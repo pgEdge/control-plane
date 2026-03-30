@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -27,6 +28,13 @@ func TestGetServiceImage(t *testing.T) {
 			serviceType: "mcp",
 			version:     "latest",
 			wantTag:     "ghcr.io/pgedge/postgres-mcp:latest",
+			wantErr:     false,
+		},
+		{
+			name:        "valid postgrest 14.5",
+			serviceType: "postgrest",
+			version:     "14.5",
+			wantTag:     "ghcr.io/pgedge/postgrest:14.5",
 			wantErr:     false,
 		},
 		{
@@ -81,21 +89,29 @@ func TestSupportedServiceVersions(t *testing.T) {
 	sv := NewServiceVersions(cfg)
 
 	tests := []struct {
-		name        string
-		serviceType string
-		wantLen     int
-		wantErr     bool
+		name           string
+		serviceType    string
+		wantLatest     bool // whether "latest" must be present
+		minPinnedCount int  // minimum number of pinned (non-"latest") versions required
+		wantErr        bool
 	}{
 		{
-			name:        "mcp service has versions",
-			serviceType: "mcp",
-			wantLen:     1, // "latest"
-			wantErr:     false,
+			name:           "mcp service has versions",
+			serviceType:    "mcp",
+			wantLatest:     true,
+			minPinnedCount: 0,
+			wantErr:        false,
+		},
+		{
+			name:           "postgrest service has versions",
+			serviceType:    "postgrest",
+			wantLatest:     false,
+			minPinnedCount: 1, // at least one pinned release (e.g. 14.5 or newer)
+			wantErr:        false,
 		},
 		{
 			name:        "unsupported service type",
 			serviceType: "unknown",
-			wantLen:     0,
 			wantErr:     true,
 		},
 	}
@@ -107,8 +123,19 @@ func TestSupportedServiceVersions(t *testing.T) {
 				t.Errorf("SupportedServiceVersions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != tt.wantLen {
-				t.Errorf("SupportedServiceVersions() returned %d versions, want %d", len(got), tt.wantLen)
+			if !tt.wantErr {
+				if tt.wantLatest && !slices.Contains(got, "latest") {
+					t.Errorf("SupportedServiceVersions() missing required version \"latest\", got %v", got)
+				}
+				pinned := 0
+				for _, v := range got {
+					if v != "latest" {
+						pinned++
+					}
+				}
+				if pinned < tt.minPinnedCount {
+					t.Errorf("SupportedServiceVersions() has %d pinned version(s), want at least %d", pinned, tt.minPinnedCount)
+				}
 			}
 		})
 	}
@@ -180,6 +207,22 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 		}
 		if img.SpockConstraint != nil {
 			t.Error("expected nil SpockConstraint for mcp")
+		}
+	})
+
+	t.Run("postgrest has no constraints", func(t *testing.T) {
+		img, err := sv.GetServiceImage("postgrest", "14.5")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if img.Tag != "ghcr.io/pgedge/postgrest:14.5" {
+			t.Errorf("expected ghcr.io/pgedge/postgrest:14.5, got %s", img.Tag)
+		}
+		if img.PostgresConstraint != nil {
+			t.Error("expected nil PostgresConstraint for postgrest")
+		}
+		if img.SpockConstraint != nil {
+			t.Error("expected nil SpockConstraint for postgrest")
 		}
 	})
 

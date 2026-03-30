@@ -65,8 +65,10 @@ type ServiceUserRole struct {
 	ServiceID        string               `json:"service_id"`
 	DatabaseID       string               `json:"database_id"`
 	DatabaseName     string               `json:"database_name"`
-	NodeName         string               `json:"node_name"` // Database node name for PrimaryExecutor routing
-	Mode             string               `json:"mode"`      // ServiceUserRoleRO or ServiceUserRoleRW
+	NodeName         string               `json:"node_name"`    // Database node name for PrimaryExecutor routing
+	Mode             string               `json:"mode"`         // ServiceUserRoleRO or ServiceUserRoleRW
+	ServiceType      string               `json:"service_type"` // "mcp" or "postgrest"
+	DBAnonRole       string               `json:"db_anon_role"` // PostgREST only: anonymous role granted to the service user
 	Username         string               `json:"username"`
 	Password         string               `json:"password"` // Generated on Create, persisted in state
 	CredentialSource *resource.Identifier `json:"credential_source,omitempty"`
@@ -191,32 +193,64 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	}
 	defer conn.Close(ctx)
 
-	// Determine group role based on mode
-	var groupRole string
-	switch r.Mode {
-	case ServiceUserRoleRO:
-		groupRole = "pgedge_application_read_only"
-	case ServiceUserRoleRW:
-		groupRole = "pgedge_application"
-	default:
-		return fmt.Errorf("unknown service user role mode: %q", r.Mode)
-	}
-
-	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
-		Name:       r.Username,
-		Password:   r.Password,
-		Attributes: []string{"LOGIN"},
-		Roles:      []string{groupRole},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to generate create user role statements: %w", err)
-	}
-
-	if err := statements.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to create service user: %w", err)
+	if r.ServiceType == "postgrest" {
+		attributes, grants := r.roleAttributesAndGrants()
+		statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
+			Name:       r.Username,
+			Password:   r.Password,
+			Attributes: attributes,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to generate create user role statements: %w", err)
+		}
+		if err := statements.Exec(ctx, conn); err != nil {
+			return fmt.Errorf("failed to create service user: %w", err)
+		}
+		if err := grants.Exec(ctx, conn); err != nil {
+			return fmt.Errorf("failed to grant service user permissions: %w", err)
+		}
+	} else {
+		var groupRole string
+		switch r.Mode {
+		case ServiceUserRoleRO:
+			groupRole = "pgedge_application_read_only"
+		case ServiceUserRoleRW:
+			groupRole = "pgedge_application"
+		default:
+			return fmt.Errorf("unknown service user role mode: %q", r.Mode)
+		}
+		statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
+			Name:       r.Username,
+			Password:   r.Password,
+			Attributes: []string{"LOGIN"},
+			Roles:      []string{groupRole},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to generate create user role statements: %w", err)
+		}
+		if err := statements.Exec(ctx, conn); err != nil {
+			return fmt.Errorf("failed to create service user: %w", err)
+		}
 	}
 
 	return nil
+}
+
+// roleAttributesAndGrants returns the PostgREST-specific role attributes and
+// SQL grant statements. Only called when ServiceType == "postgrest";
+// MCP uses the group-role path in createUserRole() directly.
+func (r *ServiceUserRole) roleAttributesAndGrants() ([]string, postgres.Statements) {
+	// NOINHERIT + GRANT <anon_role> enables PostgREST's SET ROLE mechanism.
+	attributes := []string{"LOGIN", "NOINHERIT"}
+	anonRole := r.DBAnonRole
+	if anonRole == "" {
+		anonRole = "pgedge_application_read_only"
+	}
+	grants := postgres.Statements{
+		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
+		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(r.Username))},
+	}
+	return attributes, grants
 }
 
 func (r *ServiceUserRole) Update(ctx context.Context, rc *resource.Context) error {

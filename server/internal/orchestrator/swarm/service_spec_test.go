@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types/swarm"
@@ -306,4 +307,123 @@ func TestBuildServicePortConfig(t *testing.T) {
 
 func intPtr(i int) *int {
 	return &i
+}
+
+// --- PostgREST container spec tests ---
+
+func makePostgRESTSpecOpts() *ServiceContainerSpecOptions {
+	return &ServiceContainerSpecOptions{
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "svc-1",
+			ServiceType: "postgrest",
+		},
+		ServiceInstanceID: "inst-1",
+		DatabaseID:        "db-1",
+		DatabaseName:      "mydb",
+		HostID:            "host-1",
+		ServiceName:       "svc-mydb-postgrest",
+		Hostname:          "postgrest-host1",
+		CohortMemberID:    "node-abc",
+		ServiceImage:      &ServiceImage{Tag: "postgrest/postgrest:latest"},
+		Credentials: &database.ServiceUser{
+			Username: "svc_postgrest_host1",
+			Password: "supersecret",
+		},
+		DatabaseNetworkID: "net-1",
+		DatabaseHosts:     []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
+		DataPath:          "/var/lib/pgedge/services/inst-1",
+	}
+}
+
+func TestServiceContainerSpec_PostgREST_Command(t *testing.T) {
+	spec, err := ServiceContainerSpec(makePostgRESTSpecOpts())
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+	cs := spec.TaskTemplate.ContainerSpec
+	if len(cs.Command) != 1 || cs.Command[0] != "postgrest" {
+		t.Errorf("Command = %v, want [\"postgrest\"]", cs.Command)
+	}
+	if len(cs.Args) != 1 || cs.Args[0] != "/app/data/postgrest.conf" {
+		t.Errorf("Args = %v, want [\"/app/data/postgrest.conf\"]", cs.Args)
+	}
+}
+
+func TestServiceContainerSpec_PostgREST_HealthCheck(t *testing.T) {
+	spec, err := ServiceContainerSpec(makePostgRESTSpecOpts())
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+	hc := spec.TaskTemplate.ContainerSpec.Healthcheck
+	if hc == nil {
+		t.Fatal("Healthcheck is nil")
+	}
+	want := []string{"CMD", "postgrest", "--ready"}
+	if len(hc.Test) != len(want) {
+		t.Fatalf("Healthcheck.Test = %v, want %v", hc.Test, want)
+	}
+	for i, v := range want {
+		if hc.Test[i] != v {
+			t.Errorf("Healthcheck.Test[%d] = %q, want %q", i, hc.Test[i], v)
+		}
+	}
+}
+
+func TestServiceContainerSpec_PostgREST_EnvVars(t *testing.T) {
+	spec, err := ServiceContainerSpec(makePostgRESTSpecOpts())
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+	envMap := make(map[string]string)
+	for _, e := range spec.TaskTemplate.ContainerSpec.Env {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	checks := map[string]string{
+		"PGRST_DB_URI":            "postgresql://",
+		"PGRST_SERVER_PORT":       "8080",
+		"PGRST_ADMIN_SERVER_PORT": "3001",
+		"PGHOST":                  "pg-host1",
+		"PGPORT":                  "5432",
+		"PGDATABASE":              "mydb",
+		"PGUSER":                  "svc_postgrest_host1",
+		"PGPASSWORD":              "supersecret",
+	}
+	for key, want := range checks {
+		if got, ok := envMap[key]; !ok {
+			t.Errorf("env var %s is missing", key)
+		} else if got != want {
+			t.Errorf("env var %s = %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestServiceContainerSpec_PostgREST_MountReadOnly(t *testing.T) {
+	spec, err := ServiceContainerSpec(makePostgRESTSpecOpts())
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+	mounts := spec.TaskTemplate.ContainerSpec.Mounts
+	if len(mounts) != 1 {
+		t.Fatalf("len(Mounts) = %d, want 1", len(mounts))
+	}
+	if !mounts[0].ReadOnly {
+		t.Error("data mount should be read-only for PostgREST")
+	}
+	if mounts[0].Target != "/app/data" {
+		t.Errorf("mount target = %q, want \"/app/data\"", mounts[0].Target)
+	}
+}
+
+func TestServiceContainerSpec_PostgREST_User(t *testing.T) {
+	spec, err := ServiceContainerSpec(makePostgRESTSpecOpts())
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+	want := fmt.Sprintf("%d", postgrestContainerUID)
+	if spec.TaskTemplate.ContainerSpec.User != want {
+		t.Errorf("User = %q, want %q (PostgREST runs as UID 1000 per official Dockerfile)", spec.TaskTemplate.ContainerSpec.User, want)
+	}
 }
