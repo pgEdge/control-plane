@@ -124,6 +124,9 @@ func (r *PostgRESTConfigResource) writeConfigFile(fs afero.Fs, dirPath string) e
 	if err := afero.WriteFile(fs, configPath, content, 0o600); err != nil {
 		return fmt.Errorf("failed to write %s: %w", configPath, err)
 	}
+	if err := fs.Chown(configPath, postgrestContainerUID, postgrestContainerUID); err != nil {
+		return fmt.Errorf("failed to change ownership for %s: %w", configPath, err)
+	}
 
 	return nil
 }
