@@ -21,17 +21,27 @@ var testConfig = struct {
 }{}
 
 func TestMain(m *testing.M) {
-	defaultImageTag := "127.0.0.1:5000/control-plane:" + os.Getenv("CONTROL_PLANE_VERSION")
-
 	flag.BoolVar(&testConfig.skipCleanup, "skip-cleanup", false, "skip cleaning up resources created by the tests")
 	flag.BoolVar(&testConfig.skipImageBuild, "skip-image-build", false, "skip building the control plane image. this setting is implied true when a non-default image-tag is specified.")
-	flag.StringVar(&testConfig.imageTag, "image-tag", defaultImageTag, "the control plane image to test")
+	flag.StringVar(&testConfig.imageTag, "image-tag", "", "the control plane image to test")
 	flag.StringVar(&testConfig.dataDirPrefix, "data-dir", "", "the directory to store test data. defaults to clustertest/data")
 
 	flag.Parse()
 
-	if !testConfig.skipImageBuild && testConfig.imageTag == defaultImageTag {
-		buildImage()
+	if testConfig.imageTag == "" {
+		// No explicit image tag: derive the default from CONTROL_PLANE_VERSION.
+		// Fatal here (after flag parsing) so runs that supply -image-tag are
+		// never blocked by a missing version.
+		version := os.Getenv("CONTROL_PLANE_VERSION")
+		if version == "" {
+			log.Fatal("CONTROL_PLANE_VERSION is not set; ensure common.mk version resolution succeeded or pass -image-tag explicitly")
+		}
+		testConfig.imageTag = "127.0.0.1:5000/control-plane:" + version
+		if !testConfig.skipImageBuild {
+			buildImage()
+		} else {
+			log.Println("skipping image build")
+		}
 	} else {
 		log.Println("skipping image build")
 	}

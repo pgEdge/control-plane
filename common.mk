@@ -12,7 +12,10 @@ go-licenses=$(gobin)/go-licenses
 CHANGIE_LATEST = $(shell $(changie) latest)
 # deferred simple variable expansion pattern:
 # https://make.mad-scientist.net/deferred-simple-variable-expansion/
-CONTROL_PLANE_VERSION ?= $(eval CONTROL_PLANE_VERSION := $$(shell git fetch --quiet && git describe --tags --abbrev=0 --match 'v*' release/$$(CHANGIE_LATEST)))$(CONTROL_PLANE_VERSION)
+# The 'git fetch' and 'git describe' will return the latest tag if we're on the
+# release branch. The 'echo' returns our fallback for every other branch,
+# including main.
+CONTROL_PLANE_VERSION ?= $(eval CONTROL_PLANE_VERSION := $$(shell git fetch --quiet --tags && git describe --tags --abbrev=0 --match '$$(CHANGIE_LATEST)*' 2>/dev/null || echo '$$(CHANGIE_LATEST)'))$(CONTROL_PLANE_VERSION)
 
 .PHONY: install-tools
 install-tools:
