@@ -1,3 +1,4 @@
+/* global document$ */
 // This is the RxJS observable described on this page:
 // https://squidfunk.github.io/mkdocs-material/customization/?h=script#additional-javascript
 document$.subscribe(function () {
