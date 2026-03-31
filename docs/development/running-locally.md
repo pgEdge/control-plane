@@ -120,13 +120,17 @@ On MacOS, the full path to the Restish configuration file is `~/Library/Applicat
 
 ## Running the Control Plane
 
-To start the Control Plane instances, navigate into the `control-plane` repository root and run:
+To start the Control Plane instances, navigate into the `control-plane`
+repository root and run:
 
 ```sh
 make dev-watch
 ```
 
-This will build a `control-plane` binary, build the Docker image in `docker/control-plane-dev`, and run the Docker Compose configuration in `watch` mode. See the [Development workflow](#development-workflow) section to learn how to use this setup for development.
+This will build a `pgedge-control-plane` binary, build the Docker image in
+`docker/control-plane-dev`, and run the Docker Compose configuration in `watch`
+mode. See the [Development workflow](#development-workflow) section to learn how
+to use this setup for development.
 
 ## Interact with the Control Plane API
 
@@ -199,11 +203,11 @@ section to reinitialize your cluster.
 
 The following sections detail the steps in the development process.
 
-### Rebuilding the `control-plane` binary
+### Rebuilding the `pgedge-control-plane` binary
 
 The Docker Compose file is configured to watch for changes to the
-`control-plane` binary. You can update the binary in the running containers by
-running:
+`pgedge-control-plane` binary. You can update the binary in the running
+containers by running:
 
 ```sh
 make dev-build
