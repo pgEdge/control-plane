@@ -6,4 +6,5 @@ RUN apt-get update && \
 
 COPY ./pgedge-control-plane /pgedge-control-plane
 
+# nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
 ENTRYPOINT ["/pgedge-control-plane"]

@@ -97,6 +97,7 @@ func (s *Service) PostgresUserTLS(ctx context.Context, instanceID, hostname, use
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{clientCert},
 		ServerName:   hostname,
+		MinVersion:   tls.VersionTLS12,
 	}, nil
 }
 
