@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,19 +13,19 @@ import (
 
 func TestDeleteKeyOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("key exists", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		_, err := client.Put(ctx, "foo", "bar")
 		require.NoError(t, err)
 
-		deleted, err := storage.NewDeleteKeyOp(client, "foo").Exec(ctx)
+		op := storage.NewDeleteKeyOp(client, "foo")
+		deleted, err := op.Exec(ctx)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), deleted)
+		assert.NotZero(t, op.Revision())
 
 		resp, err := client.Get(ctx, "foo")
 		require.NoError(t, err)
@@ -34,30 +33,32 @@ func TestDeleteKeyOp(t *testing.T) {
 	})
 
 	t.Run("key does not exist", func(t *testing.T) {
-		ctx := context.Background()
-		deleted, err := storage.NewDeleteKeyOp(client, "baz").Exec(ctx)
+		ctx := t.Context()
+		op := storage.NewDeleteKeyOp(client, "baz")
+		deleted, err := op.Exec(ctx)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), deleted)
+		assert.NotZero(t, op.Revision())
 	})
 }
 
 func TestDeletePrefixOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("keys exist", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		_, err := client.Put(ctx, "/prefix/foo", "1")
 		require.NoError(t, err)
 		_, err = client.Put(ctx, "/prefix/bar", "2")
 		require.NoError(t, err)
 
-		deleted, err := storage.NewDeletePrefixOp(client, "/prefix").Exec(ctx)
+		op := storage.NewDeletePrefixOp(client, "/prefix")
+		deleted, err := op.Exec(ctx)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(2), deleted)
+		assert.NotZero(t, op.Revision())
 
 		resp, err := client.Get(ctx, "/prefix", clientv3.WithPrefix())
 		require.NoError(t, err)
@@ -65,22 +66,22 @@ func TestDeletePrefixOp(t *testing.T) {
 	})
 
 	t.Run("keys do not exist", func(t *testing.T) {
-		ctx := context.Background()
-		deleted, err := storage.NewDeletePrefixOp(client, "/prefix2").Exec(ctx)
+		ctx := t.Context()
+		op := storage.NewDeletePrefixOp(client, "/prefix2")
+		deleted, err := op.Exec(ctx)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), deleted)
+		assert.NotZero(t, op.Revision())
 	})
 }
 
 func TestDeleteValueOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("key exists", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		err := storage.NewCreateOp(client, "foo", &TestValue{SomeField: "foo"}).Exec(ctx)
 		require.NoError(t, err)
@@ -88,9 +89,11 @@ func TestDeleteValueOp(t *testing.T) {
 		val, err := storage.NewGetOp[*TestValue](client, "foo").Exec(ctx)
 		require.NoError(t, err)
 
-		err = storage.NewDeleteValueOp(client, "foo", val).Exec(ctx)
+		op := storage.NewDeleteValueOp(client, "foo", val)
+		err = op.Exec(ctx)
 
 		assert.NoError(t, err)
+		assert.NotZero(t, op.Revision())
 
 		resp, err := client.Get(ctx, "foo")
 		require.NoError(t, err)
@@ -98,16 +101,18 @@ func TestDeleteValueOp(t *testing.T) {
 	})
 
 	t.Run("key does not exist", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		val := &TestValue{SomeField: "bar"}
-		err := storage.NewDeleteValueOp(client, "baz", val).Exec(ctx)
+		op := storage.NewDeleteValueOp(client, "baz", val)
+		err := op.Exec(ctx)
 
 		assert.NoError(t, err)
+		assert.NotZero(t, op.Revision())
 	})
 
 	t.Run("version mismatch", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		err := storage.NewCreateOp(client, "baz", &TestValue{SomeField: "baz"}).Exec(ctx)
 		require.NoError(t, err)
@@ -119,8 +124,10 @@ func TestDeleteValueOp(t *testing.T) {
 		err = storage.NewPutOp(client, "baz", &TestValue{SomeField: "new baz"}).Exec(ctx)
 		require.NoError(t, err)
 
-		err = storage.NewDeleteValueOp(client, "baz", val).Exec(ctx)
+		op := storage.NewDeleteValueOp(client, "baz", val)
+		err = op.Exec(ctx)
 
 		assert.ErrorIs(t, err, storage.ErrValueVersionMismatch)
+		assert.NotZero(t, op.Revision())
 	})
 }

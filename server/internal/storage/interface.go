@@ -33,8 +33,10 @@ func (v *StoredValue) SetVersion(version int64) {
 
 // TxnOperation is a storage operation that can be used in a transaction.
 type TxnOperation interface {
-	Ops(ctx context.Context) ([]clientv3.Op, error)
+	ClientOp(ctx context.Context) (clientv3.Op, error)
 	Cmps() []clientv3.Cmp
+	UpdateRevision(revision int64)
+	Revision() int64
 }
 
 // Txn is a group of operations that will be executed together in a transaction.
@@ -72,6 +74,8 @@ type PutOp[V Value] interface {
 	// operation completes.
 	WithUpdatedVersion() PutOp[V]
 	Exec(ctx context.Context) error
+	// The revision returned by the server. Only populated after Exec is called.
+	Revision() int64
 
 	VersionUpdater
 }
@@ -81,6 +85,9 @@ type PutOp[V Value] interface {
 type DeleteOp interface {
 	TxnOperation
 	Exec(ctx context.Context) (int64, error)
+	// The revision returned by the server. Only populated after Exec() is
+	// called.
+	Revision() int64
 }
 
 // DeleteValueOp is a delete operation that deletes a single value from storage
@@ -89,6 +96,8 @@ type DeleteOp interface {
 type DeleteValueOp[V Value] interface {
 	TxnOperation
 	Exec(ctx context.Context) error
+	// The revision returned by the server. Only populated after Exec is called.
+	Revision() int64
 }
 
 type EventType string
@@ -109,6 +118,7 @@ type Event[V Value] struct {
 	Value    V
 	IsCreate bool
 	IsModify bool
+	Revision int64
 }
 
 // WatchOp watches one or more keys for modifications.
@@ -139,4 +149,52 @@ type VersionUpdater interface {
 	// UpdateVersion should read the previous KVs that it manages from prevKV
 	// and update its item's versions.
 	UpdateVersion(prevKVs map[string]*mvccpb.KeyValue)
+}
+
+// Cache is a write-through cache that uses Watch operations to stay updated. It
+// is most suitable for making range operations on small numbers of small values
+// more efficient. Note that since reads are executed from the in-memory cache,
+// these caches are not suitable for complex Get operations that require
+// OpOptions.
+type Cache[V Value] interface {
+	// Start starts the cache. This must be called before the cache can be used.
+	Start(ctx context.Context) error
+	// Put returns an operation that puts a key-value pair into storage.
+	Put(item V, options ...clientv3.OpOption) PutOp[V]
+	// Create returns an operation that creates a key value pair with an
+	// optional time-to-live. This operation will fail with ErrAlreadyExists if
+	// the given key already exists.
+	Create(item V, options ...clientv3.OpOption) PutOp[V]
+	// Update returns an operation updates an existing key value pair with a new
+	// value and an optional time-to-live. This operation will fail with
+	// ErrValueVersionMismatch if the stored value's version does not match the
+	// given value's version. Note that this operation is equivalent to a create
+	// when the item version is 0.
+	Update(item V, options ...clientv3.OpOption) PutOp[V]
+	// DeleteByKey returns an operation that deletes a single value by key.
+	DeleteByKey(key string, options ...clientv3.OpOption) DeleteOp
+	// DeleteValue returns an operation that deletes a single value if its
+	// version matches the given value's version. Its Exec method will return an
+	// ErrValueVersionMismatch if the stored value version did not match the
+	// given value version.
+	DeleteValue(item V, options ...clientv3.OpOption) DeleteValueOp[V]
+	// DeletePrefix returns an operation that deletes a multiple values by
+	// prefix.
+	DeletePrefix(prefix string, options ...clientv3.OpOption) DeleteOp
+	// Get returns an operation that returns a single value by key.
+	Get(key string) GetOp[V]
+	// GetPrefix returns an operation that returns multiple values by prefix.
+	GetPrefix(prefix string) GetMultipleOp[V]
+	// Stop stops the cache.
+	Stop()
+	// Error reports errors that originate from the cache's watch.
+	Error() <-chan error
+	// PropagateErrors will propagate errors from the cache's Error() channel to
+	// the given error channel in a goroutine until the given context is
+	// complete.
+	PropagateErrors(ctx context.Context, ch chan error)
+}
+
+type CachedTxnOp interface {
+	UpdateCache()
 }

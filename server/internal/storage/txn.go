@@ -27,19 +27,21 @@ func (t *txn) AddOps(ops ...TxnOperation) {
 func (t *txn) Commit(ctx context.Context) error {
 	var allOps []clientv3.Op
 	var allCmps []clientv3.Cmp
+	var cachedOps []CachedTxnOp
 
 	opsByKey := map[string][]clientv3.Op{}
 	for _, op := range t.ops {
-		ops, err := op.Ops(ctx)
+		clientOp, err := op.ClientOp(ctx)
 		if err != nil {
 			return err
 		}
-		for _, o := range ops {
-			key := string(o.KeyBytes())
-			opsByKey[key] = append(opsByKey[key], o)
-		}
-		allOps = append(allOps, ops...)
+		key := string(clientOp.KeyBytes())
+		opsByKey[key] = append(opsByKey[key], clientOp)
+		allOps = append(allOps, clientOp)
 		allCmps = append(allCmps, op.Cmps()...)
+		if c, ok := op.(CachedTxnOp); ok {
+			cachedOps = append(cachedOps, c)
+		}
 	}
 
 	// Etcd will reject the transaction if there are duplicate keys, and it
@@ -66,6 +68,9 @@ func (t *txn) Commit(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed transaction: %w", err)
 	}
+	for _, o := range t.ops {
+		o.UpdateRevision(resp.Header.Revision)
+	}
 
 	if !resp.Succeeded {
 		return ErrOperationConstraintViolated
@@ -77,6 +82,10 @@ func (t *txn) Commit(ctx context.Context) error {
 		if up, ok := o.(VersionUpdater); ok && up.UpdateVersionEnabled() {
 			up.UpdateVersion(prevKVs)
 		}
+	}
+	// Update the cache for all cached operations
+	for _, c := range cachedOps {
+		c.UpdateCache()
 	}
 
 	return nil

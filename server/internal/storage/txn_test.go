@@ -18,13 +18,17 @@ func TestTxn(t *testing.T) {
 
 	t.Run("all conditions met", func(t *testing.T) {
 		ctx := context.Background()
-		err := storage.NewTxn(client,
+		ops := []storage.TxnOperation{
 			storage.NewCreateOp(client, "foo", &TestValue{SomeField: "foo"}),
 			storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"}),
 			storage.NewCreateOp(client, "baz", &TestValue{SomeField: "baz"}),
-		).Commit(ctx)
+		}
+		err := storage.NewTxn(client, ops...).Commit(ctx)
 
 		assert.NoError(t, err)
+		for _, op := range ops {
+			assert.NotZero(t, op.Revision())
+		}
 
 		expected := []*TestValue{
 			{SomeField: "foo"},
@@ -52,13 +56,17 @@ func TestTxn(t *testing.T) {
 		err := storage.NewPutOp(client, "1", &TestValue{SomeField: "1"}).Exec(ctx)
 		require.NoError(t, err)
 
-		err = storage.NewTxn(client,
+		ops := []storage.TxnOperation{
 			storage.NewCreateOp(client, "1", &TestValue{SomeField: "1"}),
 			storage.NewCreateOp(client, "2", &TestValue{SomeField: "2"}),
 			storage.NewCreateOp(client, "3", &TestValue{SomeField: "3"}),
-		).Commit(ctx)
+		}
+		err = storage.NewTxn(client, ops...).Commit(ctx)
 
 		assert.ErrorIs(t, err, storage.ErrOperationConstraintViolated)
+		for _, op := range ops {
+			assert.NotZero(t, op.Revision())
+		}
 
 		// 1 already exists since we created it before the transaction.
 		vals, err := storage.NewGetMultipleOp[*TestValue](client, []string{
@@ -73,12 +81,18 @@ func TestTxn(t *testing.T) {
 
 	t.Run("duplicate keys", func(t *testing.T) {
 		ctx := context.Background()
-		err := storage.NewTxn(client,
+		ops := []storage.TxnOperation{
 			storage.NewPutOp(client, "a", &TestValue{SomeField: "a"}),
 			storage.NewDeleteKeyOp(client, "a"),
-		).Commit(ctx)
+		}
+		err := storage.NewTxn(client, ops...).Commit(ctx)
 
 		assert.ErrorIs(t, err, storage.ErrDuplicateKeysInTransaction)
+		for _, op := range ops {
+			// These should be zero since this transaction failed before making
+			// a request to the server.
+			assert.Zero(t, op.Revision())
+		}
 
 		assert.ErrorContains(t, err, "put a")
 		assert.ErrorContains(t, err, "delete a")
