@@ -23,10 +23,10 @@ install-tools:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
 	go install goa.design/goa/v3/cmd/goa@v3.23.4
-	# TODO: goreleaser v2.14+ requires Go 1.26+. The GONOSUMDB/GONOSUMCHECK
-	# workaround bypasses a broken deprecation check on the sum DB. Remove
-	# these env vars and bump goreleaser when we upgrade to Go 1.26.
-	GONOSUMDB=github.com/goreleaser/goreleaser GONOSUMCHECK=github.com/goreleaser/goreleaser go install github.com/goreleaser/goreleaser/v2@v2.13.3
+	# TODO: goreleaser v2.14+ requires Go 1.26+. GONOSUMDB bypasses a broken
+	# deprecation check on the sum DB. Remove and bump goreleaser when we
+	# upgrade to Go 1.26.
+	GONOSUMDB=github.com/goreleaser/goreleaser go install github.com/goreleaser/goreleaser/v2@v2.13.3
 	go install github.com/anchore/syft/cmd/syft@v1.40.0
 	go install github.com/miniscruff/changie@v1.24.0
 	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.21.0
