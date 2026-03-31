@@ -17,7 +17,7 @@ func newZapLogger(base zerolog.Logger, logLevel, component string) (*zap.Logger,
 	core := zerozap.New(base.
 		Level(level).
 		With().
-		Str("component", component).
+		Str("etcd_component", component).
 		Logger())
 	return zap.New(core), nil
 }

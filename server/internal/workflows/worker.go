@@ -46,7 +46,7 @@ func NewWorker(loggerFactory *logging.Factory, be backend.Backend, workflows *Wo
 	}
 
 	return &Worker{
-		logger:    loggerFactory.Logger("workflows_worker"),
+		logger:    loggerFactory.Logger(logging.ComponentWorkflowsWorker),
 		worker:    w,
 		workflows: workflows,
 	}, nil

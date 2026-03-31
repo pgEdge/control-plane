@@ -38,7 +38,7 @@ func NewRemoteEtcd(cfg *config.Manager, loggerFactory *logging.Factory) *RemoteE
 		cfg:           cfg,
 		initialized:   make(chan struct{}),
 		err:           make(chan error),
-		logger:        loggerFactory.Logger("remote_etcd"),
+		logger:        loggerFactory.Logger(logging.ComponentRemoteEtcd),
 		loggerFactory: loggerFactory,
 	}
 }
