@@ -18,6 +18,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/migrate"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
+	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
@@ -171,6 +172,14 @@ func (a *App) runInitialized(parentCtx context.Context) error {
 	}
 	if err := hostSvc.UpdateHost(a.serviceCtx); err != nil {
 		return handleError(fmt.Errorf("failed to update host: %w", err))
+	}
+
+	resourceSvc, err := do.Invoke[*resource.Service](a.i)
+	if err != nil {
+		return handleError(fmt.Errorf("failed to initialize resource service: %w", err))
+	}
+	if err := resourceSvc.Start(a.serviceCtx); err != nil {
+		return handleError(fmt.Errorf("failed to start resource service: %w", err))
 	}
 
 	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)

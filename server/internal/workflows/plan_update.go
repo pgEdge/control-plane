@@ -7,7 +7,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
-	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -40,6 +40,10 @@ func (w *Workflows) ExecutePlanUpdate(
 func (w *Workflows) PlanUpdate(ctx workflow.Context, input *PlanUpdateInput) (*PlanUpdateOutput, error) {
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("getting desired state")
+
+	if err := input.Current.ValidateVersion(); err != nil {
+		return nil, err
+	}
 
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
@@ -96,7 +100,7 @@ func (w *Workflows) getServiceResources(
 	nodeInstances []*database.NodeInstances,
 ) (*operations.ServiceResources, error) {
 	serviceInstanceID := database.GenerateServiceInstanceID(spec.DatabaseID, serviceSpec.ServiceID, hostID)
-	pgEdgeVersion, err := host.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
+	pgEdgeVersion, err := ds.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pgedge version: %w", err)
 	}

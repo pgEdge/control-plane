@@ -23,9 +23,10 @@ CLUSTER_TEST_SKIP_CLEANUP ?= 0
 CLUSTER_TEST_IMAGE_TAG ?=
 CLUSTER_TEST_DATA_DIR ?=
 
+ci_enabled=$(filter true,$(CI))
 docker_swarm_state=$(shell docker info --format '{{.Swarm.LocalNodeState}}')
-buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
-buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
+buildx_builder=$(if $(ci_enabled),"control-plane-ci","control-plane")
+buildx_config=$(if $(ci_enabled),"./buildkit.ci.toml","./buildkit.toml")
 docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		DEBUG=$(DEBUG) \
 		LOG_LEVEL=$(LOG_LEVEL) \
@@ -53,10 +54,10 @@ cluster_test_args=-tags=cluster_test -count=1 -timeout=10m \
 # Automatically adds junit output named after the rule, e.g.
 # 'test-e2e-results.xml' in CI environment.
 gotestsum=$(gobin)/gotestsum \
-	$(if $(filter true,$(CI)),--junitfile $@-results.xml)
+	$(if $(ci_enabled),--junitfile $@-results.xml)
 
 golangci-lint=$(gobin)/golangci-lint \
-	$(if $(filter true,$(CI)),--output.text.path stdout --output.junit-xml.path $@-results.xml)
+	$(if $(ci_enabled),--output.text.path stdout --output.junit-xml.path $@-results.xml)
 
 .DEFAULT_GOAL := build
 

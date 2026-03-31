@@ -7116,7 +7116,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "deleting",
+            "example": "modifying",
             "enum": [
               "creating",
               "modifying",
@@ -7124,7 +7124,6 @@
               "deleting",
               "degraded",
               "failed",
-              "backing_up",
               "restoring",
               "unknown"
             ]
@@ -7576,7 +7575,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "restoring",
+            "example": "modifying",
             "enum": [
               "creating",
               "modifying",
@@ -7584,7 +7583,6 @@
               "deleting",
               "degraded",
               "failed",
-              "backing_up",
               "restoring",
               "unknown"
             ]
@@ -8128,7 +8126,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "creating",
+            "example": "unknown",
             "enum": [
               "creating",
               "modifying",
@@ -8136,7 +8134,6 @@
               "deleting",
               "degraded",
               "failed",
-              "backing_up",
               "restoring",
               "unknown"
             ]
@@ -8586,7 +8583,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "creating",
+            "example": "unknown",
             "enum": [
               "creating",
               "modifying",
@@ -8594,7 +8591,6 @@
               "deleting",
               "degraded",
               "failed",
-              "backing_up",
               "restoring",
               "unknown"
             ]
@@ -9136,7 +9132,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "backing_up",
+            "example": "restoring",
             "enum": [
               "creating",
               "modifying",
@@ -9144,7 +9140,6 @@
               "deleting",
               "degraded",
               "failed",
-              "backing_up",
               "restoring",
               "unknown"
             ]

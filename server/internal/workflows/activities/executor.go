@@ -26,6 +26,7 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 		State:    state,
 		Injector: a.Injector,
 		Registry: registry,
+		HostID:   a.Config.HostID,
 	}
 
 	switch executor.Type {

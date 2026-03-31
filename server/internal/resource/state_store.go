@@ -41,9 +41,19 @@ func (s *StateStore) GetByKey(databaseID string) storage.GetOp[*StoredState] {
 	return storage.NewGetOp[*StoredState](s.client, key)
 }
 
+func (s *StateStore) GetAll() storage.GetMultipleOp[*StoredState] {
+	prefix := s.Prefix()
+	return storage.NewGetPrefixOp[*StoredState](s.client, prefix)
+}
+
 func (s *StateStore) Put(item *StoredState) storage.PutOp[*StoredState] {
 	key := s.Key(item.DatabaseID)
 	return storage.NewPutOp(s.client, key, item)
+}
+
+func (s *StateStore) Update(item *StoredState) storage.PutOp[*StoredState] {
+	key := s.Key(item.DatabaseID)
+	return storage.NewUpdateOp(s.client, key, item)
 }
 
 func (s *StateStore) DeleteByKey(databaseID string) storage.DeleteOp {

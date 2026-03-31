@@ -482,7 +482,6 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 			HostID:     hostID,
 		}
 	}
-	prevState := db.State
 	t, err := s.workflowSvc.CreatePgBackRestBackup(ctx,
 		db.DatabaseID,
 		node.Name,
@@ -495,11 +494,7 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 		},
 	)
 	if err != nil {
-		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateBackingUp, prevState)
-		if restorationErr != nil {
-			s.logger.Err(restorationErr).Msg("failed to roll back database state change")
-		}
-		return nil, apiErr(err)
+		return nil, apiErr(fmt.Errorf("failed to initialize backup workflow: %w", err))
 	}
 
 	return &api.BackupDatabaseNodeResponse{

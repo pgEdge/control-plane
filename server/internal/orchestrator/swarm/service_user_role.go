@@ -180,7 +180,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
-		DBOwner:    false,
 		Attributes: []string{"LOGIN"},
 		Roles:      []string{groupRole},
 	})

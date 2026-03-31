@@ -42,7 +42,7 @@ commands:
   common_setup:
     steps:
       - go/install:
-          version: '1.25.5'
+          version: '1.25.8'
       - checkout
       - use_mod_cache
       - run:

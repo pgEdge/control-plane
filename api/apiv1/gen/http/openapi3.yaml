@@ -4864,7 +4864,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: deleting
+          example: modifying
           enum:
             - creating
             - modifying
@@ -4872,7 +4872,6 @@ components:
             - deleting
             - degraded
             - failed
-            - backing_up
             - restoring
             - unknown
         tenant_id:
@@ -5190,7 +5189,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: restoring
+          example: modifying
           enum:
             - creating
             - modifying
@@ -5198,7 +5197,6 @@ components:
             - deleting
             - degraded
             - failed
-            - backing_up
             - restoring
             - unknown
         tenant_id:
@@ -5581,7 +5579,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: creating
+          example: unknown
           enum:
             - creating
             - modifying
@@ -5589,7 +5587,6 @@ components:
             - deleting
             - degraded
             - failed
-            - backing_up
             - restoring
             - unknown
         tenant_id:
@@ -5906,7 +5903,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: creating
+          example: unknown
           enum:
             - creating
             - modifying
@@ -5914,7 +5911,6 @@ components:
             - deleting
             - degraded
             - failed
-            - backing_up
             - restoring
             - unknown
         tenant_id:
@@ -6296,7 +6292,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: backing_up
+          example: restoring
           enum:
             - creating
             - modifying
@@ -6304,7 +6300,6 @@ components:
             - deleting
             - degraded
             - failed
-            - backing_up
             - restoring
             - unknown
         tenant_id:

@@ -2580,7 +2580,7 @@ definitions:
       state:
         type: string
         description: Current state of the database.
-        example: deleting
+        example: restoring
         enum:
           - creating
           - modifying
@@ -2588,7 +2588,6 @@ definitions:
           - deleting
           - degraded
           - failed
-          - backing_up
           - restoring
           - unknown
       tenant_id:

@@ -43,7 +43,7 @@ func (r *ReplicationSlotCreateResource) Identifier() resource.Identifier {
 
 func (r *ReplicationSlotCreateResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),
+		PostgresDatabaseResourceIdentifier(r.ProviderNode, r.DatabaseName),
 	}
 }
 

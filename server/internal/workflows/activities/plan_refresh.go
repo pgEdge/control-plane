@@ -36,6 +36,10 @@ func (a *Activities) PlanRefresh(ctx context.Context, input *PlanRefreshInput) (
 	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("generating refresh plan")
 
+	if err := input.State.ValidateVersion(); err != nil {
+		return nil, err
+	}
+
 	// This needs to be in an activity because it's non-deterministic and can
 	// produce an error
 	plan, err := input.State.PlanRefresh()

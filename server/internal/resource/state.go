@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"maps"
@@ -12,13 +13,41 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
+var (
+	StateVersion_1_0_0 = ds.MustParseVersion("1.0.0")
+
+	CurrentVersion = StateVersion_1_0_0
+)
+
+var (
+	ErrStateNeedsUpgrade        = errors.New("state needs to be upgraded")
+	ErrControlPlaneNeedsUpgrade = errors.New("control plane upgrade required: cannot operate on a state produced by a newer control plane version")
+)
+
 type State struct {
+	Version   *ds.Version                       `json:"version"`
 	Resources map[Type]map[string]*ResourceData `json:"resources"`
 }
 
 func NewState() *State {
 	return &State{
+		Version:   CurrentVersion.Clone(),
 		Resources: make(map[Type]map[string]*ResourceData),
+	}
+}
+
+func (s *State) ValidateVersion() error {
+	if s.Version == nil {
+		s.Version = &ds.Version{}
+	}
+	comparison := CurrentVersion.Compare(s.Version)
+	switch {
+	case comparison < 0:
+		return ErrControlPlaneNeedsUpgrade
+	case comparison > 0:
+		return ErrStateNeedsUpgrade
+	default:
+		return nil
 	}
 }
 
@@ -88,7 +117,13 @@ func (s *State) Clone() *State {
 		}
 	}
 
+	var version *ds.Version
+	if s.Version != nil {
+		version = s.Version.Clone()
+	}
+
 	return &State{
+		Version:   version,
 		Resources: resources,
 	}
 }

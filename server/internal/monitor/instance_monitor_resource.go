@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/samber/do"
+
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/samber/do"
 )
 
 var _ resource.Resource = (*InstanceMonitorResource)(nil)

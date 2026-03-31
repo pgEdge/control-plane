@@ -1,9 +1,13 @@
 package host
 
 import (
+	"errors"
+	"fmt"
+	"slices"
 	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 )
 
@@ -46,11 +50,11 @@ type Host struct {
 	MemBytes                uint64
 	EtcdMode                config.EtcdMode
 	Status                  *HostStatus
-	DefaultPgEdgeVersion    *PgEdgeVersion
-	SupportedPgEdgeVersions []*PgEdgeVersion
+	DefaultPgEdgeVersion    *ds.PgEdgeVersion
+	SupportedPgEdgeVersions []*ds.PgEdgeVersion
 }
 
-func (h *Host) Supports(pgEdgeVersion *PgEdgeVersion) bool {
+func (h *Host) Supports(pgEdgeVersion *ds.PgEdgeVersion) bool {
 	for _, v := range h.SupportedPgEdgeVersions {
 		if v.Equals(pgEdgeVersion) {
 			return true
@@ -158,4 +162,49 @@ func statusToStorage(status *HostStatus) *StoredHostStatus {
 		State:      status.State,
 		Components: status.Components,
 	}
+}
+
+func GreatestCommonDefaultVersion(hosts ...*Host) (*ds.PgEdgeVersion, error) {
+	// We can't do set operations on *PgEdgeVersion, and we can't do semver
+	// comparisons on strings. So, we'll use strings for set operations, then
+	// translate them back to *PgEdgeVersions to do the version comparisons.
+	stringToVersion := map[string]*ds.PgEdgeVersion{}
+	defaultVersions := ds.NewSet[string]()
+	var commonVersions ds.Set[string]
+	for _, h := range hosts {
+		if h.DefaultPgEdgeVersion == nil {
+			return nil, fmt.Errorf("missing default pgedge version on host '%s'", h.ID)
+		}
+		defaultVersions.Add(h.DefaultPgEdgeVersion.String())
+		supported := ds.NewSet[string]()
+		for _, v := range h.SupportedPgEdgeVersions {
+			vs := v.String()
+			supported.Add(vs)
+			stringToVersion[vs] = v
+		}
+		if commonVersions == nil {
+			commonVersions = supported
+		} else {
+			commonVersions = commonVersions.Intersection(supported)
+		}
+	}
+
+	commonDefaults := defaultVersions.Intersection(commonVersions)
+	if len(commonDefaults) == 0 {
+		return nil, errors.New("no common default versions found between the given hosts")
+	}
+
+	versions := make([]*ds.PgEdgeVersion, 0, len(commonDefaults))
+	for vs := range commonDefaults {
+		v, ok := stringToVersion[vs]
+		if !ok {
+			return nil, fmt.Errorf("invalid state - missing version: %q", vs)
+		}
+		versions = append(versions, v)
+	}
+	slices.SortFunc(versions, func(a, b *ds.PgEdgeVersion) int {
+		// Sort in reverse order
+		return -a.Compare(b)
+	})
+	return versions[0], nil
 }

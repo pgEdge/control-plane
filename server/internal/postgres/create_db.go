@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -23,6 +25,12 @@ type ReplicationSetTable struct {
 	SetRelOID    uint32
 	SetAttList   []string
 	SetRowFilter string
+}
+
+func IsInRecovery() Query[bool] {
+	return Query[bool]{
+		SQL: "SELECT pg_is_in_recovery();",
+	}
 }
 
 func IsSpockEnabled() Query[bool] {
@@ -78,29 +86,28 @@ func RenameDB(oldName, newName string) ConditionalStatement {
 	}
 }
 
-func InitializePgEdgeExtensions(nodeName string, dsn *DSN) Statements {
+func NodeNeedsCreate(nodeName string) Query[bool] {
+	return Query[bool]{
+		SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.node WHERE node_name = @node);",
+		Args: pgx.NamedArgs{
+			"node": nodeName,
+		},
+	}
+}
+
+func InitializeSpockNode(nodeName string, nodeDSN *DSN) Statements {
+	dsn := nodeDSN.String()
 	return Statements{
 		Statement{
 			SQL: "CREATE EXTENSION IF NOT EXISTS spock;",
 		},
-		// Statement{
-		// 	SQL: "CREATE EXTENSION IF NOT EXISTS snowflake;",
-		// },
-		// Statement{
-		// 	SQL: "CREATE EXTENSION IF NOT EXISTS lolor;",
-		// },
 		ConditionalStatement{
-			If: Query[bool]{
-				SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.node WHERE node_name = @node_name);",
-				Args: pgx.NamedArgs{
-					"node_name": nodeName,
-				},
-			},
+			If: NodeNeedsCreate(nodeName),
 			Then: Statement{
-				SQL: "SELECT spock.node_create(@node_name, @dsn);",
+				SQL: "SELECT spock.node_create(@node, @dsn);",
 				Args: pgx.NamedArgs{
-					"node_name": nodeName,
-					"dsn":       dsn.String(),
+					"node": nodeName,
+					"dsn":  dsn,
 				},
 			},
 		},
@@ -549,4 +556,31 @@ func RestoreReplicationSets(sets []ReplicationSet, tabs []ReplicationSetTable) S
 	}
 
 	return stmts
+}
+
+// StartRepairModeTxn will start a new transaction and, if Spock is enabled,
+// enable repair mode for the transaction. Callers are responsible for calling
+// Rollback and Commit on the returned transaction.
+func StartRepairModeTxn(ctx context.Context, conn *pgx.Conn) (pgx.Tx, error) {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	enabled, err := IsSpockEnabled().Scalar(ctx, tx)
+	if err != nil {
+		return nil, errors.Join(
+			fmt.Errorf("failed to check if spock is enabled: %w", err),
+			tx.Rollback(ctx),
+		)
+	}
+	if enabled {
+		err = EnableRepairMode().Exec(ctx, tx)
+		if err != nil {
+			return nil, errors.Join(
+				fmt.Errorf("failed to enable repair mode: %w", err),
+				tx.Rollback(ctx),
+			)
+		}
+	}
+	return tx, nil
 }

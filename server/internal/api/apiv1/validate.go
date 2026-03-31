@@ -67,6 +67,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 	errs = append(errs, validateCPUs(spec.Cpus, []string{"cpus"})...)
 	errs = append(errs, validateMemory(spec.Memory, []string{"memory"})...)
 	errs = append(errs, validatePorts(spec.Port, spec.PatroniPort, []string{"port"}))
+	errs = append(errs, validateUsers(spec.DatabaseUsers, []string{"database_users"})...)
 
 	// Track node-name uniqueness and prepare set for cross-node checks.
 	seenNodeNames := make(ds.Set[string], len(spec.Nodes))
@@ -448,6 +449,33 @@ func validatePorts(postgresPort, patroniPort *int, path []string) error {
 	}
 
 	return nil
+}
+
+func validateUsers(users []*api.DatabaseUserSpec, path []string) []error {
+	var errs []error
+
+	seenNames := ds.NewSet[string]()
+	var hasOwner bool
+	for i, user := range users {
+		userPath := appendPath(path, arrayIndexPath(i))
+
+		if seenNames.Has(user.Username) {
+			err := errors.New("usernames must be unique within a database")
+			errs = append(errs, newValidationError(err, userPath))
+		}
+		if user.DbOwner != nil && *user.DbOwner && hasOwner {
+			err := errors.New("cannot have multiple users with db_owner = true")
+			errs = append(errs, newValidationError(err, userPath))
+		}
+
+		seenNames.Add(user.Username)
+
+		if user.DbOwner != nil && *user.DbOwner {
+			hasOwner = true
+		}
+	}
+
+	return errs
 }
 
 func validateBackupConfig(cfg *api.BackupConfigSpec, path []string) []error {

@@ -1,16 +1,13 @@
-package host
+package ds
 
 import (
 	"encoding"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 // VersionConstraint defines an optional minimum and/or maximum version bound.
@@ -201,46 +198,4 @@ func NewPgEdgeVersion(postgresVersion, spockVersion string) (*PgEdgeVersion, err
 		PostgresVersion: pv,
 		SpockVersion:    sv,
 	}, nil
-}
-
-func GreatestCommonDefaultVersion(hosts ...*Host) (*PgEdgeVersion, error) {
-	// We can't do set operations on *PgEdgeVersion, and we can't do semver
-	// comparisons on strings. So, we'll use strings for set operations, then
-	// translate them back to *PgEdgeVersions to do the version comparisons.
-	stringToVersion := map[string]*PgEdgeVersion{}
-	defaultVersions := ds.NewSet[string]()
-	var commonVersions ds.Set[string]
-	for _, h := range hosts {
-		defaultVersions.Add(h.DefaultPgEdgeVersion.String())
-		supported := ds.NewSet[string]()
-		for _, v := range h.SupportedPgEdgeVersions {
-			vs := v.String()
-			supported.Add(vs)
-			stringToVersion[vs] = v
-		}
-		if commonVersions == nil {
-			commonVersions = supported
-		} else {
-			commonVersions = commonVersions.Intersection(supported)
-		}
-	}
-
-	commonDefaults := defaultVersions.Intersection(commonVersions)
-	if len(commonDefaults) == 0 {
-		return nil, errors.New("no common default versions found between the given hosts")
-	}
-
-	versions := make([]*PgEdgeVersion, 0, len(commonDefaults))
-	for vs := range commonDefaults {
-		v, ok := stringToVersion[vs]
-		if !ok {
-			return nil, fmt.Errorf("invalid state - missing version: %q", vs)
-		}
-		versions = append(versions, v)
-	}
-	slices.SortFunc(versions, func(a, b *PgEdgeVersion) int {
-		// Sort in reverse order
-		return -a.Compare(b)
-	})
-	return versions[0], nil
 }

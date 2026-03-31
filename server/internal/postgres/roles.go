@@ -14,8 +14,6 @@ var builtinRoles = []string{"pgedge_application", "pgedge_application_read_only"
 type UserRoleOptions struct {
 	Name       string
 	Password   string
-	DBName     string
-	DBOwner    bool
 	Attributes []string
 	Roles      []string
 }
@@ -51,11 +49,6 @@ func CreateUserRole(opts UserRoleOptions) (Statements, error) {
 			SQL: fmt.Sprintf("ALTER ROLE %q WITH %s;", opts.Name, attr),
 		})
 	}
-	if opts.DBOwner {
-		statements = append(statements, Statement{
-			SQL: fmt.Sprintf("ALTER DATABASE %q OWNER TO %q;", opts.DBName, opts.Name),
-		})
-	}
 	for _, role := range opts.Roles {
 		statements = append(statements, Statement{
 			SQL: fmt.Sprintf("GRANT %q TO %q WITH INHERIT TRUE;", role, opts.Name),
@@ -66,16 +59,7 @@ func CreateUserRole(opts UserRoleOptions) (Statements, error) {
 }
 
 type BuiltinRoleOptions struct {
-	PGVersion    string
-	DBName       string
-	ExtraSchemas []string
-}
-
-func (o BuiltinRoleOptions) Schemas() []string {
-	var schemas []string
-	schemas = append(schemas, defaultSchemas...)
-	schemas = append(schemas, o.ExtraSchemas...)
-	return schemas
+	PGVersion string
 }
 
 func CreateBuiltInRoles(opts BuiltinRoleOptions) (Statements, error) {
@@ -98,11 +82,6 @@ func CreateApplicationRole(opts BuiltinRoleOptions) Statements {
 				SQL: "CREATE ROLE pgedge_application WITH NOLOGIN;",
 			},
 		},
-		dbConnect(opts.DBName, "pgedge_application"),
-	}
-
-	for _, schema := range opts.Schemas() {
-		statements = append(statements, schemaAdmin(schema, "pgedge_application")...)
 	}
 
 	return statements
@@ -112,17 +91,12 @@ func CreateApplicationReadOnlyRole(opts BuiltinRoleOptions) Statements {
 	statements := Statements{
 		ConditionalStatement{
 			If: Query[bool]{
-				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_application');",
+				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_application_read_only');",
 			},
 			Then: Statement{
 				SQL: "CREATE ROLE pgedge_application_read_only WITH NOLOGIN;",
 			},
 		},
-		dbConnect(opts.DBName, "pgedge_application_read_only"),
-	}
-
-	for _, schema := range opts.Schemas() {
-		statements = append(statements, schemaReadOnly(schema, "pgedge_application_read_only")...)
 	}
 
 	return statements
@@ -156,16 +130,45 @@ func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
 		Statement{
 			SQL: "GRANT " + roles + " TO pgedge_superuser WITH ADMIN true;",
 		},
-		Statement{
-			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON DATABASE %q TO pgedge_superuser;", opts.DBName),
-		},
-	}
-
-	for _, schema := range opts.Schemas() {
-		statements = append(statements, schemaAdmin(schema, "pgedge_superuser")...)
 	}
 
 	return statements, nil
+}
+
+func AlterOwner(dbName, owner string) Statement {
+	return Statement{
+		SQL: fmt.Sprintf("ALTER DATABASE %q OWNER TO %q;", dbName, owner),
+	}
+}
+
+type BuiltinRolePrivilegeOptions struct {
+	DBName       string
+	ExtraSchemas []string
+}
+
+func (o BuiltinRolePrivilegeOptions) Schemas() []string {
+	var schemas []string
+	schemas = append(schemas, defaultSchemas...)
+	schemas = append(schemas, o.ExtraSchemas...)
+	return schemas
+}
+
+func GrantBuiltinRolePrivileges(opts BuiltinRolePrivilegeOptions) Statements {
+	statements := Statements{
+		Statement{
+			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON DATABASE %q TO pgedge_superuser;", opts.DBName),
+		},
+		dbConnect(opts.DBName, "pgedge_superuser"),
+		dbConnect(opts.DBName, "pgedge_application"),
+		dbConnect(opts.DBName, "pgedge_application_read_only"),
+	}
+	for _, schema := range opts.Schemas() {
+		statements = append(statements, schemaAdmin(schema, "pgedge_superuser")...)
+		statements = append(statements, schemaAdmin(schema, "pgedge_application")...)
+		statements = append(statements, schemaReadOnly(schema, "pgedge_application_read_only")...)
+	}
+
+	return statements
 }
 
 func dbConnect(dbName, role string) Statement {

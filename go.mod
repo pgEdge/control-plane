@@ -2,7 +2,7 @@ module github.com/pgEdge/control-plane
 
 go 1.25.0
 
-toolchain go1.25.5
+toolchain go1.25.8
 
 require (
 	github.com/alessio/shellescape v1.4.2
