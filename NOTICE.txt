@@ -436,8 +436,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ## github.com/containerd/containerd/pkg/userns
 
 * Name: github.com/containerd/containerd/pkg/userns
-* Version: v1.7.27
-* License: [Apache-2.0](https://github.com/containerd/containerd/blob/v1.7.27/LICENSE)
+* Version: v1.7.29
+* License: [Apache-2.0](https://github.com/containerd/containerd/blob/v1.7.29/LICENSE)
 
 ```
 
@@ -12557,8 +12557,8 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ## go.opentelemetry.io/otel
 
 * Name: go.opentelemetry.io/otel
-* Version: v1.38.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.38.0/LICENSE)
+* Version: v1.40.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.40.0/LICENSE)
 
 ```
                                  Apache License
@@ -12797,8 +12797,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel
 
 * Name: go.opentelemetry.io/otel
-* Version: v1.38.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/v1.38.0/LICENSE)
+* Version: v1.40.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/v1.40.0/LICENSE)
 
 ```
                                  Apache License
@@ -13459,8 +13459,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/metric
 
 * Name: go.opentelemetry.io/otel/metric
-* Version: v1.38.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.38.0/metric/LICENSE)
+* Version: v1.40.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.40.0/metric/LICENSE)
 
 ```
                                  Apache License
@@ -13699,8 +13699,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/metric
 
 * Name: go.opentelemetry.io/otel/metric
-* Version: v1.38.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.38.0/metric/LICENSE)
+* Version: v1.40.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.40.0/metric/LICENSE)
 
 ```
                                  Apache License
@@ -13939,8 +13939,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/sdk
 
 * Name: go.opentelemetry.io/otel/sdk
-* Version: v1.38.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.38.0/sdk/LICENSE)
+* Version: v1.40.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.40.0/sdk/LICENSE)
 
 ```
                                  Apache License
@@ -14179,8 +14179,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/sdk
 
 * Name: go.opentelemetry.io/otel/sdk
-* Version: v1.38.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.38.0/sdk/LICENSE)
+* Version: v1.40.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.40.0/sdk/LICENSE)
 
 ```
                                  Apache License
@@ -14419,8 +14419,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/trace
 
 * Name: go.opentelemetry.io/otel/trace
-* Version: v1.38.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.38.0/trace/LICENSE)
+* Version: v1.40.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.40.0/trace/LICENSE)
 
 ```
                                  Apache License
@@ -14659,8 +14659,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/trace
 
 * Name: go.opentelemetry.io/otel/trace
-* Version: v1.38.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.38.0/trace/LICENSE)
+* Version: v1.40.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.40.0/trace/LICENSE)
 
 ```
                                  Apache License
@@ -15376,8 +15376,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/sys/unix
 
 * Name: golang.org/x/sys/unix
-* Version: v0.39.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.39.0:LICENSE)
+* Version: v0.40.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.40.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15450,8 +15450,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/time/rate
 
 * Name: golang.org/x/time/rate
-* Version: v0.9.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/time/+/v0.9.0:LICENSE)
+* Version: v0.12.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/time/+/v0.12.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15556,8 +15556,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## google.golang.org/genproto/googleapis/api
 
 * Name: google.golang.org/genproto/googleapis/api
-* Version: v0.0.0-20251022142026-3a174f9686a8
-* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/3a174f9686a8/googleapis/api/LICENSE)
+* Version: v0.0.0-20251202230838-ff82c1b0f217
+* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/ff82c1b0f217/googleapis/api/LICENSE)
 
 ```
 
@@ -15980,8 +15980,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## google.golang.org/grpc
 
 * Name: google.golang.org/grpc
-* Version: v1.77.0
-* License: [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.77.0/LICENSE)
+* Version: v1.79.3
+* License: [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.79.3/LICENSE)
 
 ```
 
