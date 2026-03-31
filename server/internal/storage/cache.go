@@ -167,6 +167,10 @@ func (c *cache[V]) Stop() {
 	if c.op != nil {
 		c.op.Close()
 		c.op = nil
+
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
 		c.lastWatchRevision = 0
 		c.items = map[string]*cachedValue{}
 		c.tombstones = nil

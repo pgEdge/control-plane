@@ -1,6 +1,11 @@
 package etcd
 
 import (
+	"context"
+	"fmt"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/activity_lock"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/activity_queue_item"
@@ -10,11 +15,11 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/workflow_instance_lock"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/workflow_instance_sticky"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/workflow_queue_item"
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Store struct {
 	client                 *clientv3.Client
+	errCh                  chan error
 	ActivityLock           *activity_lock.Store
 	ActivityQueueItem      *activity_queue_item.Store
 	HistoryEvent           *history_event.Store
@@ -28,6 +33,7 @@ type Store struct {
 func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client:                 client,
+		errCh:                  make(chan error, 1),
 		ActivityLock:           activity_lock.NewStore(client, root),
 		ActivityQueueItem:      activity_queue_item.NewStore(client, root),
 		HistoryEvent:           history_event.NewStore(client, root),
@@ -41,4 +47,26 @@ func NewStore(client *clientv3.Client, root string) *Store {
 
 func (s *Store) Txn(ops ...storage.TxnOperation) storage.Txn {
 	return storage.NewTxn(s.client, ops...)
+}
+
+func (s *Store) StartCaches(ctx context.Context) error {
+	if err := s.WorkflowQueueItem.StartCache(ctx); err != nil {
+		return fmt.Errorf("failed to start workflow queue item cache: %w", err)
+	}
+	if err := s.ActivityQueueItem.StartCache(ctx); err != nil {
+		return fmt.Errorf("failed to start activity queue item cache: %w", err)
+	}
+	s.WorkflowQueueItem.PropagateErrors(ctx, s.errCh)
+	s.ActivityQueueItem.PropagateErrors(ctx, s.errCh)
+
+	return nil
+}
+
+func (s *Store) StopCaches() {
+	s.WorkflowQueueItem.StopCache()
+	s.ActivityQueueItem.StopCache()
+}
+
+func (s *Store) Error() <-chan error {
+	return s.errCh
 }
