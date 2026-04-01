@@ -1,4 +1,0 @@
-# Docker client SDK v27 — these CVEs are in the Docker daemon, not the
-# Go client library. No Docker plugins are used in this project.
-CVE-2026-34040
-CVE-2026-33997
