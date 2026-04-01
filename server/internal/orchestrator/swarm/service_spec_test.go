@@ -381,21 +381,24 @@ func TestServiceContainerSpec_PostgREST_EnvVars(t *testing.T) {
 			envMap[parts[0]] = parts[1]
 		}
 	}
-	checks := map[string]string{
-		"PGRST_DB_URI":            "postgresql://",
+	// Only server-side vars belong in the container environment;
+	// credentials are in postgrest.conf via db-uri.
+	required := map[string]string{
+		"PGRST_SERVER_HOST":       "0.0.0.0",
 		"PGRST_SERVER_PORT":       "8080",
 		"PGRST_ADMIN_SERVER_PORT": "3001",
-		"PGHOST":                  "pg-host1",
-		"PGPORT":                  "5432",
-		"PGDATABASE":              "mydb",
-		"PGUSER":                  "svc_postgrest_host1",
-		"PGPASSWORD":              "supersecret",
 	}
-	for key, want := range checks {
+	for key, want := range required {
 		if got, ok := envMap[key]; !ok {
 			t.Errorf("env var %s is missing", key)
 		} else if got != want {
 			t.Errorf("env var %s = %q, want %q", key, got, want)
+		}
+	}
+	// Credentials and connection details must not appear as env vars.
+	for _, forbidden := range []string{"PGUSER", "PGPASSWORD", "PGHOST", "PGPORT", "PGDATABASE", "PGRST_DB_URI", "PGTARGETSESSIONATTRS"} {
+		if _, ok := envMap[forbidden]; ok {
+			t.Errorf("env var %s must not be set (credentials belong in postgrest.conf)", forbidden)
 		}
 	}
 }

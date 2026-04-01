@@ -1,12 +1,167 @@
 package database_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// parseConf parses key=value lines from a postgrest.conf into a map.
+// Surrounding quotes are stripped from string values.
+func parseConf(t *testing.T, data []byte) map[string]string {
+	t.Helper()
+	m := make(map[string]string)
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, " = ", 2)
+		if len(parts) != 2 {
+			t.Fatalf("unexpected line in postgrest.conf: %q", line)
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		if strings.HasPrefix(val, `"`) && strings.HasSuffix(val, `"`) {
+			val = val[1 : len(val)-1]
+		}
+		m[key] = val
+	}
+	return m
+}
+
+func makeTestConn() database.PostgRESTConnParams {
+	return database.PostgRESTConnParams{
+		Username:      "svc_pgrest",
+		Password:      "testpass",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
+	}
+}
+
+func TestGenerateConf_CoreFields(t *testing.T) {
+	cfg := &database.PostgRESTServiceConfig{
+		DBSchemas:  "public",
+		DBAnonRole: "pgedge_application_read_only",
+		DBPool:     10,
+		MaxRows:    1000,
+	}
+	data, err := cfg.GenerateConf(makeTestConn())
+	require.NoError(t, err)
+	m := parseConf(t, data)
+	assert.Equal(t, "public", m["db-schemas"])
+	assert.Equal(t, "pgedge_application_read_only", m["db-anon-role"])
+	assert.Equal(t, "10", m["db-pool"])
+	assert.Equal(t, "1000", m["db-max-rows"])
+}
+
+func TestGenerateConf_CustomCoreFields(t *testing.T) {
+	cfg := &database.PostgRESTServiceConfig{
+		DBSchemas:  "api,private",
+		DBAnonRole: "web_anon",
+		DBPool:     5,
+		MaxRows:    500,
+	}
+	data, err := cfg.GenerateConf(makeTestConn())
+	require.NoError(t, err)
+	m := parseConf(t, data)
+	assert.Equal(t, "api,private", m["db-schemas"])
+	assert.Equal(t, "web_anon", m["db-anon-role"])
+	assert.Equal(t, "5", m["db-pool"])
+	assert.Equal(t, "500", m["db-max-rows"])
+}
+
+func TestGenerateConf_JWTFieldsAbsent(t *testing.T) {
+	cfg := &database.PostgRESTServiceConfig{
+		DBSchemas:  "public",
+		DBAnonRole: "web_anon",
+		DBPool:     10,
+		MaxRows:    1000,
+	}
+	data, err := cfg.GenerateConf(makeTestConn())
+	require.NoError(t, err)
+	m := parseConf(t, data)
+	for _, key := range []string{"jwt-secret", "jwt-aud", "jwt-role-claim-key", "server-cors-allowed-origins"} {
+		assert.NotContains(t, m, key, "%s should be absent when not configured", key)
+	}
+}
+
+func TestGenerateConf_AllJWTFields(t *testing.T) {
+	secret := "a-very-long-jwt-secret-that-is-at-least-32-chars"
+	aud := "my-api-audience"
+	roleClaimKey := ".role"
+	corsOrigins := "https://example.com"
+	cfg := &database.PostgRESTServiceConfig{
+		DBSchemas:                "public",
+		DBAnonRole:               "web_anon",
+		DBPool:                   10,
+		MaxRows:                  1000,
+		JWTSecret:                &secret,
+		JWTAud:                   &aud,
+		JWTRoleClaimKey:          &roleClaimKey,
+		ServerCORSAllowedOrigins: &corsOrigins,
+	}
+	data, err := cfg.GenerateConf(makeTestConn())
+	require.NoError(t, err)
+	m := parseConf(t, data)
+	assert.Equal(t, secret, m["jwt-secret"])
+	assert.Equal(t, aud, m["jwt-aud"])
+	assert.Equal(t, roleClaimKey, m["jwt-role-claim-key"])
+	assert.Equal(t, corsOrigins, m["server-cors-allowed-origins"])
+}
+
+func TestGenerateConf_DBURIContainsCredentials(t *testing.T) {
+	cfg := &database.PostgRESTServiceConfig{
+		DBSchemas:  "public",
+		DBAnonRole: "web_anon",
+		DBPool:     10,
+		MaxRows:    1000,
+	}
+	conn := database.PostgRESTConnParams{
+		Username:      "svc_pgrest",
+		Password:      "s3cr3t",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
+	}
+	data, err := cfg.GenerateConf(conn)
+	require.NoError(t, err)
+	m := parseConf(t, data)
+	uri, ok := m["db-uri"]
+	require.True(t, ok, "db-uri must be present in postgrest.conf")
+	assert.Contains(t, uri, "svc_pgrest")
+	assert.Contains(t, uri, "s3cr3t")
+	assert.Contains(t, uri, "pg-host1")
+	assert.Contains(t, uri, "mydb")
+}
+
+func TestGenerateConf_DBURIMultiHost(t *testing.T) {
+	cfg := &database.PostgRESTServiceConfig{
+		DBSchemas:  "public",
+		DBAnonRole: "web_anon",
+		DBPool:     10,
+		MaxRows:    1000,
+	}
+	conn := database.PostgRESTConnParams{
+		Username:     "svc_pgrest",
+		Password:     "pass",
+		DatabaseName: "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{
+			{Host: "pg-host1", Port: 5432},
+			{Host: "pg-host2", Port: 5432},
+		},
+		TargetSessionAttrs: "read-write",
+	}
+	data, err := cfg.GenerateConf(conn)
+	require.NoError(t, err)
+	m := parseConf(t, data)
+	uri := m["db-uri"]
+	assert.Contains(t, uri, "pg-host1")
+	assert.Contains(t, uri, "pg-host2")
+	assert.Contains(t, uri, "target_session_attrs")
+}
 
 func TestParsePostgRESTServiceConfig(t *testing.T) {
 	t.Run("defaults applied for empty config", func(t *testing.T) {

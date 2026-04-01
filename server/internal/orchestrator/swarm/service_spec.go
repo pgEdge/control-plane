@@ -2,8 +2,6 @@ package swarm
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -21,32 +19,12 @@ const mcpContainerUID = 1001
 // See: https://github.com/PostgREST/postgrest/blob/main/Dockerfile (USER 1000)
 const postgrestContainerUID = 1000
 
-func buildPostgRESTEnvVars(opts *ServiceContainerSpecOptions) []string {
-	hosts := make([]string, 0, len(opts.DatabaseHosts))
-	ports := make([]string, 0, len(opts.DatabaseHosts))
-	for _, h := range opts.DatabaseHosts {
-		hosts = append(hosts, h.Host)
-		ports = append(ports, strconv.Itoa(h.Port))
-	}
-	env := []string{
-		"PGRST_DB_URI=postgresql://",
+func buildPostgRESTEnvVars() []string {
+	return []string{
 		"PGRST_SERVER_HOST=0.0.0.0",
 		"PGRST_SERVER_PORT=8080",
 		"PGRST_ADMIN_SERVER_PORT=3001",
-		fmt.Sprintf("PGHOST=%s", strings.Join(hosts, ",")),
-		fmt.Sprintf("PGPORT=%s", strings.Join(ports, ",")),
-		fmt.Sprintf("PGDATABASE=%s", opts.DatabaseName),
 	}
-	if opts.TargetSessionAttrs != "" {
-		env = append(env, fmt.Sprintf("PGTARGETSESSIONATTRS=%s", opts.TargetSessionAttrs))
-	}
-	if opts.Credentials != nil {
-		env = append(env,
-			fmt.Sprintf("PGUSER=%s", opts.Credentials.Username),
-			fmt.Sprintf("PGPASSWORD=%s", opts.Credentials.Password),
-		)
-	}
-	return env
 }
 
 // ServiceContainerSpecOptions contains all parameters needed to build a service container spec.
@@ -139,7 +117,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		user = fmt.Sprintf("%d", postgrestContainerUID)
 		command = []string{"postgrest"}
 		args = []string{"/app/data/postgrest.conf"}
-		env = buildPostgRESTEnvVars(opts)
+		env = buildPostgRESTEnvVars()
 		// postgrest --ready exits 0/1; no curl in the static binary image.
 		healthcheck = &container.HealthConfig{
 			Test:        []string{"CMD", "postgrest", "--ready"},

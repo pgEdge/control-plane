@@ -25,13 +25,19 @@ func PostgRESTConfigResourceIdentifier(serviceInstanceID string) resource.Identi
 }
 
 // PostgRESTConfigResource manages the postgrest.conf file on the host filesystem.
-// The file is bind-mounted read-only into the container; credentials are not included.
+// The file is bind-mounted read-only into the container and includes the db-uri
+// with embedded credentials.
 type PostgRESTConfigResource struct {
-	ServiceInstanceID string                          `json:"service_instance_id"`
-	ServiceID         string                          `json:"service_id"`
-	HostID            string                          `json:"host_id"`
-	DirResourceID     string                          `json:"dir_resource_id"`
-	Config            *database.PostgRESTServiceConfig `json:"config"`
+	ServiceInstanceID  string                           `json:"service_instance_id"`
+	ServiceID          string                           `json:"service_id"`
+	HostID             string                           `json:"host_id"`
+	DirResourceID      string                           `json:"dir_resource_id"`
+	Config             *database.PostgRESTServiceConfig `json:"config"`
+	Username           string                           `json:"username"`
+	Password           string                           `json:"password"`
+	DatabaseName       string                           `json:"database_name"`
+	DatabaseHosts      []database.ServiceHostEntry      `json:"database_hosts"`
+	TargetSessionAttrs string                           `json:"target_session_attrs,omitempty"`
 }
 
 func (r *PostgRESTConfigResource) ResourceVersion() string {
@@ -113,8 +119,12 @@ func (r *PostgRESTConfigResource) Delete(ctx context.Context, rc *resource.Conte
 }
 
 func (r *PostgRESTConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
-	content, err := GeneratePostgRESTConfig(&PostgRESTConfigParams{
-		Config: r.Config,
+	content, err := r.Config.GenerateConf(database.PostgRESTConnParams{
+		Username:           r.Username,
+		Password:           r.Password,
+		DatabaseName:       r.DatabaseName,
+		DatabaseHosts:      r.DatabaseHosts,
+		TargetSessionAttrs: r.TargetSessionAttrs,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate PostgREST config: %w", err)
