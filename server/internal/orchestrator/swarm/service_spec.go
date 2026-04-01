@@ -19,6 +19,14 @@ const mcpContainerUID = 1001
 // See: https://github.com/PostgREST/postgrest/blob/main/Dockerfile (USER 1000)
 const postgrestContainerUID = 1000
 
+// Shared health check timing for all service container types.
+const (
+	serviceHealthCheckStartPeriod = 30 * time.Second
+	serviceHealthCheckInterval    = 10 * time.Second
+	serviceHealthCheckTimeout     = 5 * time.Second
+	serviceHealthCheckRetries     = 3
+)
+
 func buildPostgRESTEnvVars() []string {
 	return []string{
 		"PGRST_SERVER_HOST=0.0.0.0",
@@ -121,10 +129,10 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		// postgrest --ready exits 0/1; no curl in the static binary image.
 		healthcheck = &container.HealthConfig{
 			Test:        []string{"CMD", "postgrest", "--ready"},
-			StartPeriod: time.Second * 30,
-			Interval:    time.Second * 10,
-			Timeout:     time.Second * 5,
-			Retries:     3,
+			StartPeriod: serviceHealthCheckStartPeriod,
+			Interval:    serviceHealthCheckInterval,
+			Timeout:     serviceHealthCheckTimeout,
+			Retries:     serviceHealthCheckRetries,
 		}
 		mounts = []mount.Mount{
 			docker.BuildMount(opts.DataPath, "/app/data", true),
@@ -136,10 +144,10 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		args = []string{"-config", "/app/data/config.yaml"}
 		healthcheck = &container.HealthConfig{
 			Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
-			StartPeriod: time.Second * 30,
-			Interval:    time.Second * 10,
-			Timeout:     time.Second * 5,
-			Retries:     3,
+			StartPeriod: serviceHealthCheckStartPeriod,
+			Interval:    serviceHealthCheckInterval,
+			Timeout:     serviceHealthCheckTimeout,
+			Retries:     serviceHealthCheckRetries,
 		}
 		mounts = []mount.Mount{
 			docker.BuildMount(opts.DataPath, "/app/data", false),

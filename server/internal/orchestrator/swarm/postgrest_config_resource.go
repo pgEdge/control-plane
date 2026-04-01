@@ -100,17 +100,7 @@ func (r *PostgRESTConfigResource) Create(ctx context.Context, rc *resource.Conte
 }
 
 func (r *PostgRESTConfigResource) Update(ctx context.Context, rc *resource.Context) error {
-	fs, err := do.Invoke[afero.Fs](rc.Injector)
-	if err != nil {
-		return err
-	}
-
-	dirPath, err := filesystem.DirResourceFullPath(rc, r.DirResourceID)
-	if err != nil {
-		return fmt.Errorf("failed to get service data dir path: %w", err)
-	}
-
-	return r.writeConfigFile(fs, dirPath)
+	return r.Create(ctx, rc)
 }
 
 func (r *PostgRESTConfigResource) Delete(ctx context.Context, rc *resource.Context) error {

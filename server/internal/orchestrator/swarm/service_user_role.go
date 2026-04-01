@@ -263,7 +263,9 @@ func (r *ServiceUserRole) Update(ctx context.Context, rc *resource.Context) erro
 }
 
 // reconcilePostgRESTGrants revokes any stale anon role grants and re-applies
-// the desired ones. Safe to call repeatedly — all operations are idempotent.
+// the desired ones. The revoke + regrant pair runs in a single transaction so
+// that a failed regrant rolls back the revoke, preventing transient loss of
+// anon-role membership.
 func (r *ServiceUserRole) reconcilePostgRESTGrants(ctx context.Context, rc *resource.Context) error {
 	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
@@ -280,21 +282,33 @@ func (r *ServiceUserRole) reconcilePostgRESTGrants(ctx context.Context, rc *reso
 		desiredAnon = "pgedge_application_read_only"
 	}
 
-	if err := r.revokeStaleAnonRoles(ctx, conn, desiredAnon); err != nil {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	if err := r.revokeStaleAnonRoles(ctx, tx, desiredAnon); err != nil {
 		return err
 	}
 
 	// Re-apply grants idempotently.
 	_, grants := r.roleAttributesAndGrants()
-	if err := grants.Exec(ctx, conn); err != nil {
+	if err := grants.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to reconcile PostgREST grants for %q: %w", r.Username, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit PostgREST grant reconciliation for %q: %w", r.Username, err)
 	}
 	return nil
 }
 
 // revokeStaleAnonRoles removes any role memberships on r.Username that differ
 // from desiredAnon, so that only the intended anon role remains granted.
-func (r *ServiceUserRole) revokeStaleAnonRoles(ctx context.Context, conn *pgx.Conn, desiredAnon string) error {
+// conn may be a plain connection or a transaction — callers should prefer a
+// transaction so revokes and the subsequent regrant are atomic.
+func (r *ServiceUserRole) revokeStaleAnonRoles(ctx context.Context, conn postgres.Executor, desiredAnon string) error {
 	currentRoles, err := postgres.Query[string]{
 		SQL:  `SELECT r.rolname FROM pg_auth_members m JOIN pg_roles r ON m.roleid = r.oid JOIN pg_roles u ON m.member = u.oid WHERE u.rolname = @username`,
 		Args: pgx.NamedArgs{"username": r.Username},
@@ -304,7 +318,7 @@ func (r *ServiceUserRole) revokeStaleAnonRoles(ctx context.Context, conn *pgx.Co
 	}
 	for _, current := range currentRoles {
 		if current != desiredAnon {
-			if _, err := conn.Exec(ctx, fmt.Sprintf("REVOKE %s FROM %s",
+			if _, err := conn.Exec(ctx, fmt.Sprintf("REVOKE %s FROM %s", // #nosec G201 -- sanitizeIdentifier quotes all identifiers
 				sanitizeIdentifier(current), sanitizeIdentifier(r.Username))); err != nil {
 				return fmt.Errorf("failed to revoke stale anon role %q from %q: %w", current, r.Username, err)
 			}
@@ -342,7 +356,7 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 	// For PostgREST, revoke CONNECT before dropping — PostgreSQL will refuse
 	// to drop a role that still holds privileges on a database object.
 	if r.ServiceType == "postgrest" && r.DatabaseName != "" {
-		if _, rErr := conn.Exec(ctx, fmt.Sprintf("REVOKE CONNECT ON DATABASE %s FROM %s",
+		if _, rErr := conn.Exec(ctx, fmt.Sprintf("REVOKE CONNECT ON DATABASE %s FROM %s", // #nosec G201 -- sanitizeIdentifier quotes all identifiers
 			sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))); rErr != nil {
 			logger.Warn().Err(rErr).Msg("failed to revoke connect privilege before drop, continuing anyway")
 		}
