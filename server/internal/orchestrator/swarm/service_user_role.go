@@ -280,7 +280,21 @@ func (r *ServiceUserRole) reconcilePostgRESTGrants(ctx context.Context, rc *reso
 		desiredAnon = "pgedge_application_read_only"
 	}
 
-	// Revoke any role memberships that no longer match the desired anon role.
+	if err := r.revokeStaleAnonRoles(ctx, conn, desiredAnon); err != nil {
+		return err
+	}
+
+	// Re-apply grants idempotently.
+	_, grants := r.roleAttributesAndGrants()
+	if err := grants.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to reconcile PostgREST grants for %q: %w", r.Username, err)
+	}
+	return nil
+}
+
+// revokeStaleAnonRoles removes any role memberships on r.Username that differ
+// from desiredAnon, so that only the intended anon role remains granted.
+func (r *ServiceUserRole) revokeStaleAnonRoles(ctx context.Context, conn *pgx.Conn, desiredAnon string) error {
 	currentRoles, err := postgres.Query[string]{
 		SQL:  `SELECT r.rolname FROM pg_auth_members m JOIN pg_roles r ON m.roleid = r.oid JOIN pg_roles u ON m.member = u.oid WHERE u.rolname = @username`,
 		Args: pgx.NamedArgs{"username": r.Username},
@@ -295,12 +309,6 @@ func (r *ServiceUserRole) reconcilePostgRESTGrants(ctx context.Context, rc *reso
 				return fmt.Errorf("failed to revoke stale anon role %q from %q: %w", current, r.Username, err)
 			}
 		}
-	}
-
-	// Re-apply grants idempotently.
-	_, grants := r.roleAttributesAndGrants()
-	if err := grants.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to reconcile PostgREST grants for %q: %w", r.Username, err)
 	}
 	return nil
 }

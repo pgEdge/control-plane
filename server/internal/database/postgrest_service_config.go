@@ -164,9 +164,14 @@ type PostgRESTConnParams struct {
 // runtime connection parameters. The db-uri (including credentials) is written
 // into the file; no credentials are exposed as environment variables.
 func (c *PostgRESTServiceConfig) GenerateConf(conn PostgRESTConnParams) ([]byte, error) {
+	uri, err := buildPostgRESTDBURI(conn)
+	if err != nil {
+		return nil, err
+	}
+
 	var buf bytes.Buffer
 
-	fmt.Fprintf(&buf, "db-uri = %q\n", buildPostgRESTDBURI(conn))
+	fmt.Fprintf(&buf, "db-uri = %q\n", uri)
 	fmt.Fprintf(&buf, "db-schemas = %q\n", c.DBSchemas)
 	fmt.Fprintf(&buf, "db-anon-role = %q\n", c.DBAnonRole)
 	fmt.Fprintf(&buf, "db-pool = %d\n", c.DBPool)
@@ -190,7 +195,11 @@ func (c *PostgRESTServiceConfig) GenerateConf(conn PostgRESTConnParams) ([]byte,
 
 // buildPostgRESTDBURI constructs a libpq URI with multi-host support.
 // Format: postgresql://user:pass@host1:port1,host2:port2/dbname[?target_session_attrs=...]
-func buildPostgRESTDBURI(conn PostgRESTConnParams) string {
+func buildPostgRESTDBURI(conn PostgRESTConnParams) (string, error) {
+	if len(conn.DatabaseHosts) == 0 {
+		return "", fmt.Errorf("PostgRESTConnParams.DatabaseHosts is empty")
+	}
+
 	userInfo := url.UserPassword(conn.Username, conn.Password)
 
 	hostParts := make([]string, len(conn.DatabaseHosts))
@@ -208,5 +217,5 @@ func buildPostgRESTDBURI(conn PostgRESTConnParams) string {
 		uri += "?target_session_attrs=" + url.QueryEscape(conn.TargetSessionAttrs)
 	}
 
-	return uri
+	return uri, nil
 }

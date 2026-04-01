@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -86,23 +87,7 @@ func (r *PostgRESTPreflightResource) validate(ctx context.Context, rc *resource.
 	defer conn.Close(ctx)
 
 	var errs []error
-
-	for _, schema := range splitSchemas(r.DBSchemas) {
-		var exists bool
-		if err := conn.QueryRow(ctx,
-			"SELECT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)",
-			schema,
-		).Scan(&exists); err != nil {
-			errs = append(errs, fmt.Errorf("failed to check schema %q: %w", schema, err))
-			continue
-		}
-		if !exists {
-			errs = append(errs, fmt.Errorf(
-				"schema %q does not exist in database %q; create it before deploying PostgREST",
-				schema, r.DatabaseName,
-			))
-		}
-	}
+	errs = append(errs, r.checkSchemas(ctx, conn)...)
 
 	if r.DBAnonRole != "" {
 		var exists bool
@@ -120,6 +105,27 @@ func (r *PostgRESTPreflightResource) validate(ctx context.Context, rc *resource.
 	}
 
 	return errors.Join(errs...)
+}
+
+func (r *PostgRESTPreflightResource) checkSchemas(ctx context.Context, conn *pgx.Conn) []error {
+	var errs []error
+	for _, schema := range splitSchemas(r.DBSchemas) {
+		var exists bool
+		if err := conn.QueryRow(ctx,
+			"SELECT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)",
+			schema,
+		).Scan(&exists); err != nil {
+			errs = append(errs, fmt.Errorf("failed to check schema %q: %w", schema, err))
+			continue
+		}
+		if !exists {
+			errs = append(errs, fmt.Errorf(
+				"schema %q does not exist in database %q; create it before deploying PostgREST",
+				schema, r.DatabaseName,
+			))
+		}
+	}
+	return errs
 }
 
 func splitSchemas(s string) []string {
