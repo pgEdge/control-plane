@@ -45,7 +45,7 @@ func (r *PostgRESTConfigResource) ResourceVersion() string {
 }
 
 func (r *PostgRESTConfigResource) DiffIgnore() []string {
-	return nil
+	return []string{"/username", "/password"}
 }
 
 func (r *PostgRESTConfigResource) Identifier() resource.Identifier {
@@ -59,6 +59,7 @@ func (r *PostgRESTConfigResource) Executor() resource.Executor {
 func (r *PostgRESTConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
+		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW),
 	}
 }
 
@@ -86,6 +87,10 @@ func (r *PostgRESTConfigResource) Refresh(ctx context.Context, rc *resource.Cont
 }
 
 func (r *PostgRESTConfigResource) Create(ctx context.Context, rc *resource.Context) error {
+	if err := r.populateCredentials(rc); err != nil {
+		return err
+	}
+
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {
 		return err
@@ -105,6 +110,19 @@ func (r *PostgRESTConfigResource) Update(ctx context.Context, rc *resource.Conte
 
 func (r *PostgRESTConfigResource) Delete(ctx context.Context, rc *resource.Context) error {
 	// Cleanup is handled by the parent directory resource deletion.
+	return nil
+}
+
+// populateCredentials reads the RW service user's username and password from
+// the corresponding ServiceUserRole resource state. Called at Create/Update
+// time so that credentials are never stale.
+func (r *PostgRESTConfigResource) populateCredentials(rc *resource.Context) error {
+	rwRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW))
+	if err != nil {
+		return fmt.Errorf("failed to get RW service user role: %w", err)
+	}
+	r.Username = rwRole.Username
+	r.Password = rwRole.Password
 	return nil
 }
 

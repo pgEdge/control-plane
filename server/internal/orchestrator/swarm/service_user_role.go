@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
@@ -66,10 +65,8 @@ type ServiceUserRole struct {
 	ServiceID        string               `json:"service_id"`
 	DatabaseID       string               `json:"database_id"`
 	DatabaseName     string               `json:"database_name"`
-	NodeName         string               `json:"node_name"`    // Database node name for PrimaryExecutor routing
-	Mode             string               `json:"mode"`         // ServiceUserRoleRO or ServiceUserRoleRW
-	ServiceType      string               `json:"service_type"` // "mcp" or "postgrest"
-	DBAnonRole       string               `json:"db_anon_role"` // PostgREST only: anonymous role granted to the service user
+	NodeName         string               `json:"node_name"` // Database node name for PrimaryExecutor routing
+	Mode             string               `json:"mode"`      // ServiceUserRoleRO or ServiceUserRoleRW
 	Username         string               `json:"username"`
 	Password         string               `json:"password"` // Generated on Create, persisted in state
 	CredentialSource *resource.Identifier `json:"credential_source,omitempty"`
@@ -83,6 +80,8 @@ func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
 		"/node_name",
 		"/mode",
+		"/service_type",
+		"/db_anon_role",
 		"/username",
 		"/password",
 		"/credential_source",
@@ -175,7 +174,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		r.Password = password
 	}
 
-	if err := r.createUserRole(ctx, rc, logger); err != nil {
+	if err := r.createUserRole(ctx, rc); err != nil {
 		return fmt.Errorf("failed to create service user role: %w", err)
 	}
 
@@ -183,7 +182,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	return nil
 }
 
-func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
+func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context) error {
 	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
 		return fmt.Errorf("failed to get primary instance: %w", err)
@@ -194,136 +193,32 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	}
 	defer conn.Close(ctx)
 
-	if r.ServiceType == "postgrest" {
-		attributes, grants := r.roleAttributesAndGrants()
-		statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
-			Name:       r.Username,
-			Password:   r.Password,
-			Attributes: attributes,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to generate create user role statements: %w", err)
-		}
-		if err := statements.Exec(ctx, conn); err != nil {
-			return fmt.Errorf("failed to create service user: %w", err)
-		}
-		if err := grants.Exec(ctx, conn); err != nil {
-			return fmt.Errorf("failed to grant service user permissions: %w", err)
-		}
-	} else {
-		var groupRole string
-		switch r.Mode {
-		case ServiceUserRoleRO:
-			groupRole = "pgedge_application_read_only"
-		case ServiceUserRoleRW:
-			groupRole = "pgedge_application"
-		default:
-			return fmt.Errorf("unknown service user role mode: %q", r.Mode)
-		}
-		statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
-			Name:       r.Username,
-			Password:   r.Password,
-			Attributes: []string{"LOGIN"},
-			Roles:      []string{groupRole},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to generate create user role statements: %w", err)
-		}
-		if err := statements.Exec(ctx, conn); err != nil {
-			return fmt.Errorf("failed to create service user: %w", err)
-		}
+	var groupRole string
+	switch r.Mode {
+	case ServiceUserRoleRO:
+		groupRole = "pgedge_application_read_only"
+	case ServiceUserRoleRW:
+		groupRole = "pgedge_application"
+	default:
+		return fmt.Errorf("unknown service user role mode: %q", r.Mode)
+	}
+	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
+		Name:       r.Username,
+		Password:   r.Password,
+		Attributes: []string{"LOGIN"},
+		Roles:      []string{groupRole},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to generate create user role statements: %w", err)
+	}
+	if err := statements.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to create service user: %w", err)
 	}
 
 	return nil
-}
-
-// roleAttributesAndGrants returns the PostgREST-specific role attributes and
-// SQL grant statements. Only called when ServiceType == "postgrest";
-// MCP uses the group-role path in createUserRole() directly.
-func (r *ServiceUserRole) roleAttributesAndGrants() ([]string, postgres.Statements) {
-	// NOINHERIT + GRANT <anon_role> enables PostgREST's SET ROLE mechanism.
-	attributes := []string{"LOGIN", "NOINHERIT"}
-	anonRole := r.DBAnonRole
-	if anonRole == "" {
-		anonRole = "pgedge_application_read_only"
-	}
-	grants := postgres.Statements{
-		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
-		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(r.Username))},
-	}
-	return attributes, grants
 }
 
 func (r *ServiceUserRole) Update(ctx context.Context, rc *resource.Context) error {
-	if r.ServiceType != "postgrest" {
-		// MCP service users don't support updates (no credential rotation in Phase 1)
-		return nil
-	}
-	return r.reconcilePostgRESTGrants(ctx, rc)
-}
-
-// reconcilePostgRESTGrants revokes any stale anon role grants and re-applies
-// the desired ones. The revoke + regrant pair runs in a single transaction so
-// that a failed regrant rolls back the revoke, preventing transient loss of
-// anon-role membership.
-func (r *ServiceUserRole) reconcilePostgRESTGrants(ctx context.Context, rc *resource.Context) error {
-	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
-	if err != nil {
-		return fmt.Errorf("failed to get primary instance: %w", err)
-	}
-	conn, err := primary.Connection(ctx, rc, "postgres")
-	if err != nil {
-		return fmt.Errorf("failed to connect to database postgres on node %s: %w", r.NodeName, err)
-	}
-	defer conn.Close(ctx)
-
-	desiredAnon := r.DBAnonRole
-	if desiredAnon == "" {
-		desiredAnon = "pgedge_application_read_only"
-	}
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback(ctx) //nolint:errcheck
-
-	if err := r.revokeStaleAnonRoles(ctx, tx, desiredAnon); err != nil {
-		return err
-	}
-
-	// Re-apply grants idempotently.
-	_, grants := r.roleAttributesAndGrants()
-	if err := grants.Exec(ctx, tx); err != nil {
-		return fmt.Errorf("failed to reconcile PostgREST grants for %q: %w", r.Username, err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit PostgREST grant reconciliation for %q: %w", r.Username, err)
-	}
-	return nil
-}
-
-// revokeStaleAnonRoles removes any role memberships on r.Username that differ
-// from desiredAnon, so that only the intended anon role remains granted.
-// conn may be a plain connection or a transaction — callers should prefer a
-// transaction so revokes and the subsequent regrant are atomic.
-func (r *ServiceUserRole) revokeStaleAnonRoles(ctx context.Context, conn postgres.Executor, desiredAnon string) error {
-	currentRoles, err := postgres.Query[string]{
-		SQL:  `SELECT r.rolname FROM pg_auth_members m JOIN pg_roles r ON m.roleid = r.oid JOIN pg_roles u ON m.member = u.oid WHERE u.rolname = @username`,
-		Args: pgx.NamedArgs{"username": r.Username},
-	}.Scalars(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to query role memberships for %q: %w", r.Username, err)
-	}
-	for _, current := range currentRoles {
-		if current != desiredAnon {
-			if _, err := conn.Exec(ctx, fmt.Sprintf("REVOKE %s FROM %s", // #nosec G201 -- sanitizeIdentifier quotes all identifiers
-				sanitizeIdentifier(current), sanitizeIdentifier(r.Username))); err != nil {
-				return fmt.Errorf("failed to revoke stale anon role %q from %q: %w", current, r.Username, err)
-			}
-		}
-	}
 	return nil
 }
 
@@ -352,15 +247,6 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 		return nil
 	}
 	defer conn.Close(ctx)
-
-	// For PostgREST, revoke CONNECT before dropping — PostgreSQL will refuse
-	// to drop a role that still holds privileges on a database object.
-	if r.ServiceType == "postgrest" && r.DatabaseName != "" {
-		if _, rErr := conn.Exec(ctx, fmt.Sprintf("REVOKE CONNECT ON DATABASE %s FROM %s", // #nosec G201 -- sanitizeIdentifier quotes all identifiers
-			sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))); rErr != nil {
-			logger.Warn().Err(rErr).Msg("failed to revoke connect privilege before drop, continuing anyway")
-		}
-	}
 
 	// Drop the user role
 	// Using IF EXISTS to handle cases where the user was already dropped manually

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/rs/zerolog/log"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
@@ -60,13 +61,20 @@ func (s *ServiceInstanceSpecResource) Executor() resource.Executor {
 }
 
 func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
-	// Service instances depend on the database network, service user role, and MCP config
-	return []resource.Identifier{
+	deps := []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
 		ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO),
 		ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRW),
-		MCPConfigResourceIdentifier(s.ServiceInstanceID),
 	}
+	switch s.ServiceSpec.ServiceType {
+	case "mcp":
+		deps = append(deps, MCPConfigResourceIdentifier(s.ServiceInstanceID))
+	case "postgrest":
+		deps = append(deps, PostgRESTConfigResourceIdentifier(s.ServiceInstanceID))
+	default:
+		log.Warn().Str("service_type", s.ServiceSpec.ServiceType).Msg("unknown service type in dependencies")
+	}
+	return deps
 }
 
 func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
@@ -78,10 +86,14 @@ func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) 
 	if err != nil {
 		return fmt.Errorf("failed to get service user role from state: %w", err)
 	}
+	role := "pgedge_application_read_only"
+	if s.ServiceSpec.ServiceType == "postgrest" {
+		role = "postgrest_authenticator"
+	}
 	s.Credentials = &database.ServiceUser{
 		Username: userRole.Username,
 		Password: userRole.Password,
-		Role:     "pgedge_application_read_only",
+		Role:     role,
 	}
 	return nil
 }
