@@ -464,6 +464,10 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	// Service-type-specific resources.
 	var serviceSpecificResources []resource.Resource
 
+	// Hoisted PostgREST config — parsed once and reused in both the primary
+	// resource block and the per-node authenticator loop below.
+	var parsedPostgRESTConfig *database.PostgRESTServiceConfig
+
 	switch spec.ServiceSpec.ServiceType {
 	case "mcp":
 		mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
@@ -491,10 +495,12 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		serviceSpecificResources = []resource.Resource{dataDir, mcpConfigResource}
 
 	case "postgrest":
-		postgrestConfig, errs := database.ParsePostgRESTServiceConfig(spec.ServiceSpec.Config)
+		var errs []error
+		parsedPostgRESTConfig, errs = database.ParsePostgRESTServiceConfig(spec.ServiceSpec.Config)
 		if len(errs) > 0 {
 			return nil, fmt.Errorf("failed to parse PostgREST service config: %w", errors.Join(errs...))
 		}
+		postgrestConfig := parsedPostgRESTConfig
 
 		preflight := &PostgRESTPreflightResource{
 			ServiceID:    spec.ServiceSpec.ServiceID,
@@ -596,14 +602,13 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 				},
 			)
 			if spec.ServiceSpec.ServiceType == "postgrest" {
-				postgrestConfig, _ := database.ParsePostgRESTServiceConfig(spec.ServiceSpec.Config)
 				orchestratorResources = append(orchestratorResources,
 					&PostgRESTAuthenticatorResource{
 						ServiceID:    spec.ServiceSpec.ServiceID,
 						DatabaseID:   spec.DatabaseID,
 						DatabaseName: spec.DatabaseName,
 						NodeName:     nodeInst.NodeName,
-						DBAnonRole:   postgrestConfig.DBAnonRole,
+						DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
 						UserRoleID:   perNodeRWID,
 					},
 				)

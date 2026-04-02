@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -97,7 +98,7 @@ func (r *PostgRESTAuthenticatorResource) Refresh(ctx context.Context, rc *resour
 		r.authenticatorUsername(),
 	).Scan(&noInherit)
 	if err != nil {
-		return fmt.Errorf("%w: role %q not found: %w", resource.ErrNotFound, r.authenticatorUsername(), err)
+		return fmt.Errorf("%w", errors.Join(resource.ErrNotFound, fmt.Errorf("role %q not found: %w", r.authenticatorUsername(), err)))
 	}
 	if !noInherit {
 		return fmt.Errorf("%w: role %q does not have NOINHERIT", resource.ErrNotFound, r.authenticatorUsername())
