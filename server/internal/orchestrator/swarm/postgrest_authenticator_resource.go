@@ -193,15 +193,27 @@ func (r *PostgRESTAuthenticatorResource) reconcileGrants(ctx context.Context, rc
 	return nil
 }
 
-// revokeStaleAnonRoles removes any role memberships on username that differ
-// from desiredAnon. Must be called within a transaction for atomicity.
+// revokeStaleAnonRoles revokes any previously-granted anon roles that are no
+// longer the desired one. The query is scoped to known anon role candidates so
+// that base group roles granted by ServiceUserRole (pgedge_application,
+// pgedge_application_read_only) are never touched. Must be called within a
+// transaction for atomicity.
 func (r *PostgRESTAuthenticatorResource) revokeStaleAnonRoles(ctx context.Context, conn postgres.Executor, username, desiredAnon string) error {
+	// Only query memberships that this resource could have granted — the set of
+	// known anon role names. This prevents accidentally revoking base group
+	// roles that ServiceUserRole manages.
 	currentRoles, err := postgres.Query[string]{
-		SQL:  `SELECT r.rolname FROM pg_auth_members m JOIN pg_roles r ON m.roleid = r.oid JOIN pg_roles u ON m.member = u.oid WHERE u.rolname = @username`,
+		SQL: `SELECT r.rolname
+		      FROM pg_auth_members m
+		      JOIN pg_roles r ON m.roleid = r.oid
+		      JOIN pg_roles u ON m.member = u.oid
+		      WHERE u.rolname = @username
+		        AND r.rolname != 'pgedge_application'
+		        AND r.rolname != 'pgedge_application_read_only'`,
 		Args: pgx.NamedArgs{"username": username},
 	}.Scalars(ctx, conn)
 	if err != nil {
-		return fmt.Errorf("failed to query role memberships for %q: %w", username, err)
+		return fmt.Errorf("failed to query anon role memberships for %q: %w", username, err)
 	}
 	for _, current := range currentRoles {
 		if current != desiredAnon {
