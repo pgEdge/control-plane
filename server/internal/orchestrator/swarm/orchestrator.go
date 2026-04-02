@@ -453,6 +453,8 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 
 	// Service user role resources (manages database user lifecycle).
 	// Two roles are created per service: read-only and read-write.
+	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
+	canonicalRWID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
 	serviceUserRoleRO := &ServiceUserRole{
 		ServiceID:    spec.ServiceSpec.ServiceID,
 		DatabaseID:   spec.DatabaseID,
@@ -526,11 +528,41 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		databaseNetwork,
 		serviceUserRoleRO,
 		serviceUserRoleRW,
+	}
+
+	// Per-node RO and RW roles for each additional database node so that
+	// multi-host DSNs work correctly on all nodes. CREATE ROLE is not
+	// replicated by Spock, so each node's primary needs its own role.
+	for _, nodeInst := range spec.DatabaseNodes {
+		if nodeInst.NodeName == spec.NodeName {
+			continue
+		}
+		orchestratorResources = append(orchestratorResources,
+			&ServiceUserRole{
+				ServiceID:        spec.ServiceSpec.ServiceID,
+				DatabaseID:       spec.DatabaseID,
+				DatabaseName:     spec.DatabaseName,
+				NodeName:         nodeInst.NodeName,
+				Mode:             ServiceUserRoleRO,
+				CredentialSource: &canonicalROID,
+			},
+			&ServiceUserRole{
+				ServiceID:        spec.ServiceSpec.ServiceID,
+				DatabaseID:       spec.DatabaseID,
+				DatabaseName:     spec.DatabaseName,
+				NodeName:         nodeInst.NodeName,
+				Mode:             ServiceUserRoleRW,
+				CredentialSource: &canonicalRWID,
+			},
+		)
+	}
+
+	orchestratorResources = append(orchestratorResources,
 		dataDir,
 		mcpConfigResource,
 		serviceInstanceSpec,
 		serviceInstance,
-	}
+	)
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 
