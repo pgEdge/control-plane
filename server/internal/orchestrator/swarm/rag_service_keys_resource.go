@@ -118,6 +118,14 @@ func (r *RAGServiceKeysResource) Create(ctx context.Context, rc *resource.Contex
 }
 
 func (r *RAGServiceKeysResource) Update(ctx context.Context, rc *resource.Context) error {
+	// Validate all desired filenames before any filesystem mutation so that an
+	// invalid name never leaves the directory in a partially-deleted state.
+	for name := range r.Keys {
+		if err := validateKeyFilename(name); err != nil {
+			return err
+		}
+	}
+
 	keysDir, err := r.keysDir(rc)
 	if err != nil {
 		return err
@@ -191,6 +199,9 @@ func (r *RAGServiceKeysResource) removeStaleKeyFiles(keysDir string) error {
 
 // validateKeyFilename rejects filenames that could escape the keys directory via path traversal.
 func validateKeyFilename(name string) error {
+	if name == "." || name == ".." {
+		return fmt.Errorf("invalid key filename %q", name)
+	}
 	if filepath.Clean(name) != name || filepath.IsAbs(name) || strings.ContainsAny(name, `/\`) {
 		return fmt.Errorf("invalid key filename %q", name)
 	}
