@@ -403,11 +403,17 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 }
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	// Only MCP service instance generation is currently implemented.
-	if spec.ServiceSpec.ServiceType != "mcp" {
+	switch spec.ServiceSpec.ServiceType {
+	case "mcp":
+		return o.generateMCPInstanceResources(spec)
+	case "rag":
+		return o.generateRAGInstanceResources(spec)
+	default:
 		return nil, fmt.Errorf("service type %q instance generation is not yet supported", spec.ServiceSpec.ServiceType)
 	}
+}
 
+func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
 	// Get service image based on service type and version
 	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
 	if err != nil {
@@ -446,12 +452,10 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		Allocator: o.dbNetworkAllocator,
 	}
 
-	// Canonical identifiers for the RO and RW service user roles.
-	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
-	canonicalRWID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
-
 	// Service user role resources (manages database user lifecycle).
 	// Two roles are created per service: read-only and read-write.
+	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
+	canonicalRWID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
 	serviceUserRoleRO := &ServiceUserRole{
 		ServiceID:    spec.ServiceSpec.ServiceID,
 		DatabaseID:   spec.DatabaseID,
@@ -525,39 +529,47 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		databaseNetwork,
 		serviceUserRoleRO,
 		serviceUserRoleRW,
+	}
+
+	// Per-node RO and RW roles for each additional database node so that
+	// multi-host DSNs work correctly on all nodes. CREATE ROLE is not
+	// replicated by Spock, so each node's primary needs its own role.
+	for _, nodeInst := range spec.DatabaseNodes {
+		if nodeInst.NodeName == spec.NodeName {
+			continue
+		}
+		orchestratorResources = append(orchestratorResources,
+			&ServiceUserRole{
+				ServiceID:        spec.ServiceSpec.ServiceID,
+				DatabaseID:       spec.DatabaseID,
+				DatabaseName:     spec.DatabaseName,
+				NodeName:         nodeInst.NodeName,
+				Mode:             ServiceUserRoleRO,
+				CredentialSource: &canonicalROID,
+			},
+			&ServiceUserRole{
+				ServiceID:        spec.ServiceSpec.ServiceID,
+				DatabaseID:       spec.DatabaseID,
+				DatabaseName:     spec.DatabaseName,
+				NodeName:         nodeInst.NodeName,
+				Mode:             ServiceUserRoleRW,
+				CredentialSource: &canonicalRWID,
+			},
+		)
+	}
+
+	orchestratorResources = append(orchestratorResources,
 		dataDir,
 		mcpConfigResource,
 		serviceInstanceSpec,
 		serviceInstance,
-	}
+	)
+	return o.buildServiceInstanceResources(spec, orchestratorResources)
+}
 
-	// Append per-node ServiceUserRole resources for each additional database node.
-	// The canonical resources (above) cover the first node; nodes [1:] each get
-	// their own RO and RW role that sources credentials from the canonical.
-	if len(spec.DatabaseNodes) > 1 {
-		for _, nodeInst := range spec.DatabaseNodes[1:] {
-			orchestratorResources = append(orchestratorResources,
-				&ServiceUserRole{
-					ServiceID:        spec.ServiceSpec.ServiceID,
-					DatabaseID:       spec.DatabaseID,
-					DatabaseName:     spec.DatabaseName,
-					NodeName:         nodeInst.NodeName,
-					Mode:             ServiceUserRoleRO,
-					CredentialSource: &canonicalROID,
-				},
-				&ServiceUserRole{
-					ServiceID:        spec.ServiceSpec.ServiceID,
-					DatabaseID:       spec.DatabaseID,
-					DatabaseName:     spec.DatabaseName,
-					NodeName:         nodeInst.NodeName,
-					Mode:             ServiceUserRoleRW,
-					CredentialSource: &canonicalRWID,
-				},
-			)
-		}
-	}
-
-	// Convert to resource data
+// buildServiceInstanceResources converts a slice of resources into a
+// ServiceInstanceResources, shared by all service type generators.
+func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInstanceSpec, orchestratorResources []resource.Resource) (*database.ServiceInstanceResources, error) {
 	data := make([]*resource.ResourceData, len(orchestratorResources))
 	for i, res := range orchestratorResources {
 		d, err := resource.ToResourceData(res)
@@ -577,6 +589,42 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		},
 		Resources: data,
 	}, nil
+}
+
+// generateRAGInstanceResources returns the resources needed for one RAG service
+// instance. RAG only requires read access, so a single ServiceUserRoleRO is
+// created per database node using the same canonical+per-node pattern as MCP.
+func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
+
+	// Canonical read-only role — runs on the node co-located with this instance.
+	canonicalRO := &ServiceUserRole{
+		ServiceID:    spec.ServiceSpec.ServiceID,
+		DatabaseID:   spec.DatabaseID,
+		DatabaseName: spec.DatabaseName,
+		NodeName:     spec.NodeName,
+		Mode:         ServiceUserRoleRO,
+	}
+
+	orchestratorResources := []resource.Resource{canonicalRO}
+
+	// Per-node RO role for each additional database node so that RAG instances
+	// on other hosts can authenticate against their co-located Postgres.
+	for _, nodeInst := range spec.DatabaseNodes {
+		if nodeInst.NodeName == spec.NodeName {
+			continue
+		}
+		orchestratorResources = append(orchestratorResources, &ServiceUserRole{
+			ServiceID:        spec.ServiceSpec.ServiceID,
+			DatabaseID:       spec.DatabaseID,
+			DatabaseName:     spec.DatabaseName,
+			NodeName:         nodeInst.NodeName,
+			Mode:             ServiceUserRoleRO,
+			CredentialSource: &canonicalROID,
+		})
+	}
+
+	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
