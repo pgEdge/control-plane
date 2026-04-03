@@ -2,7 +2,7 @@
 
 This guide contains instructions for deploying the Control Plane on a set of Linux hosts, such as virtual machines or bare metal servers. 
 
-Control Plan excels at managing Postgres in a highly-available configuration.  To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using-ha/index.md).
+Control Plane excels at managing Postgres in a highly-available configuration.  To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using-ha/index.md).
 
 
 ## Initializing Docker Swarm

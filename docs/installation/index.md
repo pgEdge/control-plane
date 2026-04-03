@@ -7,3 +7,5 @@ In the documentation, you'll find instructions for deploying Control Plane in tw
 * The [Quickstart guide](quickstart.md) deploys a three node distributed Postgres database on your local host, creating a perfect environment for experimenting with Control Plane.
 
 * Visit [Installing the Control Plane](installation.md) for detailed instructions for deploying a Control Plane server to your custom hosts.
+
+* [Installing via System Packages](systemd.md) covers installing the Control Plane via system packages, without Docker. This is a **preview feature** and is not recommended for production use. Currently only supports installation through RPMs.
