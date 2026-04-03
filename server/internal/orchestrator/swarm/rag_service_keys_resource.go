@@ -69,6 +69,9 @@ func (r *RAGServiceKeysResource) keysDir(rc *resource.Context) (string, error) {
 }
 
 func (r *RAGServiceKeysResource) Refresh(ctx context.Context, rc *resource.Context) error {
+	if rc == nil {
+		return resource.ErrNotFound
+	}
 	keysDir, err := r.keysDir(rc)
 	if err != nil {
 		return resource.ErrNotFound

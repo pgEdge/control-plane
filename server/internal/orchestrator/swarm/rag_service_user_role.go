@@ -111,7 +111,7 @@ func (r *RAGServiceUserRole) Create(ctx context.Context, rc *resource.Context) e
 		Logger()
 	logger.Info().Msg("creating RAG service user role")
 
-	r.Username = database.GenerateServiceUsername(r.ServiceID)
+	r.Username = database.GenerateServiceUsername(r.ServiceID, ServiceUserRoleRO)
 	if r.Password == "" {
 		password, err := utils.RandomString(32)
 		if err != nil {

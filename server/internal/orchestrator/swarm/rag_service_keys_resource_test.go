@@ -74,8 +74,7 @@ func ragKeysRC(t *testing.T, parentID, parentFullPath string) *resource.Context 
 
 func TestRAGServiceKeysResource_RefreshMissingParentID(t *testing.T) {
 	r := &RAGServiceKeysResource{ServiceInstanceID: "inst1"}
-	// rc with an empty State — parent dir not found → ErrNotFound.
-	err := r.Refresh(context.Background(), &resource.Context{State: resource.NewState()})
+	err := r.Refresh(context.Background(), nil)
 	if err != resource.ErrNotFound {
 		t.Errorf("Refresh() = %v, want ErrNotFound", err)
 	}
