@@ -411,3 +411,91 @@ func TestValidateKeyFilename(t *testing.T) {
 		}
 	}
 }
+
+func TestRAGServiceKeysResource_Create_DirPermissions(t *testing.T) {
+	parentID := "inst1-data"
+	rc, parentPath := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys:              map[string]string{"default_rag.key": "sk-test"},
+	}
+	if err := r.Create(context.Background(), rc); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	keysDir := filepath.Join(parentPath, "keys")
+	info, err := os.Stat(keysDir)
+	if err != nil {
+		t.Fatalf("Stat(keysDir) error = %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o700 {
+		t.Errorf("keys dir perm = %04o, want 0700", perm)
+	}
+}
+
+func TestRAGServiceKeysResource_Update_EnforcesPermissionsOnExistingDir(t *testing.T) {
+	parentID := "inst1-data"
+	rc, parentPath := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys:              map[string]string{"default_rag.key": "sk-v1"},
+	}
+	if err := r.Create(context.Background(), rc); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	// Widen permissions to simulate an insecure state.
+	keysDir := filepath.Join(parentPath, "keys")
+	if err := os.Chmod(keysDir, 0o755); err != nil {
+		t.Fatalf("Chmod() error = %v", err)
+	}
+	keyFile := filepath.Join(keysDir, "default_rag.key")
+	if err := os.Chmod(keyFile, 0o644); err != nil {
+		t.Fatalf("Chmod() error = %v", err)
+	}
+
+	r.Keys = map[string]string{"default_rag.key": "sk-v2"}
+	if err := r.Update(context.Background(), rc); err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	// Directory must be back to 0700.
+	info, err := os.Stat(keysDir)
+	if err != nil {
+		t.Fatalf("Stat(keysDir) error = %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o700 {
+		t.Errorf("keys dir perm after Update = %04o, want 0700", perm)
+	}
+
+	// File must be 0600.
+	info, err = os.Stat(keyFile)
+	if err != nil {
+		t.Fatalf("Stat(keyFile) error = %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Errorf("key file perm after Update = %04o, want 0600", perm)
+	}
+}
+
+func TestRAGServiceKeysResource_Refresh_InvalidFilenameInState(t *testing.T) {
+	parentID := "inst1-data"
+	rc, _ := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys:              map[string]string{"../escape.key": "sk-bad"},
+	}
+	err := r.Refresh(context.Background(), rc)
+	if err == nil {
+		t.Error("Refresh() = nil, want error for invalid key filename in state")
+	}
+}
