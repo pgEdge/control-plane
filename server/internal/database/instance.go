@@ -71,15 +71,18 @@ func patroniToInstanceState(state *patroni.State) InstanceState {
 }
 
 type Instance struct {
-	InstanceID string          `json:"instance_id"`
-	DatabaseID string          `json:"database_id"`
-	HostID     string          `json:"host_id"`
-	NodeName   string          `json:"node_name"`
-	State      InstanceState   `json:"state"`
-	Status     *InstanceStatus `json:"status"`
-	CreatedAt  time.Time       `json:"created_at"`
-	UpdatedAt  time.Time       `json:"updated_at"`
-	Error      string          `json:"error,omitempty"`
+	InstanceID    string            `json:"instance_id"`
+	DatabaseID    string            `json:"database_id"`
+	HostID        string            `json:"host_id"`
+	NodeName      string            `json:"node_name"`
+	State         InstanceState     `json:"state"`
+	Status        *InstanceStatus   `json:"status"`
+	CreatedAt     time.Time         `json:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at"`
+	Port          *int              `json:"port"`
+	PatroniPort   *int              `json:"patroni_port"`
+	PgEdgeVersion *ds.PgEdgeVersion `json:"pgedge_version"`
+	Error         string            `json:"error,omitempty"`
 }
 
 type SubscriptionStatus struct {
@@ -113,14 +116,17 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 		return nil
 	}
 	out := &Instance{
-		InstanceID: instance.InstanceID,
-		DatabaseID: instance.DatabaseID,
-		HostID:     instance.HostID,
-		NodeName:   instance.NodeName,
-		State:      instance.State,
-		CreatedAt:  instance.CreatedAt,
-		UpdatedAt:  instance.UpdateAt,
-		Error:      instance.Error,
+		InstanceID:    instance.InstanceID,
+		DatabaseID:    instance.DatabaseID,
+		HostID:        instance.HostID,
+		NodeName:      instance.NodeName,
+		State:         instance.State,
+		CreatedAt:     instance.CreatedAt,
+		UpdatedAt:     instance.UpdateAt,
+		Port:          instance.Port,
+		PatroniPort:   instance.PatroniPort,
+		PgEdgeVersion: instance.PgEdgeVersion,
+		Error:         instance.Error,
 	}
 	if status != nil {
 		out.Status = status.Status

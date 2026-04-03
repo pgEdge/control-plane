@@ -83,7 +83,7 @@ _choose-scope() {
 
 _choose-host() {
 	local host_choice=$(restish host-1 list-hosts \
-		| jq -c '.hosts[]? | { id, state: .status.state, hostname, ipv4_address }' \
+		| jq -c '.hosts[]? | { id, state: .status.state, client_addresses, peer_addresses }' \
 		| sk --preview 'echo {} | jq')
 
 	if [[ -z "${host_choice}" ]]; then
@@ -217,7 +217,7 @@ _psql-local() {
 	fi
 
 	local ip_addr=$(<<<"${conn_info}" \
-		jq -r '.ipv4_address')
+		jq -r '.addresses[0]')
 	local port=$(<<<"${conn_info}" \
 		jq -r '.port')
 
@@ -242,6 +242,23 @@ use-compose() {
 		http://localhost:3005 \
 }
 
+use-dev-lima() {
+	export CP_ENV=dev-lima
+
+	_update-restish-config \
+		http://localhost:3000 \
+		http://localhost:3001 \
+		http://localhost:3002 \
+		http://localhost:3003 \
+		http://localhost:3004 \
+		http://localhost:3005 \
+
+	local i
+	for ((i = 1; i <= 6; i++ )); do
+		alias cp${i}-ssh="ssh -F ${HOME}/.lima/control-plane-dev-${i}/ssh.config -t lima-control-plane-dev-${i}"
+	done
+}
+
 use-lima() {
 	export CP_ENV=lima
 
@@ -261,7 +278,8 @@ $1 <-i|--instance-id instance id> <-U|--username> <-m|--method docker|local> -- 
 
 Examples:
 	# By default, this command will present interactive instance and user
-	# pickers and connect via 'docker exec'
+	# pickers and use method=local for dev-lima or method=docker for all other
+	# environments.
 	$1
 
 	# Connect using a specific instance and user
@@ -297,8 +315,16 @@ cp-psql() {
 
 	local instance_id="${o_instance_id[-1]}"
 	local username="${o_username[-1]}"
-	local method="${o_method[-1]:-docker}"	
+	local method="${o_method[-1]}"
 	local database_id
+
+	if [[ -z "${method}" ]]; then
+		if [[ "${CP_ENV}" == "dev-lima" ]]; then
+			method=local
+		else
+			method=docker
+		fi
+	fi
 
 	if [[ -z "${instance_id}" ]]; then
 		local instance=$(_choose-instance)
@@ -597,6 +623,35 @@ cp-follow-task() {
     echo "${scope} entity ${entity_id} task ${task_id} ${task_status}"
 }
 
+cp-etcdctl() {
+	local data_dir
+	case ${CP_ENV} in
+		compose)
+			data_dir="${_cp_dir}/docker/control-plane-dev/data"
+			;;
+		dev-lima)
+			data_dir="${_cp_dir}/lima/data"
+			;;
+		*)
+			echo "cannot use cp-etcdctl with environment ${CP_ENV}"
+			return 1
+			;;
+	esac
+
+	local host_1_data="${data_dir}/host-1"
+	local host_1_certs="${host_1_data}/certificates"
+	local host_1_cfg="${host_1_data}/generated.config.json"
+
+	etcdctl \
+		--endpoints=https://localhost:2379 \
+		--cacert "${host_1_certs}/ca.crt" \
+		--cert "${host_1_certs}/etcd-user.crt" \
+		--key "${host_1_certs}/etcd-user.key" \
+		--user $(jq -r '.etcd_username' "${host_1_cfg}") \
+		--password $(jq -r '.etcd_password' "${host_1_cfg}") \
+		$@
+}
+
 #########
 # setup #
 #########
@@ -607,18 +662,6 @@ use-compose
 ##################
 # static aliases #
 ##################
-
-_host_1_data="${_cp_dir}/docker/control-plane-dev/data/host-1"
-_host_1_certs="${_host_1_data}/certificates"
-_host_1_cfg="${_host_1_data}/generated.config.json"
-
-alias cp-etcdctl="etcdctl \
-	--endpoints=https://localhost:2379 \
-	--cacert '${_host_1_certs}/ca.crt' \
-	--cert '${_host_1_certs}/etcd-user.crt' \
-	--key '${_host_1_certs}/etcd-user.key' \
-	--user \$(jq -r '.etcd_username' '${_host_1_cfg}') \
-	--password \$(jq -r '.etcd_password' '${_host_1_cfg}')"
 
 alias cp-docker-compose="WORKSPACE_DIR=${_cp_dir} \
 	DEBUG=\${DEBUG:-0} \

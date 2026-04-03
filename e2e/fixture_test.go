@@ -117,11 +117,12 @@ func DefaultTestConfig() TestConfig {
 }
 
 type TestFixture struct {
-	Client      *client.MultiServerClient
-	config      TestConfig
-	skipCleanup bool
-	debug       bool
-	debugDir    string
+	Client       *client.MultiServerClient
+	config       TestConfig
+	skipCleanup  bool
+	debug        bool
+	debugDir     string
+	orchestrator string
 }
 
 func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, debug bool, debugDir string) (*TestFixture, error) {
@@ -149,12 +150,25 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, de
 
 	log.Print("cluster initialized")
 
+	// List hosts to get orchestrator
+	hosts, err := cli.ListHosts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list hosts: %w", err)
+	}
+	if len(hosts.Hosts) == 0 {
+		return nil, fmt.Errorf("list hosts returned no hosts")
+	}
+	// We don't support heterogeneous clusters right now, so we only need the
+	// orchestrator from one host.
+	orchestrator := hosts.Hosts[0].Orchestrator
+
 	return &TestFixture{
-		Client:      cli,
-		config:      config,
-		skipCleanup: skipCleanup,
-		debug:       debug,
-		debugDir:    debugDir,
+		Client:       cli,
+		config:       config,
+		skipCleanup:  skipCleanup,
+		debug:        debug,
+		debugDir:     debugDir,
+		orchestrator: orchestrator,
 	}, nil
 }
 
@@ -261,8 +275,26 @@ func (f *TestFixture) TempDir(hostID string, t testing.TB) string {
 	return dir
 }
 
-func (f *TestFixture) S3Enabled() bool {
-	return f.config.S3.Enabled
+func (f *TestFixture) Orchestrator() string {
+	return f.orchestrator
+}
+
+func (f *TestFixture) SkipIfS3Unsupported(t testing.TB) {
+	if !f.config.S3.Enabled {
+		t.Skip("s3 not enabled for this fixture")
+	}
+}
+
+func (f *TestFixture) SkipIfServicesUnsupported(t testing.TB) {
+	if f.orchestrator == "systemd" {
+		t.Skip("services not supported for systemd")
+	}
+}
+
+func (f *TestFixture) SkipIfUpgradesUnsupported(t testing.TB) {
+	if f.orchestrator == "systemd" {
+		t.Skip("database upgrades via dbspec not supported for systemd")
+	}
 }
 
 func (f *TestFixture) S3BackupRepository() *controlplane.BackupRepositorySpec {

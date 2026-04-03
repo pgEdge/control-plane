@@ -89,12 +89,12 @@ postgresql:
   - local   replication     all                                     trust
   - host    replication     all             127.0.0.1/32            trust
   - host    replication     all             ::1/128                 trust
-  - hostssl all             pgedge,patroni_replicator 10.10.0.2               cert clientcert=verify-full
-  - hostssl replication     pgedge,patroni_replicator 10.10.0.2               cert clientcert=verify-full
-  - hostssl all             pgedge,patroni_replicator 10.10.0.3               cert clientcert=verify-full
-  - hostssl replication     pgedge,patroni_replicator 10.10.0.3               cert clientcert=verify-full
-  - hostssl all             pgedge,patroni_replicator 10.10.0.4               cert clientcert=verify-full
-  - hostssl replication     pgedge,patroni_replicator 10.10.0.4               cert clientcert=verify-full
+  - hostssl all             pgedge,patroni_replicator 10.10.0.2/32            cert clientcert=verify-full
+  - hostssl replication     pgedge,patroni_replicator 10.10.0.2/32            cert clientcert=verify-full
+  - hostssl all             pgedge,patroni_replicator 10.10.0.3/32            cert clientcert=verify-full
+  - hostssl replication     pgedge,patroni_replicator 10.10.0.3/32            cert clientcert=verify-full
+  - hostssl all             pgedge,patroni_replicator 10.10.0.4/32            cert clientcert=verify-full
+  - hostssl replication     pgedge,patroni_replicator 10.10.0.4/32            cert clientcert=verify-full
   - host    all             pgedge,patroni_replicator 0.0.0.0/0               reject
   - host    all             pgedge,patroni_replicator ::/0                    reject
   - host    all             all             0.0.0.0/0               md5

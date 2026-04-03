@@ -74,8 +74,9 @@ func testCreateDB(t *testing.T, nodeCount int, deployReplicas bool) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:  pointerTo(0),
-			Nodes: nodes,
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes:       nodes,
 		},
 	})
 

@@ -13,11 +13,11 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/api"
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/migrate"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
@@ -25,11 +25,6 @@ import (
 
 type ErrorProducer interface {
 	Error() <-chan error
-}
-
-type Orchestrator interface {
-	host.Orchestrator
-	database.Orchestrator
 }
 
 type App struct {
@@ -164,6 +159,14 @@ func (a *App) runInitialized(parentCtx context.Context) error {
 	}
 	if err := certSvc.Start(a.serviceCtx); err != nil {
 		return handleError(fmt.Errorf("failed to start certificate service: %w", err))
+	}
+
+	orch, err := do.Invoke[orchestrator.Orchestrator](a.i)
+	if err != nil {
+		return handleError(fmt.Errorf("failed to initialize orchestrator: %w", err))
+	}
+	if err := orch.Start(a.serviceCtx); err != nil {
+		return handleError(fmt.Errorf("failed to start orchestrator: %w", err))
 	}
 
 	hostSvc, err := do.Invoke[*host.Service](a.i)

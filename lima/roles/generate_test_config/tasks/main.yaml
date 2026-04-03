@@ -1,0 +1,10 @@
+---
+- name: Create test_configs directory
+  ansible.builtin.file:
+    path: ../e2e/fixtures/outputs
+    state: directory
+
+- name: Generate test_config
+  ansible.builtin.template:
+    src: test_config.yaml.tmpl
+    dest: ../e2e/fixtures/outputs/dev-lima.test_config.yaml

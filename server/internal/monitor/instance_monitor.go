@@ -101,11 +101,10 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 	if currentInstance != nil && currentInstance.State != database.InstanceStateAvailable {
-		_ = m.dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+		_ = m.dbSvc.UpdateInstanceState(ctx, &database.InstanceStateUpdateOptions{
 			InstanceID: m.instanceID,
 			DatabaseID: m.databaseID,
 			State:      database.InstanceStateAvailable,
-			Error:      "",
 		})
 	}
 	return m.updateInstanceStatus(ctx, status)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -408,12 +409,16 @@ func TestValidateBackupConfig(t *testing.T) {
 
 func TestValidateNode(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		node     *api.DatabaseNodeSpec
-		expected []string
+		name         string
+		orchestrator config.Orchestrator
+		db           *api.DatabaseSpec
+		node         *api.DatabaseNodeSpec
+		expected     []string
 	}{
 		{
-			name: "valid minimal",
+			name:         "valid minimal",
+			orchestrator: config.OrchestratorSwarm,
+			db:           &api.DatabaseSpec{},
 			node: &api.DatabaseNodeSpec{
 				HostIds: []api.Identifier{
 					api.Identifier("host-1"),
@@ -421,7 +426,9 @@ func TestValidateNode(t *testing.T) {
 			},
 		},
 		{
-			name: "valid all",
+			name:         "valid all",
+			orchestrator: config.OrchestratorSwarm,
+			db:           &api.DatabaseSpec{},
 			node: &api.DatabaseNodeSpec{
 				Cpus:   utils.PointerTo("16"),
 				Memory: utils.PointerTo("64GiB"),
@@ -448,7 +455,113 @@ func TestValidateNode(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid",
+			name:         "valid minimal systemd",
+			orchestrator: config.OrchestratorSystemD,
+			db: &api.DatabaseSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(8888),
+			},
+			node: &api.DatabaseNodeSpec{
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+		},
+		{
+			name:         "valid minimal systemd with per-node",
+			orchestrator: config.OrchestratorSystemD,
+			db:           &api.DatabaseSpec{},
+			node: &api.DatabaseNodeSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(8888),
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+		},
+		{
+			name:         "invalid systemd",
+			orchestrator: config.OrchestratorSystemD,
+			db:           &api.DatabaseSpec{},
+			node: &api.DatabaseNodeSpec{
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+			expected: []string{
+				"port: port must be defined",
+				"patroni_port: patroni_port must be defined",
+			},
+		},
+		{
+			name:         "invalid inherited ports",
+			orchestrator: config.OrchestratorSystemD,
+			db: &api.DatabaseSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(5432),
+			},
+			node: &api.DatabaseNodeSpec{
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+			expected: []string{
+				"port: postgres and patroni ports must not conflict",
+			},
+		},
+		{
+			name:         "invalid inherited db port",
+			orchestrator: config.OrchestratorSystemD,
+			db: &api.DatabaseSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(8888),
+			},
+			node: &api.DatabaseNodeSpec{
+				PatroniPort: utils.PointerTo(5432),
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+			expected: []string{
+				"port: postgres and patroni ports must not conflict",
+			},
+		},
+		{
+			name:         "invalid inherited patroni port",
+			orchestrator: config.OrchestratorSystemD,
+			db: &api.DatabaseSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(8888),
+			},
+			node: &api.DatabaseNodeSpec{
+				Port: utils.PointerTo(8888),
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+			expected: []string{
+				"port: postgres and patroni ports must not conflict",
+			},
+		},
+		{
+			name:         "invalid node ports",
+			orchestrator: config.OrchestratorSystemD,
+			db:           &api.DatabaseSpec{},
+			node: &api.DatabaseNodeSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(5432),
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+			},
+			expected: []string{
+				"port: postgres and patroni ports must not conflict",
+			},
+		},
+		{
+			name:         "invalid",
+			orchestrator: config.OrchestratorSwarm,
+			db:           &api.DatabaseSpec{},
 			node: &api.DatabaseNodeSpec{
 				Cpus:   utils.PointerTo("0.00001"),
 				Memory: utils.PointerTo("%^&*"),
@@ -484,7 +597,7 @@ func TestValidateNode(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := errors.Join(validateNode(tc.node, nil)...)
+			err := errors.Join(validateNode(tc.orchestrator, tc.db, tc.node, nil)...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
@@ -797,7 +910,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDatabaseSpec(tc.spec)
+			err := validateDatabaseSpec(config.OrchestratorSwarm, tc.spec)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {

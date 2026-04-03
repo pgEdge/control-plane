@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -61,7 +62,7 @@ func appendPath(path []string, new ...string) []string {
 	return append(slices.Clone(path), new...)
 }
 
-func validateDatabaseSpec(spec *api.DatabaseSpec) error {
+func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSpec) error {
 	var errs []error
 
 	errs = append(errs, validateCPUs(spec.Cpus, []string{"cpus"})...)
@@ -90,7 +91,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		}
 
 		// Per-node validation (includes self-ref and restore vs source_node conflict)
-		errs = append(errs, validateNode(node, nodePath)...)
+		errs = append(errs, validateNode(orchestrator, spec, node, nodePath)...)
 	}
 
 	// Cross-node existence check for source_node
@@ -208,7 +209,12 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	return errors.Join(errs...)
 }
 
-func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
+func validateNode(
+	orchestrator config.Orchestrator,
+	db *api.DatabaseSpec,
+	node *api.DatabaseNodeSpec,
+	path []string,
+) []error {
 	var errs []error
 
 	cpusPath := appendPath(path, "cpus")
@@ -217,8 +223,16 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	memPath := appendPath(path, "memory")
 	errs = append(errs, validateMemory(node.Memory, memPath)...)
 
+	port := db.Port
+	if node.Port != nil {
+		port = node.Port
+	}
+	patroniPort := db.PatroniPort
+	if node.PatroniPort != nil {
+		patroniPort = node.PatroniPort
+	}
 	portPath := appendPath(path, "port")
-	errs = append(errs, validatePorts(node.Port, node.PatroniPort, portPath))
+	errs = append(errs, validatePorts(port, patroniPort, portPath))
 
 	seenHostIDs := make(ds.Set[string], len(node.HostIds))
 	for i, h := range node.HostIds {
@@ -256,6 +270,18 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	if node.RestoreConfig != nil {
 		restoreConfigPath := appendPath(path, "restore_config")
 		errs = append(errs, validateRestoreConfig(node.RestoreConfig, restoreConfigPath)...)
+	}
+
+	switch orchestrator {
+	case config.OrchestratorSystemD:
+		if db.Port == nil && node.Port == nil {
+			portPath := appendPath(path, "port")
+			errs = append(errs, newValidationError(errors.New("port must be defined"), portPath))
+		}
+		if db.PatroniPort == nil && node.PatroniPort == nil {
+			portPath := appendPath(path, "patroni_port")
+			errs = append(errs, newValidationError(errors.New("patroni_port must be defined"), portPath))
+		}
 	}
 
 	// Validate orchestrator_opts (per-node)
