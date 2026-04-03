@@ -19929,7 +19929,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     ServiceSpec2:
       type: object
       properties:
@@ -20049,7 +20048,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     ServiceSpec3:
       type: object
       properties:
@@ -20169,7 +20167,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     ServiceSpec4:
       type: object
       properties:
@@ -20289,7 +20286,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     ServiceSpec5:
       type: object
       properties:
@@ -20409,7 +20405,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     ServiceSpec6:
       type: object
       properties:
@@ -20530,7 +20525,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     ServiceSpec7:
       type: object
       properties:
@@ -20648,7 +20642,6 @@ components:
         - service_type
         - version
         - host_ids
-        - config
     StartInstanceResponse:
       type: object
       properties:

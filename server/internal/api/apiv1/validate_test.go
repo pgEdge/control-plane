@@ -934,6 +934,36 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "valid MCP service with nil config",
+			svc: &api.ServiceSpec{
+				ServiceID:   "mcp-server",
+				ServiceType: "mcp",
+				Version:     "1.0.0",
+				HostIds:     []api.Identifier{"host-1"},
+			},
+		},
+		{
+			name: "valid postgrest with nil config",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+			},
+		},
+		{
+			name: "RAG service with nil config requires pipelines",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-rag",
+				ServiceType: "rag",
+				Version:     "1.0.0",
+				HostIds:     []api.Identifier{"host-1"},
+			},
+			expected: []string{
+				"pipelines is required",
+			},
+		},
+		{
 			name: "valid postgrest with defaults",
 			svc: &api.ServiceSpec{
 				ServiceID:   "my-postgrest",

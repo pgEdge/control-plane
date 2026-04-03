@@ -44,6 +44,15 @@ func isSensitiveConfigKey(key string) bool {
 	return false
 }
 
+// normalizeConfig ensures a nil config map is converted to an empty map so
+// downstream code never has to nil-check.
+func normalizeConfig(config map[string]any) map[string]any {
+	if config == nil {
+		return map[string]any{}
+	}
+	return config
+}
+
 // scrubSensitiveConfig returns a copy of config with sensitive keys removed,
 // recursively descending into nested maps and slices.
 func scrubSensitiveConfig(config map[string]any) map[string]any {
@@ -685,7 +694,7 @@ func apiToServiceSpec(apiSvc *api.ServiceSpec) (*database.ServiceSpec, error) {
 		Version:            apiSvc.Version,
 		HostIDs:            hostIDs,
 		Port:               apiSvc.Port,
-		Config:             apiSvc.Config,
+		Config:             normalizeConfig(apiSvc.Config),
 		CPUs:               cpus,
 		MemoryBytes:        memory,
 		OrchestratorOpts:   orchestratorOptsToDatabase(apiSvc.OrchestratorOpts),
