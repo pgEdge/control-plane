@@ -123,6 +123,9 @@ func (r *RAGServiceKeysResource) Update(ctx context.Context, rc *resource.Contex
 }
 
 func (r *RAGServiceKeysResource) Delete(ctx context.Context, rc *resource.Context) error {
+	if rc == nil {
+		return nil
+	}
 	keysDir, err := r.keysDir(rc)
 	if err != nil {
 		// Parent dir is gone or unresolvable; nothing to clean up.
