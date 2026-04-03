@@ -404,6 +404,8 @@ func TestValidateKeyFilename(t *testing.T) {
 		"sub/dir.key",
 		`sub\dir.key`,
 		"./relative.key",
+		".",
+		"..",
 	}
 	for _, name := range invalid {
 		if err := validateKeyFilename(name); err == nil {
@@ -497,5 +499,32 @@ func TestRAGServiceKeysResource_Refresh_InvalidFilenameInState(t *testing.T) {
 	err := r.Refresh(context.Background(), rc)
 	if err == nil {
 		t.Error("Refresh() = nil, want error for invalid key filename in state")
+	}
+}
+
+func TestRAGServiceKeysResource_Update_InvalidFilenameIsNonDestructive(t *testing.T) {
+	parentID := "inst1-data"
+	rc, parentPath := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys:              map[string]string{"default_rag.key": "sk-good"},
+	}
+	if err := r.Create(context.Background(), rc); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	// Attempt Update with an invalid filename — must fail before any deletion.
+	r.Keys = map[string]string{"../escape.key": "sk-bad"}
+	if err := r.Update(context.Background(), rc); err == nil {
+		t.Fatal("Update() = nil, want error for invalid key filename")
+	}
+
+	// The original file must still be present — Update must not have deleted it.
+	existing := filepath.Join(parentPath, "keys", "default_rag.key")
+	if _, err := os.Stat(existing); err != nil {
+		t.Errorf("default_rag.key should still exist after failed Update, got err = %v", err)
 	}
 }
