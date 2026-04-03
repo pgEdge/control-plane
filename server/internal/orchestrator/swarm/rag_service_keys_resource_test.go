@@ -2,6 +2,8 @@ package swarm
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -263,5 +265,149 @@ func TestGenerateRAGInstanceResources_IncludesKeysResource(t *testing.T) {
 	}
 	if !foundKeys {
 		t.Errorf("expected ResourceTypeRAGServiceKeys in resources, not found")
+	}
+}
+
+// ragKeysRCWithTempDir returns a resource.Context whose DirResource points at a
+// fresh temporary directory that is automatically cleaned up after the test.
+func ragKeysRCWithTempDir(t *testing.T, parentID string) (*resource.Context, string) {
+	t.Helper()
+	parentPath := t.TempDir()
+	return ragKeysRC(t, parentID, parentPath), parentPath
+}
+
+func TestRAGServiceKeysResource_Create(t *testing.T) {
+	parentID := "inst1-data"
+	rc, parentPath := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys: map[string]string{
+			"default_embedding.key": "sk-embed",
+			"default_rag.key":       "sk-rag",
+		},
+	}
+
+	if err := r.Create(context.Background(), rc); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	keysDir := filepath.Join(parentPath, "keys")
+	for name, want := range r.Keys {
+		got, err := os.ReadFile(filepath.Join(keysDir, name))
+		if err != nil {
+			t.Errorf("ReadFile(%q) error = %v", name, err)
+			continue
+		}
+		if string(got) != want {
+			t.Errorf("key file %q = %q, want %q", name, string(got), want)
+		}
+		info, err := os.Stat(filepath.Join(keysDir, name))
+		if err != nil {
+			t.Errorf("Stat(%q) error = %v", name, err)
+			continue
+		}
+		if perm := info.Mode().Perm(); perm != 0o600 {
+			t.Errorf("key file %q perm = %04o, want 0600", name, perm)
+		}
+	}
+
+	// Refresh must succeed now that the directory and files exist.
+	if err := r.Refresh(context.Background(), rc); err != nil {
+		t.Errorf("Refresh() after Create = %v, want nil", err)
+	}
+}
+
+func TestRAGServiceKeysResource_Update_WritesNewKeys(t *testing.T) {
+	parentID := "inst1-data"
+	rc, parentPath := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys:              map[string]string{"old_rag.key": "sk-old"},
+	}
+	if err := r.Create(context.Background(), rc); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	r.Keys = map[string]string{"new_rag.key": "sk-new"}
+	if err := r.Update(context.Background(), rc); err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	keysDir := filepath.Join(parentPath, "keys")
+
+	if _, err := os.Stat(filepath.Join(keysDir, "old_rag.key")); !os.IsNotExist(err) {
+		t.Errorf("old_rag.key should be removed after Update, got err = %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(keysDir, "new_rag.key"))
+	if err != nil {
+		t.Fatalf("ReadFile(new_rag.key) error = %v", err)
+	}
+	if string(got) != "sk-new" {
+		t.Errorf("new_rag.key = %q, want %q", string(got), "sk-new")
+	}
+}
+
+func TestRAGServiceKeysResource_Delete(t *testing.T) {
+	parentID := "inst1-data"
+	rc, parentPath := ragKeysRCWithTempDir(t, parentID)
+
+	r := &RAGServiceKeysResource{
+		ServiceInstanceID: "inst1",
+		HostID:            "host-1",
+		ParentID:          parentID,
+		Keys:              map[string]string{"default_rag.key": "sk-test"},
+	}
+	if err := r.Create(context.Background(), rc); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	if err := r.Delete(context.Background(), rc); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+
+	keysDir := filepath.Join(parentPath, "keys")
+	if _, err := os.Stat(keysDir); !os.IsNotExist(err) {
+		t.Errorf("keys directory should not exist after Delete, got err = %v", err)
+	}
+}
+
+func TestRAGServiceKeysResource_Delete_NilRC(t *testing.T) {
+	r := &RAGServiceKeysResource{ServiceInstanceID: "inst1"}
+	// Delete with nil rc (parent unresolvable) must not error.
+	if err := r.Delete(context.Background(), nil); err != nil {
+		t.Errorf("Delete() with nil rc = %v, want nil", err)
+	}
+}
+
+func TestValidateKeyFilename(t *testing.T) {
+	valid := []string{
+		"default_rag.key",
+		"pipeline-a_embedding.key",
+		"foo.key",
+	}
+	for _, name := range valid {
+		if err := validateKeyFilename(name); err != nil {
+			t.Errorf("validateKeyFilename(%q) = %v, want nil", name, err)
+		}
+	}
+
+	invalid := []string{
+		"../escape.key",
+		"/absolute/path.key",
+		"sub/dir.key",
+		`sub\dir.key`,
+		"./relative.key",
+	}
+	for _, name := range invalid {
+		if err := validateKeyFilename(name); err == nil {
+			t.Errorf("validateKeyFilename(%q) = nil, want error", name)
+		}
 	}
 }
