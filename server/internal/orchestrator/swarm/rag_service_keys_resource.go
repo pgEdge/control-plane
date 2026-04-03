@@ -89,6 +89,9 @@ func (r *RAGServiceKeysResource) Refresh(ctx context.Context, rc *resource.Conte
 	}
 
 	for name := range r.Keys {
+		if err := validateKeyFilename(name); err != nil {
+			return fmt.Errorf("invalid key filename in state: %w", err)
+		}
 		if _, err := os.Stat(filepath.Join(keysDir, name)); err != nil {
 			if os.IsNotExist(err) {
 				return resource.ErrNotFound
@@ -108,6 +111,9 @@ func (r *RAGServiceKeysResource) Create(ctx context.Context, rc *resource.Contex
 	if err := os.MkdirAll(keysDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create keys directory: %w", err)
 	}
+	if err := os.Chmod(keysDir, 0o700); err != nil {
+		return fmt.Errorf("failed to set keys directory permissions: %w", err)
+	}
 	return r.writeKeyFiles(keysDir)
 }
 
@@ -115,6 +121,12 @@ func (r *RAGServiceKeysResource) Update(ctx context.Context, rc *resource.Contex
 	keysDir, err := r.keysDir(rc)
 	if err != nil {
 		return err
+	}
+	if err := os.MkdirAll(keysDir, 0o700); err != nil {
+		return fmt.Errorf("failed to create keys directory: %w", err)
+	}
+	if err := os.Chmod(keysDir, 0o700); err != nil {
+		return fmt.Errorf("failed to set keys directory permissions: %w", err)
 	}
 	if err := r.removeStaleKeyFiles(keysDir); err != nil {
 		return err
@@ -145,6 +157,9 @@ func (r *RAGServiceKeysResource) writeKeyFiles(keysDir string) error {
 		path := filepath.Join(keysDir, name)
 		if err := os.WriteFile(path, []byte(key), 0o600); err != nil {
 			return fmt.Errorf("failed to write key file %q: %w", name, err)
+		}
+		if err := os.Chmod(path, 0o600); err != nil {
+			return fmt.Errorf("failed to set key file %q permissions: %w", name, err)
 		}
 	}
 	return nil
