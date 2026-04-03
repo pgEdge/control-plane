@@ -80,6 +80,8 @@ func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
 		"/node_name",
 		"/mode",
+		"/service_type",
+		"/db_anon_role",
 		"/username",
 		"/password",
 		"/credential_source",
@@ -172,7 +174,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		r.Password = password
 	}
 
-	if err := r.createUserRole(ctx, rc, logger); err != nil {
+	if err := r.createUserRole(ctx, rc); err != nil {
 		return fmt.Errorf("failed to create service user role: %w", err)
 	}
 
@@ -180,7 +182,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	return nil
 }
 
-func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
+func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context) error {
 	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
 		return fmt.Errorf("failed to get primary instance: %w", err)
@@ -191,7 +193,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	}
 	defer conn.Close(ctx)
 
-	// Determine group role based on mode
 	var groupRole string
 	switch r.Mode {
 	case ServiceUserRoleRO:
@@ -201,7 +202,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	default:
 		return fmt.Errorf("unknown service user role mode: %q", r.Mode)
 	}
-
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
@@ -211,7 +211,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	if err != nil {
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
 	}
-
 	if err := statements.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
 	}
@@ -220,7 +219,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 }
 
 func (r *ServiceUserRole) Update(ctx context.Context, rc *resource.Context) error {
-	// Service users don't support updates (no credential rotation in Phase 1)
 	return nil
 }
 

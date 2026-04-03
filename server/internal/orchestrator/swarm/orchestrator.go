@@ -404,7 +404,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
 	switch spec.ServiceSpec.ServiceType {
-	case "mcp":
+	case "mcp", "postgrest":
 		return o.generateMCPInstanceResources(spec)
 	case "rag":
 		return o.generateRAGInstanceResources(spec)
@@ -429,19 +429,6 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
 				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
 		}
-	}
-
-	// Only MCP is fully implemented in the orchestrator for now.
-	// PostgREST provisioning (container spec, config delivery, service user) is
-	// implemented in follow-up tickets.
-	if spec.ServiceSpec.ServiceType != "mcp" {
-		return nil, fmt.Errorf("service type %q is not yet supported for provisioning", spec.ServiceSpec.ServiceType)
-	}
-
-	// Parse the MCP service config from the untyped config map
-	mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("failed to parse MCP service config: %w", errors.Join(errs...))
 	}
 
 	// Database network (shared with postgres instances)
@@ -473,25 +460,82 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 
 	// Service data directory resource (host-side bind mount directory)
 	dataDirID := spec.ServiceInstanceID + "-data"
-	dataDir := &filesystem.DirResource{
-		ID:       dataDirID,
-		HostID:   spec.HostID,
-		Path:     filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
-		OwnerUID: mcpContainerUID,
-		OwnerGID: mcpContainerUID,
-	}
 
-	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
-	// Credentials are populated from ServiceUserRole resources during refresh.
-	mcpConfigResource := &MCPConfigResource{
-		ServiceInstanceID:  spec.ServiceInstanceID,
-		ServiceID:          spec.ServiceSpec.ServiceID,
-		HostID:             spec.HostID,
-		DirResourceID:      dataDirID,
-		Config:             mcpConfig,
-		DatabaseName:       spec.DatabaseName,
-		DatabaseHosts:      spec.DatabaseHosts,
-		TargetSessionAttrs: spec.TargetSessionAttrs,
+	// Service-type-specific resources.
+	var serviceSpecificResources []resource.Resource
+
+	// Hoisted PostgREST config — parsed once and reused in both the primary
+	// resource block and the per-node authenticator loop below.
+	var parsedPostgRESTConfig *database.PostgRESTServiceConfig
+
+	switch spec.ServiceSpec.ServiceType {
+	case "mcp":
+		mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
+		if len(errs) > 0 {
+			return nil, fmt.Errorf("failed to parse MCP service config: %w", errors.Join(errs...))
+		}
+
+		dataDir := &filesystem.DirResource{
+			ID:       dataDirID,
+			HostID:   spec.HostID,
+			Path:     filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+			OwnerUID: mcpContainerUID,
+			OwnerGID: mcpContainerUID,
+		}
+		mcpConfigResource := &MCPConfigResource{
+			ServiceInstanceID:  spec.ServiceInstanceID,
+			ServiceID:          spec.ServiceSpec.ServiceID,
+			HostID:             spec.HostID,
+			DirResourceID:      dataDirID,
+			Config:             mcpConfig,
+			DatabaseName:       spec.DatabaseName,
+			DatabaseHosts:      spec.DatabaseHosts,
+			TargetSessionAttrs: spec.TargetSessionAttrs,
+		}
+		serviceSpecificResources = []resource.Resource{dataDir, mcpConfigResource}
+
+	case "postgrest":
+		var errs []error
+		parsedPostgRESTConfig, errs = database.ParsePostgRESTServiceConfig(spec.ServiceSpec.Config)
+		if len(errs) > 0 {
+			return nil, fmt.Errorf("failed to parse PostgREST service config: %w", errors.Join(errs...))
+		}
+		postgrestConfig := parsedPostgRESTConfig
+
+		preflight := &PostgRESTPreflightResource{
+			ServiceID:    spec.ServiceSpec.ServiceID,
+			DatabaseID:   spec.DatabaseID,
+			DatabaseName: spec.DatabaseName,
+			NodeName:     spec.NodeName,
+			DBSchemas:    postgrestConfig.DBSchemas,
+			DBAnonRole:   postgrestConfig.DBAnonRole,
+		}
+		authenticator := &PostgRESTAuthenticatorResource{
+			ServiceID:    spec.ServiceSpec.ServiceID,
+			DatabaseID:   spec.DatabaseID,
+			DatabaseName: spec.DatabaseName,
+			NodeName:     spec.NodeName,
+			DBAnonRole:   postgrestConfig.DBAnonRole,
+			UserRoleID:   canonicalRWID,
+		}
+		dataDir := &filesystem.DirResource{
+			ID:       dataDirID,
+			HostID:   spec.HostID,
+			Path:     filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+			OwnerUID: postgrestContainerUID,
+			OwnerGID: postgrestContainerUID,
+		}
+		postgrestConfigResource := &PostgRESTConfigResource{
+			ServiceInstanceID:  spec.ServiceInstanceID,
+			ServiceID:          spec.ServiceSpec.ServiceID,
+			HostID:             spec.HostID,
+			DirResourceID:      dataDirID,
+			Config:             postgrestConfig,
+			DatabaseName:       spec.DatabaseName,
+			DatabaseHosts:      spec.DatabaseHosts,
+			TargetSessionAttrs: spec.TargetSessionAttrs,
+		}
+		serviceSpecificResources = []resource.Resource{preflight, authenticator, dataDir, postgrestConfigResource}
 	}
 
 	// Service instance spec resource
@@ -524,46 +568,54 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		HostID:            spec.HostID,
 	}
 
-	// Resource chain: Network → ServiceUserRole(RO,RW) → DirResource → MCPConfigResource → ServiceInstanceSpec → ServiceInstance
+	// Build the full resource list.
 	orchestratorResources := []resource.Resource{
 		databaseNetwork,
 		serviceUserRoleRO,
 		serviceUserRoleRW,
 	}
+	orchestratorResources = append(orchestratorResources, serviceSpecificResources...)
+	orchestratorResources = append(orchestratorResources, serviceInstanceSpec, serviceInstance)
 
-	// Per-node RO and RW roles for each additional database node so that
-	// multi-host DSNs work correctly on all nodes. CREATE ROLE is not
-	// replicated by Spock, so each node's primary needs its own role.
-	for _, nodeInst := range spec.DatabaseNodes {
-		if nodeInst.NodeName == spec.NodeName {
-			continue
+	// Append per-node ServiceUserRole resources for each additional database node.
+	// The canonical resources (above) cover the first node; nodes [1:] each get
+	// their own RO and RW role that sources credentials from the canonical.
+	if len(spec.DatabaseNodes) > 1 {
+		for _, nodeInst := range spec.DatabaseNodes[1:] {
+			perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
+			orchestratorResources = append(orchestratorResources,
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRO,
+					CredentialSource: &canonicalROID,
+				},
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRW,
+					CredentialSource: &canonicalRWID,
+				},
+			)
+			if spec.ServiceSpec.ServiceType == "postgrest" {
+				orchestratorResources = append(orchestratorResources,
+					&PostgRESTAuthenticatorResource{
+						ServiceID:    spec.ServiceSpec.ServiceID,
+						DatabaseID:   spec.DatabaseID,
+						DatabaseName: spec.DatabaseName,
+						NodeName:     nodeInst.NodeName,
+						DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
+						UserRoleID:   perNodeRWID,
+					},
+				)
+			}
 		}
-		orchestratorResources = append(orchestratorResources,
-			&ServiceUserRole{
-				ServiceID:        spec.ServiceSpec.ServiceID,
-				DatabaseID:       spec.DatabaseID,
-				DatabaseName:     spec.DatabaseName,
-				NodeName:         nodeInst.NodeName,
-				Mode:             ServiceUserRoleRO,
-				CredentialSource: &canonicalROID,
-			},
-			&ServiceUserRole{
-				ServiceID:        spec.ServiceSpec.ServiceID,
-				DatabaseID:       spec.DatabaseID,
-				DatabaseName:     spec.DatabaseName,
-				NodeName:         nodeInst.NodeName,
-				Mode:             ServiceUserRoleRW,
-				CredentialSource: &canonicalRWID,
-			},
-		)
 	}
 
-	orchestratorResources = append(orchestratorResources,
-		dataDir,
-		mcpConfigResource,
-		serviceInstanceSpec,
-		serviceInstance,
-	)
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 

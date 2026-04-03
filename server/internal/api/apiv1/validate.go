@@ -641,7 +641,7 @@ func validateS3RepoProperties(props repoProperties, path []string) []error {
 }
 
 var pgBackRestOptionPattern = regexp.MustCompile(`^[a-z0-9-]+$`)
-var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+var semverPattern = regexp.MustCompile(`^\d+\.\d+(\.\d+)?$`)
 
 // reservedLabelPrefix is the label key prefix reserved for system use.
 const reservedLabelPrefix = "pgedge."

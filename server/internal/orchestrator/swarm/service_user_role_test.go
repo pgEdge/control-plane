@@ -209,3 +209,6 @@ func TestServiceUserRolePerNodeIdentifierUniqueness(t *testing.T) {
 		seen[id] = fmt.Sprintf("role[%d] node=%s mode=%s", i, r.NodeName, r.Mode)
 	}
 }
+
+
+

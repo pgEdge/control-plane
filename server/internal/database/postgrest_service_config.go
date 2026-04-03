@@ -1,7 +1,9 @@
 package database
 
 import (
+	"bytes"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 )
@@ -144,4 +146,76 @@ func validatePostgRESTUnknownKeys(config map[string]any) []error {
 		quoted[i] = fmt.Sprintf("%q", k)
 	}
 	return []error{fmt.Errorf("unknown config keys: %s", strings.Join(quoted, ", "))}
+}
+
+// PostgRESTConnParams holds the connection and credential details needed to
+// generate a complete postgrest.conf. These are kept separate from
+// PostgRESTServiceConfig because they are runtime-provisioned values (not
+// user-supplied configuration).
+type PostgRESTConnParams struct {
+	Username           string
+	Password           string
+	DatabaseName       string
+	DatabaseHosts      []ServiceHostEntry
+	TargetSessionAttrs string
+}
+
+// GenerateConf renders a postgrest.conf file from the service config and the
+// runtime connection parameters. The db-uri (including credentials) is written
+// into the file; no credentials are exposed as environment variables.
+func (c *PostgRESTServiceConfig) GenerateConf(conn PostgRESTConnParams) ([]byte, error) {
+	uri, err := buildPostgRESTDBURI(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+
+	fmt.Fprintf(&buf, "db-uri = %q\n", uri)
+	fmt.Fprintf(&buf, "db-schemas = %q\n", c.DBSchemas)
+	fmt.Fprintf(&buf, "db-anon-role = %q\n", c.DBAnonRole)
+	fmt.Fprintf(&buf, "db-pool = %d\n", c.DBPool)
+	fmt.Fprintf(&buf, "db-max-rows = %d\n", c.MaxRows)
+
+	if c.JWTSecret != nil {
+		fmt.Fprintf(&buf, "jwt-secret = %q\n", *c.JWTSecret)
+	}
+	if c.JWTAud != nil {
+		fmt.Fprintf(&buf, "jwt-aud = %q\n", *c.JWTAud)
+	}
+	if c.JWTRoleClaimKey != nil {
+		fmt.Fprintf(&buf, "jwt-role-claim-key = %q\n", *c.JWTRoleClaimKey)
+	}
+	if c.ServerCORSAllowedOrigins != nil {
+		fmt.Fprintf(&buf, "server-cors-allowed-origins = %q\n", *c.ServerCORSAllowedOrigins)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// buildPostgRESTDBURI constructs a libpq URI with multi-host support.
+// Format: postgresql://user:pass@host1:port1,host2:port2/dbname[?target_session_attrs=...]
+func buildPostgRESTDBURI(conn PostgRESTConnParams) (string, error) {
+	if len(conn.DatabaseHosts) == 0 {
+		return "", fmt.Errorf("PostgRESTConnParams.DatabaseHosts is empty")
+	}
+
+	userInfo := url.UserPassword(conn.Username, conn.Password)
+
+	hostParts := make([]string, len(conn.DatabaseHosts))
+	for i, h := range conn.DatabaseHosts {
+		hostParts[i] = fmt.Sprintf("%s:%d", h.Host, h.Port)
+	}
+
+	uri := fmt.Sprintf("postgresql://%s@%s/%s",
+		userInfo.String(),
+		strings.Join(hostParts, ","),
+		url.PathEscape(conn.DatabaseName),
+	)
+
+	if conn.TargetSessionAttrs != "" {
+		uri += "?target_session_attrs=" + url.QueryEscape(conn.TargetSessionAttrs)
+	}
+
+	return uri, nil
 }
