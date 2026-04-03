@@ -44,6 +44,9 @@ type MCPServiceConfig struct {
 	// Optional - connection pool (overridable defaults)
 	PoolMaxConns *int `json:"pool_max_conns,omitempty"`
 
+	// Optional - metadata cache TTL (e.g. "5m", "1h"); passed to MCP server
+	MetadataTTL *string `json:"metadata_ttl,omitempty"`
+
 	// Optional - tool toggles (all enabled by default)
 	DisableQueryDatabase       *bool `json:"disable_query_database,omitempty"`
 	DisableGetSchemaInfo       *bool `json:"disable_get_schema_info,omitempty"`
@@ -71,6 +74,7 @@ var mcpKnownKeys = map[string]bool{
 	"llm_temperature":              true,
 	"llm_max_tokens":               true,
 	"pool_max_conns":               true,
+	"metadata_ttl":                 true,
 	"disable_query_database":       true,
 	"disable_get_schema_info":      true,
 	"disable_similarity_search":    true,
@@ -217,6 +221,9 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	poolMaxConns, pmcErrs := optionalInt(config, "pool_max_conns")
 	errs = append(errs, pmcErrs...)
 
+	metadataTTL, mttlErrs := optionalString(config, "metadata_ttl")
+	errs = append(errs, mttlErrs...)
+
 	// Tool toggles
 	disableQueryDB, dqErrs := optionalBool(config, "disable_query_database")
 	errs = append(errs, dqErrs...)
@@ -289,6 +296,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		LLMTemperature:             llmTemperature,
 		LLMMaxTokens:               llmMaxTokens,
 		PoolMaxConns:               poolMaxConns,
+		MetadataTTL:                metadataTTL,
 		DisableQueryDatabase:       disableQueryDB,
 		DisableGetSchemaInfo:       disableGetSchema,
 		DisableSimilaritySearch:    disableSimilarity,

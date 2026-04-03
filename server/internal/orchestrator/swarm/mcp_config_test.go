@@ -207,6 +207,7 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 			LLMMaxTokens:    &maxTok,
 			PoolMaxConns:    &poolMax,
 			AllowWrites:     &allowW,
+			MetadataTTL:     strPtr("10m"),
 		},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
@@ -238,6 +239,29 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 	}
 	if !cfg.Databases[0].AllowWrites {
 		t.Error("databases[0].allow_writes should be true")
+	}
+	if cfg.Databases[0].MetadataTTL != "10m" {
+		t.Errorf("databases[0].metadata_ttl = %q, want %q", cfg.Databases[0].MetadataTTL, "10m")
+	}
+}
+
+func TestGenerateMCPConfig_MetadataTTL_Omitted(t *testing.T) {
+	params := &MCPConfigParams{
+		Config:        &database.MCPServiceConfig{},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Databases[0].MetadataTTL != "" {
+		t.Errorf("databases[0].metadata_ttl = %q, want empty (omitted)", cfg.Databases[0].MetadataTTL)
 	}
 }
 
