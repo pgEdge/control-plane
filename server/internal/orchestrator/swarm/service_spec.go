@@ -22,8 +22,6 @@ const ragContainerUID = 1001
 // See: https://github.com/PostgREST/postgrest/blob/main/Dockerfile (USER 1000)
 const postgrestContainerUID = 1000
 
-// ragContainerUID is the UID of the RAG container user.
-const ragContainerUID = 1001
 
 // Shared health check timing for all service container types.
 const (
