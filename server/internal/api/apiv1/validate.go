@@ -131,6 +131,8 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 
 	// Validate services
 	seenServiceIDs := make(ds.Set[string], len(spec.Services))
+	portOwner := make(servicePortOwnerMap)
+
 	for i, svc := range spec.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
 
@@ -141,6 +143,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		}
 		seenServiceIDs.Add(string(svc.ServiceID))
 
+		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
 		errs = append(errs, validateServiceSpec(svc, svcPath, false, seenNodeNames)...)
 	}
 
@@ -199,9 +202,12 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	// Validate each service. Pass isUpdate=false for services being added for the
 	// first time so that bootstrap-only fields are accepted. For service types that
 	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
+	portOwner := make(servicePortOwnerMap)
 	for i, svc := range new.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+
+		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, newNodeNames)...)
 	}
 
@@ -475,6 +481,38 @@ func validateUsers(users []*api.DatabaseUserSpec, path []string) []error {
 		}
 	}
 
+	return errs
+}
+
+// hostPort identifies a unique (host, port) binding for cross-service
+// port conflict detection.
+type hostPort struct {
+	hostID string
+	port   int
+}
+
+// servicePortOwnerMap tracks which service owns a given (host, port) pair.
+// Callers create one map and pass it to validateServicePortConflicts for
+// each service in the spec.
+type servicePortOwnerMap map[hostPort]string
+
+// validateServicePortConflicts checks that the service's explicit port (if any)
+// does not collide with a port already claimed by another service on the same host.
+func validateServicePortConflicts(svc *api.ServiceSpec, path []string, owner servicePortOwnerMap) []error {
+	if svc.Port == nil || *svc.Port <= 0 {
+		return nil
+	}
+
+	var errs []error
+	for _, hostID := range svc.HostIds {
+		key := hostPort{hostID: string(hostID), port: *svc.Port}
+		if prev, exists := owner[key]; exists {
+			err := fmt.Errorf("port %d conflicts with service %q on the same host", *svc.Port, prev)
+			errs = append(errs, newValidationError(err, appendPath(path, "port")))
+		} else {
+			owner[key] = string(svc.ServiceID)
+		}
+	}
 	return errs
 }
 
