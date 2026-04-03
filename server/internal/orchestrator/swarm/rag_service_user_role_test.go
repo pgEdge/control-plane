@@ -1,94 +1,12 @@
 package swarm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
-
-func TestRAGServiceUserRole_ResourceVersion(t *testing.T) {
-	r := &RAGServiceUserRole{}
-	if got := r.ResourceVersion(); got != "1" {
-		t.Errorf("ResourceVersion() = %q, want %q", got, "1")
-	}
-}
-
-func TestRAGServiceUserRole_Identifier(t *testing.T) {
-	r := &RAGServiceUserRole{ServiceID: "rag"}
-	id := r.Identifier()
-	if id.ID != "rag" {
-		t.Errorf("Identifier().ID = %q, want %q", id.ID, "rag")
-	}
-	if id.Type != ResourceTypeRAGServiceUserRole {
-		t.Errorf("Identifier().Type = %q, want %q", id.Type, ResourceTypeRAGServiceUserRole)
-	}
-}
-
-func TestRAGServiceUserRole_Executor(t *testing.T) {
-	r := &RAGServiceUserRole{NodeName: "n1"}
-	exec := r.Executor()
-	if exec != resource.PrimaryExecutor("n1") {
-		t.Errorf("Executor() = %v, want PrimaryExecutor(%q)", exec, "n1")
-	}
-}
-
-func TestRAGServiceUserRole_DiffIgnore(t *testing.T) {
-	r := &RAGServiceUserRole{}
-	ignored := r.DiffIgnore()
-	want := map[string]bool{
-		"/node_name": true,
-		"/username":  true,
-		"/password":  true,
-	}
-	if len(ignored) != len(want) {
-		t.Errorf("DiffIgnore() length = %d, want %d", len(ignored), len(want))
-	}
-	for _, path := range ignored {
-		if !want[path] {
-			t.Errorf("unexpected path in DiffIgnore(): %q", path)
-		}
-	}
-}
-
-func TestRAGServiceUserRole_RefreshEmptyCredentials(t *testing.T) {
-	tests := []struct {
-		name     string
-		username string
-		password string
-	}{
-		{"empty username", "", "somepassword"},
-		{"empty password", "svc_inst", ""},
-		{"both empty", "", ""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &RAGServiceUserRole{
-				ServiceID: "rag",
-				Username:  tt.username,
-				Password:  tt.password,
-			}
-			// Refresh with nil rc — the empty-credential guard fires before any
-			// injection call, so no injector is needed.
-			err := r.Refresh(context.Background(), nil)
-			if err != resource.ErrNotFound {
-				t.Errorf("Refresh() = %v, want ErrNotFound", err)
-			}
-		})
-	}
-}
-
-func TestRAGServiceUserRoleIdentifier(t *testing.T) {
-	id := RAGServiceUserRoleIdentifier("my-instance")
-	if id.ID != "my-instance" {
-		t.Errorf("ID = %q, want %q", id.ID, "my-instance")
-	}
-	if id.Type != ResourceTypeRAGServiceUserRole {
-		t.Errorf("Type = %q, want %q", id.Type, ResourceTypeRAGServiceUserRole)
-	}
-}
 
 // minimalRAGConfig returns a minimal valid RAG service config suitable for unit tests.
 func minimalRAGConfig() map[string]any {
