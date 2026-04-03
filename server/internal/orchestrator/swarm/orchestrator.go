@@ -578,41 +578,42 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	orchestratorResources = append(orchestratorResources, serviceInstanceSpec, serviceInstance)
 
 	// Append per-node ServiceUserRole resources for each additional database node.
-	// The canonical resources (above) cover the first node; nodes [1:] each get
+	// The canonical resources (above) cover spec.NodeName; all other nodes get
 	// their own RO and RW role that sources credentials from the canonical.
-	if len(spec.DatabaseNodes) > 1 {
-		for _, nodeInst := range spec.DatabaseNodes[1:] {
-			perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
+	for _, nodeInst := range spec.DatabaseNodes {
+		if nodeInst.NodeName == spec.NodeName {
+			continue
+		}
+		perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
+		orchestratorResources = append(orchestratorResources,
+			&ServiceUserRole{
+				ServiceID:        spec.ServiceSpec.ServiceID,
+				DatabaseID:       spec.DatabaseID,
+				DatabaseName:     spec.DatabaseName,
+				NodeName:         nodeInst.NodeName,
+				Mode:             ServiceUserRoleRO,
+				CredentialSource: &canonicalROID,
+			},
+			&ServiceUserRole{
+				ServiceID:        spec.ServiceSpec.ServiceID,
+				DatabaseID:       spec.DatabaseID,
+				DatabaseName:     spec.DatabaseName,
+				NodeName:         nodeInst.NodeName,
+				Mode:             ServiceUserRoleRW,
+				CredentialSource: &canonicalRWID,
+			},
+		)
+		if spec.ServiceSpec.ServiceType == "postgrest" {
 			orchestratorResources = append(orchestratorResources,
-				&ServiceUserRole{
-					ServiceID:        spec.ServiceSpec.ServiceID,
-					DatabaseID:       spec.DatabaseID,
-					DatabaseName:     spec.DatabaseName,
-					NodeName:         nodeInst.NodeName,
-					Mode:             ServiceUserRoleRO,
-					CredentialSource: &canonicalROID,
-				},
-				&ServiceUserRole{
-					ServiceID:        spec.ServiceSpec.ServiceID,
-					DatabaseID:       spec.DatabaseID,
-					DatabaseName:     spec.DatabaseName,
-					NodeName:         nodeInst.NodeName,
-					Mode:             ServiceUserRoleRW,
-					CredentialSource: &canonicalRWID,
+				&PostgRESTAuthenticatorResource{
+					ServiceID:    spec.ServiceSpec.ServiceID,
+					DatabaseID:   spec.DatabaseID,
+					DatabaseName: spec.DatabaseName,
+					NodeName:     nodeInst.NodeName,
+					DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
+					UserRoleID:   perNodeRWID,
 				},
 			)
-			if spec.ServiceSpec.ServiceType == "postgrest" {
-				orchestratorResources = append(orchestratorResources,
-					&PostgRESTAuthenticatorResource{
-						ServiceID:    spec.ServiceSpec.ServiceID,
-						DatabaseID:   spec.DatabaseID,
-						DatabaseName: spec.DatabaseName,
-						NodeName:     nodeInst.NodeName,
-						DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
-						UserRoleID:   perNodeRWID,
-					},
-				)
-			}
 		}
 	}
 
