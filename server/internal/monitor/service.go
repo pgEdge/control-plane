@@ -23,7 +23,7 @@ type Service struct {
 	certSvc          *certificates.Service
 	dbOrch           database.Orchestrator
 	store            *Store
-	hostMoniter      *HostMonitor
+	hostMonitor      *HostMonitor
 	instances        map[string]*InstanceMonitor
 	serviceInstances map[string]*ServiceInstanceMonitor
 }
@@ -46,7 +46,7 @@ func NewService(
 		store:            store,
 		instances:        map[string]*InstanceMonitor{},
 		serviceInstances: map[string]*ServiceInstanceMonitor{},
-		hostMoniter:      NewHostMonitor(logger, hostSvc),
+		hostMonitor:      NewHostMonitor(logger, hostSvc),
 	}
 }
 
@@ -56,6 +56,7 @@ func (s *Service) Start(ctx context.Context) error {
 	// The monitors should run for the lifetime of the application rather than
 	// the lifetime of a single operation.
 	s.appCtx = ctx
+	s.hostMonitor.Start(ctx)
 
 	stored, err := s.store.InstanceMonitor.
 		GetAllByHostID(s.cfg.HostID).
@@ -104,6 +105,7 @@ func (s *Service) Shutdown() error {
 	}
 
 	s.serviceInstances = map[string]*ServiceInstanceMonitor{}
+	s.hostMonitor.Stop()
 
 	return nil
 }

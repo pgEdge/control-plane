@@ -185,12 +185,6 @@ func (a *App) runInitialized(parentCtx context.Context) error {
 		return handleError(fmt.Errorf("failed to start resource service: %w", err))
 	}
 
-	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)
-	if err != nil {
-		return handleError(fmt.Errorf("failed to initialize host ticker: %w", err))
-	}
-	hostTicker.Start(a.serviceCtx)
-
 	monitorSvc, err := do.Invoke[*monitor.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize monitor service: %w", err))

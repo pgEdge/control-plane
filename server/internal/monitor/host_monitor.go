@@ -3,9 +3,9 @@ package monitor
 import (
 	"context"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/rs/zerolog"
+
+	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
 type HostMonitor struct {
@@ -22,7 +22,7 @@ func NewHostMonitor(
 	}
 	m.monitor = NewMonitor(
 		logger,
-		database.InstanceMonitorRefreshInterval,
+		host.HostMonitorRefreshInterval,
 		m.checkStatus,
 	)
 	return m
