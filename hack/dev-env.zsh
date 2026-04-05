@@ -71,7 +71,7 @@ _use-test-config() {
 
 _choose-scope() {
 	# (j:\n:) joins the array with newlines
-	local scope_choice=$(echo "host\ndatabase" | sk)
+	local scope_choice=$(echo "database\nhost" | sk)
 
 	if [[ -z "${scope_choice}" ]]; then
 		return 1
@@ -232,6 +232,7 @@ _psql-local() {
 
 use-compose() {
 	export CP_ENV=compose
+	unset E2E_FIXTURE
 
 	_update-restish-config \
 		http://localhost:3000 \
@@ -244,6 +245,7 @@ use-compose() {
 
 use-dev-lima() {
 	export CP_ENV=dev-lima
+	export E2E_FIXTURE=dev-lima
 
 	_update-restish-config \
 		http://localhost:3000 \
@@ -261,12 +263,14 @@ use-dev-lima() {
 
 use-lima() {
 	export CP_ENV=lima
+	export E2E_FIXTURE=lima
 
 	_use-test-config
 }
 
 use-ec2() {
 	export CP_ENV=ec2
+	export E2E_FIXTURE=ec2
 
 	_use-test-config
 }
