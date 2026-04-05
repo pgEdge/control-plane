@@ -259,7 +259,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		DatabaseID: spec.DatabaseID,
 		HostID:     spec.HostID,
 		Name:       patroniServiceName(spec.InstanceID),
-		Options:    patroniUnitOptions(paths, o.packageManager.BinDir(pgMajor)),
+		Options:    PatroniUnitOptions(paths, o.packageManager.BinDir(pgMajor), spec.CPUs, spec.MemoryBytes),
 		ExtraDependencies: []resource.Identifier{
 			patroniConfig.Identifier(),
 			instanceDir.Identifier(),
