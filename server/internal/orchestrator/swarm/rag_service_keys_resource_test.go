@@ -234,7 +234,7 @@ func TestExtractRAGAPIKeys_MultiPipeline(t *testing.T) {
 }
 
 func TestGenerateRAGInstanceResources_IncludesKeysResource(t *testing.T) {
-	o := &Orchestrator{}
+	o := newTestOrchestrator()
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{

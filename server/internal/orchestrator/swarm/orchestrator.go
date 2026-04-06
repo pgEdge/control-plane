@@ -653,10 +653,24 @@ func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInsta
 // instance. RAG only requires read access, so a single ServiceUserRoleRO is
 // created per database node using the same canonical+per-node pattern as MCP.
 func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	// Get service image.
+	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service image: %w", err)
+	}
+
 	// Parse the RAG service config to extract API keys.
 	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("failed to parse RAG service config: %w", errors.Join(errs...))
+	}
+
+	// Database network (shared with postgres instances).
+	databaseNetwork := &Network{
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
 	}
 
 	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
@@ -670,7 +684,7 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		Mode:         ServiceUserRoleRO,
 	}
 
-	orchestratorResources := []resource.Resource{canonicalRO}
+	orchestratorResources := []resource.Resource{databaseNetwork, canonicalRO}
 
 	// Per-node RO role for each additional database node so that RAG instances
 	// on other hosts can authenticate against their co-located Postgres.
@@ -691,12 +705,15 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 	// Service data directory resource (host-side bind mount directory).
 	dataDirID := spec.ServiceInstanceID + "-data"
 	dataDir := &filesystem.DirResource{
-		ID:     dataDirID,
-		HostID: spec.HostID,
-		Path:   filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+		ID:       dataDirID,
+		HostID:   spec.HostID,
+		Path:     filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+		OwnerUID: ragContainerUID,
+		OwnerGID: ragContainerUID,
 	}
 
 	// API key files resource — writes provider keys into a "keys" subdirectory.
+	// The keys subdirectory path is resolved at runtime from the parent DirResource.
 	keysResource := &RAGServiceKeysResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		HostID:            spec.HostID,
@@ -722,7 +739,38 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		DatabasePort:      dbPort,
 	}
 
-	orchestratorResources = append(orchestratorResources, dataDir, keysResource, ragConfigRes)
+	// Service instance spec resource — holds the computed Docker Swarm service spec.
+	// KeysDirID is the parent data dir; the actual keys subdir path is derived at runtime.
+	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceInstanceSpec := &ServiceInstanceSpecResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		ServiceSpec:       spec.ServiceSpec,
+		DatabaseID:        spec.DatabaseID,
+		DatabaseName:      spec.DatabaseName,
+		HostID:            spec.HostID,
+		ServiceName:       serviceName,
+		Hostname:          serviceName,
+		CohortMemberID:    o.swarmNodeID,
+		ServiceImage:      serviceImage,
+		Credentials:       spec.Credentials,
+		DatabaseNetworkID: databaseNetwork.Name,
+		DatabaseHosts:     spec.DatabaseHosts,
+		Port:              spec.Port,
+		DataDirID:         dataDirID,
+	}
+
+	// Service instance resource (actual Docker Swarm service).
+	serviceInstance := &ServiceInstanceResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		DatabaseID:        spec.DatabaseID,
+		ServiceName:       serviceName,
+		ServiceID:         spec.ServiceSpec.ServiceID,
+		ServiceSpecID:     spec.ServiceSpec.ServiceID,
+		ServiceType:       spec.ServiceSpec.ServiceType,
+		HostID:            spec.HostID,
+	}
+
+	orchestratorResources = append(orchestratorResources, dataDir, keysResource, ragConfigRes, serviceInstanceSpec, serviceInstance)
 
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }

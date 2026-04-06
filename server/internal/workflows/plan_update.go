@@ -149,16 +149,10 @@ func (w *Workflows) getServiceResources(
 		ServiceInstanceID: serviceInstanceID,
 		Resources:         generateOutput.Resources.Resources,
 	}
-	// Only attach the monitor when the service deploys a Docker container
-	// (swarm.service_instance). Service types that provision infrastructure
-	// without a container (e.g. "rag" in its initial phase) must not set this
-	// dependency, as the planner requires all declared dependencies to exist.
-	if serviceSpec.ServiceType != "rag" {
-		svcResources.MonitorResource = &monitor.ServiceInstanceMonitorResource{
-			DatabaseID:        spec.DatabaseID,
-			ServiceInstanceID: serviceInstanceID,
-			HostID:            hostID,
-		}
+	svcResources.MonitorResource = &monitor.ServiceInstanceMonitorResource{
+		DatabaseID:        spec.DatabaseID,
+		ServiceInstanceID: serviceInstanceID,
+		HostID:            hostID,
 	}
 	return svcResources, nil
 }
