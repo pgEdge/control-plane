@@ -3,7 +3,7 @@ package swarm
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -162,13 +162,31 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 }
 
 // ServiceInstanceName generates a Docker Swarm service name for a service instance.
-// It follows the same host ID hashing convention used for Postgres instance IDs
-// (see database.InstanceIDFor), producing shorter, more readable names when host
-// IDs are UUIDs.
-func ServiceInstanceName(serviceType, databaseID, serviceID, hostID string) string {
-	hash := sha1.Sum([]byte(hostID))
+// All three inputs are hashed together so truncated prefixes never collide across
+// different databases or services on the same host. serviceType is omitted because
+// serviceID is already unique within a database.
+func ServiceInstanceName(databaseID, serviceID, hostID string) string {
+	hash := sha256.Sum256([]byte(databaseID + ":" + serviceID + ":" + hostID))
 	base36 := new(big.Int).SetBytes(hash[:]).Text(36)
-	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, base36[:8])
+
+	// Docker Swarm service names are limited to 63 characters.
+	// Two separators + 8-char hash = 10 fixed chars; 53 chars remain for the IDs.
+	// Give databaseID up to half (26), then serviceID gets the rest.
+	const budget = 53
+	if len(databaseID)+len(serviceID) > budget {
+		dbCap := budget / 2 // 26 max for databaseID
+		if len(databaseID) < dbCap {
+			dbCap = len(databaseID)
+		}
+		databaseID = databaseID[:dbCap]
+		svcCap := budget - dbCap
+		if svcCap > len(serviceID) {
+			svcCap = len(serviceID)
+		}
+		serviceID = serviceID[:svcCap]
+	}
+
+	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, base36[:8])
 }
 
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, error) {
@@ -552,7 +570,7 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	}
 
 	// Service instance spec resource
-	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
 		ServiceInstanceID:  spec.ServiceInstanceID,
 		ServiceSpec:        spec.ServiceSpec,
@@ -748,7 +766,7 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 
 	// Service instance spec resource — holds the computed Docker Swarm service spec.
 	// KeysDirID is the parent data dir; the actual keys subdir path is derived at runtime.
-	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		ServiceSpec:       spec.ServiceSpec,

@@ -33,6 +33,8 @@ const (
 )
 
 func buildPostgRESTEnvVars() []string {
+	// Connection details (hosts, credentials) are embedded in the db-uri inside
+	// postgrest.conf by PostgRESTConfigResource — they must not appear as env vars.
 	return []string{
 		"PGRST_SERVER_HOST=0.0.0.0",
 		"PGRST_SERVER_PORT=8080",
