@@ -129,10 +129,11 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 	// Validate orchestrator_opts (spec-level)
 	errs = append(errs, validateOrchestratorOpts(spec.OrchestratorOpts, []string{"orchestrator_opts"})...)
 
-	// Validate services
-	seenServiceIDs := make(ds.Set[string], len(spec.Services))
+	// Validate services — seed portOwner with Postgres ports so services can't collide with the database.
 	portOwner := make(servicePortOwnerMap)
+	seedPostgresPorts(spec, portOwner)
 
+	seenServiceIDs := make(ds.Set[string], len(spec.Services))
 	for i, svc := range spec.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
 
@@ -199,10 +200,13 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		existingServiceIDs.Add(svc.ServiceID)
 	}
 
+	// Seed portOwner with Postgres ports so services can't collide with the database.
+	portOwner := make(servicePortOwnerMap)
+	seedPostgresPorts(new, portOwner)
+
 	// Validate each service. Pass isUpdate=false for services being added for the
 	// first time so that bootstrap-only fields are accepted. For service types that
 	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
-	portOwner := make(servicePortOwnerMap)
 	for i, svc := range new.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
@@ -482,6 +486,24 @@ func validateUsers(users []*api.DatabaseUserSpec, path []string) []error {
 	}
 
 	return errs
+}
+
+// seedPostgresPorts registers each node's effective Postgres port in the
+// portOwner map so that service port validation can detect collisions with
+// the database. A node-level port override (node.Port) takes precedence
+// over the spec-level default (spec.Port).
+func seedPostgresPorts(spec *api.DatabaseSpec, owner servicePortOwnerMap) {
+	for _, node := range spec.Nodes {
+		pgPort := utils.FromPointer(spec.Port)
+		if node.Port != nil {
+			pgPort = *node.Port
+		}
+		if pgPort > 0 {
+			for _, hostID := range node.HostIds {
+				owner[hostPort{hostID: string(hostID), port: pgPort}] = "postgres"
+			}
+		}
+	}
 }
 
 // hostPort identifies a unique (host, port) binding for cross-service

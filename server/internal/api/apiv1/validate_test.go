@@ -818,6 +818,99 @@ func TestValidateDatabaseSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "invalid service port conflicts with postgres port",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Port:            utils.PointerTo(5432),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{"host-1"},
+					},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "mcp-server",
+						ServiceType: "mcp",
+						Version:     "1.0.0",
+						HostIds:     []api.Identifier{"host-1"},
+						Port:        utils.PointerTo(5432),
+						Config: map[string]any{
+							"llm_enabled":       true,
+							"llm_provider":      "anthropic",
+							"llm_model":         "claude-sonnet-4-5",
+							"anthropic_api_key": "sk-ant-...",
+						},
+					},
+				},
+			},
+			expected: []string{
+				`port 5432 conflicts with service "postgres" on the same host`,
+			},
+		},
+		{
+			name: "invalid service port conflicts with node-level postgres port override",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{"host-1"},
+						Port:    utils.PointerTo(5433),
+					},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "mcp-server",
+						ServiceType: "mcp",
+						Version:     "1.0.0",
+						HostIds:     []api.Identifier{"host-1"},
+						Port:        utils.PointerTo(5433),
+						Config: map[string]any{
+							"llm_enabled":       true,
+							"llm_provider":      "anthropic",
+							"llm_model":         "claude-sonnet-4-5",
+							"anthropic_api_key": "sk-ant-...",
+						},
+					},
+				},
+			},
+			expected: []string{
+				`port 5433 conflicts with service "postgres" on the same host`,
+			},
+		},
+		{
+			name: "valid service port on different host than postgres",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Port:            utils.PointerTo(5432),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{"host-1"},
+					},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "mcp-server",
+						ServiceType: "mcp",
+						Version:     "1.0.0",
+						HostIds:     []api.Identifier{"host-2"},
+						Port:        utils.PointerTo(5432),
+						Config: map[string]any{
+							"llm_enabled":       true,
+							"llm_provider":      "anthropic",
+							"llm_model":         "claude-sonnet-4-5",
+							"anthropic_api_key": "sk-ant-...",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid with service validation errors",
 			spec: &api.DatabaseSpec{
 				DatabaseName:    "testdb",
