@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/goccy/go-yaml"
@@ -259,9 +260,9 @@ func TestGenerateMCPConfig_MetadataTTL_Omitted(t *testing.T) {
 		t.Fatalf("GenerateMCPConfig() error = %v", err)
 	}
 
-	cfg := parseYAML(t, data)
-	if cfg.Databases[0].MetadataTTL != "" {
-		t.Errorf("databases[0].metadata_ttl = %q, want empty (omitted)", cfg.Databases[0].MetadataTTL)
+	// Check raw YAML to verify omitempty actually omits the key.
+	if strings.Contains(string(data), "metadata_ttl:") {
+		t.Error("raw YAML should not contain metadata_ttl key when unset")
 	}
 }
 
