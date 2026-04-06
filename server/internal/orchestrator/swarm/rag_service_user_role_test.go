@@ -73,9 +73,9 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 			result.ServiceInstance.State, database.ServiceInstanceStateCreating)
 	}
 
-	// Single node: canonical RO ServiceUserRole + data DirResource + RAGServiceKeysResource.
-	if len(result.Resources) != 3 {
-		t.Fatalf("len(Resources) = %d, want 3", len(result.Resources))
+	// Single node: canonical RO ServiceUserRole + DirResource + RAGServiceKeysResource + RAGConfigResource.
+	if len(result.Resources) != 4 {
+		t.Fatalf("len(Resources) = %d, want 4", len(result.Resources))
 	}
 	if result.Resources[0].Identifier.Type != ResourceTypeServiceUserRole {
 		t.Errorf("Resources[0].Identifier.Type = %q, want %q",
@@ -92,6 +92,10 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 	if result.Resources[2].Identifier.Type != ResourceTypeRAGServiceKeys {
 		t.Errorf("Resources[2].Identifier.Type = %q, want %q",
 			result.Resources[2].Identifier.Type, ResourceTypeRAGServiceKeys)
+	}
+	if result.Resources[3].Identifier.Type != ResourceTypeRAGConfig {
+		t.Errorf("Resources[3].Identifier.Type = %q, want %q",
+			result.Resources[3].Identifier.Type, ResourceTypeRAGConfig)
 	}
 }
 
@@ -121,9 +125,9 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 		t.Fatalf("generateRAGInstanceResources() error = %v", err)
 	}
 
-	// 3 nodes → canonical(n1) + per-node(n2) + per-node(n3) + data dir + keys = 5 resources.
-	if len(result.Resources) != 5 {
-		t.Fatalf("len(Resources) = %d, want 5", len(result.Resources))
+	// 3 nodes → canonical(n1) + per-node(n2) + per-node(n3) + dir + keys + config = 6 resources.
+	if len(result.Resources) != 6 {
+		t.Fatalf("len(Resources) = %d, want 6", len(result.Resources))
 	}
 	// First three must be ServiceUserRole resources.
 	for i := 0; i < 3; i++ {
@@ -159,7 +163,7 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 		}
 	}
 
-	// Data dir and keys resource are appended last.
+	// Data dir, keys, and config resource are appended last.
 	if result.Resources[3].Identifier.Type != filesystem.ResourceTypeDir {
 		t.Errorf("Resources[3].Identifier.Type = %q, want %q",
 			result.Resources[3].Identifier.Type, filesystem.ResourceTypeDir)
@@ -167,6 +171,10 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 	if result.Resources[4].Identifier.Type != ResourceTypeRAGServiceKeys {
 		t.Errorf("Resources[4].Identifier.Type = %q, want %q",
 			result.Resources[4].Identifier.Type, ResourceTypeRAGServiceKeys)
+	}
+	if result.Resources[5].Identifier.Type != ResourceTypeRAGConfig {
+		t.Errorf("Resources[5].Identifier.Type = %q, want %q",
+			result.Resources[5].Identifier.Type, ResourceTypeRAGConfig)
 	}
 }
 
@@ -196,9 +204,9 @@ func TestGenerateRAGInstanceResources_MultiNode_CanonicalNotFirst(t *testing.T) 
 		t.Fatalf("generateRAGInstanceResources() error = %v", err)
 	}
 
-	// 3 nodes → canonical(n2) + per-node(n1) + per-node(n3) + data dir + keys = 5 resources.
-	if len(result.Resources) != 5 {
-		t.Fatalf("len(Resources) = %d, want 5", len(result.Resources))
+	// 3 nodes → canonical(n2) + per-node(n1) + per-node(n3) + dir + keys + config = 6 resources.
+	if len(result.Resources) != 6 {
+		t.Fatalf("len(Resources) = %d, want 6", len(result.Resources))
 	}
 
 	// Canonical (index 0) must be n2 with no CredentialSource
