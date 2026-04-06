@@ -1,0 +1,17 @@
+[Unit]
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=postgres
+ExecStart=/usr/local/bin/patroni /var/lib/pgsql/18/storefront-n1-689qacsi/configs/patroni.yaml
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=process
+TimeoutSec=30
+MemoryMax=8589934592
+Restart=on-failure
+Environment="PATH=/usr/pgsql-18/bin:/root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/local/go/bin"
+Environment="PGSERVICEFILE=/var/lib/pgsql/18/storefront-n1-689qacsi/configs/pg_service.conf"
+
+[Install]
+WantedBy=multi-user.target
