@@ -11,6 +11,8 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 )
 
+const HostMonitorRefreshInterval = 15 * time.Second
+
 type HostState string
 
 const (
@@ -112,7 +114,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 
 	// Host is considered unreachable if it has failed to check in for 2
 	// heartbeats.
-	if time.Since(out.Status.UpdatedAt) > 2*UpdateStatusInterval {
+	if time.Since(out.Status.UpdatedAt) > 2*HostMonitorRefreshInterval {
 		out.Status.State = HostStateUnreachable
 		out.Status.Components = nil //Clear stale component statuses
 	}

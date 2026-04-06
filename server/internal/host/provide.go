@@ -3,7 +3,6 @@ package host
 import (
 	"fmt"
 
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -14,21 +13,6 @@ import (
 func Provide(i *do.Injector) {
 	provideStore(i)
 	provideService(i)
-	provideTicker(i)
-}
-
-func provideTicker(i *do.Injector) {
-	do.Provide(i, func(i *do.Injector) (*UpdateTicker, error) {
-		logger, err := do.Invoke[zerolog.Logger](i)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get logger: %w", err)
-		}
-		svc, err := do.Invoke[*Service](i)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get host service: %w", err)
-		}
-		return NewUpdateTicker(logger, svc), nil
-	})
 }
 
 func provideService(i *do.Injector) {
