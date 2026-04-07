@@ -76,7 +76,10 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 	case "postgrest":
 		deps = append(deps, PostgRESTConfigResourceIdentifier(s.ServiceInstanceID))
 	case "rag":
-		deps = append(deps, RAGConfigResourceIdentifier(s.ServiceInstanceID))
+		deps = append(deps,
+			RAGConfigResourceIdentifier(s.ServiceInstanceID),
+			RAGServiceKeysResourceIdentifier(s.ServiceInstanceID),
+		)
 	default:
 		log.Warn().Str("service_type", s.ServiceSpec.ServiceType).Msg("unknown service type in dependencies")
 	}
