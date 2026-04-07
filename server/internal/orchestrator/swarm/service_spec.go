@@ -15,6 +15,9 @@ import (
 // mcpContainerUID is the UID of the MCP container user.
 const mcpContainerUID = 1001
 
+// ragContainerUID is the UID of the RAG server container user.
+const ragContainerUID = 1001
+
 // postgrestContainerUID is the UID of the PostgREST container user.
 // See: https://github.com/PostgREST/postgrest/blob/main/Dockerfile (USER 1000)
 const postgrestContainerUID = 1000
