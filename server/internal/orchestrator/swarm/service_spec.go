@@ -15,6 +15,9 @@ import (
 // mcpContainerUID is the UID of the MCP container user.
 const mcpContainerUID = 1001
 
+// ragContainerUID is the UID of the RAG server container user.
+const ragContainerUID = 1001
+
 // postgrestContainerUID is the UID of the PostgREST container user.
 // See: https://github.com/PostgREST/postgrest/blob/main/Dockerfile (USER 1000)
 const postgrestContainerUID = 1000
@@ -54,6 +57,9 @@ type ServiceContainerSpecOptions struct {
 	Port *int
 	// DataPath is the host-side directory path for the bind mount
 	DataPath string
+	// KeysPath is the host-side directory containing API key files.
+	// When non-empty, it is bind-mounted read-only into the container at /app/keys.
+	KeysPath string
 }
 
 // ServiceContainerSpec builds a Docker Swarm service spec for a service instance.
