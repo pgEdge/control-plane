@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/storage"
-	"github.com/rs/zerolog"
 )
 
 // ClaimHandler is a callback function invoked when a candidate successfully
@@ -27,13 +27,13 @@ type Candidate struct {
 	logger       zerolog.Logger
 	electionName Name
 	candidateID  string
-	isLeader     atomic.Bool
 	ttl          time.Duration
 	watchOp      storage.WatchOp[*StoredElection]
 	ticker       *time.Ticker
 	done         chan struct{}
 	errCh        chan error
 	onClaim      []ClaimHandler
+	curr         *StoredElection
 }
 
 // NewCandidate creates a new Candidate instance to participate in the specified
@@ -110,7 +110,7 @@ func (c *Candidate) Start(ctx context.Context) error {
 		return err
 	}
 
-	if c.IsLeader() {
+	if c.isLeader() {
 		c.logger.Debug().Msg("i am the current leader")
 	}
 
@@ -119,7 +119,14 @@ func (c *Candidate) Start(ctx context.Context) error {
 
 // IsLeader returns true if this candidate currently holds leadership.
 func (c *Candidate) IsLeader() bool {
-	return c.isLeader.Load()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.isLeader()
+}
+
+func (c *Candidate) isLeader() bool {
+	return c.curr != nil && c.curr.LeaderID == c.candidateID
 }
 
 // Stop ceases participation in the election, releases leadership if held, and
@@ -159,62 +166,58 @@ func (c *Candidate) lockAndCheckClaim(ctx context.Context) error {
 	return c.checkClaim(ctx)
 }
 
-func (c *Candidate) checkClaim(ctx context.Context) error {
-	const maxRetries = 3
-	for range maxRetries {
-		curr, err := c.store.GetByKey(c.electionName).Exec(ctx)
-		switch {
-		case errors.Is(err, storage.ErrNotFound):
-			return c.attemptClaim(ctx)
-		case err != nil:
-			return fmt.Errorf("failed to check for existing leader: %w", err)
-		}
-
-		c.isLeader.Store(curr.LeaderID == c.candidateID)
-		if curr.LeaderID != c.candidateID {
-			return nil
-		}
-
-		err = c.store.Update(curr).
-			WithTTL(c.ttl).
-			Exec(ctx)
-		switch {
-		case errors.Is(err, storage.ErrValueVersionMismatch):
-			// Can happen if we caught the claim right before it expired. The
-			// continue will retry the operation. When we re-fetch the claim, it
-			// will either not exist or it will belong to someone else.
-			continue
-		case err != nil:
-			return fmt.Errorf("failed to refresh claim: %w", err)
-		}
-
-		return nil
-	}
-	return fmt.Errorf("failed to refresh claim after %d retries", maxRetries)
-}
-
 func (c *Candidate) attemptClaim(ctx context.Context) error {
 	c.logger.Debug().Msg("attempting to claim leadership")
 
+	curr := &StoredElection{
+		Name:      c.electionName,
+		LeaderID:  c.candidateID,
+		CreatedAt: time.Now(),
+	}
 	err := c.store.
-		Create(&StoredElection{
-			Name:      c.electionName,
-			LeaderID:  c.candidateID,
-			CreatedAt: time.Now(),
-		}).
+		Create(curr).
+		WithUpdatedVersion().
 		WithTTL(c.ttl).
 		Exec(ctx)
 	switch {
 	case err == nil:
-		c.isLeader.Store(true)
+		c.curr = curr
 		c.logger.Debug().Msg("successfully claimed leadership")
 		for _, handler := range c.onClaim {
 			go handler(ctx)
 		}
 	case !errors.Is(err, storage.ErrAlreadyExists):
 		return fmt.Errorf("failed to claim leadership: %w", err)
-	default:
-		c.isLeader.Store(false)
+	}
+
+	return nil
+}
+
+func (c *Candidate) refreshClaim(ctx context.Context) error {
+	if !c.isLeader() {
+		return errors.New("cannot refresh claim when not the leader")
+	}
+
+	err := c.store.Update(c.curr).
+		WithTTL(c.ttl).
+		WithUpdatedVersion().
+		Exec(ctx)
+	// We tolerate ErrValueVersionMismatch because it usually means another
+	// candidate has successfully claimed leadership. We want to return without
+	// error, release the lock, and let our watch catch up.
+	if err != nil && !errors.Is(err, storage.ErrValueVersionMismatch) {
+		return fmt.Errorf("failed to refresh claim: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Candidate) checkClaim(ctx context.Context) error {
+	switch {
+	case c.curr == nil:
+		return c.attemptClaim(ctx)
+	case c.curr.LeaderID == c.candidateID:
+		return c.refreshClaim(ctx)
 	}
 
 	return nil
@@ -225,6 +228,15 @@ func (c *Candidate) watch(ctx context.Context, done chan struct{}) error {
 
 	err := c.watchOp.Watch(ctx, func(evt *storage.Event[*StoredElection]) error {
 		switch evt.Type {
+		case storage.EventTypeError:
+			c.logger.Warn().Err(evt.Err).Msg("encountered a watch error")
+		case storage.EventTypeUnknown:
+			c.logger.Debug().Msg("encountered unknown watch event type")
+		}
+
+		switch evt.Type {
+		case storage.EventTypePut:
+
 		case storage.EventTypeDelete:
 			// The delete event will fire simultaneously with the ticker in some
 			// types of outages, so the claim might have already been created
@@ -259,40 +271,20 @@ func (c *Candidate) watch(ctx context.Context, done chan struct{}) error {
 }
 
 func (c *Candidate) release(ctx context.Context) error {
+	if !c.isLeader() {
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, c.ttl)
 	defer cancel()
 
-	if !c.isLeader.Load() {
-		return nil
-	}
-
-	curr, err := c.store.GetByKey(c.electionName).Exec(ctx)
-	switch {
-	case errors.Is(err, storage.ErrNotFound):
-		// Happens when the claim has expired since the last time we checked it
-		// and no one else has claimed it.
-		c.isLeader.Store(false)
-		return nil
-	case err != nil:
-		return fmt.Errorf("failed to fetch current leader: %w", err)
-	case curr.LeaderID != c.candidateID:
-		// Happens when the claim has expired since the last time we checked it
-		// and someone else has claimed it.
-		c.isLeader.Store(false)
-		return nil
-	}
-
-	err = c.store.Delete(curr).Exec(ctx)
-	switch {
-	case errors.Is(err, storage.ErrValueVersionMismatch):
-		// Happens when the claim has expired after the above check and someone
-		// else has claimed it.
-		c.isLeader.Store(false)
-		return nil
-	case err != nil:
+	err := c.store.Delete(c.curr).Exec(ctx)
+	// ErrValueVersionMismatch happens when the claim has expired after the
+	// above check and someone else has claimed it.
+	if err != nil && !errors.Is(err, storage.ErrValueVersionMismatch) {
 		return fmt.Errorf("failed to release leadership claim: %w", err)
 	}
+	c.curr = nil
 
-	c.isLeader.Store(false)
 	return nil
 }

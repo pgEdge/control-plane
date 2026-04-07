@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/pgEdge/control-plane/server/internal/election"
 	"github.com/pgEdge/control-plane/server/internal/storage/storagetest"
 	"github.com/pgEdge/control-plane/server/internal/testutils"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCandidate(t *testing.T) {

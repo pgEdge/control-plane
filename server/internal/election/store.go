@@ -3,8 +3,9 @@ package election
 import (
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/storage"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
 type Name string
