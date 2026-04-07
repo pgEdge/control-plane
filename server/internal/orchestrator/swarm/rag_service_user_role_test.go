@@ -1,10 +1,12 @@
 package swarm
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -314,5 +316,39 @@ func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) 
 	_, err := o.GenerateServiceInstanceResources(spec)
 	if err == nil {
 		t.Fatal("expected error for unknown service type, got nil")
+	}
+}
+
+func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
+	o := newTestOrchestrator()
+	// Override the "rag/latest" image with a constraint requiring PG >= 18.
+	o.serviceVersions.addServiceImage("rag", "latest", &ServiceImage{
+		Tag: "rag-server:latest",
+		PostgresConstraint: &ds.VersionConstraint{
+			Min: ds.MustParseVersion("18"),
+		},
+	})
+
+	spec := &database.ServiceInstanceSpec{
+		ServiceInstanceID: "db1-rag-host1",
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "rag",
+			ServiceType: "rag",
+			Version:     "latest",
+			Config:      minimalRAGConfig(),
+		},
+		DatabaseID:    "db1",
+		DatabaseName:  "db1",
+		HostID:        "host-1",
+		NodeName:      "n1",
+		PgEdgeVersion: ds.MustPgEdgeVersion("17", "5.0.0"),
+	}
+
+	_, err := o.generateRAGInstanceResources(spec)
+	if err == nil {
+		t.Fatal("expected compatibility error, got nil")
+	}
+	if !strings.Contains(err.Error(), "not compatible") {
+		t.Errorf("error = %q, want it to contain %q", err.Error(), "not compatible")
 	}
 }

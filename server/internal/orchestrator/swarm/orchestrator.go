@@ -659,6 +659,17 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		return nil, fmt.Errorf("failed to get service image: %w", err)
 	}
 
+	// Validate compatibility with database version.
+	if spec.PgEdgeVersion != nil {
+		if err := serviceImage.ValidateCompatibility(
+			spec.PgEdgeVersion.PostgresVersion,
+			spec.PgEdgeVersion.SpockVersion,
+		); err != nil {
+			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
+				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
+		}
+	}
+
 	// Parse the RAG service config to extract API keys.
 	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
