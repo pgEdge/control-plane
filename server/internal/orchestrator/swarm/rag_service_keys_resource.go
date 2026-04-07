@@ -156,6 +156,7 @@ func (r *RAGServiceKeysResource) Update(ctx context.Context, rc *resource.Contex
 }
 
 func (r *RAGServiceKeysResource) Delete(ctx context.Context, rc *resource.Context) error {
+
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {
 		return err

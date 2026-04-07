@@ -704,7 +704,25 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		Keys:              extractRAGAPIKeys(ragConfig),
 	}
 
-	orchestratorResources = append(orchestratorResources, dataDir, keysResource)
+	// RAG config resource — generates pgedge-rag-server.yaml in the data directory.
+	var dbHost string
+	var dbPort int
+	if len(spec.DatabaseHosts) > 0 {
+		dbHost = spec.DatabaseHosts[0].Host
+		dbPort = spec.DatabaseHosts[0].Port
+	}
+	ragConfigRes := &RAGConfigResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		ServiceID:         spec.ServiceSpec.ServiceID,
+		HostID:            spec.HostID,
+		DirResourceID:     dataDirID,
+		Config:            ragConfig,
+		DatabaseName:      spec.DatabaseName,
+		DatabaseHost:      dbHost,
+		DatabasePort:      dbPort,
+	}
+
+	orchestratorResources = append(orchestratorResources, dataDir, keysResource, ragConfigRes)
 
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
