@@ -68,9 +68,8 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 	}
 
 	// Extract swarm orchestrator options (matches Postgres pattern in spec.go).
-	// NOTE: ExtraVolumes is not supported for service containers — services get
-	// their bind mounts configured per service type below. Add support here if a
-	// use case arises.
+	// ExtraVolumes and DriverOpts are rejected at the API validation layer
+	// (validateServiceOrchestratorOpts).
 	var swarmOpts *database.SwarmOpts
 	if opts.ServiceSpec.OrchestratorOpts != nil {
 		swarmOpts = opts.ServiceSpec.OrchestratorOpts.Swarm
@@ -100,8 +99,6 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 	}
 
 	// Append user-requested extra networks (e.g. Traefik, reverse proxy).
-	// NOTE: DriverOpts on ExtraNetworkSpec is accepted by the API but not
-	// passed through here or in Postgres spec.go — add if needed.
 	if swarmOpts != nil {
 		for _, net := range swarmOpts.ExtraNetworks {
 			networks = append(networks, swarm.NetworkAttachmentConfig{
