@@ -267,6 +267,39 @@ func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
 	}
 }
 
+func TestGenerateRAGInstanceResources_TargetSessionAttrs(t *testing.T) {
+	o := newTestOrchestrator()
+	spec := &database.ServiceInstanceSpec{
+		ServiceInstanceID: "storefront-rag-host1",
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "rag",
+			ServiceType: "rag",
+			Version:     "latest",
+			Config:      minimalRAGConfig(),
+		},
+		DatabaseID:         "storefront",
+		DatabaseName:       "storefront",
+		HostID:             "host-1",
+		NodeName:           "n1",
+		TargetSessionAttrs: "prefer-standby",
+	}
+
+	result, err := o.generateRAGInstanceResources(spec)
+	if err != nil {
+		t.Fatalf("generateRAGInstanceResources() error = %v", err)
+	}
+
+	// ServiceInstanceSpecResource is at index 5 (single node: 7 resources total,
+	// index 0=Network, 1=RO role, 2=dir, 3=keys, 4=config, 5=instanceSpec, 6=instance).
+	sis, err := resource.ToResource[*ServiceInstanceSpecResource](result.Resources[5])
+	if err != nil {
+		t.Fatalf("ToResource ServiceInstanceSpecResource: %v", err)
+	}
+	if sis.TargetSessionAttrs != "prefer-standby" {
+		t.Errorf("TargetSessionAttrs = %q, want %q", sis.TargetSessionAttrs, "prefer-standby")
+	}
+}
+
 func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) {
 	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
