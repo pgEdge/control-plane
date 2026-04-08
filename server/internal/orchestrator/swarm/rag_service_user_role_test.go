@@ -352,3 +352,35 @@ func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
 		t.Errorf("error = %q, want it to contain %q", err.Error(), "not compatible")
 	}
 }
+
+func TestGenerateRAGInstanceResources_TargetSessionAttrs(t *testing.T) {
+	o := newTestOrchestrator()
+	spec := &database.ServiceInstanceSpec{
+		ServiceInstanceID:  "storefront-rag-host1",
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "rag",
+			ServiceType: "rag",
+			Version:     "latest",
+			Config:      minimalRAGConfig(),
+		},
+		DatabaseID:         "storefront",
+		DatabaseName:       "storefront",
+		HostID:             "host-1",
+		NodeName:           "n1",
+		TargetSessionAttrs: "prefer-standby",
+	}
+
+	result, err := o.generateRAGInstanceResources(spec)
+	if err != nil {
+		t.Fatalf("generateRAGInstanceResources() error = %v", err)
+	}
+
+	// ServiceInstanceSpecResource is at index 5 (single node: Network + RO + dir + keys + config + instanceSpec + instance).
+	sis, err := resource.ToResource[*ServiceInstanceSpecResource](result.Resources[5])
+	if err != nil {
+		t.Fatalf("ToResource ServiceInstanceSpecResource: %v", err)
+	}
+	if sis.TargetSessionAttrs != "prefer-standby" {
+		t.Errorf("TargetSessionAttrs = %q, want %q", sis.TargetSessionAttrs, "prefer-standby")
+	}
+}
