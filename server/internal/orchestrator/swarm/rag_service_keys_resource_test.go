@@ -368,34 +368,10 @@ func TestRAGServiceKeysResource_Update_WritesNewKeys(t *testing.T) {
 }
 
 func TestRAGServiceKeysResource_Delete(t *testing.T) {
-	parentID := "inst1-data"
-	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys:              map[string]string{"default_rag.key": "sk-test"},
-	}
-	if err := r.Create(context.Background(), rc); err != nil {
-		t.Fatalf("Create() error = %v", err)
-	}
-
-	if err := r.Delete(context.Background(), rc); err != nil {
-		t.Fatalf("Delete() error = %v", err)
-	}
-
-	keysDir := filepath.Join(parentPath, "keys")
-	if _, err := fs.Stat(keysDir); !errors.Is(err, afero.ErrFileNotFound) {
-		t.Errorf("keys directory should not exist after Delete, got err = %v", err)
-	}
-}
-
-func TestRAGServiceKeysResource_Delete_NilRC(t *testing.T) {
 	r := &RAGServiceKeysResource{ServiceInstanceID: "inst1"}
-	// Delete with nil rc (parent unresolvable) must not error.
+	// Delete is a no-op; cleanup is handled by the parent DirResource.
 	if err := r.Delete(context.Background(), nil); err != nil {
-		t.Errorf("Delete() with nil rc = %v, want nil", err)
+		t.Errorf("Delete() = %v, want nil", err)
 	}
 }
 
@@ -450,6 +426,7 @@ func TestRAGServiceKeysResource_Create_DirPermissions(t *testing.T) {
 		t.Errorf("keys dir perm = %04o, want 0700", perm)
 	}
 }
+
 func TestRAGServiceKeysResource_Update_EnforcesPermissionsOnExistingDir(t *testing.T) {
 	parentID := "inst1-data"
 	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)

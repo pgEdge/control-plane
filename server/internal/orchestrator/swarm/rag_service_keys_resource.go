@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	
+
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
@@ -76,7 +76,7 @@ func (r *RAGServiceKeysResource) Refresh(ctx context.Context, rc *resource.Conte
 	if err != nil {
 		return err
 	}
-	
+
 	keysDir, err := r.keysDir(rc)
 	if err != nil {
 		return err
@@ -159,21 +159,7 @@ func (r *RAGServiceKeysResource) Update(ctx context.Context, rc *resource.Contex
 }
 
 func (r *RAGServiceKeysResource) Delete(ctx context.Context, rc *resource.Context) error {
-	if rc == nil {
-		return nil
-	}
-	fs, err := do.Invoke[afero.Fs](rc.Injector)
-	if err != nil {
-		return err
-	}
-	keysDir, err := r.keysDir(rc)
-	if err != nil {
-		// Parent dir is gone or unresolvable; nothing to clean up.
-		return nil
-	}
-	if err := fs.RemoveAll(keysDir); err != nil {
-		return fmt.Errorf("failed to remove keys directory: %w", err)
-	}
+	// Cleanup is handled by the parent directory resource deletion.
 	return nil
 }
 

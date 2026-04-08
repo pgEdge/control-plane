@@ -10,6 +10,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
+
 // newTestOrchestrator returns an Orchestrator with serviceVersions initialised
 // from a minimal config, suitable for unit tests that call generateRAGInstanceResources.
 func newTestOrchestrator() *Orchestrator {
@@ -317,6 +318,7 @@ func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) 
 		t.Fatal("expected error for unknown service type, got nil")
 	}
 }
+
 func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
 	o := newTestOrchestrator()
 	// Override the "rag/latest" image with a constraint requiring PG >= 18.

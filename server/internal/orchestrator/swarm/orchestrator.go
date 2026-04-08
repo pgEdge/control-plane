@@ -669,7 +669,7 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
 		}
 	}
-	
+
 	// Parse the RAG service config to extract API keys.
 	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
