@@ -4083,11 +4083,13 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 	for i, val := range v.HostIds {
 		res.HostIds[i] = controlplane.Identifier(val)
 	}
-	res.Config = make(map[string]any, len(v.Config))
-	for key, val := range v.Config {
-		tk := key
-		tv := val
-		res.Config[tk] = tv
+	if v.Config != nil {
+		res.Config = make(map[string]any, len(v.Config))
+		for key, val := range v.Config {
+			tk := key
+			tv := val
+			res.Config[tk] = tv
+		}
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
@@ -5087,11 +5089,13 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 	for i, val := range v.HostIds {
 		res.HostIds[i] = controlplane.Identifier(val)
 	}
-	res.Config = make(map[string]any, len(v.Config))
-	for key, val := range v.Config {
-		tk := key
-		tv := val
-		res.Config[tk] = tv
+	if v.Config != nil {
+		res.Config = make(map[string]any, len(v.Config))
+		for key, val := range v.Config {
+			tk := key
+			tv := val
+			res.Config[tk] = tv
+		}
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)

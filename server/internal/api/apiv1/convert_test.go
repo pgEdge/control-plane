@@ -31,3 +31,23 @@ func TestIsSensitiveConfigKey(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeConfig(t *testing.T) {
+	t.Run("nil becomes empty map", func(t *testing.T) {
+		result := normalizeConfig(nil)
+		if result == nil {
+			t.Fatal("normalizeConfig(nil) returned nil, want empty map")
+		}
+		if len(result) != 0 {
+			t.Errorf("normalizeConfig(nil) returned map with %d entries, want 0", len(result))
+		}
+	})
+
+	t.Run("non-nil map is returned as-is", func(t *testing.T) {
+		input := map[string]any{"key": "value"}
+		result := normalizeConfig(input)
+		if result["key"] != "value" {
+			t.Errorf("normalizeConfig did not preserve existing entries")
+		}
+	})
+}

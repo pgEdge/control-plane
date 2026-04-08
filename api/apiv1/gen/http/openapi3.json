@@ -28158,8 +28158,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "ServiceSpec2": {
@@ -28323,8 +28322,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "ServiceSpec3": {
@@ -28488,8 +28486,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "ServiceSpec4": {
@@ -28653,8 +28650,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "ServiceSpec5": {
@@ -28818,8 +28814,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "ServiceSpec6": {
@@ -28984,8 +28979,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "ServiceSpec7": {
@@ -29147,8 +29141,7 @@
           "service_id",
           "service_type",
           "version",
-          "host_ids",
-          "config"
+          "host_ids"
         ]
       },
       "StartInstanceResponse": {
