@@ -28,6 +28,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -105,6 +106,10 @@ func NewOrchestrator(
 		swarmNodeID:      info.Swarm.NodeID,
 		controlAvailable: info.Swarm.ControlAvailable,
 	}, nil
+}
+
+func (o *Orchestrator) Start(_ context.Context) error {
+	return nil
 }
 
 func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
@@ -654,6 +659,17 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		return nil, fmt.Errorf("failed to get service image: %w", err)
 	}
 
+	// Validate compatibility with database version.
+	if spec.PgEdgeVersion != nil {
+		if err := serviceImage.ValidateCompatibility(
+			spec.PgEdgeVersion.PostgresVersion,
+			spec.PgEdgeVersion.SpockVersion,
+		); err != nil {
+			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
+				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
+		}
+	}
+	
 	// Parse the RAG service config to extract API keys.
 	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
@@ -771,7 +787,11 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 
-func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
+func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
+	databaseID, instanceID string,
+	postgresPort, patroniPort *int,
+	pgEdgeVersion *ds.PgEdgeVersion,
+) (*database.ConnectionInfo, error) {
 	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
 	if err != nil {
 		if errors.Is(err, ErrNoPostgresContainer) {
@@ -892,10 +912,10 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	return queues, nil
 }
 
-func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error {
+func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, spec *database.InstanceSpec, options *pgbackrest.BackupOptions) error {
 	backupCmd := PgBackRestBackupCmd("backup", options.StringSlice()...)
 
-	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())
+	err := PostgresContainerExec(ctx, w, o.docker, spec.InstanceID, backupCmd.StringSlice())
 	if err != nil {
 		return fmt.Errorf("failed to exec backup command: %w", err)
 	}
