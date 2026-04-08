@@ -30,7 +30,9 @@ func TestProvisionRAGService(t *testing.T) {
 
 	fixture.SkipIfServicesUnsupported(t)
 
-	host1 := fixture.HostIDs()[0]
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
+	host1 := hosts[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -117,11 +119,8 @@ func TestProvisionRAGService(t *testing.T) {
 		insertRAGDocument(ctx, t, conn)
 	})
 
-	// Allow the RAG server a moment to pick up the new data.
-	time.Sleep(5 * time.Second)
-
 	t.Log("Querying RAG pipeline")
-	answer := queryRAGPipeline(ctx, t, ragURL, "What is pgEdge?")
+	answer := waitForNonEmptyRAGAnswer(ctx, t, ragURL, "What is pgEdge?", 2*time.Minute)
 
 	require.NotEmpty(t, answer, "RAG pipeline should return a non-empty answer")
 	t.Logf("RAG answer: %s", answer)
@@ -252,9 +251,9 @@ func TestProvisionMultiHostRAGService(t *testing.T) {
 
 	fixture.SkipIfServicesUnsupported(t)
 
-	host1 := fixture.HostIDs()[0]
-	host2 := fixture.HostIDs()[1]
-	host3 := fixture.HostIDs()[2]
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 3, "requires at least 3 hosts")
+	host1, host2, host3 := hosts[0], hosts[1], hosts[2]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -345,7 +344,9 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 
 	fixture.SkipIfServicesUnsupported(t)
 
-	host1 := fixture.HostIDs()[0]
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
+	host1 := hosts[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -445,7 +446,9 @@ func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 
 	fixture.SkipIfServicesUnsupported(t)
 
-	host1 := fixture.HostIDs()[0]
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
+	host1 := hosts[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -545,6 +548,25 @@ func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 	assert.Equal(t, "failed", db.State, "Database should be in failed state")
 
 	t.Log("RAG unsupported version test completed successfully")
+}
+
+// waitForNonEmptyRAGAnswer polls the RAG pipeline until it returns a non-empty
+// answer or the deadline is exceeded. This avoids a fixed sleep after document
+// ingestion, which is nondeterministic under load.
+func waitForNonEmptyRAGAnswer(ctx context.Context, t testing.TB, baseURL, query string, maxWait time.Duration) string {
+	t.Helper()
+
+	deadline := time.Now().Add(maxWait)
+	for time.Now().Before(deadline) {
+		answer := queryRAGPipeline(ctx, t, baseURL, query)
+		if answer != "" {
+			return answer
+		}
+		time.Sleep(3 * time.Second)
+	}
+
+	t.Fatalf("RAG answer did not become non-empty within %s", maxWait)
+	return ""
 }
 
 // ragOpenAIKey returns the OpenAI API key for E2E tests.
