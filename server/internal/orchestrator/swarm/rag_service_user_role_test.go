@@ -367,7 +367,7 @@ func TestGenerateRAGInstanceResources_TargetSessionAttrs(t *testing.T) {
 		DatabaseName:       "storefront",
 		HostID:             "host-1",
 		NodeName:           "n1",
-		TargetSessionAttrs: "prefer-standby",
+		TargetSessionAttrs: database.TargetSessionAttrsPreferStandby,
 	}
 
 	result, err := o.generateRAGInstanceResources(spec)
@@ -375,12 +375,21 @@ func TestGenerateRAGInstanceResources_TargetSessionAttrs(t *testing.T) {
 		t.Fatalf("generateRAGInstanceResources() error = %v", err)
 	}
 
-	// ServiceInstanceSpecResource is at index 5 (single node: Network + RO + dir + keys + config + instanceSpec + instance).
-	sis, err := resource.ToResource[*ServiceInstanceSpecResource](result.Resources[5])
-	if err != nil {
-		t.Fatalf("ToResource ServiceInstanceSpecResource: %v", err)
+	var sis *ServiceInstanceSpecResource
+	for _, rd := range result.Resources {
+		if rd.Identifier.Type != ResourceTypeServiceInstanceSpec {
+			continue
+		}
+		sis, err = resource.ToResource[*ServiceInstanceSpecResource](rd)
+		if err != nil {
+			t.Fatalf("ToResource ServiceInstanceSpecResource: %v", err)
+		}
+		break
 	}
-	if sis.TargetSessionAttrs != "prefer-standby" {
-		t.Errorf("TargetSessionAttrs = %q, want %q", sis.TargetSessionAttrs, "prefer-standby")
+	if sis == nil {
+		t.Fatal("ServiceInstanceSpecResource not found")
+	}
+	if sis.TargetSessionAttrs != database.TargetSessionAttrsPreferStandby {
+		t.Errorf("TargetSessionAttrs = %q, want %q", sis.TargetSessionAttrs, database.TargetSessionAttrsPreferStandby)
 	}
 }
