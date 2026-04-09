@@ -369,8 +369,8 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nod
 		errs = append(errs, validateMemory(svc.Memory, appendPath(path, "memory"))...)
 	}
 
-	// Validate orchestrator_opts
-	errs = append(errs, validateOrchestratorOpts(svc.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
+	// Validate orchestrator_opts (service-specific restrictions on top of shared checks)
+	errs = append(errs, validateServiceOrchestratorOpts(svc.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
 
 	return errs
 }
@@ -685,6 +685,32 @@ func validateOrchestratorOpts(opts *api.OrchestratorOpts, path []string) []error
 			errs = append(errs, newValidationError(err, labelPath))
 		}
 	}
+	return errs
+}
+
+// validateServiceOrchestratorOpts runs the shared orchestrator_opts checks and
+// adds service-specific restrictions. Services do not support extra_volumes
+// (bind mounts are configured per service type) or driver_opts on extra_networks.
+func validateServiceOrchestratorOpts(opts *api.OrchestratorOpts, path []string) []error {
+	errs := validateOrchestratorOpts(opts, path)
+
+	if opts == nil || opts.Swarm == nil {
+		return errs
+	}
+
+	if len(opts.Swarm.ExtraVolumes) > 0 {
+		err := errors.New("extra_volumes is not supported for services")
+		errs = append(errs, newValidationError(err, appendPath(path, "swarm", "extra_volumes")))
+	}
+
+	for i, net := range opts.Swarm.ExtraNetworks {
+		if len(net.DriverOpts) > 0 {
+			netPath := appendPath(path, "swarm", "extra_networks", arrayIndexPath(i), "driver_opts")
+			err := errors.New("driver_opts is not supported for services")
+			errs = append(errs, newValidationError(err, netPath))
+		}
+	}
+
 	return errs
 }
 

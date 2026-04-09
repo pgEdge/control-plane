@@ -71,6 +71,8 @@ func DatabaseServiceSpec(
 			mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
 		}
 
+		// NOTE: DriverOpts on ExtraNetworkSpec is accepted by the API but not
+		// passed through here — add if needed.
 		for _, net := range instance.OrchestratorOpts.Swarm.ExtraNetworks {
 			networks = append(networks, swarm.NetworkAttachmentConfig{
 				Target:  net.ID,

@@ -1407,6 +1407,63 @@ func TestValidateServiceSpec(t *testing.T) {
 				"cpus: failed to parse CPUs",
 			},
 		},
+		{
+			name: "extra_volumes rejected for services",
+			svc: &api.ServiceSpec{
+				ServiceID:   "mcp-server",
+				ServiceType: "mcp",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+				OrchestratorOpts: &api.OrchestratorOpts{
+					Swarm: &api.SwarmOpts{
+						ExtraVolumes: []*api.ExtraVolumesSpec{
+							{HostPath: "/data", DestinationPath: "/mnt/data"},
+						},
+					},
+				},
+			},
+			expected: []string{
+				"orchestrator_opts.swarm.extra_volumes: extra_volumes is not supported for services",
+			},
+		},
+		{
+			name: "driver_opts rejected for service extra_networks",
+			svc: &api.ServiceSpec{
+				ServiceID:   "mcp-server",
+				ServiceType: "mcp",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+				OrchestratorOpts: &api.OrchestratorOpts{
+					Swarm: &api.SwarmOpts{
+						ExtraNetworks: []*api.ExtraNetworkSpec{
+							{ID: "traefik", DriverOpts: map[string]string{"com.docker.network.driver.mtu": "1500"}},
+						},
+					},
+				},
+			},
+			expected: []string{
+				"orchestrator_opts.swarm.extra_networks[0].driver_opts: driver_opts is not supported for services",
+			},
+		},
+		{
+			name: "valid service with extra_networks and no driver_opts",
+			svc: &api.ServiceSpec{
+				ServiceID:   "mcp-server",
+				ServiceType: "mcp",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+				OrchestratorOpts: &api.OrchestratorOpts{
+					Swarm: &api.SwarmOpts{
+						ExtraNetworks: []*api.ExtraNetworkSpec{
+							{ID: "traefik"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := errors.Join(validateServiceSpec(tc.svc, nil, false)...)
