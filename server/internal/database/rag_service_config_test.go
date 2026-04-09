@@ -384,6 +384,49 @@ func TestParseRAGServiceConfig_MissingRAGLLM(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "rag_llm.provider")
 }
 
+func TestParseRAGServiceConfig_PipelineNameAllowlist(t *testing.T) {
+	validNames := []string{
+		"default",
+		"my-pipeline",
+		"my_pipeline",
+		"pipeline-1",
+		"a",
+		"abc123",
+		"a-b_c-1",
+	}
+	for _, name := range validNames {
+		t.Run("valid/"+name, func(t *testing.T) {
+			config := minimalRAGConfig()
+			config["pipelines"].([]any)[0].(map[string]any)["name"] = name
+			_, errs := database.ParseRAGServiceConfig(config, false)
+			assert.Empty(t, errs, "name %q should be valid", name)
+		})
+	}
+
+	invalidNames := []string{
+		"My Pipeline",          // uppercase + space
+		"pipeline name",        // space
+		"pipeline/name",        // slash
+		"../etc/passwd",        // path traversal
+		"UPPER",                // uppercase
+		"pipe🔥line",           // unicode emoji
+		"pipeline.name",        // dot
+		"",                     // empty (covered separately, but included for completeness)
+	}
+	for _, name := range invalidNames {
+		if name == "" {
+			continue // empty name is a separate "required" error
+		}
+		t.Run("invalid/"+name, func(t *testing.T) {
+			config := minimalRAGConfig()
+			config["pipelines"].([]any)[0].(map[string]any)["name"] = name
+			_, errs := database.ParseRAGServiceConfig(config, false)
+			require.NotEmpty(t, errs, "name %q should be invalid", name)
+			assert.Contains(t, errs[0].Error(), "must match ^[a-z0-9_-]+$")
+		})
+	}
+}
+
 func TestParseRAGServiceConfig_MultiplePipelines(t *testing.T) {
 	config := map[string]any{
 		"pipelines": []any{

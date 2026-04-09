@@ -4,10 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
 )
+
+// ragPipelineNamePattern restricts pipeline names to lowercase alphanumeric
+// characters, hyphens, and underscores. This keeps key filenames
+// ({name}_embedding.key / {name}_rag.key) safe and auditable.
+var ragPipelineNamePattern = regexp.MustCompile(`^[a-z0-9_-]+$`)
 
 // RAGPipelineLLMConfig represents LLM configuration for an embedding or RAG step.
 type RAGPipelineLLMConfig struct {
@@ -126,9 +132,11 @@ func validateRAGPipeline(p RAGPipeline, i int, seenNames map[string]bool) []erro
 	var errs []error
 	prefix := fmt.Sprintf("pipelines[%d]", i)
 
-	// name (required, unique)
+	// name (required, allowlist, unique)
 	if p.Name == "" {
 		errs = append(errs, fmt.Errorf("%s.name is required", prefix))
+	} else if !ragPipelineNamePattern.MatchString(p.Name) {
+		errs = append(errs, fmt.Errorf("%s.name %q is invalid: must match ^[a-z0-9_-]+$", prefix, p.Name))
 	} else if seenNames[p.Name] {
 		errs = append(errs, fmt.Errorf("pipelines contains duplicate name %q", p.Name))
 	} else {
