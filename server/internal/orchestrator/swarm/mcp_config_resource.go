@@ -53,11 +53,7 @@ func (r *MCPConfigResource) ResourceVersion() string {
 }
 
 func (r *MCPConfigResource) DiffIgnore() []string {
-	return []string{
-		// Credentials are resolved from database_users via connect_as.
-		"/connect_as_username",
-		"/connect_as_password",
-	}
+	return nil
 }
 
 func (r *MCPConfigResource) Identifier() resource.Identifier {
