@@ -14,7 +14,6 @@ func provideStateMigrations(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*resource.StateMigrations, error) {
 		return resource.NewStateMigrations([]resource.StateMigration{
 			&Version_1_0_0{},
-			&Version_2_0_0{},
 		}), nil
 	})
 }
