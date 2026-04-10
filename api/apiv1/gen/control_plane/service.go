@@ -1016,6 +1016,9 @@ type ServiceSpec struct {
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	// Optional database connection routing configuration.
 	DatabaseConnection *DatabaseConnection `json:"database_connection,omitempty"`
+	// Username of the database_users entry this service connects as. The user must
+	// exist in database_users and have appropriate roles for the service's needs.
+	ConnectAs string `json:"connect_as"`
 }
 
 // StartInstancePayload is the payload type of the control-plane service

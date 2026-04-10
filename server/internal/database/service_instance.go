@@ -167,6 +167,8 @@ type ServiceInstanceSpec struct {
 	TargetSessionAttrs string             // libpq target_session_attrs value
 	Port               *int               // Service instance published port (optional, 0 = random)
 	DatabaseNodes      []*NodeInstances   // All database nodes; used to create per-node ServiceUserRole resources
+	ConnectAsUsername  string             // Username from database_users (resolved from ServiceSpec.ConnectAs)
+	ConnectAsPassword  string             // Password from database_users (resolved from ServiceSpec.ConnectAs)
 }
 
 // storedToServiceInstance converts stored service instance and status to ServiceInstance.

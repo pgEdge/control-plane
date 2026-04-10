@@ -4722,6 +4722,7 @@
                 "llm_provider": "openai",
                 "openai_api_key": "sk-..."
               },
+              "connect_as": "app",
               "cpus": "500m",
               "database_connection": {
                 "target_nodes": [
@@ -4800,6 +4801,7 @@
                 "llm_provider": "openai",
                 "openai_api_key": "sk-..."
               },
+              "connect_as": "app",
               "cpus": "500m",
               "database_connection": {
                 "target_nodes": [
@@ -5317,6 +5319,7 @@
               "llm_provider": "openai",
               "openai_api_key": "sk-..."
             },
+            "connect_as": "app",
             "cpus": "500m",
             "database_connection": {
               "target_nodes": [
@@ -5395,6 +5398,7 @@
               "llm_provider": "openai",
               "openai_api_key": "sk-..."
             },
+            "connect_as": "app",
             "cpus": "500m",
             "database_connection": {
               "target_nodes": [
@@ -5473,6 +5477,7 @@
               "llm_provider": "openai",
               "openai_api_key": "sk-..."
             },
+            "connect_as": "app",
             "cpus": "500m",
             "database_connection": {
               "target_nodes": [
@@ -8891,6 +8896,11 @@
           },
           "additionalProperties": true
         },
+        "connect_as": {
+          "type": "string",
+          "description": "Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.",
+          "example": "app"
+        },
         "cpus": {
           "type": "string",
           "description": "The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.",
@@ -8963,6 +8973,7 @@
           "llm_provider": "openai",
           "openai_api_key": "sk-..."
         },
+        "connect_as": "app",
         "cpus": "500m",
         "database_connection": {
           "target_nodes": [
@@ -9038,7 +9049,8 @@
         "service_id",
         "service_type",
         "version",
-        "host_ids"
+        "host_ids",
+        "connect_as"
       ]
     },
     "StartInstanceResponse": {

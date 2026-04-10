@@ -123,6 +123,20 @@ func (w *Workflows) getServiceResources(
 		return nil, fmt.Errorf("failed to build service host list: %w", err)
 	}
 
+	// Look up the connect_as user's credentials from database_users.
+	var connectAsUser *database.User
+	if serviceSpec.ConnectAs != "" {
+		for _, u := range spec.DatabaseUsers {
+			if u.Username == serviceSpec.ConnectAs {
+				connectAsUser = u
+				break
+			}
+		}
+		if connectAsUser == nil {
+			return nil, fmt.Errorf("connect_as user %q not found in database_users", serviceSpec.ConnectAs)
+		}
+	}
+
 	serviceInstanceSpec := &database.ServiceInstanceSpec{
 		ServiceInstanceID:  serviceInstanceID,
 		ServiceSpec:        serviceSpec,
@@ -136,7 +150,10 @@ func (w *Workflows) getServiceResources(
 		TargetSessionAttrs: connInfo.TargetSessionAttrs,
 		Port:               serviceSpec.Port,
 		DatabaseNodes:      nodeInstances,
-		// Credentials: nil — ServiceUserRole.Create() will generate them
+	}
+	if connectAsUser != nil {
+		serviceInstanceSpec.ConnectAsUsername = connectAsUser.Username
+		serviceInstanceSpec.ConnectAsPassword = connectAsUser.Password
 	}
 
 	generateInput := &activities.GenerateServiceInstanceResourcesInput{Spec: serviceInstanceSpec}

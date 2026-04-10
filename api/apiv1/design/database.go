@@ -224,8 +224,14 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Description("Optional database connection routing configuration.")
 		g.Meta("struct:tag:json", "database_connection,omitempty")
 	})
+	g.Attribute("connect_as", g.String, func() {
+		g.Description("Username of the database_users entry this service connects as. " +
+			"The user must exist in database_users and have appropriate roles for the service's needs.")
+		g.Example("app")
+		g.Meta("struct:tag:json", "connect_as")
+	})
 
-	g.Required("service_id", "service_type", "version", "host_ids")
+	g.Required("service_id", "service_type", "version", "host_ids", "connect_as")
 })
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {

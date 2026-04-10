@@ -2194,6 +2194,9 @@ type ServiceSpecResponseBody struct {
 	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
 	// Optional database connection routing configuration.
 	DatabaseConnection *DatabaseConnectionResponseBody `json:"database_connection,omitempty"`
+	// Username of the database_users entry this service connects as. The user must
+	// exist in database_users and have appropriate roles for the service's needs.
+	ConnectAs string `json:"connect_as"`
 }
 
 // DatabaseConnectionResponseBody is used to define fields on response body
@@ -2543,6 +2546,9 @@ type ServiceSpecRequestBody struct {
 	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
 	// Optional database connection routing configuration.
 	DatabaseConnection *DatabaseConnectionRequestBody `json:"database_connection,omitempty"`
+	// Username of the database_users entry this service connects as. The user must
+	// exist in database_users and have appropriate roles for the service's needs.
+	ConnectAs *string `json:"connect_as"`
 }
 
 // DatabaseConnectionRequestBody is used to define fields on request body types.
@@ -2892,6 +2898,9 @@ type ServiceSpecRequestBodyRequestBody struct {
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
 	// Optional database connection routing configuration.
 	DatabaseConnection *DatabaseConnectionRequestBodyRequestBody `json:"database_connection,omitempty"`
+	// Username of the database_users entry this service connects as. The user must
+	// exist in database_users and have appropriate roles for the service's needs.
+	ConnectAs *string `json:"connect_as"`
 }
 
 // DatabaseConnectionRequestBodyRequestBody is used to define fields on request
@@ -5816,6 +5825,9 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
+	if body.ConnectAs == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("connect_as", "body"))
+	}
 	if body.ServiceID != nil {
 		if utf8.RuneCountInString(*body.ServiceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 1, true))
@@ -6593,6 +6605,9 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	}
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
+	}
+	if body.ConnectAs == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("connect_as", "body"))
 	}
 	if body.ServiceID != nil {
 		if utf8.RuneCountInString(*body.ServiceID) < 1 {

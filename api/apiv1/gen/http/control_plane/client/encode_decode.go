@@ -4714,6 +4714,7 @@ func marshalControlplaneServiceSpecToServiceSpecRequestBody(v *controlplane.Serv
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
+		ConnectAs:   v.ConnectAs,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
@@ -5185,6 +5186,7 @@ func marshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecReques
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
+		ConnectAs:   v.ConnectAs,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
@@ -5776,6 +5778,7 @@ func unmarshalServiceSpecResponseBodyToControlplaneServiceSpec(v *ServiceSpecRes
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
+		ConnectAs:   *v.ConnectAs,
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
@@ -6245,6 +6248,7 @@ func marshalControlplaneServiceSpecToServiceSpecRequestBodyRequestBody(v *contro
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
+		ConnectAs:   v.ConnectAs,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
@@ -6718,6 +6722,7 @@ func marshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Servic
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
+		ConnectAs:   v.ConnectAs,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplane.Identifier, len(v.HostIds))

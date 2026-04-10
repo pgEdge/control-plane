@@ -273,6 +273,7 @@ func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
 		Memory:             utils.NillablePointerTo(humanizeBytes(utils.FromPointer(svc.MemoryBytes))),
 		OrchestratorOpts:   orchestratorOptsToAPI(svc.OrchestratorOpts),
 		DatabaseConnection: databaseConnectionToAPI(svc.DatabaseConnection),
+		ConnectAs:          svc.ConnectAs,
 	}
 }
 
@@ -711,6 +712,7 @@ func apiToServiceSpec(apiSvc *api.ServiceSpec) (*database.ServiceSpec, error) {
 		MemoryBytes:        memory,
 		OrchestratorOpts:   orchestratorOptsToDatabase(apiSvc.OrchestratorOpts),
 		DatabaseConnection: apiToDatabaseConnection(apiSvc.DatabaseConnection),
+		ConnectAs:          apiSvc.ConnectAs,
 	}, nil
 }
 

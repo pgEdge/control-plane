@@ -64,12 +64,18 @@ func (s *ServiceInstanceSpecResource) Executor() resource.Executor {
 func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
-		ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO),
 	}
-	// RAG only has an RO role; all other service types also have an RW role.
-	if s.ServiceSpec.ServiceType != "rag" {
-		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRW))
+
+	// MCP uses connect_as credentials from database_users — no ServiceUserRole dependency.
+	// Other service types (PostgREST, RAG) still use ServiceUserRole until they adopt connect_as.
+	// RAG only has an RO role; other service types (PostgREST) also require an RW role.
+	if s.ServiceSpec.ServiceType != "mcp" {
+		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO))
+		if s.ServiceSpec.ServiceType != "rag" {
+			deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRW))
+		}
 	}
+
 	switch s.ServiceSpec.ServiceType {
 	case "mcp":
 		deps = append(deps, MCPConfigResourceIdentifier(s.ServiceInstanceID))
@@ -91,6 +97,12 @@ func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
 }
 
 func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
+	// MCP uses connect_as credentials from the spec — no ServiceUserRole lookup needed.
+	if s.ServiceSpec.ServiceType == "mcp" {
+		return nil
+	}
+
+	// Other service types (PostgREST, RAG) still use ServiceUserRole.
 	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO))
 	if err != nil {
 		return fmt.Errorf("failed to get service user role from state: %w", err)

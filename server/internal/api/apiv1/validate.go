@@ -149,7 +149,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSp
 		seenServiceIDs.Add(string(svc.ServiceID))
 
 		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
-		errs = append(errs, validateServiceSpec(svc, svcPath, false, seenNodeNames)...)
+		errs = append(errs, validateServiceSpec(svc, svcPath, false, spec.DatabaseUsers, seenNodeNames)...)
 	}
 
 	return errors.Join(errs...)
@@ -216,7 +216,7 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
 
 		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
-		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, newNodeNames)...)
+		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, new.DatabaseUsers, newNodeNames)...)
 	}
 
 	return errors.Join(errs...)
@@ -303,7 +303,7 @@ func validateNode(
 	return errs
 }
 
-func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nodeNames ...ds.Set[string]) []error {
+func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, dbUsers []*api.DatabaseUserSpec, nodeNames ...ds.Set[string]) []error {
 	var errs []error
 
 	// Validate service_id
@@ -360,6 +360,9 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nod
 		errs = append(errs, validateDatabaseConnection(svc.DatabaseConnection, dcPath, nn)...)
 	}
 
+	// Validate connect_as references a valid database_users entry
+	errs = append(errs, validateConnectAs(svc, dbUsers, path)...)
+
 	// MCP-specific cross-validation: allow_writes vs target_session_attrs
 	if svc.ServiceType == "mcp" && svc.DatabaseConnection != nil && svc.DatabaseConnection.TargetSessionAttrs != nil {
 		if allowWrites, ok := svc.Config["allow_writes"].(bool); ok && allowWrites {
@@ -386,6 +389,31 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nod
 	errs = append(errs, validateServiceOrchestratorOpts(svc.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
 
 	return errs
+}
+
+func validateConnectAs(svc *api.ServiceSpec, dbUsers []*api.DatabaseUserSpec, path []string) []error {
+	connectAsPath := appendPath(path, "connect_as")
+	if svc.ConnectAs == "" {
+		return []error{newValidationError(errors.New("connect_as is required"), connectAsPath)}
+	}
+
+	for _, u := range dbUsers {
+		if u.Username == svc.ConnectAs {
+			// For MCP with allow_writes, the connect_as user must be the db owner
+			if svc.ServiceType == "mcp" {
+				if allowWrites, ok := svc.Config["allow_writes"].(bool); ok && allowWrites {
+					if u.DbOwner == nil || !*u.DbOwner {
+						err := errors.New("allow_writes requires connect_as to reference a database_users entry with db_owner: true")
+						return []error{newValidationError(err, connectAsPath)}
+					}
+				}
+			}
+			return nil
+		}
+	}
+
+	err := fmt.Errorf("connect_as %q does not match any database_users entry", svc.ConnectAs)
+	return []error{newValidationError(err, connectAsPath)}
 }
 
 func validateMCPServiceConfig(config map[string]any, path []string, isUpdate bool) []error {

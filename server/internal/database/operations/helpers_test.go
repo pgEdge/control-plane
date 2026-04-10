@@ -212,27 +212,6 @@ func (r *serviceNetworkResource) Dependencies() []resource.Identifier {
 	return deps
 }
 
-type serviceUserRoleResource struct {
-	orchestratorResource
-	nodeNames []string
-}
-
-func (r *serviceUserRoleResource) Identifier() resource.Identifier {
-	return resource.Identifier{ID: r.ID, Type: "swarm.service_user_role"}
-}
-
-func (r *serviceUserRoleResource) DiffIgnore() []string {
-	return []string{"/postgres_host_id", "/username", "/password"}
-}
-
-func (r *serviceUserRoleResource) Dependencies() []resource.Identifier {
-	var deps []resource.Identifier
-	for _, name := range r.nodeNames {
-		deps = append(deps, database.NodeResourceIdentifier(name))
-	}
-	return deps
-}
-
 type serviceInstanceSpecResource struct {
 	orchestratorResource
 	networkID         string
@@ -255,7 +234,6 @@ func (r *serviceInstanceSpecResource) DiffIgnore() []string {
 func (r *serviceInstanceSpecResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		{ID: r.networkID, Type: "swarm.network"},
-		{ID: r.serviceInstanceID, Type: "swarm.service_user_role"},
 	}
 }
 
@@ -278,7 +256,6 @@ func (r *serviceInstanceResource) Executor() resource.Executor {
 
 func (r *serviceInstanceResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		{ID: r.serviceInstanceID, Type: "swarm.service_user_role"},
 		{ID: r.serviceInstanceID, Type: "swarm.service_instance_spec"},
 	}
 }
@@ -292,10 +269,6 @@ func makeServiceResources(t testing.TB, databaseID, serviceID, hostID string, no
 	resources := []resource.Resource{
 		&serviceNetworkResource{
 			orchestratorResource: orchestratorResource{ID: databaseNetworkID},
-			nodeNames:            nodeNames,
-		},
-		&serviceUserRoleResource{
-			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
 			nodeNames:            nodeNames,
 		},
 		&serviceInstanceSpecResource{
