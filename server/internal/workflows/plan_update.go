@@ -173,7 +173,9 @@ func resolveTargetSessionAttrs(serviceSpec *database.ServiceSpec) string {
 			return database.TargetSessionAttrsPrimary
 		}
 		return database.TargetSessionAttrsPreferStandby
-	// Future service types add cases here.
+	case "rag":
+		// RAG is read-only; always prefer a standby when available.
+		return database.TargetSessionAttrsPreferStandby
 	default:
 		// Default to "prefer-standby" for safety — read-only unless the
 		// service explicitly opts in to writes.

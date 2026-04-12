@@ -762,12 +762,13 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		ServiceName:       serviceName,
 		Hostname:          serviceName,
 		CohortMemberID:    o.swarmNodeID,
-		ServiceImage:      serviceImage,
-		Credentials:       spec.Credentials,
-		DatabaseNetworkID: databaseNetwork.Name,
-		DatabaseHosts:     spec.DatabaseHosts,
-		Port:              spec.Port,
-		DataDirID:         dataDirID,
+		ServiceImage:       serviceImage,
+		Credentials:        spec.Credentials,
+		DatabaseNetworkID:  databaseNetwork.Name,
+		DatabaseHosts:      spec.DatabaseHosts,
+		TargetSessionAttrs: spec.TargetSessionAttrs,
+		Port:               spec.Port,
+		DataDirID:          dataDirID,
 	}
 
 	// Service instance resource (actual Docker Swarm service).

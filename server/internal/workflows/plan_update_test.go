@@ -58,6 +58,23 @@ func TestResolveTargetSessionAttrs(t *testing.T) {
 			expected: database.TargetSessionAttrsPreferStandby,
 		},
 		{
+			name: "RAG returns prefer-standby",
+			spec: &database.ServiceSpec{
+				ServiceType: "rag",
+			},
+			expected: database.TargetSessionAttrsPreferStandby,
+		},
+		{
+			name: "RAG explicit override wins",
+			spec: &database.ServiceSpec{
+				ServiceType: "rag",
+				DatabaseConnection: &database.DatabaseConnection{
+					TargetSessionAttrs: database.TargetSessionAttrsPrimary,
+				},
+			},
+			expected: database.TargetSessionAttrsPrimary,
+		},
+		{
 			name: "unknown service type returns prefer-standby",
 			spec: &database.ServiceSpec{
 				ServiceType: "unknown-type",
