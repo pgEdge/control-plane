@@ -4,10 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
 )
+
+// ragPipelineNamePatternText is the allowlist pattern for RAG pipeline names.
+// It is kept as a const so that the compiled regexp and the error message both
+// reference the same literal and cannot drift apart.
+const ragPipelineNamePatternText = `^[a-z0-9_][a-z0-9_-]*$`
+
+// ragPipelineNamePattern restricts pipeline names to lowercase alphanumeric
+// characters, hyphens, and underscores. The first character must not be a
+// hyphen so that names are safe as filename components and cannot be
+// misinterpreted as CLI flags if ever passed to a command.
+var ragPipelineNamePattern = regexp.MustCompile(ragPipelineNamePatternText)
 
 // RAGPipelineLLMConfig represents LLM configuration for an embedding or RAG step.
 type RAGPipelineLLMConfig struct {
@@ -126,9 +138,11 @@ func validateRAGPipeline(p RAGPipeline, i int, seenNames map[string]bool) []erro
 	var errs []error
 	prefix := fmt.Sprintf("pipelines[%d]", i)
 
-	// name (required, unique)
+	// name (required, allowlist, unique)
 	if p.Name == "" {
 		errs = append(errs, fmt.Errorf("%s.name is required", prefix))
+	} else if !ragPipelineNamePattern.MatchString(p.Name) {
+		errs = append(errs, fmt.Errorf("%s.name %q is invalid: must match %s", prefix, p.Name, ragPipelineNamePatternText))
 	} else if seenNames[p.Name] {
 		errs = append(errs, fmt.Errorf("pipelines contains duplicate name %q", p.Name))
 	} else {
