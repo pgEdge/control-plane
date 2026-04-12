@@ -130,7 +130,10 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSp
 	// Validate orchestrator_opts (spec-level)
 	errs = append(errs, validateOrchestratorOpts(spec.OrchestratorOpts, []string{"orchestrator_opts"})...)
 
-	// Validate services
+	// Validate services — seed portOwner with Postgres ports so services can't collide with the database.
+	portOwner := make(servicePortOwnerMap)
+	seedPostgresPorts(spec, portOwner)
+
 	seenServiceIDs := make(ds.Set[string], len(spec.Services))
 	for i, svc := range spec.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
@@ -142,6 +145,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSp
 		}
 		seenServiceIDs.Add(string(svc.ServiceID))
 
+		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
 		errs = append(errs, validateServiceSpec(svc, svcPath, false, seenNodeNames)...)
 	}
 
@@ -197,12 +201,18 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		existingServiceIDs.Add(svc.ServiceID)
 	}
 
+	// Seed portOwner with Postgres ports so services can't collide with the database.
+	portOwner := make(servicePortOwnerMap)
+	seedPostgresPorts(new, portOwner)
+
 	// Validate each service. Pass isUpdate=false for services being added for the
 	// first time so that bootstrap-only fields are accepted. For service types that
 	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
 	for i, svc := range new.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+
+		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, newNodeNames)...)
 	}
 
@@ -369,8 +379,8 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nod
 		errs = append(errs, validateMemory(svc.Memory, appendPath(path, "memory"))...)
 	}
 
-	// Validate orchestrator_opts
-	errs = append(errs, validateOrchestratorOpts(svc.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
+	// Validate orchestrator_opts (service-specific restrictions on top of shared checks)
+	errs = append(errs, validateServiceOrchestratorOpts(svc.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
 
 	return errs
 }
@@ -501,6 +511,56 @@ func validateUsers(users []*api.DatabaseUserSpec, path []string) []error {
 		}
 	}
 
+	return errs
+}
+
+// seedPostgresPorts registers each node's effective Postgres port in the
+// portOwner map so that service port validation can detect collisions with
+// the database. A node-level port override (node.Port) takes precedence
+// over the spec-level default (spec.Port).
+func seedPostgresPorts(spec *api.DatabaseSpec, owner servicePortOwnerMap) {
+	for _, node := range spec.Nodes {
+		pgPort := utils.FromPointer(spec.Port)
+		if node.Port != nil {
+			pgPort = *node.Port
+		}
+		if pgPort > 0 {
+			for _, hostID := range node.HostIds {
+				owner[hostPort{hostID: string(hostID), port: pgPort}] = "postgres"
+			}
+		}
+	}
+}
+
+// hostPort identifies a unique (host, port) binding for cross-service
+// port conflict detection.
+type hostPort struct {
+	hostID string
+	port   int
+}
+
+// servicePortOwnerMap tracks which service owns a given (host, port) pair.
+// Callers create one map and pass it to validateServicePortConflicts for
+// each service in the spec.
+type servicePortOwnerMap map[hostPort]string
+
+// validateServicePortConflicts checks that the service's explicit port (if any)
+// does not collide with a port already claimed by another service on the same host.
+func validateServicePortConflicts(svc *api.ServiceSpec, path []string, owner servicePortOwnerMap) []error {
+	if svc.Port == nil || *svc.Port <= 0 {
+		return nil
+	}
+
+	var errs []error
+	for _, hostID := range svc.HostIds {
+		key := hostPort{hostID: string(hostID), port: *svc.Port}
+		if prev, exists := owner[key]; exists {
+			err := fmt.Errorf("port %d conflicts with service %q on the same host", *svc.Port, prev)
+			errs = append(errs, newValidationError(err, appendPath(path, "port")))
+		} else {
+			owner[key] = string(svc.ServiceID)
+		}
+	}
 	return errs
 }
 
@@ -685,6 +745,32 @@ func validateOrchestratorOpts(opts *api.OrchestratorOpts, path []string) []error
 			errs = append(errs, newValidationError(err, labelPath))
 		}
 	}
+	return errs
+}
+
+// validateServiceOrchestratorOpts runs the shared orchestrator_opts checks and
+// adds service-specific restrictions. Services do not support extra_volumes
+// (bind mounts are configured per service type) or driver_opts on extra_networks.
+func validateServiceOrchestratorOpts(opts *api.OrchestratorOpts, path []string) []error {
+	errs := validateOrchestratorOpts(opts, path)
+
+	if opts == nil || opts.Swarm == nil {
+		return errs
+	}
+
+	if len(opts.Swarm.ExtraVolumes) > 0 {
+		err := errors.New("extra_volumes is not supported for services")
+		errs = append(errs, newValidationError(err, appendPath(path, "swarm", "extra_volumes")))
+	}
+
+	for i, net := range opts.Swarm.ExtraNetworks {
+		if len(net.DriverOpts) > 0 {
+			netPath := appendPath(path, "swarm", "extra_networks", arrayIndexPath(i), "driver_opts")
+			err := errors.New("driver_opts is not supported for services")
+			errs = append(errs, newValidationError(err, netPath))
+		}
+	}
+
 	return errs
 }
 

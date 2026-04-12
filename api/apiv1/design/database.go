@@ -199,7 +199,7 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 			"llm_model":      "gpt-4",
 			"openai_api_key": "sk-...",
 		})
-		g.Meta("struct:tag:json", "config")
+		g.Meta("struct:tag:json", "config,omitempty")
 	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.")
@@ -225,7 +225,7 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Meta("struct:tag:json", "database_connection,omitempty")
 	})
 
-	g.Required("service_id", "service_type", "version", "host_ids", "config")
+	g.Required("service_id", "service_type", "version", "host_ids")
 })
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {

@@ -73,9 +73,17 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		"pgedge.host.id":             opts.HostID,
 	}
 
-	// Merge user-provided extra labels (matches Postgres ExtraLabels behavior)
-	if opts.ServiceSpec.OrchestratorOpts != nil && opts.ServiceSpec.OrchestratorOpts.Swarm != nil {
-		for k, v := range opts.ServiceSpec.OrchestratorOpts.Swarm.ExtraLabels {
+	// Extract swarm orchestrator options (matches Postgres pattern in spec.go).
+	// ExtraVolumes and DriverOpts are rejected at the API validation layer
+	// (validateServiceOrchestratorOpts).
+	var swarmOpts *database.SwarmOpts
+	if opts.ServiceSpec.OrchestratorOpts != nil {
+		swarmOpts = opts.ServiceSpec.OrchestratorOpts.Swarm
+	}
+
+	// Merge user-provided extra labels
+	if swarmOpts != nil {
+		for k, v := range swarmOpts.ExtraLabels {
 			labels[k] = v
 		}
 	}
@@ -94,6 +102,16 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		{
 			Target: opts.DatabaseNetworkID,
 		},
+	}
+
+	// Append user-requested extra networks (e.g. Traefik, reverse proxy).
+	if swarmOpts != nil {
+		for _, net := range swarmOpts.ExtraNetworks {
+			networks = append(networks, swarm.NetworkAttachmentConfig{
+				Target:  net.ID,
+				Aliases: net.Aliases,
+			})
+		}
 	}
 
 	// Get container image (already resolved in ServiceImage)

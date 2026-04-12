@@ -309,6 +309,86 @@ func intPtr(i int) *int {
 	return &i
 }
 
+func TestServiceContainerSpec_ExtraNetworks(t *testing.T) {
+	opts := &ServiceContainerSpecOptions{
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+			OrchestratorOpts: &database.OrchestratorOpts{
+				Swarm: &database.SwarmOpts{
+					ExtraNetworks: []database.ExtraNetworkSpec{
+						{ID: "traefik_us-west-2a", Aliases: []string{"mcp"}},
+						{ID: "monitoring"},
+					},
+				},
+			},
+		},
+		ServiceInstanceID: "db1-mcp-host1",
+		DatabaseID:        "db1",
+		DatabaseName:      "testdb",
+		HostID:            "host1",
+		ServiceName:       "db1-mcp-host1",
+		Hostname:          "mcp-host1",
+		CohortMemberID:    "node-123",
+		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/postgres-mcp:latest"},
+		Credentials:       &database.ServiceUser{Username: "svc_mcp", Password: "pw"},
+		DatabaseNetworkID: "db1-database",
+		Port:              intPtr(8080),
+		DataPath:          "/var/lib/pgedge/services/db1-mcp-host1",
+	}
+
+	spec, err := ServiceContainerSpec(opts)
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+
+	networks := spec.TaskTemplate.Networks
+	// [0]=bridge, [1]=database overlay, [2..]=extra networks
+	if len(networks) != 4 {
+		t.Fatalf("got %d networks, want 4", len(networks))
+	}
+	if networks[2].Target != "traefik_us-west-2a" {
+		t.Errorf("networks[2].Target = %q, want %q", networks[2].Target, "traefik_us-west-2a")
+	}
+	if len(networks[2].Aliases) != 1 || networks[2].Aliases[0] != "mcp" {
+		t.Errorf("networks[2].Aliases = %v, want [mcp]", networks[2].Aliases)
+	}
+	if networks[3].Target != "monitoring" {
+		t.Errorf("networks[3].Target = %q, want %q", networks[3].Target, "monitoring")
+	}
+}
+
+func TestServiceContainerSpec_NoExtraNetworks(t *testing.T) {
+	opts := &ServiceContainerSpecOptions{
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+		},
+		ServiceInstanceID: "db1-mcp-host1",
+		DatabaseID:        "db1",
+		DatabaseName:      "testdb",
+		HostID:            "host1",
+		ServiceName:       "db1-mcp-host1",
+		Hostname:          "mcp-host1",
+		CohortMemberID:    "node-123",
+		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/postgres-mcp:latest"},
+		Credentials:       &database.ServiceUser{Username: "svc_mcp", Password: "pw"},
+		DatabaseNetworkID: "db1-database",
+		Port:              intPtr(8080),
+		DataPath:          "/var/lib/pgedge/services/db1-mcp-host1",
+	}
+
+	spec, err := ServiceContainerSpec(opts)
+	if err != nil {
+		t.Fatalf("ServiceContainerSpec() error = %v", err)
+	}
+
+	networks := spec.TaskTemplate.Networks
+	if len(networks) != 2 {
+		t.Fatalf("got %d networks, want 2", len(networks))
+	}
+}
+
 // --- PostgREST container spec tests ---
 
 func makePostgRESTSpecOpts() *ServiceContainerSpecOptions {

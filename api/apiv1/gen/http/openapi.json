@@ -8893,8 +8893,7 @@
         "service_id",
         "service_type",
         "version",
-        "host_ids",
-        "config"
+        "host_ids"
       ]
     },
     "StartInstanceResponse": {

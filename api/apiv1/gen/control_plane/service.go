@@ -981,7 +981,7 @@ type ServiceSpec struct {
 	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `json:"config"`
+	Config map[string]any `json:"config,omitempty"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
