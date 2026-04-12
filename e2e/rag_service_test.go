@@ -247,8 +247,18 @@ func waitForServiceRunning(
 	for time.Now().Before(deadline) {
 		require.NoError(t, db.Refresh(ctx), "failed to refresh database")
 		for _, si := range db.ServiceInstances {
-			if si.ServiceInstanceID == serviceInstanceID && si.State == "running" {
+			if si.ServiceInstanceID != serviceInstanceID {
+				continue
+			}
+			if si.State == "running" {
 				return si
+			}
+			if si.State == "failed" {
+				var errMsg string
+				if si.Error != nil {
+					errMsg = *si.Error
+				}
+				t.Fatalf("service instance %s entered failed state: %s", serviceInstanceID, errMsg)
 			}
 		}
 		time.Sleep(5 * time.Second)
@@ -300,34 +310,45 @@ func insertRAGDocument(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 }
 
 // queryRAGPipeline sends a query to the RAG service and returns the answer.
-func queryRAGPipeline(ctx context.Context, t testing.TB, baseURL, query string) string {
+func queryRAGPipeline(ctx context.Context, t testing.TB, baseURL, query string) (string, error) {
 	t.Helper()
 
 	body, err := json.Marshal(map[string]string{"query": query})
-	require.NoError(t, err)
+	if err != nil {
+		return "", fmt.Errorf("marshal query payload: %w", err)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		baseURL+"/v1/pipelines/default",
 		bytes.NewReader(body),
 	)
-	require.NoError(t, err)
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
+	if err != nil {
+		return "", fmt.Errorf("send request: %w", err)
+	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode,
-		"unexpected status %d: %s", resp.StatusCode, string(respBody))
+	if err != nil {
+		return "", fmt.Errorf("read response body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(respBody))
+	}
 
 	var result struct {
 		Answer string `json:"answer"`
 	}
-	require.NoError(t, json.Unmarshal(respBody, &result), "failed to parse RAG response")
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return "", fmt.Errorf("parse response: %w", err)
+	}
 
-	return result.Answer
+	return result.Answer, nil
 }
 
 // TestProvisionMultiHostRAGService tests provisioning a RAG service on multiple
@@ -643,15 +664,21 @@ func waitForNonEmptyRAGAnswer(ctx context.Context, t testing.TB, baseURL, query 
 	t.Helper()
 
 	deadline := time.Now().Add(maxWait)
+	var lastErr error
 	for time.Now().Before(deadline) {
-		answer := queryRAGPipeline(ctx, t, baseURL, query)
+		answer, err := queryRAGPipeline(ctx, t, baseURL, query)
+		if err != nil {
+			lastErr = err
+			time.Sleep(3 * time.Second)
+			continue
+		}
 		if answer != "" {
 			return answer
 		}
 		time.Sleep(3 * time.Second)
 	}
 
-	t.Fatalf("RAG answer did not become non-empty within %s", maxWait)
+	t.Fatalf("RAG answer did not become non-empty within %s (last error: %v)", maxWait, lastErr)
 	return ""
 }
 
