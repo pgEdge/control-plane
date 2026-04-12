@@ -288,6 +288,16 @@ func serviceSpecsToAPI(services []*database.ServiceSpec) []*api.ServiceSpec {
 	return apiServices
 }
 
+func scriptsToAPI(scripts *database.ScriptStatements) *api.DatabaseScripts {
+	if scripts == nil {
+		return nil
+	}
+	return &api.DatabaseScripts{
+		PostInit:           scripts.PostInit,
+		PostDatabaseCreate: scripts.PostDatabaseCreate,
+	}
+}
+
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	return &api.DatabaseSpec{
 		DatabaseName:     d.DatabaseName,
@@ -304,6 +314,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		RestoreConfig:    restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:   d.PostgreSQLConf,
 		OrchestratorOpts: orchestratorOptsToAPI(d.OrchestratorOpts),
+		Scripts:          scriptsToAPI(d.Scripts),
 	}
 }
 
@@ -719,6 +730,16 @@ func apiToServiceSpecs(apiServices []*api.ServiceSpec) ([]*database.ServiceSpec,
 	return services, nil
 }
 
+func apiToScripts(scripts *api.DatabaseScripts) *database.ScriptStatements {
+	if scripts == nil {
+		return nil
+	}
+	return &database.ScriptStatements{
+		PostInit:           scripts.PostInit,
+		PostDatabaseCreate: scripts.PostDatabaseCreate,
+	}
+}
+
 func apiToDatabaseSpec(
 	orchestrator config.Orchestrator,
 	id, tID *api.Identifier,
@@ -798,6 +819,7 @@ func apiToDatabaseSpec(
 		PostgreSQLConf:   apiSpec.PostgresqlConf,
 		RestoreConfig:    restoreConfig,
 		OrchestratorOpts: orchestratorOptsToDatabase(apiSpec.OrchestratorOpts),
+		Scripts:          apiToScripts(apiSpec.Scripts),
 	}, nil
 }
 

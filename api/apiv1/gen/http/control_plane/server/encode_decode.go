@@ -3753,6 +3753,9 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
+	if v.Scripts != nil {
+		res.Scripts = unmarshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts(v.Scripts)
+	}
 
 	return res
 }
@@ -4121,6 +4124,30 @@ func unmarshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v *D
 	return res
 }
 
+// unmarshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts builds a
+// value of type *controlplane.DatabaseScripts from a value of type
+// *DatabaseScriptsRequestBody.
+func unmarshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts(v *DatabaseScriptsRequestBody) *controlplane.DatabaseScripts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseScripts{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
+		}
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseToDatabaseResponseBody builds a value of type
 // *DatabaseResponseBody from a value of type *controlplane.Database.
 func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database) *DatabaseResponseBody {
@@ -4316,6 +4343,9 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v.OrchestratorOpts)
+	}
+	if v.Scripts != nil {
+		res.Scripts = marshalControlplaneDatabaseScriptsToDatabaseScriptsResponseBody(v.Scripts)
 	}
 
 	return res
@@ -4699,6 +4729,30 @@ func marshalControlplaneDatabaseConnectionToDatabaseConnectionResponseBody(v *co
 	return res
 }
 
+// marshalControlplaneDatabaseScriptsToDatabaseScriptsResponseBody builds a
+// value of type *DatabaseScriptsResponseBody from a value of type
+// *controlplane.DatabaseScripts.
+func marshalControlplaneDatabaseScriptsToDatabaseScriptsResponseBody(v *controlplane.DatabaseScripts) *DatabaseScriptsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseScriptsResponseBody{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
+		}
+	}
+
+	return res
+}
+
 // unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec builds
 // a value of type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBodyRequestBody.
@@ -4756,6 +4810,9 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
+	}
+	if v.Scripts != nil {
+		res.Scripts = unmarshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts(v.Scripts)
 	}
 
 	return res
@@ -5121,6 +5178,30 @@ func unmarshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConn
 		res.TargetNodes = make([]string, len(v.TargetNodes))
 		for i, val := range v.TargetNodes {
 			res.TargetNodes[i] = val
+		}
+	}
+
+	return res
+}
+
+// unmarshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts
+// builds a value of type *controlplane.DatabaseScripts from a value of type
+// *DatabaseScriptsRequestBodyRequestBody.
+func unmarshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts(v *DatabaseScriptsRequestBodyRequestBody) *controlplane.DatabaseScripts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseScripts{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
 		}
 	}
 

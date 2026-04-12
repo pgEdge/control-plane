@@ -1843,7 +1843,7 @@ definitions:
           key: value
         additionalProperties:
           type: string
-          example: Ratione asperiores iusto nostrum commodi quidem occaecati.
+          example: Quidem occaecati.
       backup_options:
         type: object
         description: Options for the backup.
@@ -2953,6 +2953,47 @@ definitions:
     required:
       - name
       - host_ids
+  DatabaseScripts:
+    title: DatabaseScripts
+    type: object
+    properties:
+      post_database_create:
+        type: array
+        items:
+          type: string
+          example: r0
+          minLength: 1
+          maxLength: 1024
+        description: The `post_database_create` script runs once on each primary instance of each node after the application database is created for the first time. Each element of the array is a single SQL statement. These statements run within a transaction in the application database after Spock is initialized, but before subscriptions are created.
+        example:
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app
+        minItems: 0
+        maxItems: 256
+      post_init:
+        type: array
+        items:
+          type: string
+          example: p
+          minLength: 1
+          maxLength: 1024
+        description: The `post_init` script runs on each primary instance of each node after the instance is created for the first time. Each element of the array is single SQL statement. These statements run within a transaction in the `postgres` database before the users are created, so this feature can be used to create nologin roles that can be assigned to the database users via their `roles` field.
+        example:
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app
+        minItems: 0
+        maxItems: 256
+    example:
+      post_database_create:
+        - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app
+        - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app
+        - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app
+      post_init:
+        - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app
+        - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app
+        - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app
   DatabaseSpec:
     title: DatabaseSpec
     type: object
@@ -3329,6 +3370,8 @@ definitions:
         additionalProperties: true
       restore_config:
         $ref: '#/definitions/RestoreConfigSpec'
+      scripts:
+        $ref: '#/definitions/DatabaseScripts'
       services:
         type: array
         items:
@@ -3746,7 +3789,65 @@ definitions:
         source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
         source_database_name: northwind
         source_node_name: n1
+      scripts:
+        post_database_create:
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app
+        post_init:
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app
+          - ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app
       services:
+        - config:
+            llm_model: gpt-4
+            llm_provider: openai
+            openai_api_key: sk-...
+          cpus: 500m
+          database_connection:
+            target_nodes:
+              - n1
+              - n2
+            target_session_attrs: primary
+          host_ids:
+            - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            - 76f9b8c0-4958-11f0-a489-3bb29577c696
+          memory: 512M
+          orchestrator_opts:
+            swarm:
+              extra_labels:
+                traefik.enable: "true"
+                traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+              extra_networks:
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+              extra_volumes:
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+          port: 0
+          service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+          service_type: rag
+          version: latest
         - config:
             llm_model: gpt-4
             llm_provider: openai

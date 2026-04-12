@@ -298,6 +298,21 @@ func (d *SwarmOpts) Clone() *SwarmOpts {
 	}
 }
 
+type ScriptStatements struct {
+	PostInit           []string `json:"post_init"`
+	PostDatabaseCreate []string `json:"post_database_create"`
+}
+
+func (s *ScriptStatements) Clone() *ScriptStatements {
+	if s == nil {
+		return nil
+	}
+	return &ScriptStatements{
+		PostInit:           slices.Clone(s.PostInit),
+		PostDatabaseCreate: slices.Clone(s.PostDatabaseCreate),
+	}
+}
+
 type Spec struct {
 	DatabaseID       string            `json:"database_id"`
 	TenantID         *string           `json:"tenant_id,omitempty"`
@@ -315,6 +330,7 @@ type Spec struct {
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	Scripts          *ScriptStatements `json:"scripts,omitempty"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -402,6 +418,7 @@ func (s *Spec) Clone() *Spec {
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
+		Scripts:          s.Scripts.Clone(),
 	}
 }
 
@@ -581,12 +598,14 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 }
 
 type NodeInstances struct {
-	DatabaseOwner string          `json:"database_owner"`
-	DatabaseName  string          `json:"database_name"`
-	NodeName      string          `json:"node_name"`
-	SourceNode    string          `json:"source_node"`
-	Instances     []*InstanceSpec `json:"instances"`
-	RestoreConfig *RestoreConfig  `json:"restore_config"`
+	DatabaseID    string            `json:"database_id"`
+	DatabaseOwner string            `json:"database_owner"`
+	DatabaseName  string            `json:"database_name"`
+	NodeName      string            `json:"node_name"`
+	SourceNode    string            `json:"source_node"`
+	Instances     []*InstanceSpec   `json:"instances"`
+	RestoreConfig *RestoreConfig    `json:"restore_config"`
+	Scripts       *ScriptStatements `json:"scripts"`
 }
 
 func (n *NodeInstances) InstanceIDs() []string {
@@ -675,12 +694,14 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		}
 
 		nodes[nodeIdx] = &NodeInstances{
+			DatabaseID:    s.DatabaseID,
 			DatabaseOwner: owner,
 			DatabaseName:  s.DatabaseName,
 			NodeName:      node.Name,
 			SourceNode:    node.SourceNode,
 			Instances:     instances,
 			RestoreConfig: effectiveRestore,
+			Scripts:       s.Scripts,
 		}
 	}
 	return nodes, nil

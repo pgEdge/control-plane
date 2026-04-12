@@ -378,6 +378,22 @@ type DatabaseNodeSpec struct {
 	SourceNode *string `json:"source_node,omitempty"`
 }
 
+type DatabaseScripts struct {
+	// The `post_init` script runs on each primary instance of each node after the
+	// instance is created for the first time. Each element of the array is single
+	// SQL statement. These statements run within a transaction in the `postgres`
+	// database before the users are created, so this feature can be used to create
+	// nologin roles that can be assigned to the database users via their `roles`
+	// field.
+	PostInit SQLScript `json:"post_init,omitempty"`
+	// The `post_database_create` script runs once on each primary instance of each
+	// node after the application database is created for the first time. Each
+	// element of the array is a single SQL statement. These statements run within
+	// a transaction in the application database after Spock is initialized, but
+	// before subscriptions are created.
+	PostDatabaseCreate SQLScript `json:"post_database_create,omitempty"`
+}
+
 type DatabaseSpec struct {
 	// The name of the Postgres database.
 	DatabaseName string `json:"database_name"`
@@ -417,6 +433,10 @@ type DatabaseSpec struct {
 	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	// User-defined SQL scripts that run at different points during the database
+	// creation process. Once a database has been successfully created, changes to
+	// these scripts will have no effect.
+	Scripts *DatabaseScripts `json:"scripts,omitempty"`
 }
 
 type DatabaseSummary struct {
@@ -924,6 +944,9 @@ type RestoreRepositorySpec struct {
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
+
+// Each element of this array is an individual SQL statement.
+type SQLScript []string
 
 // A service instance running on a host alongside the database.
 type ServiceInstance struct {

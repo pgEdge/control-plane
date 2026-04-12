@@ -1,6 +1,6 @@
 module github.com/pgEdge/control-plane
 
-go 1.25.0
+go 1.25.6
 
 toolchain go1.25.8
 
@@ -35,6 +35,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.34.0
+	github.com/valkdb/postgresparser v1.1.9
 	github.com/wI2L/jsondiff v0.6.1
 	go.etcd.io/etcd/api/v3 v3.6.5
 	go.etcd.io/etcd/client/pkg/v3 v3.6.5
@@ -46,6 +47,11 @@ require (
 	goa.design/goa/v3 v3.23.4
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/ini.v1 v1.67.0
+)
+
+require (
+	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 )
 
 require (

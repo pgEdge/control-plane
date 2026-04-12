@@ -4376,6 +4376,9 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsRequestBody(v.OrchestratorOpts)
 	}
+	if v.Scripts != nil {
+		res.Scripts = marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBody(v.Scripts)
+	}
 
 	return res
 }
@@ -4758,6 +4761,30 @@ func marshalControlplaneDatabaseConnectionToDatabaseConnectionRequestBody(v *con
 	return res
 }
 
+// marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBody builds a
+// value of type *DatabaseScriptsRequestBody from a value of type
+// *controlplane.DatabaseScripts.
+func marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBody(v *controlplane.DatabaseScripts) *DatabaseScriptsRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseScriptsRequestBody{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
+		}
+	}
+
+	return res
+}
+
 // marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec builds a value of
 // type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBody.
@@ -4819,6 +4846,9 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
+	}
+	if v.Scripts != nil {
+		res.Scripts = marshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts(v.Scripts)
 	}
 
 	return res
@@ -5202,6 +5232,30 @@ func marshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v *Dat
 	return res
 }
 
+// marshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts builds a
+// value of type *controlplane.DatabaseScripts from a value of type
+// *DatabaseScriptsRequestBody.
+func marshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts(v *DatabaseScriptsRequestBody) *controlplane.DatabaseScripts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseScripts{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
+		}
+	}
+
+	return res
+}
+
 // unmarshalDatabaseResponseBodyToControlplaneDatabase builds a value of type
 // *controlplane.Database from a value of type *DatabaseResponseBody.
 func unmarshalDatabaseResponseBodyToControlplaneDatabase(v *DatabaseResponseBody) *controlplane.Database {
@@ -5393,6 +5447,9 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsResponseBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
+	}
+	if v.Scripts != nil {
+		res.Scripts = unmarshalDatabaseScriptsResponseBodyToControlplaneDatabaseScripts(v.Scripts)
 	}
 
 	return res
@@ -5762,6 +5819,30 @@ func unmarshalDatabaseConnectionResponseBodyToControlplaneDatabaseConnection(v *
 	return res
 }
 
+// unmarshalDatabaseScriptsResponseBodyToControlplaneDatabaseScripts builds a
+// value of type *controlplane.DatabaseScripts from a value of type
+// *DatabaseScriptsResponseBody.
+func unmarshalDatabaseScriptsResponseBodyToControlplaneDatabaseScripts(v *DatabaseScriptsResponseBody) *controlplane.DatabaseScripts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseScripts{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
+		}
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody builds a
 // value of type *DatabaseSpecRequestBodyRequestBody from a value of type
 // *controlplane.DatabaseSpec.
@@ -5823,6 +5904,9 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsRequestBodyRequestBody(v.OrchestratorOpts)
+	}
+	if v.Scripts != nil {
+		res.Scripts = marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBodyRequestBody(v.Scripts)
 	}
 
 	return res
@@ -6208,6 +6292,30 @@ func marshalControlplaneDatabaseConnectionToDatabaseConnectionRequestBodyRequest
 	return res
 }
 
+// marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBodyRequestBody
+// builds a value of type *DatabaseScriptsRequestBodyRequestBody from a value
+// of type *controlplane.DatabaseScripts.
+func marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBodyRequestBody(v *controlplane.DatabaseScripts) *DatabaseScriptsRequestBodyRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseScriptsRequestBodyRequestBody{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
+		}
+	}
+
+	return res
+}
+
 // marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec builds a
 // value of type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBodyRequestBody.
@@ -6269,6 +6377,9 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
+	}
+	if v.Scripts != nil {
+		res.Scripts = marshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts(v.Scripts)
 	}
 
 	return res
@@ -6648,6 +6759,30 @@ func marshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnec
 		res.TargetNodes = make([]string, len(v.TargetNodes))
 		for i, val := range v.TargetNodes {
 			res.TargetNodes[i] = val
+		}
+	}
+
+	return res
+}
+
+// marshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts
+// builds a value of type *controlplane.DatabaseScripts from a value of type
+// *DatabaseScriptsRequestBodyRequestBody.
+func marshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts(v *DatabaseScriptsRequestBodyRequestBody) *controlplane.DatabaseScripts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseScripts{}
+	if v.PostInit != nil {
+		res.PostInit = make([]string, len(v.PostInit))
+		for i, val := range v.PostInit {
+			res.PostInit[i] = val
+		}
+	}
+	if v.PostDatabaseCreate != nil {
+		res.PostDatabaseCreate = make([]string, len(v.PostDatabaseCreate))
+		for i, val := range v.PostDatabaseCreate {
+			res.PostDatabaseCreate[i] = val
 		}
 	}
 
