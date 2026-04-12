@@ -48,6 +48,7 @@ type Database struct {
 	Spec             *Spec
 	Instances        []*Instance
 	ServiceInstances []*ServiceInstance
+	NotCreated       bool
 }
 
 func databaseToStored(d *Database) *StoredDatabase {
@@ -57,6 +58,7 @@ func databaseToStored(d *Database) *StoredDatabase {
 		CreatedAt:  d.CreatedAt,
 		UpdatedAt:  d.UpdatedAt,
 		State:      d.State,
+		NotCreated: d.NotCreated,
 	}
 }
 
@@ -70,6 +72,7 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 		Spec:             storedSpec.Spec,
 		Instances:        instances,
 		ServiceInstances: serviceInstances,
+		NotCreated:       d.NotCreated,
 	}
 }
 

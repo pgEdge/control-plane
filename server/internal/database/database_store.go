@@ -15,6 +15,7 @@ type StoredDatabase struct {
 	CreatedAt  time.Time     `json:"created_at"`
 	UpdatedAt  time.Time     `json:"updated_at"`
 	State      DatabaseState `json:"state"`
+	NotCreated bool          `json:"not_created"`
 }
 
 type DatabaseStore struct {

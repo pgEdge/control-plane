@@ -73,6 +73,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 		UpdatedAt:  now,
 		State:      DatabaseStateCreating,
 		Spec:       spec,
+		NotCreated: true,
 	}
 
 	if err := s.store.Txn(
@@ -263,6 +264,11 @@ func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID string, fr
 	// database is in the expected state
 	if from != "" && storedDb.State != from {
 		return fmt.Errorf("database state is not in expected state %s, but %s", from, storedDb.State)
+	}
+	// creation is considered complete the first time we set the database to
+	// available.
+	if to == DatabaseStateAvailable && storedDb.NotCreated {
+		storedDb.NotCreated = false
 	}
 
 	storedDb.State = to
