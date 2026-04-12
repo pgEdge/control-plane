@@ -22,9 +22,9 @@ import (
 	"github.com/pgEdge/control-plane/client"
 )
 
-// TestProvisionRAGService provisions a database with a single-host RAG service,
-// inserts a document with a pre-computed embedding, queries the pipeline, and
-// verifies a non-empty answer is returned.
+// TestProvisionRAGService provisions a database with a single-host RAG service
+// and verifies it reaches running state. Placeholder API keys are used so this
+// test runs in CI without incurring LLM costs.
 func TestProvisionRAGService(t *testing.T) {
 	t.Parallel()
 
@@ -79,12 +79,100 @@ func TestProvisionRAGService(t *testing.T) {
 								"embedding_llm": map[string]any{
 									"provider": "openai",
 									"model":    "text-embedding-3-small",
-									"api_key":  ragOpenAIKey(t),
+									"api_key":  "sk-test-embed-key",
 								},
 								"rag_llm": map[string]any{
 									"provider": "anthropic",
 									"model":    "claude-haiku-4-5-20251001",
-									"api_key":  ragAnthropicKey(t),
+									"api_key":  "sk-ant-test-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	require.NotNil(t, db.ServiceInstances, "ServiceInstances should not be nil")
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 RAG service instance")
+
+	si := db.ServiceInstances[0]
+	assert.Equal(t, "rag", si.ServiceID)
+	assert.Equal(t, string(host1), si.HostID)
+
+	t.Log("Waiting for RAG service to be running")
+	waitForServiceRunning(ctx, t, db, si.ServiceInstanceID, 8*time.Minute)
+}
+
+// TestRAGPipelineQuery provisions a RAG service with real API keys, inserts a
+// document with a pre-computed embedding, queries the pipeline, and verifies a
+// non-empty answer is returned.
+//
+// Skipped unless E2E_OPENAI_API_KEY and E2E_ANTHROPIC_API_KEY are set.
+func TestRAGPipelineQuery(t *testing.T) {
+	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
+
+	openAIKey := getEnvOrSkip(t, "E2E_OPENAI_API_KEY")
+	anthropicKey := getEnvOrSkip(t, "E2E_ANTHROPIC_API_KEY")
+
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
+	host1 := hosts[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with RAG service")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_rag_pipeline_query",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "rag",
+					ServiceType: "rag",
+					Version:     "latest",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
+					Config: map[string]any{
+						"pipelines": []any{
+							map[string]any{
+								"name": "default",
+								"tables": []any{
+									map[string]any{
+										"table":         "docs",
+										"text_column":   "content",
+										"vector_column": "embedding",
+									},
+								},
+								"embedding_llm": map[string]any{
+									"provider": "openai",
+									"model":    "text-embedding-3-small",
+									"api_key":  openAIKey,
+								},
+								"rag_llm": map[string]any{
+									"provider": "anthropic",
+									"model":    "claude-haiku-4-5-20251001",
+									"api_key":  anthropicKey,
 								},
 							},
 						},
@@ -104,11 +192,9 @@ func TestProvisionRAGService(t *testing.T) {
 	t.Log("Waiting for RAG service to be running")
 	si = waitForServiceRunning(ctx, t, db, si.ServiceInstanceID, 8*time.Minute)
 
-	// Resolve the RAG service base URL from the published host port.
 	ragURL := ragServiceURL(t, si)
 	t.Logf("RAG service URL: %s", ragURL)
 
-	// Set up the schema and insert a test document.
 	t.Log("Setting up docs table and inserting test document")
 	db.WithConnection(ctx, ConnectionOptions{
 		Matcher:  And(WithNode("n1"), WithRole("master")),
@@ -303,12 +389,12 @@ func TestProvisionMultiHostRAGService(t *testing.T) {
 								"embedding_llm": map[string]any{
 									"provider": "openai",
 									"model":    "text-embedding-3-small",
-									"api_key":  ragOpenAIKey(t),
+									"api_key":  "sk-test-embed-key",
 								},
 								"rag_llm": map[string]any{
 									"provider": "anthropic",
 									"model":    "claude-haiku-4-5-20251001",
-									"api_key":  ragAnthropicKey(t),
+									"api_key":  "sk-ant-test-key",
 								},
 							},
 						},
@@ -413,12 +499,12 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 								"embedding_llm": map[string]any{
 									"provider": "openai",
 									"model":    "text-embedding-3-small",
-									"api_key":  ragOpenAIKey(t),
+									"api_key":  "sk-test-embed-key",
 								},
 								"rag_llm": map[string]any{
 									"provider": "anthropic",
 									"model":    "claude-haiku-4-5-20251001",
-									"api_key":  ragAnthropicKey(t),
+									"api_key":  "sk-ant-test-key",
 								},
 							},
 						},
@@ -567,23 +653,6 @@ func waitForNonEmptyRAGAnswer(ctx context.Context, t testing.TB, baseURL, query 
 
 	t.Fatalf("RAG answer did not become non-empty within %s", maxWait)
 	return ""
-}
-
-// ragOpenAIKey returns the OpenAI API key for E2E tests.
-// Tests are skipped if the key is not configured in the fixture.
-func ragOpenAIKey(t testing.TB) string {
-	t.Helper()
-	// In CI the fixture config provides real keys via environment injection.
-	// For local runs without real keys, skip this test.
-	key := getEnvOrSkip(t, "E2E_OPENAI_API_KEY")
-	return key
-}
-
-// ragAnthropicKey returns the Anthropic API key for E2E tests.
-func ragAnthropicKey(t testing.TB) string {
-	t.Helper()
-	key := getEnvOrSkip(t, "E2E_ANTHROPIC_API_KEY")
-	return key
 }
 
 // getEnvOrSkip returns the value of the environment variable, or skips the
