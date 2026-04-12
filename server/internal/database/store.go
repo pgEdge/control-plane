@@ -13,6 +13,7 @@ type Store struct {
 	Instance              *InstanceStore
 	InstanceStatus        *InstanceStatusStore
 	InstanceSpec          *InstanceSpecStore
+	ScriptResult          *ScriptResultStore
 	ServiceInstance       *ServiceInstanceStore
 	ServiceInstanceStatus *ServiceInstanceStatusStore
 }
@@ -25,6 +26,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 		Instance:              NewInstanceStore(client, root),
 		InstanceStatus:        NewInstanceStatusStore(client, root),
 		InstanceSpec:          NewInstanceSpecStore(client, root),
+		ScriptResult:          NewScriptResultStore(client, root),
 		ServiceInstance:       NewServiceInstanceStore(client, root),
 		ServiceInstanceStatus: NewServiceInstanceStatusStore(client, root),
 	}

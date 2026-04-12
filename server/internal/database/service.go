@@ -173,6 +173,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 		s.store.Instance.DeleteByDatabaseID(databaseID),
 		s.store.InstanceSpec.DeleteByDatabaseID(databaseID),
 		s.store.InstanceStatus.DeleteByDatabaseID(databaseID),
+		s.store.ScriptResult.DeleteByDatabaseID(databaseID),
 	)
 
 	if err := s.store.Txn(ops...).Commit(ctx); err != nil {
@@ -274,6 +275,47 @@ func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID string, fr
 	storedDb.State = to
 	if err := s.store.Database.Update(storedDb).Exec(ctx); err != nil {
 		return fmt.Errorf("failed to update database state: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) GetScriptResult(ctx context.Context, databaseID string, scriptName ScriptName, nodeName string) (*ScriptResult, error) {
+	stored, err := s.store.ScriptResult.
+		GetByKey(databaseID, scriptName, nodeName).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return NewScriptResult(databaseID, scriptName, nodeName), nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get script result: %w", err)
+	}
+
+	return stored.Result, nil
+}
+
+func (s *Service) UpdateScriptResult(ctx context.Context, result *ScriptResult) error {
+	if err := result.Validate(); err != nil {
+		return fmt.Errorf("invalid script result: %w", err)
+	}
+
+	stored, err := s.store.ScriptResult.
+		GetByKey(result.DatabaseID, result.ScriptName, result.NodeName).
+		Exec(ctx)
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
+		stored = &StoredScriptResult{Result: result}
+	case err != nil:
+		return fmt.Errorf("failed to get script result: %w", err)
+	case stored.Result.Succeeded:
+		// Avoid overwriting a successful result in the off-chance of
+		// overlapping operations.
+		return errors.New("script already marked as succeeded")
+	default:
+		stored.Result = result
+	}
+
+	if err := s.store.ScriptResult.Update(stored).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to store script result: %w", err)
 	}
 
 	return nil
