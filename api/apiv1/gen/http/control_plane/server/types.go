@@ -2178,7 +2178,7 @@ type ServiceSpecResponseBody struct {
 	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `json:"config"`
+	Config map[string]any `json:"config,omitempty"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
@@ -2506,7 +2506,7 @@ type ServiceSpecRequestBody struct {
 	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `json:"config"`
+	Config map[string]any `json:"config,omitempty"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
@@ -2834,7 +2834,7 @@ type ServiceSpecRequestBodyRequestBody struct {
 	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `json:"config"`
+	Config map[string]any `json:"config,omitempty"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
@@ -5747,9 +5747,6 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
-	if body.Config == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("config", "body"))
-	}
 	if body.ServiceID != nil {
 		if utf8.RuneCountInString(*body.ServiceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 1, true))
@@ -6488,9 +6485,6 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	}
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
-	}
-	if body.Config == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("config", "body"))
 	}
 	if body.ServiceID != nil {
 		if utf8.RuneCountInString(*body.ServiceID) < 1 {

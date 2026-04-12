@@ -6383,7 +6383,6 @@ definitions:
       - service_type
       - version
       - host_ids
-      - config
   StartInstanceResponse:
     title: StartInstanceResponse
     type: object

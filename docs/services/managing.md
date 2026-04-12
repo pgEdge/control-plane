@@ -16,7 +16,7 @@ The following table describes the fields in a service spec:
 | `service_type` | string | Yes | The type of service to run. One of: `mcp`, `rag`, `postgrest`.                                                                                                   |
 | `version` | string | Yes | The service version in semver format (e.g., `1.0.0`) or the literal `latest`.                                                                                   |
 | `host_ids` | array | Yes | The IDs of the hosts to run this service on. One instance is created per host.                                                                                  |
-| `config` | object | Yes | Service-type-specific configuration. See the page for your service type for valid fields.                                                                       |
+| `config` | object | No | Service-type-specific configuration. See the page for your service type for valid fields. When omitted, the service uses sensible defaults.                     |
 | `port` | integer | No | Host port to publish the service on. Set to `0` to let Docker assign a random port. When omitted, the service is not reachable from outside the Docker network. |
 | `cpus` | string | No | CPU limit for the service container. Accepts a decimal (e.g., `"0.5"`) or millicpu suffix (e.g., `"500m"`). Defaults to container defaults if unspecified.      |
 | `memory` | string | No | Memory limit for the service container in SI or IEC notation (e.g., `"512M"`, `"1GiB"`). Defaults to container defaults if unspecified.                        |
