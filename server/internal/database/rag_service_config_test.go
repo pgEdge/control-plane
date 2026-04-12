@@ -411,6 +411,7 @@ func TestParseRAGServiceConfig_PipelineNameAllowlist(t *testing.T) {
 		"UPPER",                // uppercase
 		"pipe🔥line",           // unicode emoji
 		"pipeline.name",        // dot
+		"-pipeline",            // leading hyphen (could be misread as a CLI flag)
 		"",                     // empty (covered separately, but included for completeness)
 	}
 	for _, name := range invalidNames {
@@ -422,7 +423,7 @@ func TestParseRAGServiceConfig_PipelineNameAllowlist(t *testing.T) {
 			config["pipelines"].([]any)[0].(map[string]any)["name"] = name
 			_, errs := database.ParseRAGServiceConfig(config, false)
 			require.NotEmpty(t, errs, "name %q should be invalid", name)
-			assert.Contains(t, errs[0].Error(), "must match ^[a-z0-9_-]+$")
+			assert.Contains(t, errs[0].Error(), "must match ^[a-z0-9_][a-z0-9_-]*$")
 		})
 	}
 }
