@@ -176,6 +176,24 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		mounts = []mount.Mount{
 			docker.BuildMount(opts.DataPath, "/app/data", false),
 		}
+	case "rag":
+		user = fmt.Sprintf("%d", ragContainerUID)
+		command = []string{"/app/pgedge-rag-server"}
+		args = []string{"-config", "/app/data/pgedge-rag-server.yaml"}
+		// No curl in the RHEL minimal image — use a TCP probe instead.
+		healthcheck = &container.HealthConfig{
+			Test:        []string{"CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"},
+			StartPeriod: serviceHealthCheckStartPeriod,
+			Interval:    serviceHealthCheckInterval,
+			Timeout:     serviceHealthCheckTimeout,
+			Retries:     serviceHealthCheckRetries,
+		}
+		mounts = []mount.Mount{
+			docker.BuildMount(opts.DataPath, "/app/data", false),
+		}
+		if opts.KeysPath != "" {
+			mounts = append(mounts, docker.BuildMount(opts.KeysPath, "/app/keys", true))
+		}
 	default:
 		return swarm.ServiceSpec{}, fmt.Errorf("unsupported service type: %q", opts.ServiceSpec.ServiceType)
 	}

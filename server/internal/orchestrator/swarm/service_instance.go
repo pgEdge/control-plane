@@ -34,6 +34,7 @@ type ServiceInstanceResource struct {
 	ServiceName       string `json:"service_name"`
 	ServiceID         string `json:"service_id"`      // Docker Swarm service ID (set by Refresh)
 	ServiceSpecID     string `json:"service_spec_id"` // Logical service ID from the spec (e.g. "mcp-server")
+	ServiceType       string `json:"service_type"`    // Service type (e.g. "mcp", "rag", "postgrest")
 	HostID            string `json:"host_id"`
 	NeedsUpdate       bool   `json:"needs_update"`
 }
@@ -60,11 +61,15 @@ func (s *ServiceInstanceResource) Executor() resource.Executor {
 }
 
 func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
-	return []resource.Identifier{
+	deps := []resource.Identifier{
 		ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRO),
-		ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW),
-		ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID),
 	}
+	// RAG only has an RO role; all other service types also require an RW role.
+	if s.ServiceType != "rag" {
+		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW))
+	}
+	deps = append(deps, ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID))
+	return deps
 }
 
 func (s *ServiceInstanceResource) TypeDependencies() []resource.Type {

@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/rs/zerolog/log"
@@ -64,13 +65,21 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
 		ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO),
-		ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRW),
+	}
+	// RAG only has an RO role; all other service types also have an RW role.
+	if s.ServiceSpec.ServiceType != "rag" {
+		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRW))
 	}
 	switch s.ServiceSpec.ServiceType {
 	case "mcp":
 		deps = append(deps, MCPConfigResourceIdentifier(s.ServiceInstanceID))
 	case "postgrest":
 		deps = append(deps, PostgRESTConfigResourceIdentifier(s.ServiceInstanceID))
+	case "rag":
+		deps = append(deps,
+			RAGConfigResourceIdentifier(s.ServiceInstanceID),
+			RAGServiceKeysResourceIdentifier(s.ServiceInstanceID),
+		)
 	default:
 		log.Warn().Str("service_type", s.ServiceSpec.ServiceType).Msg("unknown service type in dependencies")
 	}
@@ -115,6 +124,12 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
+	// Resolve the keys directory path (RAG only): it lives at {dataPath}/keys.
+	var keysPath string
+	if s.ServiceSpec.ServiceType == "rag" {
+		keysPath = filepath.Join(dataPath, "keys")
+	}
+
 	spec, err := ServiceContainerSpec(&ServiceContainerSpecOptions{
 		ServiceSpec:        s.ServiceSpec,
 		ServiceInstanceID:  s.ServiceInstanceID,
@@ -131,6 +146,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		TargetSessionAttrs: s.TargetSessionAttrs,
 		Port:               s.Port,
 		DataPath:           dataPath,
+		KeysPath:           keysPath,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate service container spec: %w", err)
