@@ -146,7 +146,7 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, h *host.HostStatu
 	return nil
 }
 
-func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*database.InstanceResources, error) {
+func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
 	paths, err := o.instancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {
 		return nil, err
@@ -274,6 +274,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	instance := &database.InstanceResource{
 		Spec:             spec,
 		InstanceHostname: o.cfg.PeerAddress(),
+		PostInit:         scripts[database.ScriptNamePostInit],
 		OrchestratorDependencies: []resource.Identifier{
 			patroniUnit.Identifier(),
 		},
@@ -371,7 +372,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 	restoreSpec := *spec
 	restoreSpec.InPlaceRestore = true
 
-	instance, err := o.GenerateInstanceResources(&restoreSpec)
+	instance, err := o.GenerateInstanceResources(&restoreSpec, nil)
 	if err != nil {
 		return nil, err
 	}

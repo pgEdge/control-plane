@@ -250,11 +250,17 @@ func (w *Workflows) getNodeResources(
 	ctx workflow.Context,
 	node *database.NodeInstances,
 ) (*operations.NodeResources, error) {
+	scripts, err := w.getScripts(ctx, node)
+	if err != nil {
+		return nil, err
+	}
+
 	resources := make([]*database.InstanceResources, len(node.Instances))
 
 	for i, instance := range node.Instances {
 		in := &activities.GetInstanceResourcesInput{
-			Spec: instance,
+			Spec:    instance,
+			Scripts: scripts,
 		}
 		out, err := w.Activities.
 			ExecuteGetInstanceResources(ctx, in).
@@ -267,11 +273,58 @@ func (w *Workflows) getNodeResources(
 	}
 
 	return &operations.NodeResources{
+		DatabaseID:        node.DatabaseID,
 		DatabaseOwner:     node.DatabaseOwner,
 		DatabaseName:      node.DatabaseName,
 		NodeName:          node.NodeName,
 		SourceNode:        node.SourceNode,
 		InstanceResources: resources,
 		RestoreConfig:     node.RestoreConfig,
+		Scripts:           scripts,
 	}, nil
+}
+
+func (w *Workflows) getScripts(
+	ctx workflow.Context,
+	node *database.NodeInstances,
+) (database.Scripts, error) {
+	if node.Scripts == nil {
+		return nil, nil
+	}
+	var scriptNames []database.ScriptName
+	scripts := database.Scripts{}
+	if len(node.Scripts.PostInit) != 0 {
+		scripts[database.ScriptNamePostInit] = &database.Script{
+			DatabaseID: node.DatabaseID,
+			NodeName:   node.NodeName,
+			Name:       database.ScriptNamePostInit,
+			Statements: node.Scripts.PostInit,
+		}
+		scriptNames = append(scriptNames, database.ScriptNamePostInit)
+	}
+	if len(node.Scripts.PostDatabaseCreate) != 0 {
+		scripts[database.ScriptNamePostDatabaseCreate] = &database.Script{
+			DatabaseID: node.DatabaseID,
+			NodeName:   node.NodeName,
+			Name:       database.ScriptNamePostDatabaseCreate,
+			Statements: node.Scripts.PostDatabaseCreate,
+		}
+		scriptNames = append(scriptNames, database.ScriptNamePostDatabaseCreate)
+	}
+	in := &activities.GetScriptResultsInput{
+		DatabaseID:  node.DatabaseID,
+		NodeName:    node.NodeName,
+		ScriptNames: scriptNames,
+	}
+	out, err := w.Activities.
+		ExecuteGetScriptResults(ctx, in).
+		Get(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get script results: %w", err)
+	}
+	for name, succeeded := range out.Succeeded {
+		scripts[name].Succeeded = succeeded
+	}
+
+	return scripts, nil
 }

@@ -31,6 +31,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.GetInstanceResources),
 		work.RegisterActivity(a.GetPrimaryInstance),
 		work.RegisterActivity(a.GetRestoreResources),
+		work.RegisterActivity(a.GetScriptResults),
 		work.RegisterActivity(a.LogTaskEvent),
 		work.RegisterActivity(a.PerformFailover),
 		work.RegisterActivity(a.PerformSwitchover),

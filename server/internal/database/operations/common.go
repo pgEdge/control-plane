@@ -9,6 +9,7 @@ import (
 )
 
 type NodeResources struct {
+	DatabaseID        string
 	DatabaseOwner     string
 	DatabaseName      string
 	NodeName          string
@@ -16,6 +17,7 @@ type NodeResources struct {
 	PrimaryInstanceID string
 	InstanceResources []*database.InstanceResources
 	RestoreConfig     *database.RestoreConfig
+	Scripts           database.Scripts
 }
 
 func (n *NodeResources) primaryInstance() *database.InstanceResources {
@@ -55,11 +57,13 @@ func (n *NodeResources) databaseResourceState() (*resource.State, error) {
 	}
 
 	db := &database.PostgresDatabaseResource{
-		NodeName:         n.NodeName,
-		DatabaseName:     n.DatabaseName,
-		Owner:            n.DatabaseOwner,
-		RenameFrom:       renameFrom,
-		HasRestoreConfig: hasRestoreConfig,
+		DatabaseID:         n.DatabaseID,
+		NodeName:           n.NodeName,
+		DatabaseName:       n.DatabaseName,
+		Owner:              n.DatabaseOwner,
+		RenameFrom:         renameFrom,
+		HasRestoreConfig:   hasRestoreConfig,
+		PostDatabaseCreate: n.Scripts[database.ScriptNamePostDatabaseCreate],
 	}
 
 	state := resource.NewState()

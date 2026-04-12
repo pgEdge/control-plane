@@ -11,6 +11,7 @@ import (
 // as well as the end state for both the primary instance and the replica
 // instances for the given node.
 type NodeRestoreResources struct {
+	DatabaseID       string
 	DatabaseOwner    string
 	DatabaseName     string
 	NodeName         string
@@ -25,6 +26,7 @@ func (n *NodeRestoreResources) ToNodeResources() *NodeResources {
 	all = append(all, n.ReplicaInstances...)
 
 	return &NodeResources{
+		DatabaseID:        n.DatabaseID,
 		DatabaseOwner:     n.DatabaseOwner,
 		DatabaseName:      n.DatabaseName,
 		NodeName:          n.NodeName,

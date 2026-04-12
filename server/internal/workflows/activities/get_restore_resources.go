@@ -48,7 +48,7 @@ func (a *Activities) GetRestoreResources(ctx context.Context, input *GetRestoreR
 		return nil, fmt.Errorf("failed to reconcile instance spec: %w", err)
 	}
 
-	resources, err := a.Orchestrator.GenerateInstanceResources(spec)
+	resources, err := a.Orchestrator.GenerateInstanceResources(spec, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}
