@@ -20,6 +20,7 @@ func (w *Workflows) applyEvents(
 	databaseID string,
 	taskID uuid.UUID,
 	state *resource.State,
+	variables resource.Variables,
 	plan resource.Plan,
 	removeHosts ...string,
 ) error {
@@ -32,6 +33,7 @@ func (w *Workflows) applyEvents(
 				State:       state,
 				Event:       event,
 				RemoveHosts: removeHosts,
+				Variables:   variables,
 			}
 			future, err := w.Activities.ExecuteApplyEvent(ctx, in)
 			switch {
@@ -132,6 +134,7 @@ func (w *Workflows) applyPlans(
 	databaseID string,
 	taskID uuid.UUID,
 	state *resource.State,
+	variables resource.Variables,
 	plans []resource.Plan,
 	removeHosts ...string,
 ) error {
@@ -154,7 +157,7 @@ func (w *Workflows) applyPlans(
 		if err != nil {
 			return err
 		}
-		err = w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts...)
+		err = w.applyEvents(ctx, databaseID, taskID, state, variables, plan, removeHosts...)
 		if err != nil {
 			return fmt.Errorf("error in plan %d: %w", i, err)
 		}

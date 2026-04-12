@@ -17,11 +17,12 @@ import (
 )
 
 type ApplyEventInput struct {
-	DatabaseID  string          `json:"database_id"`
-	TaskID      uuid.UUID       `json:"task_id"`
-	State       *resource.State `json:"state"`
-	Event       *resource.Event `json:"event"`
-	RemoveHosts []string        `json:"remove_hosts"`
+	DatabaseID  string             `json:"database_id"`
+	TaskID      uuid.UUID          `json:"task_id"`
+	State       *resource.State    `json:"state"`
+	Event       *resource.Event    `json:"event"`
+	RemoveHosts []string           `json:"remove_hosts"`
+	Variables   resource.Variables `json:"variables"`
 }
 
 type ApplyEventOutput struct {
@@ -77,10 +78,11 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 	}
 
 	rc := &resource.Context{
-		State:    input.State,
-		Injector: a.Injector,
-		Registry: registry,
-		HostID:   a.Config.HostID,
+		State:     input.State,
+		Injector:  a.Injector,
+		Registry:  registry,
+		HostID:    a.Config.HostID,
+		Variables: input.Variables,
 	}
 
 	event := input.Event

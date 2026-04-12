@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/core"
-	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -18,17 +17,6 @@ var (
 )
 
 func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Executor) (core.Queue, error) {
-	registry, err := do.Invoke[*resource.Registry](a.Injector)
-	if err != nil {
-		return "", err
-	}
-	rc := &resource.Context{
-		State:    state,
-		Injector: a.Injector,
-		Registry: registry,
-		HostID:   a.Config.HostID,
-	}
-
 	switch executor.Type {
 	case resource.ExecutorTypeHost:
 		return utils.HostQueue(executor.ID), nil
@@ -37,7 +25,7 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 	case resource.ExecutorTypeAny:
 		return utils.AnyQueue(), nil
 	case resource.ExecutorTypePrimary:
-		node, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(executor.ID))
+		node, err := resource.FromState[*database.NodeResource](state, database.NodeResourceIdentifier(executor.ID))
 		if errors.Is(err, resource.ErrNotFound) {
 			return "", ErrExecutorNotFound
 		} else if err != nil {
@@ -48,7 +36,7 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 			// is probably missing the node in its dependencies.
 			return "", fmt.Errorf("node %s has no primary instance", node.Name)
 		}
-		instance, err := resource.FromContext[*database.InstanceResource](rc, database.InstanceResourceIdentifier(node.PrimaryInstanceID))
+		instance, err := resource.FromState[*database.InstanceResource](state, database.InstanceResourceIdentifier(node.PrimaryInstanceID))
 		if errors.Is(err, resource.ErrNotFound) {
 			return "", ErrExecutorNotFound
 		} else if err != nil {

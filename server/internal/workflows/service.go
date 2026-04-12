@@ -44,8 +44,8 @@ func NewService(
 	}
 }
 
-func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*task.Task, error) {
-	databaseID := spec.DatabaseID
+func (s *Service) CreateDatabase(ctx context.Context, db *database.Database) (*task.Task, error) {
+	databaseID := db.DatabaseID
 	// Clear out any old tasks. This can happen if you were to recreate a
 	// database with the same ID.
 	if err := s.taskSvc.DeleteAllTasks(ctx, task.ScopeDatabase, databaseID); err != nil {
@@ -60,8 +60,9 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input := &UpdateDatabaseInput{
-		TaskID: t.TaskID,
-		Spec:   spec,
+		TaskID:    t.TaskID,
+		Spec:      db.Spec,
+		Variables: db.Variables(),
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {
@@ -71,8 +72,8 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 	return t, nil
 }
 
-func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, forceUpdate bool, removeHosts ...string) (*task.Task, error) {
-	databaseID := spec.DatabaseID
+func (s *Service) UpdateDatabase(ctx context.Context, db *database.Database, forceUpdate bool, removeHosts ...string) (*task.Task, error) {
+	databaseID := db.DatabaseID
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		Scope:      task.ScopeDatabase,
 		DatabaseID: databaseID,
@@ -83,9 +84,10 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 	}
 	input := &UpdateDatabaseInput{
 		TaskID:      t.TaskID,
-		Spec:        spec,
+		Spec:        db.Spec,
 		ForceUpdate: forceUpdate,
 		RemoveHosts: removeHosts,
+		Variables:   db.Variables(),
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {
@@ -95,18 +97,19 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 	return t, nil
 }
 
-func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) (*task.Task, error) {
+func (s *Service) DeleteDatabase(ctx context.Context, db *database.Database) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		Scope:      task.ScopeDatabase,
-		DatabaseID: databaseID,
+		DatabaseID: db.DatabaseID,
 		Type:       task.TypeDelete,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input := &DeleteDatabaseInput{
-		DatabaseID: databaseID,
+		DatabaseID: db.DatabaseID,
 		TaskID:     t.TaskID,
+		Variables:  db.Variables(),
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.DeleteDatabase, input)
 	if err != nil {
@@ -150,11 +153,11 @@ func (s *Service) CreatePgBackRestBackup(
 
 func (s *Service) PgBackRestRestore(
 	ctx context.Context,
-	spec *database.Spec,
+	db *database.Database,
 	targetNodes []string,
 	restoreConfig *database.RestoreConfig,
 ) (*task.Task, []*task.Task, error) {
-	databaseID := spec.DatabaseID
+	databaseID := db.DatabaseID
 
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		Scope:      task.ScopeDatabase,
@@ -187,10 +190,11 @@ func (s *Service) PgBackRestRestore(
 
 	input := &PgBackRestRestoreInput{
 		TaskID:        t.TaskID,
-		Spec:          spec,
+		Spec:          db.Spec,
 		TargetNodes:   targetNodes,
 		RestoreConfig: restoreConfig.Clone(),
 		NodeTaskIDs:   nodeTaskIDs,
+		Variables:     db.Variables(),
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.PgBackRestRestore, input)
 	if err != nil {

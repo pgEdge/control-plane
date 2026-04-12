@@ -12,9 +12,10 @@ import (
 )
 
 type RefreshCurrentStateInput struct {
-	DatabaseID  string    `json:"database_id"`
-	TaskID      uuid.UUID `json:"task_id"`
-	RemoveHosts []string  `json:"remove_hosts,omitempty"`
+	DatabaseID  string             `json:"database_id"`
+	TaskID      uuid.UUID          `json:"task_id"`
+	RemoveHosts []string           `json:"remove_hosts,omitempty"`
+	Variables   resource.Variables `json:"variables"`
 }
 
 type RefreshCurrentStateOutput struct {
@@ -73,7 +74,7 @@ func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurr
 	if err != nil {
 		return nil, err
 	}
-	if err := w.applyEvents(ctx, input.DatabaseID, input.TaskID, current, planRefreshOutput.Plan, input.RemoveHosts...); err != nil {
+	if err := w.applyEvents(ctx, input.DatabaseID, input.TaskID, current, input.Variables, planRefreshOutput.Plan, input.RemoveHosts...); err != nil {
 		return nil, fmt.Errorf("failed to apply refresh events: %w", err)
 	}
 	duration := workflow.Now(ctx).Sub(start)

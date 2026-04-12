@@ -9,13 +9,15 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
+	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 type DeleteDatabaseInput struct {
-	DatabaseID string    `json:"database_id"`
-	TaskID     uuid.UUID `json:"task_id"`
+	DatabaseID string             `json:"database_id"`
+	TaskID     uuid.UUID          `json:"task_id"`
+	Variables  resource.Variables `json:"variables"`
 }
 
 type DeleteDatabaseOutput struct{}
@@ -81,6 +83,7 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.DatabaseID,
 		TaskID:     input.TaskID,
+		Variables:  input.Variables,
 	}
 	refreshCurrentOutput, err := w.ExecuteRefreshCurrentState(ctx, refreshCurrentInput).Get(ctx)
 	if err != nil {
@@ -98,7 +101,7 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 		return nil, handleError(err)
 	}
 
-	err = w.applyPlans(ctx, input.DatabaseID, input.TaskID, current, plans)
+	err = w.applyPlans(ctx, input.DatabaseID, input.TaskID, current, input.Variables, plans)
 	if err != nil {
 		return nil, handleError(err)
 	}

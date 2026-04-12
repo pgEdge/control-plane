@@ -327,7 +327,7 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 		return nil, apiErr(err)
 	}
 
-	t, err := s.workflowSvc.CreateDatabase(ctx, spec)
+	t, err := s.workflowSvc.CreateDatabase(ctx, db)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -396,7 +396,7 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	}
 
 	prevState := db.State
-	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, req.ForceUpdate, req.RemoveHost...)
+	t, err := s.workflowSvc.UpdateDatabase(ctx, db, req.ForceUpdate, req.RemoveHost...)
 	if err != nil {
 		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, prevState)
 		if restorationErr != nil {
@@ -431,7 +431,7 @@ func (s *PostInitHandlers) DeleteDatabase(ctx context.Context, req *api.DeleteDa
 		return nil, apiErr(err)
 	}
 
-	t, err := s.workflowSvc.DeleteDatabase(ctx, databaseID)
+	t, err := s.workflowSvc.DeleteDatabase(ctx, db)
 
 	if err != nil {
 		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateDeleting, prevState)
@@ -817,7 +817,7 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 		return apiErr(cause)
 	}
 
-	t, nodeTasks, err := s.workflowSvc.PgBackRestRestore(ctx, db.Spec, targetNodes, restoreConfig)
+	t, nodeTasks, err := s.workflowSvc.PgBackRestRestore(ctx, db, targetNodes, restoreConfig)
 	if err != nil {
 		return nil, handleError(err)
 	}
