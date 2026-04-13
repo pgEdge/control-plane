@@ -151,6 +151,13 @@ func GenerateDatabaseNetworkID(databaseID string) string {
 	return databaseID
 }
 
+// CopyPortFrom copies the port from the current (persisted) spec to this spec,
+// retaining any previously allocated stable random port. This mirrors the
+// reconcilePort logic used by InstanceSpec.CopySettingsFrom.
+func (s *ServiceInstanceSpec) CopyPortFrom(current *ServiceInstanceSpec) {
+	s.Port = reconcilePort(current.Port, s.Port)
+}
+
 // ServiceInstanceSpec contains the specification for generating service instance resources.
 type ServiceInstanceSpec struct {
 	ServiceInstanceID  string

@@ -149,6 +149,18 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 		}
 	}
 
+	serviceInstanceSpecs, err := s.store.ServiceInstanceSpec.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get service instance specs: %w", err)
+	}
+	for _, spec := range serviceInstanceSpecs {
+		if err := s.releaseServiceInstancePort(ctx, spec.Spec); err != nil {
+			return err
+		}
+	}
+
 	var ops []storage.TxnOperation
 
 	spec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
@@ -174,6 +186,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 		s.store.InstanceSpec.DeleteByDatabaseID(databaseID),
 		s.store.InstanceStatus.DeleteByDatabaseID(databaseID),
 		s.store.ScriptResult.DeleteByDatabaseID(databaseID),
+		s.store.ServiceInstanceSpec.DeleteByDatabaseID(databaseID),
 	)
 
 	if err := s.store.Txn(ops...).Commit(ctx); err != nil {
@@ -723,6 +736,103 @@ func (s *Service) DeleteInstanceSpec(ctx context.Context, databaseID, instanceID
 	return nil
 }
 
+func (s *Service) ReconcileServiceInstanceSpec(ctx context.Context, spec *ServiceInstanceSpec) (*ServiceInstanceSpec, error) {
+	if s.cfg.HostID != spec.HostID {
+		return nil, fmt.Errorf("this service instance belongs to another host - this host='%s', service instance host='%s'", s.cfg.HostID, spec.HostID)
+	}
+
+	var previous *ServiceInstanceSpec
+	stored, err := s.store.ServiceInstanceSpec.
+		GetByKey(spec.DatabaseID, spec.ServiceInstanceID).
+		Exec(ctx)
+	switch {
+	case err == nil:
+		previous = stored.Spec
+		spec.CopyPortFrom(previous)
+	case errors.Is(err, storage.ErrNotFound):
+		stored = &StoredServiceInstanceSpec{}
+	default:
+		return nil, fmt.Errorf("failed to get current spec for service instance '%s': %w", spec.ServiceInstanceID, err)
+	}
+
+	var allocated []int
+	rollback := func(cause error) error {
+		rollbackCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		return errors.Join(cause, s.portsSvc.ReleasePort(rollbackCtx, spec.HostID, allocated...))
+	}
+
+	if spec.Port != nil && *spec.Port == 0 {
+		port, err := s.portsSvc.AllocatePort(ctx, spec.HostID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to allocate port for service instance: %w", err)
+		}
+		allocated = append(allocated, port)
+		spec.Port = utils.PointerTo(port)
+	}
+
+	stored.Spec = spec
+	err = s.store.ServiceInstanceSpec.
+		Update(stored).
+		Exec(ctx)
+	if err != nil {
+		return nil, rollback(fmt.Errorf("failed to persist updated service instance spec: %w", err))
+	}
+
+	if err := s.releasePreviousServiceInstancePort(ctx, previous, spec); err != nil {
+		return nil, err
+	}
+
+	return spec, nil
+}
+
+func (s *Service) DeleteServiceInstanceSpec(ctx context.Context, databaseID, serviceInstanceID string) error {
+	spec, err := s.store.ServiceInstanceSpec.
+		GetByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to check if service instance spec exists: %w", err)
+	}
+
+	if err := s.releaseServiceInstancePort(ctx, spec.Spec); err != nil {
+		return err
+	}
+
+	_, err = s.store.ServiceInstanceSpec.
+		DeleteByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete service instance spec: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) releaseServiceInstancePort(ctx context.Context, spec *ServiceInstanceSpec) error {
+	err := s.portsSvc.ReleasePortIfDefined(ctx, spec.HostID, spec.Port)
+	if err != nil {
+		return fmt.Errorf("failed to release port for service instance '%s': %w", spec.ServiceInstanceID, err)
+	}
+
+	return nil
+}
+
+func (s *Service) releasePreviousServiceInstancePort(ctx context.Context, previous, new *ServiceInstanceSpec) error {
+	if previous == nil {
+		return nil
+	}
+	if portShouldBeReleased(previous.Port, new.Port) {
+		err := s.portsSvc.ReleasePortIfDefined(ctx, previous.HostID, previous.Port)
+		if err != nil {
+			return fmt.Errorf("failed to release previous service instance port: %w", err)
+		}
+	}
+	return nil
+}
+
 func (s *Service) releaseInstancePorts(ctx context.Context, spec *InstanceSpec) error {
 	err := s.portsSvc.ReleasePortIfDefined(ctx, spec.HostID, spec.Port, spec.PatroniPort)
 	if err != nil {
@@ -913,7 +1023,7 @@ func (s *Service) DeleteServiceInstance(ctx context.Context, databaseID, service
 		return fmt.Errorf("failed to delete stored service instance status: %w", err)
 	}
 
-	return nil
+	return s.DeleteServiceInstanceSpec(ctx, databaseID, serviceInstanceID)
 }
 
 func (s *Service) UpdateServiceInstanceStatus(
