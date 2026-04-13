@@ -1,6 +1,8 @@
 package swarm
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -36,6 +38,16 @@ func buildPostgRESTEnvVars() []string {
 		"PGRST_SERVER_PORT=8080",
 		"PGRST_ADMIN_SERVER_PORT=3001",
 	}
+}
+
+// ragConfigHash returns a short hex digest of the RAG service configuration.
+// It is embedded in the container spec as PGEDGE_CONFIG_VERSION so that Docker
+// Swarm detects a TaskTemplate change and restarts the container whenever the
+// pipeline configuration or API keys change.
+func ragConfigHash(config map[string]any) string {
+	b, _ := json.Marshal(config)
+	sum := sha256.Sum256(b)
+	return fmt.Sprintf("%x", sum[:8])
 }
 
 // ServiceContainerSpecOptions contains all parameters needed to build a service container spec.
@@ -180,6 +192,10 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		user = fmt.Sprintf("%d", ragContainerUID)
 		command = []string{"/app/pgedge-rag-server"}
 		args = []string{"-config", "/app/data/pgedge-rag-server.yaml"}
+		// Embed a hash of the service config so that Docker Swarm detects a
+		// TaskTemplate change and restarts the container when pipelines or API
+		// keys change. Without this, bind-mount updates are invisible to Swarm.
+		env = []string{"PGEDGE_CONFIG_VERSION=" + ragConfigHash(opts.ServiceSpec.Config)}
 		// No curl in the RHEL minimal image — use a TCP probe instead.
 		healthcheck = &container.HealthConfig{
 			Test:        []string{"CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"},

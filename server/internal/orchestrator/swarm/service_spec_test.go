@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 )
@@ -356,6 +358,84 @@ func TestServiceContainerSpec_ExtraNetworks(t *testing.T) {
 	if networks[3].Target != "monitoring" {
 		t.Errorf("networks[3].Target = %q, want %q", networks[3].Target, "monitoring")
 	}
+}
+
+func TestRagConfigHash(t *testing.T) {
+	cfg := map[string]any{
+		"pipelines": []any{
+			map[string]any{"name": "default", "api_key": "sk-abc"},
+		},
+	}
+
+	h1 := ragConfigHash(cfg)
+	h2 := ragConfigHash(cfg)
+	assert.Equal(t, h1, h2, "same config must produce the same hash")
+	assert.Len(t, h1, 16, "hash should be 16 hex chars (8 bytes)")
+
+	changed := map[string]any{
+		"pipelines": []any{
+			map[string]any{"name": "default", "api_key": "sk-xyz"},
+		},
+	}
+	assert.NotEqual(t, h1, ragConfigHash(changed), "different config must produce a different hash")
+}
+
+func TestServiceContainerSpec_RAGHasConfigVersionEnv(t *testing.T) {
+	config := map[string]any{
+		"pipelines": []any{
+			map[string]any{"name": "default", "api_key": "sk-test"},
+		},
+	}
+	opts := &ServiceContainerSpecOptions{
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "rag",
+			ServiceType: "rag",
+			Version:     "latest",
+			Config:      config,
+		},
+		ServiceInstanceID: "db1-rag-host1",
+		DatabaseID:        "db1",
+		DatabaseName:      "testdb",
+		HostID:            "host1",
+		ServiceName:       "db1-rag-host1",
+		Hostname:          "rag-host1",
+		CohortMemberID:    "node-123",
+		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/rag-server:latest"},
+		Credentials:       &database.ServiceUser{Username: "svc_rag", Password: "pw"},
+		DatabaseNetworkID: "db1-database",
+		Port:              intPtr(0),
+		DataPath:          "/var/lib/pgedge/services/db1-rag-host1",
+		KeysPath:          "/var/lib/pgedge/services/db1-rag-host1/keys",
+	}
+
+	spec, err := ServiceContainerSpec(opts)
+	require.NoError(t, err)
+
+	env := spec.TaskTemplate.ContainerSpec.Env
+	var configVersion string
+	for _, e := range env {
+		if strings.HasPrefix(e, "PGEDGE_CONFIG_VERSION=") {
+			configVersion = strings.TrimPrefix(e, "PGEDGE_CONFIG_VERSION=")
+		}
+	}
+	require.NotEmpty(t, configVersion, "RAG container spec must have PGEDGE_CONFIG_VERSION env var")
+	assert.Equal(t, ragConfigHash(config), configVersion)
+
+	// Changing the config must produce a different env var value.
+	opts.ServiceSpec.Config = map[string]any{
+		"pipelines": []any{
+			map[string]any{"name": "default", "api_key": "sk-new"},
+		},
+	}
+	spec2, err := ServiceContainerSpec(opts)
+	require.NoError(t, err)
+	var configVersion2 string
+	for _, e := range spec2.TaskTemplate.ContainerSpec.Env {
+		if strings.HasPrefix(e, "PGEDGE_CONFIG_VERSION=") {
+			configVersion2 = strings.TrimPrefix(e, "PGEDGE_CONFIG_VERSION=")
+		}
+	}
+	assert.NotEqual(t, configVersion, configVersion2, "changed config must produce a different PGEDGE_CONFIG_VERSION")
 }
 
 func TestServiceContainerSpec_NoExtraNetworks(t *testing.T) {
