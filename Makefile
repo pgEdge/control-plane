@@ -384,8 +384,8 @@ dev-detached: dev-build docker-swarm-init
 dev-down:
 	$(docker_compose_dev) down
 
-.PHONY: dev-teardown
-dev-teardown: dev-down
+.PHONY: dev-reset
+dev-reset: dev-down
 	# remove postgres and supported services
 	ids=$$(docker service ls -q); \
 	if [ -n "$$ids" ]; then \

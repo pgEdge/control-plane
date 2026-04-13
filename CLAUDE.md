@@ -19,8 +19,8 @@ make dev-build
 # Stop development environment
 make dev-down
 
-# Complete teardown (removes databases, networks, data)
-make dev-teardown
+# Reset development environment (removes databases, networks, data)
+make dev-reset
 ```
 
 ### Testing
