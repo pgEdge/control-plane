@@ -1,17 +1,22 @@
 ansible_playbook=ansible-playbook \
 	--extra-vars='@vars.yaml'
 
+.PHONY: quit
+quit:
+	[ -e ./circus.pid ] && circusctl --timeout 2 quit 2>/dev/null || true
+	rm -f ./circus.pid
+
 .PHONY: deploy
 deploy:
 	$(ansible_playbook) deploy.yaml
 
 .PHONY: teardown
-teardown:
+teardown: quit
 	$(ansible_playbook) teardown.yaml
 	rm -rf ./data
 
 .PHONY: reset
-reset:
+reset: quit
 	$(ansible_playbook) stop-dbs.yaml
 	rm -rf ./data
 
@@ -27,5 +32,5 @@ fix-clocks:
 	ansible --become -i ./inventory.yaml all -m command -a 'chronyc -a makestep'
 
 .PHONY: run
-run: build fix-clocks
-	LIMA_DIR=$(shell pwd) circusd ./circus.ini
+run: quit build fix-clocks
+	LIMA_DIR=$(shell pwd) circusd --pidfile ./circus.pid ./circus.ini
