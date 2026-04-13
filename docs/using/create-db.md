@@ -163,3 +163,64 @@ After creating the database, you can enable extensions in your database using `C
 !!! note
 
     Always include `spock` in `shared_preload_libraries`, as it is required for core functionality provided by the Control Plane. The Control Plane will call `CREATE EXTENSION` for spock when initializing each instance.
+
+## User-Defined Scripts
+
+The `scripts` field allows you to run SQL statements at specific points during the database creation process. The scripts are executed by the `pgedge` superuser. This is useful for setting up roles, default privileges, schema objects, and other one-time initialization that must happen before the database is ready for use.
+
+Two script types are supported:
+
+- `post_init` - Runs on each primary instance after the instance is created, but before database users are created. Statements execute in the `postgres` database within a transaction. Use this to create roles that database users can be assigned to via their `roles` field.
+- `post_database_create` - Runs on each primary instance after the application database is created and Spock is initialized, but before subscriptions are set up. Statements execute in the application database within a transaction. Use this to set default privileges, create tables, or perform other schema initialization.
+
+!!! warning
+
+    Scripts only execute during the initial creation of a database. Once a database has been successfully created, any changes to the `scripts` field will have no effect.
+
+!!! warning
+
+    Script statements execute within a transaction. Operations that cannot run inside a transaction - such as `CREATE DATABASE`, `VACUUM`, or `CREATE INDEX CONCURRENTLY` - are not supported.
+
+The following example creates a database with a `read_write` role that is assigned to an application user. The `post_init` script creates the role before users are provisioned, and `post_database_create` configures default privileges so that objects created by the `admin` user are automatically accessible to the role:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "password": "password",
+                        "db_owner": true,
+                        "attributes": ["LOGIN", "SUPERUSER"]
+                    },
+                    {
+                        "username": "app",
+                        "password": "password",
+                        "roles": ["read_write"]
+                    }
+                ],
+                "port": 5432,
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { "name": "n2", "host_ids": ["host-2"] },
+                    { "name": "n3", "host_ids": ["host-3"] }
+                ],
+                "scripts": {
+                    "post_init": [
+                        "CREATE ROLE read_write NOLOGIN"
+                    ],
+                    "post_database_create": [
+                        "ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO read_write",
+                        "ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO read_write",
+                        "ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO read_write"
+                    ]
+                }
+            }
+        }'
+    ```
