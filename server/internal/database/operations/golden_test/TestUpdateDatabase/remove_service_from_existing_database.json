@@ -26,11 +26,6 @@
         "type": "delete",
         "resource_id": "swarm.network::database-id",
         "diff": null
-      },
-      {
-        "type": "delete",
-        "resource_id": "swarm.service_user_role::database-id-test-svc-host-1-id",
-        "diff": null
       }
     ]
   ]

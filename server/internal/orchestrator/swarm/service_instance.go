@@ -62,13 +62,17 @@ func (s *ServiceInstanceResource) Executor() resource.Executor {
 
 func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRO),
+		ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID),
 	}
-	// RAG only has an RO role; all other service types also require an RW role.
-	if s.ServiceType != "rag" {
-		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW))
+	// MCP uses connect_as credentials — no ServiceUserRole dependency.
+	// Other service types still use ServiceUserRole until they adopt connect_as.
+	// RAG only has an RO role; other service types (PostgREST) also require an RW role.
+	if s.ServiceType != "mcp" {
+		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRO))
+		if s.ServiceType != "rag" {
+			deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW))
+		}
 	}
-	deps = append(deps, ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID))
 	return deps
 }
 

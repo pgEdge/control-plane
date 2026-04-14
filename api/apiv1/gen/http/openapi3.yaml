@@ -8188,6 +8188,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -8238,6 +8239,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -8568,6 +8570,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -8618,6 +8621,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -8668,6 +8672,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -8718,6 +8723,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -9157,6 +9163,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -9206,6 +9213,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -9255,6 +9263,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -9304,6 +9313,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -9819,6 +9829,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -9868,6 +9879,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -9917,6 +9929,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -9966,6 +9979,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -10402,6 +10416,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -10451,6 +10466,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -10500,6 +10516,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -11154,6 +11171,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -11203,6 +11221,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -11252,6 +11271,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -11688,6 +11708,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -11737,6 +11758,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -11786,6 +11808,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -11835,6 +11858,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -12348,6 +12372,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -12397,6 +12422,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -12446,6 +12472,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -12495,6 +12522,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -12790,6 +12818,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -12838,6 +12867,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -12886,6 +12916,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -13257,6 +13288,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -13305,6 +13337,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -13353,6 +13386,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -13647,6 +13681,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -13696,6 +13731,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -14068,6 +14104,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -14117,6 +14154,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -14166,6 +14204,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -14215,6 +14254,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -14651,6 +14691,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -14700,6 +14741,7 @@ components:
                 llm_model: gpt-4
                 llm_provider: openai
                 openai_api_key: sk-...
+              connect_as: app
               cpus: 500m
               database_connection:
                 target_nodes:
@@ -15072,6 +15114,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -15121,6 +15164,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -15170,6 +15214,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -15219,6 +15264,7 @@ components:
               llm_model: gpt-4
               llm_provider: openai
               openai_api_key: sk-...
+            connect_as: app
             cpus: 500m
             database_connection:
               target_nodes:
@@ -17997,6 +18043,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18055,6 +18106,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:
@@ -18115,6 +18167,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18171,6 +18228,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:
@@ -18232,6 +18290,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18288,6 +18351,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:
@@ -18350,6 +18414,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18407,6 +18476,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:
@@ -18469,6 +18539,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18527,6 +18602,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:
@@ -18589,6 +18665,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18647,6 +18728,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:
@@ -18709,6 +18791,11 @@ components:
             llm_provider: openai
             openai_api_key: sk-...
           additionalProperties: true
+        connect_as:
+          type: string
+          description: Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.
+          default: ""
+          example: app
         cpus:
           type: string
           description: The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.
@@ -18765,6 +18852,7 @@ components:
           llm_model: gpt-4
           llm_provider: openai
           openai_api_key: sk-...
+        connect_as: app
         cpus: 500m
         database_connection:
           target_nodes:

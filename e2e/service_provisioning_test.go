@@ -52,6 +52,7 @@ func TestProvisionMCPService(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					//Version:     "1.0.0",
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
@@ -183,6 +184,7 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					//Version:     "1.0.0",
 					Version: "latest",
 					HostIds: []controlplane.Identifier{
@@ -293,6 +295,7 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					//Version:     "1.0.0",
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host2)},
@@ -363,6 +366,7 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					Version:     "99.99.99", // Valid semver but not registered in ServiceVersions
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
@@ -471,6 +475,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					Version:     "99.99.99", // Unsupported version - workflow will fail
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
@@ -560,6 +565,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
+						ConnectAs:   "admin",
 						Version:     "latest", // Corrected version
 						HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 						Config: map[string]any{
@@ -673,6 +679,7 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
@@ -743,6 +750,7 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
@@ -817,6 +825,7 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
@@ -881,6 +890,7 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
@@ -963,6 +973,7 @@ func TestUpdateDatabaseRemoveService(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
+					ConnectAs:   "admin",
 					//Version:     "1.0.0",
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},

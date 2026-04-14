@@ -4082,6 +4082,9 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
 	}
+	if v.ConnectAs != nil {
+		res.ConnectAs = *v.ConnectAs
+	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
 		res.HostIds[i] = controlplane.Identifier(val)
@@ -4099,6 +4102,9 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = unmarshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
+	}
+	if v.ConnectAs == nil {
+		res.ConnectAs = ""
 	}
 
 	return res
@@ -4682,6 +4688,7 @@ func marshalControlplaneServiceSpecToServiceSpecResponseBody(v *controlplane.Ser
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
+		ConnectAs:   v.ConnectAs,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
@@ -4704,6 +4711,12 @@ func marshalControlplaneServiceSpecToServiceSpecResponseBody(v *controlplane.Ser
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = marshalControlplaneDatabaseConnectionToDatabaseConnectionResponseBody(v.DatabaseConnection)
+	}
+	{
+		var zero string
+		if res.ConnectAs == zero {
+			res.ConnectAs = ""
+		}
 	}
 
 	return res
@@ -5142,6 +5155,9 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
 	}
+	if v.ConnectAs != nil {
+		res.ConnectAs = *v.ConnectAs
+	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
 		res.HostIds[i] = controlplane.Identifier(val)
@@ -5159,6 +5175,9 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = unmarshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
+	}
+	if v.ConnectAs == nil {
+		res.ConnectAs = ""
 	}
 
 	return res

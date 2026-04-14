@@ -697,12 +697,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Config: map[string]any{
 							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
@@ -768,12 +772,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -787,6 +795,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						ServiceType: "postgrest",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config:      map[string]any{},
 					},
@@ -807,12 +816,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -826,6 +839,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						ServiceType: "postgrest",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-2"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config:      map[string]any{},
 					},
@@ -843,12 +857,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1", "host-2"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1", "host-2"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -871,12 +889,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Config: map[string]any{
 							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
@@ -889,6 +911,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						ServiceType: "postgrest",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Config:      map[string]any{},
 					},
 				},
@@ -905,12 +928,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(0),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -924,6 +951,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						ServiceType: "postgrest",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(0),
 						Config:      map[string]any{},
 					},
@@ -942,12 +970,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(5432),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -974,12 +1006,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Port:    utils.PointerTo(5433),
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(5433),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -1006,12 +1042,16 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{"host-1"},
 					},
 				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-2"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(5432),
 						Config: map[string]any{
 							"llm_enabled":       true,
@@ -1786,7 +1826,14 @@ func TestValidateServiceSpec(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := errors.Join(validateServiceSpec(tc.svc, nil, false)...)
+			// Default connect_as to "app" for tests that don't set it
+			if tc.svc.ConnectAs == "" {
+				tc.svc.ConnectAs = "app"
+			}
+			testDBUsers := []*api.DatabaseUserSpec{
+				{Username: "app", DbOwner: utils.PointerTo(true)},
+			}
+			err := errors.Join(validateServiceSpec(tc.svc, nil, false, testDBUsers)...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
@@ -1881,6 +1928,9 @@ func TestValidateDatabaseConnection(t *testing.T) {
 
 func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 	nodeNames := ds.Set[string]{"n1": true, "n2": true}
+	testDBUsers := []*api.DatabaseUserSpec{
+		{Username: "app", DbOwner: utils.PointerTo(true)},
+	}
 
 	t.Run("allow_writes with unsafe target_session_attrs", func(t *testing.T) {
 		svc := &api.ServiceSpec{
@@ -1888,6 +1938,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 			ServiceType: "mcp",
 			Version:     "1.0.0",
 			HostIds:     []api.Identifier{"host-1"},
+			ConnectAs:   "app",
 			Config: map[string]any{
 				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
@@ -1899,7 +1950,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 				TargetSessionAttrs: utils.PointerTo("prefer-standby"),
 			},
 		}
-		err := errors.Join(validateServiceSpec(svc, nil, false, nodeNames)...)
+		err := errors.Join(validateServiceSpec(svc, nil, false, testDBUsers, nodeNames)...)
 		assert.ErrorContains(t, err, "allow_writes requires target_session_attrs 'primary' or 'read-write'")
 	})
 
@@ -1909,6 +1960,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 			ServiceType: "mcp",
 			Version:     "1.0.0",
 			HostIds:     []api.Identifier{"host-1"},
+			ConnectAs:   "app",
 			Config: map[string]any{
 				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
@@ -1920,7 +1972,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 				TargetSessionAttrs: utils.PointerTo("primary"),
 			},
 		}
-		err := errors.Join(validateServiceSpec(svc, nil, false, nodeNames)...)
+		err := errors.Join(validateServiceSpec(svc, nil, false, testDBUsers, nodeNames)...)
 		assert.NoError(t, err)
 	})
 
@@ -1930,6 +1982,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 			ServiceType: "mcp",
 			Version:     "1.0.0",
 			HostIds:     []api.Identifier{"host-1"},
+			ConnectAs:   "app",
 			Config: map[string]any{
 				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
@@ -1940,8 +1993,62 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 				TargetNodes: []string{"n1", "nonexistent"},
 			},
 		}
-		err := errors.Join(validateServiceSpec(svc, nil, false, nodeNames)...)
+		err := errors.Join(validateServiceSpec(svc, nil, false, testDBUsers, nodeNames)...)
 		assert.ErrorContains(t, err, `node "nonexistent" does not exist in the database spec`)
+	})
+}
+
+func TestValidateConnectAs(t *testing.T) {
+	dbUsers := []*api.DatabaseUserSpec{
+		{Username: "app", DbOwner: utils.PointerTo(true)},
+		{Username: "app_read_only"},
+		{Username: "admin"},
+	}
+
+	baseSvc := func(connectAs string, allowWrites bool) *api.ServiceSpec {
+		return &api.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+			Version:     "1.0.0",
+			HostIds:     []api.Identifier{"host-1"},
+			ConnectAs:   connectAs,
+			Config: map[string]any{
+				"allow_writes": allowWrites,
+			},
+		}
+	}
+
+	t.Run("valid owner with writes", func(t *testing.T) {
+		errs := validateConnectAs(baseSvc("app", true), dbUsers, nil)
+		assert.Empty(t, errs)
+	})
+
+	t.Run("valid read-only user without writes", func(t *testing.T) {
+		errs := validateConnectAs(baseSvc("app_read_only", false), dbUsers, nil)
+		assert.Empty(t, errs)
+	})
+
+	t.Run("valid owner without writes", func(t *testing.T) {
+		errs := validateConnectAs(baseSvc("app", false), dbUsers, nil)
+		assert.Empty(t, errs)
+	})
+
+	t.Run("non-owner with allow_writes", func(t *testing.T) {
+		errs := validateConnectAs(baseSvc("app_read_only", true), dbUsers, nil)
+		assert.Len(t, errs, 1)
+		assert.ErrorContains(t, errs[0], "allow_writes requires connect_as to reference a database_users entry with db_owner: true")
+	})
+
+	t.Run("empty connect_as", func(t *testing.T) {
+		errs := validateConnectAs(baseSvc("", false), dbUsers, nil)
+		assert.Len(t, errs, 1)
+		assert.ErrorContains(t, errs[0], "connect_as is required")
+	})
+
+	t.Run("nonexistent user", func(t *testing.T) {
+		errs := validateConnectAs(baseSvc("ghost", false), dbUsers, nil)
+		assert.Len(t, errs, 1)
+		assert.ErrorContains(t, errs[0], `connect_as "ghost" does not match any database_users entry`)
 	})
 }
 
@@ -2041,12 +2148,17 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 		return cfg
 	}
 
+	testDBUsers := []*api.DatabaseUserSpec{
+		{Username: "app", DbOwner: utils.PointerTo(true)},
+	}
+
 	newMCPService := func(id string, config map[string]any) *api.ServiceSpec {
 		return &api.ServiceSpec{
 			ServiceID:   api.Identifier(id),
 			ServiceType: "mcp",
 			Version:     "latest",
 			HostIds:     []api.Identifier{"host-1"},
+			ConnectAs:   "app",
 			Config:      config,
 		}
 	}
@@ -2067,6 +2179,7 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 			name: "new service added via update-database - bootstrap fields allowed",
 			old:  &database.Spec{},
 			new: &api.DatabaseSpec{
+				DatabaseUsers: testDBUsers,
 				Services: []*api.ServiceSpec{
 					newMCPService("appmcp", mcpWithBootstrap()),
 				},
@@ -2076,6 +2189,7 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 			name: "no existing services - bootstrap fields allowed",
 			old:  &database.Spec{Services: nil},
 			new: &api.DatabaseSpec{
+				DatabaseUsers: testDBUsers,
 				Services: []*api.ServiceSpec{
 					newMCPService("appmcp", mcpWithBootstrap()),
 				},
@@ -2085,6 +2199,7 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 			name: "existing service updated - bootstrap fields rejected",
 			old:  oldSpecWithMCP,
 			new: &api.DatabaseSpec{
+				DatabaseUsers: testDBUsers,
 				Services: []*api.ServiceSpec{
 					newMCPService("appmcp", mcpWithBootstrap()),
 				},
@@ -2098,6 +2213,7 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 			name: "existing service updated without bootstrap fields - no error",
 			old:  oldSpecWithMCP,
 			new: &api.DatabaseSpec{
+				DatabaseUsers: testDBUsers,
 				Services: []*api.ServiceSpec{
 					newMCPService("appmcp", validMCPConfig),
 				},
@@ -2107,12 +2223,16 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 			name: "port conflict on update-database",
 			old:  &database.Spec{},
 			new: &api.DatabaseSpec{
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "mcp-server",
 						ServiceType: "mcp",
 						Version:     "latest",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config:      validMCPConfig,
 					},
@@ -2121,6 +2241,7 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 						ServiceType: "postgrest",
 						Version:     "latest",
 						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
 						Config:      map[string]any{},
 					},

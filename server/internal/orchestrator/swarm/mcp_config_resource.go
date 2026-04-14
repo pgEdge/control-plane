@@ -44,24 +44,16 @@ type MCPConfigResource struct {
 	DatabaseName       string                      `json:"database_name"`
 	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`
 	TargetSessionAttrs string                      `json:"target_session_attrs"`
-	ROUsername         string                      `json:"ro_username"`
-	ROPassword         string                      `json:"ro_password"`
-	RWUsername         string                      `json:"rw_username"`
-	RWPassword         string                      `json:"rw_password"`
+	ConnectAsUsername  string                      `json:"connect_as_username"`
+	ConnectAsPassword  string                      `json:"connect_as_password"`
 }
 
 func (r *MCPConfigResource) ResourceVersion() string {
-	return "2"
+	return "3"
 }
 
 func (r *MCPConfigResource) DiffIgnore() []string {
-	return []string{
-		// Credentials are populated from ServiceUserRole resources during refresh.
-		"/ro_username",
-		"/ro_password",
-		"/rw_username",
-		"/rw_password",
-	}
+	return nil
 }
 
 func (r *MCPConfigResource) Identifier() resource.Identifier {
@@ -75,8 +67,6 @@ func (r *MCPConfigResource) Executor() resource.Executor {
 func (r *MCPConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
-		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO),
-		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW),
 	}
 }
 
@@ -115,11 +105,6 @@ func (r *MCPConfigResource) Create(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	// Populate credentials from ServiceUserRole
-	if err := r.populateCredentials(rc); err != nil {
-		return err
-	}
-
 	// Generate and write config.yaml (always)
 	if err := r.writeConfigFile(fs, dirPath); err != nil {
 		return err
@@ -151,11 +136,6 @@ func (r *MCPConfigResource) Update(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	// Populate credentials from ServiceUserRole
-	if err := r.populateCredentials(rc); err != nil {
-		return err
-	}
-
 	// Overwrite config.yaml (CP-owned, always regenerated)
 	if err := r.writeConfigFile(fs, dirPath); err != nil {
 		return err
@@ -180,25 +160,15 @@ func (r *MCPConfigResource) Delete(ctx context.Context, rc *resource.Context) er
 	return nil
 }
 
-// activeCredentials returns the username and password for the active service
-// user based on the AllowWrites config setting.
-func (r *MCPConfigResource) activeCredentials() (username, password string) {
-	if r.Config.AllowWrites != nil && *r.Config.AllowWrites {
-		return r.RWUsername, r.RWPassword
-	}
-	return r.ROUsername, r.ROPassword
-}
-
 // writeConfigFile generates and writes the config.yaml file.
 func (r *MCPConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
-	username, password := r.activeCredentials()
 	content, err := GenerateMCPConfig(&MCPConfigParams{
 		Config:             r.Config,
 		DatabaseName:       r.DatabaseName,
 		DatabaseHosts:      r.DatabaseHosts,
 		TargetSessionAttrs: r.TargetSessionAttrs,
-		Username:           username,
-		Password:           password,
+		Username:           r.ConnectAsUsername,
+		Password:           r.ConnectAsPassword,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate MCP config: %w", err)
@@ -315,26 +285,6 @@ func (r *MCPConfigResource) signalConfigReload(ctx context.Context, rc *resource
 	logger.Info().
 		Str("container_id", container.ID).
 		Msg("sent SIGHUP to MCP container for config reload")
-
-	return nil
-}
-
-// populateCredentials fetches credentials from both ServiceUserRole resources
-// (RO and RW). Credential selection happens at usage time based on AllowWrites.
-func (r *MCPConfigResource) populateCredentials(rc *resource.Context) error {
-	roRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO))
-	if err != nil {
-		return fmt.Errorf("failed to get RO service user role from state: %w", err)
-	}
-	r.ROUsername = roRole.Username
-	r.ROPassword = roRole.Password
-
-	rwRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW))
-	if err != nil {
-		return fmt.Errorf("failed to get RW service user role from state: %w", err)
-	}
-	r.RWUsername = rwRole.Username
-	r.RWPassword = rwRole.Password
 
 	return nil
 }

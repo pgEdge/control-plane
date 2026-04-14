@@ -142,6 +142,7 @@ type ServiceSpec struct {
 	MemoryBytes        *uint64             `json:"memory,omitempty"`
 	OrchestratorOpts   *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 	DatabaseConnection *DatabaseConnection `json:"database_connection,omitempty"`
+	ConnectAs          string              `json:"connect_as"`
 }
 
 func (s *ServiceSpec) Clone() *ServiceSpec {
@@ -159,6 +160,7 @@ func (s *ServiceSpec) Clone() *ServiceSpec {
 		MemoryBytes:        utils.ClonePointer(s.MemoryBytes),
 		OrchestratorOpts:   s.OrchestratorOpts.Clone(),
 		DatabaseConnection: s.DatabaseConnection.Clone(),
+		ConnectAs:          s.ConnectAs,
 	}
 }
 
