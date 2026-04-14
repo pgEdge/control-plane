@@ -2196,7 +2196,7 @@ type ServiceSpecResponseBody struct {
 	DatabaseConnection *DatabaseConnectionResponseBody `json:"database_connection,omitempty"`
 	// Username of the database_users entry this service connects as. The user must
 	// exist in database_users and have appropriate roles for the service's needs.
-	ConnectAs string `json:"connect_as"`
+	ConnectAs string `json:"connect_as,omitempty"`
 }
 
 // DatabaseConnectionResponseBody is used to define fields on response body
@@ -2548,7 +2548,7 @@ type ServiceSpecRequestBody struct {
 	DatabaseConnection *DatabaseConnectionRequestBody `json:"database_connection,omitempty"`
 	// Username of the database_users entry this service connects as. The user must
 	// exist in database_users and have appropriate roles for the service's needs.
-	ConnectAs *string `json:"connect_as"`
+	ConnectAs *string `json:"connect_as,omitempty"`
 }
 
 // DatabaseConnectionRequestBody is used to define fields on request body types.
@@ -2900,7 +2900,7 @@ type ServiceSpecRequestBodyRequestBody struct {
 	DatabaseConnection *DatabaseConnectionRequestBodyRequestBody `json:"database_connection,omitempty"`
 	// Username of the database_users entry this service connects as. The user must
 	// exist in database_users and have appropriate roles for the service's needs.
-	ConnectAs *string `json:"connect_as"`
+	ConnectAs *string `json:"connect_as,omitempty"`
 }
 
 // DatabaseConnectionRequestBodyRequestBody is used to define fields on request
@@ -5825,9 +5825,6 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
-	if body.ConnectAs == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("connect_as", "body"))
-	}
 	if body.ServiceID != nil {
 		if utf8.RuneCountInString(*body.ServiceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 1, true))
@@ -6605,9 +6602,6 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	}
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
-	}
-	if body.ConnectAs == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("connect_as", "body"))
 	}
 	if body.ServiceID != nil {
 		if utf8.RuneCountInString(*body.ServiceID) < 1 {

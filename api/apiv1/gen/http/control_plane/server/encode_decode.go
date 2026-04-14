@@ -4081,7 +4081,9 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
-		ConnectAs:   *v.ConnectAs,
+	}
+	if v.ConnectAs != nil {
+		res.ConnectAs = *v.ConnectAs
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
@@ -4100,6 +4102,9 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = unmarshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
+	}
+	if v.ConnectAs == nil {
+		res.ConnectAs = ""
 	}
 
 	return res
@@ -4707,6 +4712,12 @@ func marshalControlplaneServiceSpecToServiceSpecResponseBody(v *controlplane.Ser
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = marshalControlplaneDatabaseConnectionToDatabaseConnectionResponseBody(v.DatabaseConnection)
 	}
+	{
+		var zero string
+		if res.ConnectAs == zero {
+			res.ConnectAs = ""
+		}
+	}
 
 	return res
 }
@@ -5143,7 +5154,9 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
-		ConnectAs:   *v.ConnectAs,
+	}
+	if v.ConnectAs != nil {
+		res.ConnectAs = *v.ConnectAs
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
@@ -5162,6 +5175,9 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = unmarshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
+	}
+	if v.ConnectAs == nil {
+		res.ConnectAs = ""
 	}
 
 	return res

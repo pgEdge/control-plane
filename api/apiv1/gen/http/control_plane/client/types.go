@@ -2112,7 +2112,7 @@ type ServiceSpecRequestBody struct {
 	DatabaseConnection *DatabaseConnectionRequestBody `json:"database_connection,omitempty"`
 	// Username of the database_users entry this service connects as. The user must
 	// exist in database_users and have appropriate roles for the service's needs.
-	ConnectAs string `json:"connect_as"`
+	ConnectAs string `json:"connect_as,omitempty"`
 }
 
 // DatabaseConnectionRequestBody is used to define fields on request body types.
@@ -2537,7 +2537,7 @@ type ServiceSpecResponseBody struct {
 	DatabaseConnection *DatabaseConnectionResponseBody `json:"database_connection,omitempty"`
 	// Username of the database_users entry this service connects as. The user must
 	// exist in database_users and have appropriate roles for the service's needs.
-	ConnectAs *string `json:"connect_as"`
+	ConnectAs *string `json:"connect_as,omitempty"`
 }
 
 // DatabaseConnectionResponseBody is used to define fields on response body
@@ -2890,7 +2890,7 @@ type ServiceSpecRequestBodyRequestBody struct {
 	DatabaseConnection *DatabaseConnectionRequestBodyRequestBody `json:"database_connection,omitempty"`
 	// Username of the database_users entry this service connects as. The user must
 	// exist in database_users and have appropriate roles for the service's needs.
-	ConnectAs string `json:"connect_as"`
+	ConnectAs string `json:"connect_as,omitempty"`
 }
 
 // DatabaseConnectionRequestBodyRequestBody is used to define fields on request
