@@ -109,7 +109,7 @@ services:
       timeout: 1s
       retries: 30
   api-docs:
-    image: redocly/redoc
+    image: redocly/redoc:v2.5.1
     ports:
       - 8999:80
     volumes:
