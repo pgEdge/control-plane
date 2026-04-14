@@ -160,7 +160,7 @@ Endpoints that are unimplemented will return a `not implemented` error.
 To reset your environment to its initial state, run:
 
 ```
-make dev-teardown
+make dev-reset
 ```
 
 This will:
