@@ -547,6 +547,40 @@ var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 	g.Required("source_database_id", "source_node_name", "source_database_name", "repository")
 })
 
+var SQLScript = g.Type("SQLScript", g.ArrayOf(g.String), func() {
+	g.Description("Each element of this array is an individual SQL statement.")
+	g.MinLength(0)
+	g.MaxLength(256)
+	g.Elem(func() {
+		g.MinLength(1)
+		g.MaxLength(1024)
+	})
+	g.Example([]string{
+		"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app",
+		"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app",
+		"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app",
+	})
+})
+
+var DatabaseScripts = g.Type("DatabaseScripts", func() {
+	g.Attribute("post_init", SQLScript, func() {
+		g.Description("The `post_init` script runs on each primary instance of each node after the instance is created for the first time. Each element of the array is single SQL statement. These statements run within a transaction in the `postgres` database before the users are created, so this feature can be used to create nologin roles that can be assigned to the database users via their `roles` field.")
+		g.Example([]string{
+			"CREATE ROLE accounting_admin NOLOGIN",
+		})
+		g.Meta("struct:tag:json", "post_init,omitempty")
+	})
+	g.Attribute("post_database_create", SQLScript, func() {
+		g.Description("The `post_database_create` script runs once on each primary instance of each node after the application database is created for the first time. Each element of the array is a single SQL statement. These statements run within a transaction in the application database after Spock is initialized, but before subscriptions are created.")
+		g.Example([]string{
+			"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app",
+			"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app",
+			"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app",
+		})
+		g.Meta("struct:tag:json", "post_database_create,omitempty")
+	})
+})
+
 var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Attribute("database_name", g.String, func() {
 		g.Description("The name of the Postgres database.")
@@ -630,6 +664,10 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
 		g.Meta("struct:tag:json", "orchestrator_opts,omitempty")
+	})
+	g.Attribute("scripts", DatabaseScripts, func() {
+		g.Description("User-defined SQL scripts that run at different points during the database creation process. Once a database has been successfully created, changes to these scripts will have no effect.")
+		g.Meta("struct:tag:json", "scripts,omitempty")
 	})
 
 	g.Required("database_name", "nodes")
@@ -968,8 +1006,8 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 		})
 	})
 
-	g.Example("Built-in roles", func() {
-		g.Description("The Control Plane can create multiple users on your behalf, and it includes some built-in roles that make it easy to assign limited permissions.")
+	g.Example("User-defined SQL scripts", func() {
+		g.Description("The Control Plane can run custom SQL scripts at different points in the database creation process.")
 		g.Value(map[string]any{
 			"id": "storefront",
 			"spec": map[string]any{
@@ -983,22 +1021,30 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 						"attributes": []string{"LOGIN", "SUPERUSER"},
 					},
 					{
-						"username":   "storefront_app",
-						"password":   "password",
-						"attributes": []string{"LOGIN"},
-						"roles":      []string{"pgedge_application"},
+						"username": "storefront",
+						"password": "password",
+						"roles":    []string{"read_write"},
 					},
 					{
-						"username":   "business_intelligence_app",
-						"password":   "password",
-						"attributes": []string{"LOGIN"},
-						"roles":      []string{"pgedge_application_read_only"},
+						"username": "accounting",
+						"password": "password",
+						"roles":    []string{"read_write"},
 					},
 				},
 				"nodes": []map[string]any{
 					{"name": "n1", "host_ids": []string{"us-east-1"}},
 					{"name": "n2", "host_ids": []string{"ap-south-1"}},
 					{"name": "n3", "host_ids": []string{"eu-central-1"}},
+				},
+				"scripts": map[string]any{
+					"post_init": []string{
+						"CREATE ROLE read_write NOLOGIN",
+					},
+					"post_database_create": []string{
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO read_write",
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO read_write",
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO read_write",
+					},
 				},
 			},
 		})

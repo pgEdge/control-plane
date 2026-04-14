@@ -148,8 +148,8 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, status *host.Host
 	return nil
 }
 
-func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*database.InstanceResources, error) {
-	instance, orchestratorResources, err := o.instanceResources(spec)
+func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
+	instance, orchestratorResources, err := o.instanceResources(spec, scripts)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func ServiceInstanceName(serviceType, databaseID, serviceID, hostID string) stri
 	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, base36[:8])
 }
 
-func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database.InstanceResource, []resource.Resource, error) {
+func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, error) {
 	images, err := o.versions.GetImages(spec.PgEdgeVersion)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get images: %w", err)
@@ -294,6 +294,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 	instance := &database.InstanceResource{
 		Spec:             spec,
 		InstanceHostname: instanceHostname,
+		PostInit:         scripts[database.ScriptNamePostInit],
 		OrchestratorDependencies: []resource.Identifier{
 			service.Identifier(),
 		},
@@ -372,7 +373,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 
 	spec.InPlaceRestore = true
 
-	instance, resources, err := o.instanceResources(spec)
+	instance, resources, err := o.instanceResources(spec, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}

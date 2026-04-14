@@ -34,6 +34,7 @@ type InstanceResource struct {
 	PrimaryInstanceID        string                `json:"primary_instance_id"`
 	OrchestratorDependencies []resource.Identifier `json:"dependencies"`
 	ConnectionInfo           *ConnectionInfo       `json:"connection_info"`
+	PostInit                 *Script               `json:"post_init"`
 }
 
 func (r *InstanceResource) ResourceVersion() string {
@@ -83,6 +84,10 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 		return resource.ErrNotFound
 	}
 	r.PrimaryInstanceID = primaryInstanceID
+
+	if err := SetScriptNeedsToRun(ctx, rc, r.PostInit); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -175,6 +180,10 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return err
 	}
 	defer conn.Close(ctx)
+
+	if err := ExecuteScript(ctx, rc, conn, r.PostInit); err != nil {
+		return fmt.Errorf("failed to execute post-init script: %w", err)
+	}
 
 	// Spock shouldn't exist in the 'postgres' database, but we want to err on
 	// the side of caution.

@@ -1842,6 +1842,10 @@ type DatabaseSpecRequestBody struct {
 	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
+	// User-defined SQL scripts that run at different points during the database
+	// creation process. Once a database has been successfully created, changes to
+	// these scripts will have no effect.
+	Scripts *DatabaseScriptsRequestBody `json:"scripts,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
@@ -2119,6 +2123,23 @@ type DatabaseConnectionRequestBody struct {
 	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
 }
 
+// DatabaseScriptsRequestBody is used to define fields on request body types.
+type DatabaseScriptsRequestBody struct {
+	// The `post_init` script runs on each primary instance of each node after the
+	// instance is created for the first time. Each element of the array is single
+	// SQL statement. These statements run within a transaction in the `postgres`
+	// database before the users are created, so this feature can be used to create
+	// nologin roles that can be assigned to the database users via their `roles`
+	// field.
+	PostInit []string `json:"post_init,omitempty"`
+	// The `post_database_create` script runs once on each primary instance of each
+	// node after the application database is created for the first time. Each
+	// element of the array is a single SQL statement. These statements run within
+	// a transaction in the application database after Spock is initialized, but
+	// before subscriptions are created.
+	PostDatabaseCreate []string `json:"post_database_create,omitempty"`
+}
+
 // DatabaseResponseBody is used to define fields on response body types.
 type DatabaseResponseBody struct {
 	// Unique identifier for the database.
@@ -2241,6 +2262,10 @@ type DatabaseSpecResponseBody struct {
 	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
+	// User-defined SQL scripts that run at different points during the database
+	// creation process. Once a database has been successfully created, changes to
+	// these scripts will have no effect.
+	Scripts *DatabaseScriptsResponseBody `json:"scripts,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
@@ -2521,6 +2546,23 @@ type DatabaseConnectionResponseBody struct {
 	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
 }
 
+// DatabaseScriptsResponseBody is used to define fields on response body types.
+type DatabaseScriptsResponseBody struct {
+	// The `post_init` script runs on each primary instance of each node after the
+	// instance is created for the first time. Each element of the array is single
+	// SQL statement. These statements run within a transaction in the `postgres`
+	// database before the users are created, so this feature can be used to create
+	// nologin roles that can be assigned to the database users via their `roles`
+	// field.
+	PostInit []string `json:"post_init,omitempty"`
+	// The `post_database_create` script runs once on each primary instance of each
+	// node after the application database is created for the first time. Each
+	// element of the array is a single SQL statement. These statements run within
+	// a transaction in the application database after Spock is initialized, but
+	// before subscriptions are created.
+	PostDatabaseCreate []string `json:"post_database_create,omitempty"`
+}
+
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
 type DatabaseSpecRequestBodyRequestBody struct {
@@ -2562,6 +2604,10 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
+	// User-defined SQL scripts that run at different points during the database
+	// creation process. Once a database has been successfully created, changes to
+	// these scripts will have no effect.
+	Scripts *DatabaseScriptsRequestBodyRequestBody `json:"scripts,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
@@ -2848,6 +2894,24 @@ type DatabaseConnectionRequestBodyRequestBody struct {
 	// derived from the service config. Valid values: primary, prefer-standby,
 	// standby, read-write, any.
 	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
+}
+
+// DatabaseScriptsRequestBodyRequestBody is used to define fields on request
+// body types.
+type DatabaseScriptsRequestBodyRequestBody struct {
+	// The `post_init` script runs on each primary instance of each node after the
+	// instance is created for the first time. Each element of the array is single
+	// SQL statement. These statements run within a transaction in the `postgres`
+	// database before the users are created, so this feature can be used to create
+	// nologin roles that can be assigned to the database users via their `roles`
+	// field.
+	PostInit []string `json:"post_init,omitempty"`
+	// The `post_database_create` script runs once on each primary instance of each
+	// node after the application database is created for the first time. Each
+	// element of the array is a single SQL statement. These statements run within
+	// a transaction in the application database after Spock is initialized, but
+	// before subscriptions are created.
+	PostDatabaseCreate []string `json:"post_database_create,omitempty"`
 }
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
@@ -5753,6 +5817,11 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if body.Scripts != nil {
+		if err2 := ValidateDatabaseScriptsRequestBody(body.Scripts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	return
 }
 
@@ -6307,6 +6376,40 @@ func ValidateDatabaseConnectionRequestBody(body *DatabaseConnectionRequestBody) 
 	return
 }
 
+// ValidateDatabaseScriptsRequestBody runs the validations defined on
+// DatabaseScriptsRequestBody
+func ValidateDatabaseScriptsRequestBody(body *DatabaseScriptsRequestBody) (err error) {
+	if len(body.PostInit) < 0 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init", body.PostInit, len(body.PostInit), 0, true))
+	}
+	if len(body.PostInit) > 256 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init", body.PostInit, len(body.PostInit), 256, false))
+	}
+	for _, e := range body.PostInit {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init[*]", e, utf8.RuneCountInString(e), 1024, false))
+		}
+	}
+	if len(body.PostDatabaseCreate) < 0 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create", body.PostDatabaseCreate, len(body.PostDatabaseCreate), 0, true))
+	}
+	if len(body.PostDatabaseCreate) > 256 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create", body.PostDatabaseCreate, len(body.PostDatabaseCreate), 256, false))
+	}
+	for _, e := range body.PostDatabaseCreate {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create[*]", e, utf8.RuneCountInString(e), 1024, false))
+		}
+	}
+	return
+}
+
 // ValidateDatabaseResponseBody runs a no-op validation on DatabaseResponseBody
 func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
 	return
@@ -6420,6 +6523,12 @@ func ValidateDatabaseConnectionResponseBody(body *DatabaseConnectionResponseBody
 	return
 }
 
+// ValidateDatabaseScriptsResponseBody runs a no-op validation on
+// DatabaseScriptsResponseBody
+func ValidateDatabaseScriptsResponseBody(body *DatabaseScriptsResponseBody) (err error) {
+	return
+}
+
 // ValidateDatabaseSpecRequestBodyRequestBody runs the validations defined on
 // DatabaseSpecRequestBodyRequestBody
 func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyRequestBody) (err error) {
@@ -6511,6 +6620,11 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 	}
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Scripts != nil {
+		if err2 := ValidateDatabaseScriptsRequestBodyRequestBody(body.Scripts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -7063,6 +7177,40 @@ func ValidateDatabaseConnectionRequestBodyRequestBody(body *DatabaseConnectionRe
 	if body.TargetSessionAttrs != nil {
 		if !(*body.TargetSessionAttrs == "primary" || *body.TargetSessionAttrs == "prefer-standby" || *body.TargetSessionAttrs == "standby" || *body.TargetSessionAttrs == "read-write" || *body.TargetSessionAttrs == "any") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.target_session_attrs", *body.TargetSessionAttrs, []any{"primary", "prefer-standby", "standby", "read-write", "any"}))
+		}
+	}
+	return
+}
+
+// ValidateDatabaseScriptsRequestBodyRequestBody runs the validations defined
+// on DatabaseScriptsRequestBodyRequestBody
+func ValidateDatabaseScriptsRequestBodyRequestBody(body *DatabaseScriptsRequestBodyRequestBody) (err error) {
+	if len(body.PostInit) < 0 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init", body.PostInit, len(body.PostInit), 0, true))
+	}
+	if len(body.PostInit) > 256 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init", body.PostInit, len(body.PostInit), 256, false))
+	}
+	for _, e := range body.PostInit {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_init[*]", e, utf8.RuneCountInString(e), 1024, false))
+		}
+	}
+	if len(body.PostDatabaseCreate) < 0 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create", body.PostDatabaseCreate, len(body.PostDatabaseCreate), 0, true))
+	}
+	if len(body.PostDatabaseCreate) > 256 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create", body.PostDatabaseCreate, len(body.PostDatabaseCreate), 256, false))
+	}
+	for _, e := range body.PostDatabaseCreate {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create[*]", e, utf8.RuneCountInString(e), 1024, false))
 		}
 	}
 	return

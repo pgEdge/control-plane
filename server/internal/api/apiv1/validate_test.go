@@ -1174,6 +1174,60 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				"database_users[3]: cannot have multiple users with db_owner = true",
 			},
 		},
+		{
+			name: "valid scripts",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+				Scripts: &api.DatabaseScripts{
+					PostInit: api.SQLScript{
+						"CREATE ROLE pgedge_superuser NOLOGIN",
+					},
+					PostDatabaseCreate: api.SQLScript{
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app",
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app",
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app;",
+					},
+				},
+			},
+		},
+		{
+			name: "invalid scripts",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+				Scripts: &api.DatabaseScripts{
+					PostInit: api.SQLScript{
+						"CREATE ROLE",
+					},
+					PostDatabaseCreate: api.SQLScript{
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT USAGE ON SCHEMAS TO app",
+						// This line has a typo in the word 'PRIVILEGES'
+						"ALTER DEFAULT PRIVILEGS FOR ROLE admin GRANT ALL PRIVILEGES ON TABLES TO app",
+						"ALTER DEFAULT PRIVILEGES FOR ROLE admin GRANT ALL PRIVILEGES ON SEQUENCES TO app",
+						// This line contains multiple statements
+						"ALTER DEFAULT PRIVILEGES FOR ROLE app GRANT USAGE ON SCHEMAS TO app_read_only; ALTER DEFAULT PRIVILEGES FOR ROLE app GRANT USAGE ON TYPES TO app_read_only;",
+					},
+				},
+			},
+			expected: []string{
+				"scripts.post_init[0]: failed to parse SQL statement",
+				"scripts.post_database_create[1]: failed to parse SQL statement",
+				"scripts.post_database_create[3]: failed to parse SQL statement",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDatabaseSpec(config.OrchestratorSwarm, tc.spec)

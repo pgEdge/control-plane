@@ -26,12 +26,14 @@ func PostgresDatabaseResourceIdentifier(nodeName, dbName string) resource.Identi
 }
 
 type PostgresDatabaseResource struct {
-	NodeName          string                `json:"node_name"`
-	DatabaseName      string                `json:"database_name"`
-	Owner             string                `json:"owner"`
-	RenameFrom        string                `json:"rename_from"`
-	HasRestoreConfig  bool                  `json:"has_restore_config"`
-	ExtraDependencies []resource.Identifier `json:"extra_dependencies"`
+	DatabaseID         string                `json:"database_id"`
+	NodeName           string                `json:"node_name"`
+	DatabaseName       string                `json:"database_name"`
+	Owner              string                `json:"owner"`
+	RenameFrom         string                `json:"rename_from"`
+	HasRestoreConfig   bool                  `json:"has_restore_config"`
+	ExtraDependencies  []resource.Identifier `json:"extra_dependencies"`
+	PostDatabaseCreate *Script               `json:"post_database_create,omitempty"`
 }
 
 func (p *PostgresDatabaseResource) ResourceVersion() string {
@@ -94,6 +96,10 @@ func (p *PostgresDatabaseResource) Refresh(ctx context.Context, rc *resource.Con
 	}
 	if needsCreate {
 		return resource.ErrNotFound
+	}
+
+	if err := SetScriptNeedsToRun(ctx, rc, p.PostDatabaseCreate); err != nil {
+		return err
 	}
 
 	return nil
@@ -214,6 +220,9 @@ func (p *PostgresDatabaseResource) create(ctx context.Context, rc *resource.Cont
 	err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to initialize spock: %w", err)
+	}
+	if err := ExecuteScript(ctx, rc, conn, p.PostDatabaseCreate); err != nil {
+		return fmt.Errorf("failed to execute post-database-create script: %w", err)
 	}
 
 	return nil

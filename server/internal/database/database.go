@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/resource"
 )
+
+const VariableNameDatabaseNotCreated resource.VariableName = "database_not_created"
 
 type DatabaseState string
 
@@ -48,6 +51,13 @@ type Database struct {
 	Spec             *Spec
 	Instances        []*Instance
 	ServiceInstances []*ServiceInstance
+	NotCreated       bool
+}
+
+func (d *Database) Variables() resource.Variables {
+	return resource.Variables{
+		VariableNameDatabaseNotCreated: d.NotCreated,
+	}
 }
 
 func databaseToStored(d *Database) *StoredDatabase {
@@ -57,6 +67,7 @@ func databaseToStored(d *Database) *StoredDatabase {
 		CreatedAt:  d.CreatedAt,
 		UpdatedAt:  d.UpdatedAt,
 		State:      d.State,
+		NotCreated: d.NotCreated,
 	}
 }
 
@@ -70,6 +81,7 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 		Spec:             storedSpec.Spec,
 		Instances:        instances,
 		ServiceInstances: serviceInstances,
+		NotCreated:       d.NotCreated,
 	}
 }
 

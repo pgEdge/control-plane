@@ -12,7 +12,8 @@ import (
 )
 
 type GetInstanceResourcesInput struct {
-	Spec *database.InstanceSpec
+	Spec    *database.InstanceSpec
+	Scripts database.Scripts
 }
 
 type GetInstanceResourcesOutput struct {
@@ -44,7 +45,7 @@ func (a *Activities) GetInstanceResources(ctx context.Context, input *GetInstanc
 		return nil, fmt.Errorf("failed to reconcile instance spec: %w", err)
 	}
 
-	resources, err := a.Orchestrator.GenerateInstanceResources(spec)
+	resources, err := a.Orchestrator.GenerateInstanceResources(spec, input.Scripts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}

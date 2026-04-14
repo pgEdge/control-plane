@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -19,6 +20,7 @@ type PgBackRestRestoreInput struct {
 	TargetNodes   []string                `json:"target_nodes"`
 	RestoreConfig *database.RestoreConfig `json:"restore_config"`
 	NodeTaskIDs   map[string]uuid.UUID    `json:"node_tasks_ids"`
+	Variables     resource.Variables      `json:"variables"`
 }
 
 type PgBackRestRestoreOutput struct{}
@@ -62,6 +64,7 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		TaskID:     input.TaskID,
+		Variables:  input.Variables,
 	}
 	refreshCurrentOutput, err := w.
 		ExecuteRefreshCurrentState(ctx, refreshCurrentInput).
@@ -87,7 +90,7 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 		return nil, handleError(err)
 	}
 
-	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
+	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans)
 	if err != nil {
 		return nil, handleError(err)
 	}

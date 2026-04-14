@@ -1,0 +1,3 @@
+kind: Added
+body: Added the ability to run user-defined SQL scripts during database creation via the `scripts` field on the database spec.
+time: 2026-04-12T20:25:28.998139-04:00

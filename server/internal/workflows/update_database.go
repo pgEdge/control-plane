@@ -15,10 +15,11 @@ import (
 )
 
 type UpdateDatabaseInput struct {
-	TaskID      uuid.UUID      `json:"task_id"`
-	Spec        *database.Spec `json:"spec"`
-	ForceUpdate bool           `json:"force_update"`
-	RemoveHosts []string       `json:"remove_hosts"`
+	TaskID      uuid.UUID          `json:"task_id"`
+	Spec        *database.Spec     `json:"spec"`
+	ForceUpdate bool               `json:"force_update"`
+	RemoveHosts []string           `json:"remove_hosts"`
+	Variables   resource.Variables `json:"variables"`
 }
 
 type UpdateDatabaseOutput struct {
@@ -88,6 +89,7 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		DatabaseID:  input.Spec.DatabaseID,
 		TaskID:      input.TaskID,
 		RemoveHosts: input.RemoveHosts,
+		Variables:   input.Variables,
 	}
 	refreshCurrentOutput, err := w.ExecuteRefreshCurrentState(ctx, refreshCurrentInput).Get(ctx)
 	if err != nil {
@@ -114,7 +116,7 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
-	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans, input.RemoveHosts...)
+	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans, input.RemoveHosts...)
 	if err != nil {
 		return nil, handleError(err)
 	}

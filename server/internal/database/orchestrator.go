@@ -155,7 +155,7 @@ func (c *ConnectionInfo) AdminDSN(dbName string) *postgres.DSN {
 }
 
 type Orchestrator interface {
-	GenerateInstanceResources(spec *InstanceSpec) (*InstanceResources, error)
+	GenerateInstanceResources(spec *InstanceSpec, scripts Scripts) (*InstanceResources, error)
 	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
 	GenerateServiceInstanceResources(spec *ServiceInstanceSpec) (*ServiceInstanceResources, error)
 	GetInstanceConnectionInfo(ctx context.Context,

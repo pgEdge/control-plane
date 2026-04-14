@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/valkdb/postgresparser"
+
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -69,6 +71,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSp
 	errs = append(errs, validateMemory(spec.Memory, []string{"memory"})...)
 	errs = append(errs, validatePorts(spec.Port, spec.PatroniPort, []string{"port"}))
 	errs = append(errs, validateUsers(spec.DatabaseUsers, []string{"database_users"})...)
+	errs = append(errs, validateScripts(spec.Scripts, []string{"scripts"})...)
 
 	// Track node-name uniqueness and prepare set for cross-node checks.
 	seenNodeNames := make(ds.Set[string], len(spec.Nodes))
@@ -820,4 +823,34 @@ func validateHostIDUniqueness(ctx context.Context, hostSvc *host.Service, hostID
 		// Other errors (connection failures, permission errors, etc.) should be propagated
 		return fmt.Errorf("failed to check for existing host: %w", err)
 	}
+}
+
+func validateScripts(scripts *api.DatabaseScripts, path []string) []error {
+	if scripts == nil {
+		return nil
+	}
+	return slices.Concat(
+		validateScript(scripts.PostInit, appendPath(path, "post_init")),
+		validateScript(scripts.PostDatabaseCreate, appendPath(path, "post_database_create")),
+	)
+}
+
+func validateScript(statements []string, path []string) []error {
+	var errs []error
+	for i, statement := range statements {
+		statementPath := appendPath(path, arrayIndexPath(i))
+		if err := validateSQLStatement(statement, statementPath); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func validateSQLStatement(statement string, path []string) error {
+	_, err := postgresparser.ParseSQLStrict(statement)
+	if err != nil {
+		err = fmt.Errorf("failed to parse SQL statement: %w", err)
+		return newValidationError(err, path)
+	}
+	return nil
 }

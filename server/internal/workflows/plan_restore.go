@@ -94,6 +94,7 @@ func (w *Workflows) getRestoreResources(
 	}
 
 	nodeRestore := &operations.NodeRestoreResources{
+		DatabaseID:    node.DatabaseID,
 		DatabaseName:  node.DatabaseName,
 		DatabaseOwner: node.DatabaseOwner,
 		NodeName:      node.NodeName,

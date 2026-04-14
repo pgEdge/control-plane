@@ -12,6 +12,8 @@ import (
 )
 
 var ErrNotFound = errors.New("resource not found")
+var ErrVariableUndefined = errors.New("variable not defined")
+var ErrVariableTypeMismatch = errors.New("variable type mismatch")
 
 func ProvideRegistry(i *do.Injector) {
 	do.Provide(i, func(_ *do.Injector) (*Registry, error) {
@@ -85,11 +87,20 @@ func ToResource[T Resource](data *ResourceData) (T, error) {
 	return resource, nil
 }
 
+type VariableName string
+
+func (v VariableName) String() string {
+	return string(v)
+}
+
+type Variables map[VariableName]any
+
 type Context struct {
-	State    *State
-	Registry *Registry
-	Injector *do.Injector
-	HostID   string // The ID of the host that's executing this context.
+	State     *State
+	Registry  *Registry
+	Injector  *do.Injector
+	HostID    string // The ID of the host that's executing this context.
+	Variables Variables
 }
 
 type ExecutorType string
@@ -218,4 +229,19 @@ func TypedFromRegistry[T Resource](registry *Registry, data *ResourceData) (T, e
 		return zero, fmt.Errorf("unexpected resource type: %T", resource)
 	}
 	return typed, nil
+}
+
+func VariableFromContext[T any](rc *Context, name VariableName) (T, error) {
+	var zero T
+
+	v, ok := rc.Variables[name]
+	if !ok {
+		return zero, ErrVariableUndefined
+	}
+	asType, ok := v.(T)
+	if !ok {
+		return zero, fmt.Errorf("%w: expected %T, but got %T", ErrVariableTypeMismatch, zero, v)
+	}
+
+	return asType, nil
 }
