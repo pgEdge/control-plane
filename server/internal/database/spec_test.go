@@ -509,3 +509,60 @@ func TestSpec(t *testing.T) {
 		})
 	})
 }
+
+func TestSpec_NodeInstances_DBOwner(t *testing.T) {
+	minimalSpec := func(users []*database.User) *database.Spec {
+		return &database.Spec{
+			DatabaseID:      "test-db",
+			DatabaseName:    "testdb",
+			PostgresVersion: "17.6",
+			SpockVersion:    "5",
+			DatabaseUsers:   users,
+			Nodes: []*database.Node{
+				{Name: "n1", HostIDs: []string{"host-1"}},
+			},
+		}
+	}
+
+	t.Run("single db_owner is propagated", func(t *testing.T) {
+		spec := minimalSpec([]*database.User{
+			{Username: "app", DBOwner: true},
+			{Username: "admin"},
+		})
+		nodes, err := spec.NodeInstances()
+		assert.NoError(t, err)
+		assert.Equal(t, "app", nodes[0].DatabaseOwner)
+	})
+
+	t.Run("no db_owner results in empty owner", func(t *testing.T) {
+		spec := minimalSpec([]*database.User{
+			{Username: "app"},
+			{Username: "admin"},
+		})
+		nodes, err := spec.NodeInstances()
+		assert.NoError(t, err)
+		assert.Empty(t, nodes[0].DatabaseOwner)
+	})
+
+	t.Run("multiple db_owners returns error", func(t *testing.T) {
+		spec := minimalSpec([]*database.User{
+			{Username: "app", DBOwner: true},
+			{Username: "other", DBOwner: true},
+		})
+		_, err := spec.NodeInstances()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "only one user can have db_owner=true")
+	})
+
+	t.Run("owner propagates to all nodes", func(t *testing.T) {
+		spec := minimalSpec([]*database.User{
+			{Username: "app", DBOwner: true},
+		})
+		spec.Nodes = append(spec.Nodes, &database.Node{Name: "n2", HostIDs: []string{"host-2"}})
+		nodes, err := spec.NodeInstances()
+		assert.NoError(t, err)
+		assert.Len(t, nodes, 2)
+		assert.Equal(t, "app", nodes[0].DatabaseOwner)
+		assert.Equal(t, "app", nodes[1].DatabaseOwner)
+	})
+}
