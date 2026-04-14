@@ -360,8 +360,11 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, dbU
 		errs = append(errs, validateDatabaseConnection(svc.DatabaseConnection, dcPath, nn)...)
 	}
 
-	// Validate connect_as references a valid database_users entry
-	errs = append(errs, validateConnectAs(svc, dbUsers, path)...)
+	// Validate connect_as references a valid database_users entry (MCP only for now;
+	// RAG and PostgREST will adopt connect_as in a future change).
+	if svc.ServiceType == "mcp" {
+		errs = append(errs, validateConnectAs(svc, dbUsers, path)...)
+	}
 
 	// MCP-specific cross-validation: allow_writes vs target_session_attrs
 	if svc.ServiceType == "mcp" && svc.DatabaseConnection != nil && svc.DatabaseConnection.TargetSessionAttrs != nil {
