@@ -695,34 +695,7 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		Allocator: o.dbNetworkAllocator,
 	}
 
-	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
-
-	// Canonical read-only role — runs on the node co-located with this instance.
-	canonicalRO := &ServiceUserRole{
-		ServiceID:    spec.ServiceSpec.ServiceID,
-		DatabaseID:   spec.DatabaseID,
-		DatabaseName: spec.DatabaseName,
-		NodeName:     spec.NodeName,
-		Mode:         ServiceUserRoleRO,
-	}
-
-	orchestratorResources := []resource.Resource{databaseNetwork, canonicalRO}
-
-	// Per-node RO role for each additional database node so that RAG instances
-	// on other hosts can authenticate against their co-located Postgres.
-	for _, nodeInst := range spec.DatabaseNodes {
-		if nodeInst.NodeName == spec.NodeName {
-			continue
-		}
-		orchestratorResources = append(orchestratorResources, &ServiceUserRole{
-			ServiceID:        spec.ServiceSpec.ServiceID,
-			DatabaseID:       spec.DatabaseID,
-			DatabaseName:     spec.DatabaseName,
-			NodeName:         nodeInst.NodeName,
-			Mode:             ServiceUserRoleRO,
-			CredentialSource: &canonicalROID,
-		})
-	}
+	orchestratorResources := []resource.Resource{databaseNetwork}
 
 	// Service data directory resource (host-side bind mount directory).
 	dataDirID := spec.ServiceInstanceID + "-data"
@@ -743,6 +716,16 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		Keys:              extractRAGAPIKeys(ragConfig),
 	}
 
+	// RAG preflight resource — waits for Patroni to finish bootstrapping
+	// the database and for the connect_as user (if any) to exist before the
+	// config file is written and the Docker service is started.
+	ragPreflight := &RAGPreflightResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		NodeName:          spec.NodeName,
+		DatabaseName:      spec.DatabaseName,
+		ConnectAsUsername: spec.ConnectAsUsername,
+	}
+
 	// RAG config resource — generates pgedge-rag-server.yaml in the data directory.
 	var dbHost string
 	var dbPort int
@@ -759,6 +742,8 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		DatabaseName:      spec.DatabaseName,
 		DatabaseHost:      dbHost,
 		DatabasePort:      dbPort,
+		ConnectAsUsername: spec.ConnectAsUsername,
+		ConnectAsPassword: spec.ConnectAsPassword,
 	}
 
 	// Service instance spec resource — holds the computed Docker Swarm service spec.
@@ -790,10 +775,11 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		ServiceID:         spec.ServiceSpec.ServiceID,
 		ServiceSpecID:     spec.ServiceSpec.ServiceID,
 		ServiceType:       spec.ServiceSpec.ServiceType,
+		ConnectAsUsername: spec.ConnectAsUsername,
 		HostID:            spec.HostID,
 	}
 
-	orchestratorResources = append(orchestratorResources, dataDir, keysResource, ragConfigRes, serviceInstanceSpec, serviceInstance)
+	orchestratorResources = append(orchestratorResources, dataDir, keysResource, ragPreflight, ragConfigRes, serviceInstanceSpec, serviceInstance)
 
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
