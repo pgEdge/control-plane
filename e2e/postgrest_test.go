@@ -59,9 +59,9 @@ func postgrestBaseSpec(dbName string, nodeHosts []string, services []*controlpla
 	}
 }
 
-// waitForServiceRunning polls until the service instance on the given host
-// reaches the "running" state, or the deadline is exceeded.
-func waitForServiceRunning(ctx context.Context, t testing.TB, db *DatabaseFixture, serviceID, hostID string, timeout time.Duration) {
+// waitForPostgRESTRunning polls until the PostgREST service instance on the given
+// host reaches the "running" state, or the deadline is exceeded.
+func waitForPostgRESTRunning(ctx context.Context, t testing.TB, db *DatabaseFixture, serviceID, hostID string, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
@@ -118,7 +118,7 @@ func TestProvisionPostgREST(t *testing.T) {
 	assert.NotEmpty(t, si.ServiceInstanceID)
 
 	if si.State != "running" {
-		waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+		waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 	}
 
 	si = db.ServiceInstances[0]
@@ -151,7 +151,7 @@ func TestProvisionPostgRESTWithJWT(t *testing.T) {
 	})
 
 	require.Len(t, db.ServiceInstances, 1)
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	si := db.ServiceInstances[0]
 	assert.Equal(t, "running", si.State)
@@ -238,7 +238,7 @@ func TestPostgRESTHealthCheck(t *testing.T) {
 		),
 	})
 
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	// PostgREST serves an OpenAPI spec at the root path.
 	url := serviceURL(db, host1)
@@ -272,7 +272,7 @@ func TestPostgRESTServiceUserRoles(t *testing.T) {
 		),
 	})
 
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	conn, err := db.ConnectToInstance(ctx, ConnectionOptions{
 		Matcher:  And(WithNode("n1"), WithRole("primary")),
@@ -350,7 +350,7 @@ func TestPostgRESTAddToExistingDatabase(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, db.ServiceInstances, 1)
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	assert.Equal(t, "running", db.ServiceInstances[0].State)
 }
@@ -375,7 +375,7 @@ func TestPostgRESTRemove(t *testing.T) {
 		),
 	})
 
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	// Remove PostgREST.
 	err := db.Update(ctx, UpdateOptions{
@@ -424,7 +424,7 @@ func TestPostgRESTConfigUpdate(t *testing.T) {
 		),
 	})
 
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	origInstanceID := db.ServiceInstances[0].ServiceInstanceID
 
@@ -483,7 +483,7 @@ func TestPostgRESTMultiHostDBURI(t *testing.T) {
 		},
 	})
 
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	// Connect to Postgres and confirm service roles exist on all nodes.
 	for _, nodeName := range []string{"n1"} {
@@ -551,7 +551,7 @@ func TestPostgRESTFailover(t *testing.T) {
 
 	dbID := controlplane.Identifier(db.ID)
 
-	waitForServiceRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
+	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
 	// Wait for cluster to settle.
 	waitFor(func() bool {
