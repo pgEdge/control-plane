@@ -89,6 +89,33 @@ func TestCreateUserRole(t *testing.T) {
 			},
 		},
 		{
+			name: "app user with built-in PostgreSQL roles",
+			opts: postgres.UserRoleOptions{
+				Name:       "app",
+				Password:   "password",
+				Attributes: []string{"LOGIN"},
+				Roles:      []string{"pg_read_all_data", "pg_read_all_settings", "pg_read_all_stats"},
+			},
+			expected: postgres.Statements{
+				postgres.ConditionalStatement{
+					If: postgres.Query[bool]{
+						SQL: `SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);`,
+						Args: pgx.NamedArgs{
+							"name": "app",
+						},
+					},
+					Then: postgres.Statement{
+						SQL: `CREATE ROLE "app"`,
+					},
+				},
+				postgres.Statement{SQL: `ALTER ROLE "app" WITH PASSWORD 'password';`},
+				postgres.Statement{SQL: `ALTER ROLE "app" WITH LOGIN;`},
+				postgres.Statement{SQL: `GRANT "pg_read_all_data" TO "app" WITH INHERIT TRUE;`},
+				postgres.Statement{SQL: `GRANT "pg_read_all_settings" TO "app" WITH INHERIT TRUE;`},
+				postgres.Statement{SQL: `GRANT "pg_read_all_stats" TO "app" WITH INHERIT TRUE;`},
+			},
+		},
+		{
 			name: "role conflict",
 			opts: postgres.UserRoleOptions{
 				Name: "pgedge_application",
