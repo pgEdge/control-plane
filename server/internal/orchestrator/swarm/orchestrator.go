@@ -3,7 +3,7 @@ package swarm
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -162,11 +162,11 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 }
 
 // ServiceInstanceName generates a Docker Swarm service name for a service instance.
-// All three inputs are hashed together so truncated prefixes never collide across
-// different databases or services on the same host. serviceType is omitted because
-// serviceID is already unique within a database.
+// The hostID is hashed to produce a stable suffix, matching the scheme used by
+// InstanceIDFor. serviceType is omitted because serviceID is already unique within
+// a database.
 func ServiceInstanceName(databaseID, serviceID, hostID string) string {
-	hash := sha256.Sum256([]byte(databaseID + ":" + serviceID + ":" + hostID))
+	hash := sha1.Sum([]byte(hostID))
 	base36 := new(big.Int).SetBytes(hash[:]).Text(36)
 
 	// Docker Swarm service names are limited to 63 characters.
