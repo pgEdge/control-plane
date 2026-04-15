@@ -88,33 +88,4 @@ func TestServiceInstanceName(t *testing.T) {
 		}
 	})
 
-	t.Run("max-length IDs are truncated to fit 63 chars", func(t *testing.T) {
-		db63 := strings.Repeat("d", 63)
-		svc63 := strings.Repeat("s", 63)
-		got := ServiceInstanceName(db63, svc63, "host-1")
-		if len(got) > 63 {
-			t.Errorf("ServiceInstanceName() = %q (len %d), must be <= 63 chars", got, len(got))
-		}
-		got2 := ServiceInstanceName(db63, svc63, "host-1")
-		if got != got2 {
-			t.Errorf("ServiceInstanceName() not deterministic: %q != %q", got, got2)
-		}
-		t.Logf("ServiceInstanceName() = %q (len %d)", got, len(got))
-	})
-
-	t.Run("short databaseID long serviceID fits 63 chars", func(t *testing.T) {
-		got := ServiceInstanceName("db", strings.Repeat("s", 63), "host-1")
-		if len(got) > 63 {
-			t.Errorf("ServiceInstanceName() = %q (len %d), must be <= 63 chars", got, len(got))
-		}
-		t.Logf("ServiceInstanceName() = %q (len %d)", got, len(got))
-	})
-
-	t.Run("long databaseID short serviceID fits 63 chars", func(t *testing.T) {
-		got := ServiceInstanceName(strings.Repeat("d", 63), "api", "host-1")
-		if len(got) > 63 {
-			t.Errorf("ServiceInstanceName() = %q (len %d), must be <= 63 chars", got, len(got))
-		}
-		t.Logf("ServiceInstanceName() = %q (len %d)", got, len(got))
-	})
 }

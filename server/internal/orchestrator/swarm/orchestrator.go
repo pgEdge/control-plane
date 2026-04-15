@@ -168,24 +168,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 func ServiceInstanceName(databaseID, serviceID, hostID string) string {
 	hash := sha1.Sum([]byte(hostID))
 	base36 := new(big.Int).SetBytes(hash[:]).Text(36)
-
-	// Docker Swarm service names are limited to 63 characters.
-	// Two separators + 8-char hash = 10 fixed chars; 53 chars remain for the IDs.
-	// Give databaseID up to half (26), then serviceID gets the rest.
-	const budget = 53
-	if len(databaseID)+len(serviceID) > budget {
-		dbCap := budget / 2 // 26 max for databaseID
-		if len(databaseID) < dbCap {
-			dbCap = len(databaseID)
-		}
-		databaseID = databaseID[:dbCap]
-		svcCap := budget - dbCap
-		if svcCap > len(serviceID) {
-			svcCap = len(serviceID)
-		}
-		serviceID = serviceID[:svcCap]
-	}
-
 	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, base36[:8])
 }
 

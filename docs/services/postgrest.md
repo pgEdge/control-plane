@@ -228,7 +228,7 @@ added table or view without restarting the container, send a POST
 request to the admin server:
 
 ```sh
-curl -X POST http://host-1:3001/notify-reload
+curl -X POST http://host-1:3101/notify-reload
 ```
 
 The admin port is always one higher than your main PostgREST port
