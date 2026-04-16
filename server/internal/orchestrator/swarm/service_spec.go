@@ -38,7 +38,7 @@ func buildPostgRESTEnvVars() []string {
 	return []string{
 		"PGRST_SERVER_HOST=0.0.0.0",
 		"PGRST_SERVER_PORT=8080",
-		"PGRST_ADMIN_SERVER_PORT=3001",
+		"PGRST_ADMIN_SERVER_PORT=8081",
 	}
 }
 
