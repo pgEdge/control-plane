@@ -95,10 +95,6 @@ func (r *InstanceResources) NodeName() string {
 	return r.Instance.Spec.NodeName
 }
 
-func (r *InstanceResources) RestoreConfig() *RestoreConfig {
-	return r.Instance.Spec.RestoreConfig
-}
-
 func (r *InstanceResources) State() (*resource.State, error) {
 	state := resource.NewState()
 	state.Add(r.Resources...)
