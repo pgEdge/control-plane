@@ -18,6 +18,7 @@ type NodeRestoreResources struct {
 	PrimaryInstance  *database.InstanceResources
 	RestoreInstance  *database.InstanceResources
 	ReplicaInstances []*database.InstanceResources
+	RestoreConfig    *database.RestoreConfig
 }
 
 func (n *NodeRestoreResources) ToNodeResources() *NodeResources {
@@ -32,7 +33,7 @@ func (n *NodeRestoreResources) ToNodeResources() *NodeResources {
 		NodeName:          n.NodeName,
 		PrimaryInstanceID: n.PrimaryInstance.InstanceID(),
 		InstanceResources: all,
-		RestoreConfig:     n.PrimaryInstance.RestoreConfig(),
+		RestoreConfig:     n.RestoreConfig,
 	}
 }
 
