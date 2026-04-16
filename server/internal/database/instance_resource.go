@@ -146,6 +146,10 @@ func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context,
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database '%s': %w", dbName, err)
 	}
+	if err := postgres.SetSafeIdentifiers().Exec(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to set safe identifier settings: %w", err)
+	}
+
 	return conn, nil
 }
 
@@ -193,29 +197,8 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	}
 	defer tx.Rollback(ctx)
 
-	roleStatements, err := postgres.CreateBuiltInRoles(postgres.BuiltinRoleOptions{
-		PGVersion: r.Spec.PgEdgeVersion.PostgresVersion.String(),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to generate built-in role statements: %w", err)
-	}
-	if err := roleStatements.Exec(ctx, tx); err != nil {
-		return fmt.Errorf("failed to create built-in roles: %w", err)
-	}
-
-	for _, user := range r.Spec.DatabaseUsers {
-		statement, err := postgres.CreateUserRole(postgres.UserRoleOptions{
-			Name:       user.Username,
-			Password:   user.Password,
-			Attributes: user.Attributes,
-			Roles:      user.Roles,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to produce create user role statement %q: %w", user.Username, err)
-		}
-		if err := statement.Exec(ctx, tx); err != nil {
-			return fmt.Errorf("failed to create user role %q: %w", user.Username, err)
-		}
+	if err := r.createRoles(ctx, rc, tx); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -287,4 +270,66 @@ func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resourc
 
 func (r *InstanceResource) patroniClient() *patroni.Client {
 	return patroni.NewClient(r.ConnectionInfo.PatroniURL(), nil)
+}
+
+func (r *InstanceResource) createRoles(ctx context.Context, rc *resource.Context, tx pgx.Tx) error {
+	source, err := resource.FromContext[*RolesSourceResource](rc, RolesSourceResourceIdentifier(r.Spec.NodeName))
+	if errors.Is(err, resource.ErrNotFound) {
+		return r.createRolesFromSpec(ctx, tx)
+	} else if err != nil {
+		return fmt.Errorf("failed to check for roles source: %w", err)
+	}
+
+	dump, err := resource.FromContext[*DumpRolesResource](rc, DumpRolesResourceIdentifier(source.SourceNodeName))
+	if err != nil {
+		return fmt.Errorf("failed to find roles dump from source node '%s': %w", source.SourceNodeName, err)
+	}
+
+	return r.createRolesFromDump(ctx, dump, tx)
+}
+
+func (r *InstanceResource) createRolesFromDump(ctx context.Context, dump *DumpRolesResource, tx pgx.Tx) error {
+	for i, role := range dump.Roles {
+		err := postgres.CreateRoleIfNotExists(role).Exec(ctx, tx)
+		if err != nil {
+			return fmt.Errorf("failed to create role[%d] from roles dump: %w", i, err)
+		}
+	}
+	for i, statement := range dump.Statements {
+		_, err := tx.Exec(ctx, statement)
+		if err != nil {
+			return fmt.Errorf("failed to execute statement[%d] from roles dump: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) createRolesFromSpec(ctx context.Context, tx pgx.Tx) error {
+	roleStatements, err := postgres.CreateBuiltInRoles(postgres.BuiltinRoleOptions{
+		PGVersion: r.Spec.PgEdgeVersion.PostgresVersion.String(),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to generate built-in role statements: %w", err)
+	}
+	if err := roleStatements.Exec(ctx, tx); err != nil {
+		return fmt.Errorf("failed to create built-in roles: %w", err)
+	}
+
+	for _, user := range r.Spec.DatabaseUsers {
+		statement, err := postgres.CreateUserRole(postgres.UserRoleOptions{
+			Name:       user.Username,
+			Password:   user.Password,
+			Attributes: user.Attributes,
+			Roles:      user.Roles,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to produce create user role statement %q: %w", user.Username, err)
+		}
+		if err := statement.Exec(ctx, tx); err != nil {
+			return fmt.Errorf("failed to create user role %q: %w", user.Username, err)
+		}
+	}
+
+	return nil
 }

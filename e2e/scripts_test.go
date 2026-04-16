@@ -87,12 +87,10 @@ func TestScripts(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
-				// TODO(PLAT-544): This will work after the 'populate nodes'
-				//        enhancement to propagate roles from the source node.
-				// {
-				// 	Username: "app",
-				// 	Roles:    []string{"test_role"},
-				// },
+				{
+					Username: "app",
+					Roles:    []string{"test_role"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -120,16 +118,14 @@ func TestScripts(t *testing.T) {
 		Matcher:  WithNode("n2"),
 	}
 	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
-		// const roleExistsQuery = "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'test_role')"
+		const roleExistsQuery = "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'test_role')"
 		const roleNotExistsQuery = "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'test_role_2')"
 		const valQuery = "SELECT val FROM foo WHERE id = 1"
 		const tableNotExistsQuery = "SELECT NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bar');"
 
-		// TODO(PLAT-544): This will work after the 'populate nodes' enhancement
-		//       to propagate roles from the source node.
-		// var roleExists bool
-		// assert.NoError(t, conn.QueryRow(ctx, roleExistsQuery).Scan(&roleExists))
-		// assert.True(t, roleExists)
+		var roleExists bool
+		require.NoError(t, conn.QueryRow(ctx, roleExistsQuery).Scan(&roleExists))
+		require.True(t, roleExists)
 
 		var roleNotExists bool
 		require.NoError(t, conn.QueryRow(ctx, roleNotExistsQuery).Scan(&roleNotExists))

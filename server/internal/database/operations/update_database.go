@@ -3,8 +3,10 @@ package operations
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -65,52 +67,12 @@ func UpdateDatabase(
 		states = append(states, u...)
 	}
 
-	// Auto-select source node ONLY when both SourceNode and RestoreConfig are empty.
-	// If no existing nodes (fresh cluster), skip auto-select (don't error).
 	if len(adds) > 0 {
-		var defaultSource string
-		if len(updates) > 0 {
-			defaultSource = updates[0].NodeName
-		}
-		for _, n := range adds {
-			if n.SourceNode == "" && n.RestoreConfig == nil && defaultSource != "" {
-				n.SourceNode = defaultSource
-			}
-		}
-	}
-
-	// New rule: new nodes cannot use other new nodes as their source.
-	// Only existing nodes (updates) are valid source_node values for added nodes.
-	if len(adds) > 0 {
-		newNames := make(map[string]struct{}, len(adds))
-		for _, n := range adds {
-			newNames[n.NodeName] = struct{}{}
-		}
-
-		for _, n := range adds {
-			if n.SourceNode == "" {
-				continue
-			}
-			if _, isNew := newNames[n.SourceNode]; isNew {
-				return nil, database.ErrInvalidSourceNode
-			}
-		}
-	}
-
-	if len(adds) > 0 {
-		a, err := AddNodes(adds)
+		addStates, err := addNodesStates(updates, adds)
 		if err != nil {
 			return nil, err
 		}
-		states = append(states, a...)
-
-		populate, err := PopulateNodes(updates, adds)
-		if err != nil {
-			return nil, err
-		}
-		if populate != nil {
-			states = append(states, populate)
-		}
+		states = append(states, addStates...)
 	}
 
 	end, err := EndState(nodes, services)
@@ -173,4 +135,95 @@ func updateFunc(options UpdateDatabaseOptions) (func([]*NodeResources) ([]*resou
 	default:
 		return nil, fmt.Errorf("unrecognized node update strategy %s", options.NodeUpdateStrategy)
 	}
+}
+
+func addNodesStates(updates, adds []*NodeResources) ([]*resource.State, error) {
+	var states []*resource.State
+
+	sourceNames := make(ds.Set[string])
+	sourceNodeMap := map[string]string{}
+	newNames := make(ds.Set[string], len(adds))
+
+	var defaultSource string
+	if len(updates) > 0 {
+		defaultSource = updates[0].NodeName
+	}
+
+	for _, n := range adds {
+		newNames.Add(n.NodeName)
+
+		if n.RestoreConfig != nil {
+			continue
+		}
+		if n.SourceNode == "" && defaultSource != "" {
+			n.SourceNode = defaultSource
+		}
+		if n.SourceNode != "" {
+			sourceNames.Add(n.SourceNode)
+			sourceNodeMap[n.NodeName] = n.SourceNode
+		}
+	}
+	if err := validateSourceNodes(newNames, sourceNames); err != nil {
+		return nil, err
+	}
+
+	if len(sourceNodeMap) > 0 {
+		dumps, err := sourceNodeRoleDumps(sourceNames, sourceNodeMap)
+		if err != nil {
+			return nil, err
+		}
+		states = append(states, dumps)
+	}
+
+	a, err := AddNodes(adds)
+	if err != nil {
+		return nil, err
+	}
+	states = append(states, a...)
+
+	populate, err := PopulateNodes(updates, adds)
+	if err != nil {
+		return nil, err
+	}
+	if populate != nil {
+		states = append(states, populate)
+	}
+
+	return states, nil
+}
+
+func validateSourceNodes(newNodes, sourceNodes ds.Set[string]) error {
+	// New nodes cannot use other new nodes as their source. Only existing nodes
+	// (updates) are valid source_node values for added nodes.
+	invalid := newNodes.Intersection(sourceNodes)
+	if invalid.Size() > 0 {
+		return fmt.Errorf(
+			"%w: new nodes %s cannot be used as source nodes",
+			database.ErrInvalidSourceNode,
+			strings.Join(invalid.ToSortedSlice(strings.Compare), ", "),
+		)
+	}
+	return nil
+}
+
+func sourceNodeRoleDumps(sourceNodes ds.Set[string], sourceNodeMap map[string]string) (*resource.State, error) {
+	state := resource.NewState()
+	for name := range sourceNodes {
+		err := state.AddResource(&database.DumpRolesResource{
+			NodeName: name,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to add roles dump resource to state: %w", err)
+		}
+	}
+	for node, source := range sourceNodeMap {
+		err := state.AddResource(&database.RolesSourceResource{
+			NodeName:       node,
+			SourceNodeName: source,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to add roles source resource to state: %w", err)
+		}
+	}
+	return state, nil
 }
