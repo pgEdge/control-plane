@@ -546,7 +546,7 @@ func TestServiceContainerSpec_PostgREST_EnvVars(t *testing.T) {
 	required := map[string]string{
 		"PGRST_SERVER_HOST":       "0.0.0.0",
 		"PGRST_SERVER_PORT":       "8080",
-		"PGRST_ADMIN_SERVER_PORT": "3001",
+		"PGRST_ADMIN_SERVER_PORT": "8081",
 	}
 	for key, want := range required {
 		if got, ok := envMap[key]; !ok {
