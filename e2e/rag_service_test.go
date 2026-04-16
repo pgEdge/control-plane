@@ -49,6 +49,11 @@ func TestProvisionRAGService(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -65,6 +70,7 @@ func TestProvisionRAGService(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Port:        pointerTo(0),
+					ConnectAs: "rag_user",
 					Config: map[string]any{
 						"pipelines": []any{
 							map[string]any{
@@ -137,6 +143,11 @@ func TestRAGPipelineQuery(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -153,6 +164,7 @@ func TestRAGPipelineQuery(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Port:        pointerTo(0),
+					ConnectAs:   "rag_user",
 					Config: map[string]any{
 						"pipelines": []any{
 							map[string]any{
@@ -377,6 +389,11 @@ func TestProvisionMultiHostRAGService(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -395,7 +412,8 @@ func TestProvisionMultiHostRAGService(t *testing.T) {
 						controlplane.Identifier(host2),
 						controlplane.Identifier(host3),
 					},
-					Port: pointerTo(0),
+					Port:      pointerTo(0),
+					ConnectAs: "rag_user",
 					Config: map[string]any{
 						"pipelines": []any{
 							map[string]any{
@@ -470,6 +488,11 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -493,6 +516,11 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -506,6 +534,7 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Port:        pointerTo(0),
+					ConnectAs:   "rag_user",
 					Config: map[string]any{
 						"pipelines": []any{
 							map[string]any{
@@ -572,6 +601,11 @@ func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
@@ -585,6 +619,7 @@ func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 					Version:     "99.99.99", // Valid semver but not registered
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Port:        pointerTo(0),
+					ConnectAs:   "rag_user",
 					Config: map[string]any{
 						"pipelines": []any{
 							map[string]any{

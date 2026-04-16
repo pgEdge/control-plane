@@ -32,9 +32,10 @@ type ServiceInstanceResource struct {
 	ServiceInstanceID string `json:"service_instance_id"`
 	DatabaseID        string `json:"database_id"`
 	ServiceName       string `json:"service_name"`
-	ServiceID         string `json:"service_id"`      // Docker Swarm service ID (set by Refresh)
-	ServiceSpecID     string `json:"service_spec_id"` // Logical service ID from the spec (e.g. "mcp-server")
-	ServiceType       string `json:"service_type"`    // Service type (e.g. "mcp", "rag", "postgrest")
+	ServiceID         string `json:"service_id"`        // Docker Swarm service ID (set by Refresh)
+	ServiceSpecID     string `json:"service_spec_id"`   // Logical service ID from the spec (e.g. "mcp-server")
+	ServiceType       string `json:"service_type"`      // Service type (e.g. "mcp", "rag", "postgrest")
+	ConnectAsUsername string `json:"connect_as_username"` // Non-empty when RAG uses connect_as credentials
 	HostID            string `json:"host_id"`
 	NeedsUpdate       bool   `json:"needs_update"`
 }
@@ -64,14 +65,11 @@ func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
 		ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID),
 	}
-	// MCP uses connect_as credentials — no ServiceUserRole dependency.
-	// Other service types still use ServiceUserRole until they adopt connect_as.
-	// RAG only has an RO role; other service types (PostgREST) also require an RW role.
-	if s.ServiceType != "mcp" {
+	// MCP and RAG get credentials from database_users (connect_as) —
+	// no ServiceUserRole dependency. PostgREST still uses ServiceUserRole.
+	if s.ServiceType == "postgrest" {
 		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRO))
-		if s.ServiceType != "rag" {
-			deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW))
-		}
+		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW))
 	}
 	return deps
 }
@@ -90,6 +88,7 @@ func (s *ServiceInstanceResource) Refresh(ctx context.Context, rc *resource.Cont
 	if err != nil {
 		return fmt.Errorf("failed to get desired service spec from state: %w", err)
 	}
+	s.ConnectAsUsername = desired.ServiceSpec.ConnectAs
 
 	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
 		"pgedge.component":           "service",

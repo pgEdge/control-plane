@@ -360,9 +360,9 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, dbU
 		errs = append(errs, validateDatabaseConnection(svc.DatabaseConnection, dcPath, nn)...)
 	}
 
-	// Validate connect_as references a valid database_users entry (MCP only for now;
-	// RAG and PostgREST will adopt connect_as in a future change).
-	if svc.ServiceType == "mcp" {
+	// Validate connect_as references a valid database_users entry.
+	// MCP and RAG both require connect_as; PostgREST will adopt it in a future change.
+	if svc.ServiceType == "mcp" || svc.ServiceType == "rag" {
 		errs = append(errs, validateConnectAs(svc, dbUsers, path)...)
 	}
 

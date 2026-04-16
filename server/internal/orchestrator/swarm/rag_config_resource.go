@@ -34,7 +34,8 @@ func RAGConfigResourceIdentifier(serviceInstanceID string) resource.Identifier {
 // host filesystem. The file is written to the service data directory
 // (managed by a DirResource) which is bind-mounted into the container at
 // /app/data. On every Create or Update the file is regenerated from the
-// current RAGServiceConfig and database credentials.
+// current RAGServiceConfig and the connect_as credentials sourced from
+// database_users.
 type RAGConfigResource struct {
 	ServiceInstanceID string                     `json:"service_instance_id"`
 	ServiceID         string                     `json:"service_id"`
@@ -44,10 +45,12 @@ type RAGConfigResource struct {
 	DatabaseName      string                     `json:"database_name"`
 	DatabaseHost      string                     `json:"database_host"`
 	DatabasePort      int                        `json:"database_port"`
+	ConnectAsUsername string                     `json:"connect_as_username"`
+	ConnectAsPassword string                     `json:"connect_as_password"`
 }
 
 func (r *RAGConfigResource) ResourceVersion() string {
-	return "1"
+	return "2"
 }
 
 func (r *RAGConfigResource) DiffIgnore() []string {
@@ -65,8 +68,8 @@ func (r *RAGConfigResource) Executor() resource.Executor {
 func (r *RAGConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
-		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO),
 		RAGServiceKeysResourceIdentifier(r.ServiceInstanceID),
+		RAGPreflightResourceIdentifier(r.ServiceInstanceID),
 	}
 }
 
@@ -104,7 +107,7 @@ func (r *RAGConfigResource) Create(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	return r.writeConfigFile(fs, dirPath, rc)
+	return r.writeConfigFile(fs, dirPath)
 }
 
 func (r *RAGConfigResource) Update(ctx context.Context, rc *resource.Context) error {
@@ -118,7 +121,7 @@ func (r *RAGConfigResource) Update(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	return r.writeConfigFile(fs, dirPath, rc)
+	return r.writeConfigFile(fs, dirPath)
 }
 
 func (r *RAGConfigResource) Delete(ctx context.Context, rc *resource.Context) error {
@@ -126,19 +129,14 @@ func (r *RAGConfigResource) Delete(ctx context.Context, rc *resource.Context) er
 	return nil
 }
 
-func (r *RAGConfigResource) writeConfigFile(fs afero.Fs, dirPath string, rc *resource.Context) error {
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO))
-	if err != nil {
-		return fmt.Errorf("failed to get RAG service user role from state: %w", err)
-	}
-
+func (r *RAGConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
 	content, err := GenerateRAGConfig(&RAGConfigParams{
 		Config:       r.Config,
 		DatabaseName: r.DatabaseName,
 		DatabaseHost: r.DatabaseHost,
 		DatabasePort: r.DatabasePort,
-		Username:     userRole.Username,
-		Password:     userRole.Password,
+		Username:     r.ConnectAsUsername,
+		Password:     r.ConnectAsPassword,
 		KeysDir:      ragKeysContainerDir,
 	})
 	if err != nil {
