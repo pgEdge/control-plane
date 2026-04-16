@@ -104,14 +104,17 @@ func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) 
 		return nil
 	}
 
-	// PostgREST still uses ServiceUserRole.
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO))
-	if err != nil {
-		return fmt.Errorf("failed to get service user role from state: %w", err)
-	}
+	// PostgREST authenticates to Postgres as the RW service user (NOINHERIT,
+	// granted the anon role). All other service types use the RO service user.
+	mode := ServiceUserRoleRO
 	role := "pgedge_application_read_only"
 	if s.ServiceSpec.ServiceType == "postgrest" {
+		mode = ServiceUserRoleRW
 		role = "postgrest_authenticator"
+	}
+	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, mode))
+	if err != nil {
+		return fmt.Errorf("failed to get service user role from state: %w", err)
 	}
 	s.Credentials = &database.ServiceUser{
 		Username: userRole.Username,
@@ -132,10 +135,13 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return err
 	}
 
-	// Resolve the data directory path from the DirResource
-	dataPath, err := filesystem.DirResourceFullPath(rc, s.DataDirID)
-	if err != nil {
-		return fmt.Errorf("failed to get service data dir path: %w", err)
+	// Resolve the data directory path from the DirResource (only if one exists).
+	var dataPath string
+	if s.DataDirID != "" {
+		dataPath, err = filesystem.DirResourceFullPath(rc, s.DataDirID)
+		if err != nil {
+			return fmt.Errorf("failed to get service data dir path: %w", err)
+		}
 	}
 
 	// Resolve the keys directory path (RAG only): it lives at {dataPath}/keys.

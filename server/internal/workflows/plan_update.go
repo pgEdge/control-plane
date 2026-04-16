@@ -190,6 +190,13 @@ func resolveTargetSessionAttrs(serviceSpec *database.ServiceSpec) string {
 			return database.TargetSessionAttrsPrimary
 		}
 		return database.TargetSessionAttrsPreferStandby
+	case "postgrest":
+		// PostgREST supports both reads and writes via JWT role claims.
+		// Even though anonymous requests are read-only, authenticated requests
+		// can INSERT/UPDATE/DELETE. A replica would reject those with
+		// "cannot execute INSERT on a read-only transaction".
+		// Always connect to the primary so all request types succeed.
+		return database.TargetSessionAttrsReadWrite
 	case "rag":
 		// RAG is read-only; always prefer a standby when available.
 		return database.TargetSessionAttrsPreferStandby

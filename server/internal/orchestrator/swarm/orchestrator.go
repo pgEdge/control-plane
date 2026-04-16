@@ -162,13 +162,13 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 }
 
 // ServiceInstanceName generates a Docker Swarm service name for a service instance.
-// It follows the same host ID hashing convention used for Postgres instance IDs
-// (see database.InstanceIDFor), producing shorter, more readable names when host
-// IDs are UUIDs.
-func ServiceInstanceName(serviceType, databaseID, serviceID, hostID string) string {
+// The hostID is hashed to produce a stable suffix, matching the scheme used by
+// InstanceIDFor. serviceType is omitted because serviceID is already unique within
+// a database.
+func ServiceInstanceName(databaseID, serviceID, hostID string) string {
 	hash := sha1.Sum([]byte(hostID))
 	base36 := new(big.Int).SetBytes(hash[:]).Text(36)
-	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, base36[:8])
+	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, base36[:8])
 }
 
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, error) {
@@ -552,7 +552,7 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	}
 
 	// Service instance spec resource
-	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
 		ServiceInstanceID:  spec.ServiceInstanceID,
 		ServiceSpec:        spec.ServiceSpec,
@@ -748,7 +748,7 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 
 	// Service instance spec resource — holds the computed Docker Swarm service spec.
 	// KeysDirID is the parent data dir; the actual keys subdir path is derived at runtime.
-	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		ServiceSpec:       spec.ServiceSpec,

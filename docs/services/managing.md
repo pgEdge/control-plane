@@ -25,8 +25,13 @@ The following table describes the fields in a service spec:
 ## Adding a Service
 
 Include a `services` array in your database spec when creating or
-updating a database. In the following example, a `curl` command creates
-a single-node database with one MCP service instance:
+updating a database. The following examples show how to add an MCP
+service and a PostgREST service.
+
+### Adding an MCP Service
+
+In the following example, a `curl` command creates a single-node
+database with one MCP service instance:
 
 === "curl"
 
@@ -52,6 +57,40 @@ a single-node database with one MCP service instance:
                             "llm_provider": "anthropic",
                             "llm_model": "claude-sonnet-4-5",
                             "anthropic_api_key": "sk-ant-..."
+                        }
+                    }
+                ]
+            }
+        }'
+    ```
+
+### Adding a PostgREST Service
+
+In the following example, a `curl` command creates a single-node
+database with a PostgREST service instance. The service exposes the
+`public` schema and enables JWT authentication:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-1:3000/v1/databases \
+        -H 'Content-Type: application/json' \
+        --data '{
+            "id": "storefront",
+            "spec": {
+                "database_name": "storefront",
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] }
+                ],
+                "services": [
+                    {
+                        "service_id": "api",
+                        "service_type": "postgrest",
+                        "version": "latest",
+                        "host_ids": ["host-1"],
+                        "port": 3100,
+                        "config": {
+                            "jwt_secret": "a-secret-key-of-at-least-32-characters"
                         }
                     }
                 ]

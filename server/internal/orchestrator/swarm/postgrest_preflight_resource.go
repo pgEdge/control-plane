@@ -46,7 +46,9 @@ func (r *PostgRESTPreflightResource) Executor() resource.Executor {
 }
 
 func (r *PostgRESTPreflightResource) Dependencies() []resource.Identifier {
-	return nil
+	return []resource.Identifier{
+		database.PostgresDatabaseResourceIdentifier(r.NodeName, r.DatabaseName),
+	}
 }
 
 func (r *PostgRESTPreflightResource) TypeDependencies() []resource.Type {

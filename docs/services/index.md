@@ -17,7 +17,7 @@ the following service types:
   queries and AI-powered data access.
 - The pgEdge RAG Server *(coming soon)* enables retrieval-augmented
   generation workflows using your database as a knowledge store.
-- PostgREST *(coming soon)* automatically generates a REST API from
+- [PostgREST](postgrest.md) automatically generates a REST API from
   your PostgreSQL schema, making your data accessible over HTTP without
   writing backend code.
 
