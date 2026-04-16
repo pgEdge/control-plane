@@ -88,6 +88,7 @@ func (s *ServiceInstanceResource) Refresh(ctx context.Context, rc *resource.Cont
 	if err != nil {
 		return fmt.Errorf("failed to get desired service spec from state: %w", err)
 	}
+	s.ConnectAsUsername = desired.ServiceSpec.ConnectAs
 
 	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
 		"pgedge.component":           "service",

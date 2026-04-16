@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -82,6 +83,9 @@ func (r *RAGPreflightResource) Delete(ctx context.Context, rc *resource.Context)
 }
 
 func (r *RAGPreflightResource) validate(ctx context.Context, rc *resource.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
 		return fmt.Errorf("preflight: failed to get primary instance: %w", err)

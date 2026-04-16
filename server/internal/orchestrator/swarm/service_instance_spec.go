@@ -97,7 +97,10 @@ func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) 
 	// MCP and RAG source credentials from database_users (connect_as).
 	// RAG credentials go into the config file via RAGConfigResource, not the
 	// container spec, so s.Credentials remains nil for RAG regardless.
+	// Clear any stale credentials that may have been persisted by the legacy
+	// ServiceUserRole path before this migration.
 	if s.ServiceSpec.ServiceType == "mcp" || s.ServiceSpec.ServiceType == "rag" {
+		s.Credentials = nil
 		return nil
 	}
 
