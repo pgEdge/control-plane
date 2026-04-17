@@ -17,6 +17,10 @@ ansible_playbook_lima=ansible-playbook \
 	--extra-vars='@$(variant_vars_file)' \
 	--extra-vars='$(EXTRA_VARS)'
 
+.PHONY: fix-lima-clocks
+fix-lima-clocks:
+	ansible --become --inventory=outputs/lima.inventory.yaml all -m command -a 'chronyc -a makestep'
+
 .PHONY: deploy-lima-machines
 deploy-lima-machines:
 	$(ansible_playbook_lima) deploy_lima_machines.yaml
@@ -36,7 +40,7 @@ setup-lima-hosts:
 		setup_hosts.yaml
 
 .PHONY: deploy-lima-control-plane
-deploy-lima-control-plane:
+deploy-lima-control-plane: fix-lima-clocks
 	$(ansible_playbook_lima) \
 		--inventory=outputs/lima.inventory.yaml \
 		--extra-vars='version=$(CONTROL_PLANE_VERSION:v%=%)' \
