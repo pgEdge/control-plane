@@ -72,6 +72,7 @@ func (v *Version_1_0_0) Run(state *resource.State) error {
 }
 
 type v1_0_0_databaseParams struct {
+	databaseID       string
 	databaseName     string
 	databaseOwner    string
 	renameFrom       string
@@ -79,6 +80,7 @@ type v1_0_0_databaseParams struct {
 }
 
 func (v *Version_1_0_0) extractDatabaseParams(instances map[string]*resource.ResourceData) (*v1_0_0_databaseParams, error) {
+	var databaseID string
 	var databaseName string
 	var databaseOwner string
 	var renameFrom string
@@ -92,6 +94,7 @@ func (v *Version_1_0_0) extractDatabaseParams(instances map[string]*resource.Res
 		if instance.Spec.DatabaseName == "" {
 			continue
 		}
+		databaseID = instance.Spec.DatabaseID
 		databaseName = instance.Spec.DatabaseName
 		for _, user := range instance.Spec.DatabaseUsers {
 			if user.DBOwner {
@@ -106,6 +109,7 @@ func (v *Version_1_0_0) extractDatabaseParams(instances map[string]*resource.Res
 	}
 
 	return &v1_0_0_databaseParams{
+		databaseID:       databaseID,
 		databaseName:     databaseName,
 		databaseOwner:    databaseOwner,
 		renameFrom:       renameFrom,
@@ -117,6 +121,7 @@ func (v *Version_1_0_0) addDatabaseResources(state *resource.State, nodes map[st
 	for _, node := range nodes {
 		nodeName := node.Identifier.ID
 		dbResource := &v1_0_0.PostgresDatabaseResource{
+			DatabaseID:       params.databaseID,
 			NodeName:         nodeName,
 			DatabaseName:     params.databaseName,
 			Owner:            params.databaseOwner,
@@ -289,13 +294,35 @@ func (v *Version_1_0_0) migrateReplicationSlotResources(state *resource.State, p
 	return nil
 }
 
+func (v *Version_1_0_0) newReplicationSlotResource(sub v1_0_0.SubscriptionResource) (*resource.ResourceData, error) {
+	new := v1_0_0.ReplicationSlotResource{
+		ProviderNode:   sub.ProviderNode,
+		SubscriberNode: sub.SubscriberNode,
+		DatabaseName:   sub.DatabaseName,
+	}
+	attrs, err := json.Marshal(new)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal new replication slot resource: %w", err)
+	}
+	return &resource.ResourceData{
+		Identifier: v1_0_0.ReplicationSlotResourceIdentifier(new.ProviderNode, new.SubscriberNode, new.DatabaseName),
+		Attributes: attrs,
+		Dependencies: []resource.Identifier{
+			v1_0_0.PostgresDatabaseResourceIdentifier(new.ProviderNode, new.DatabaseName),
+		},
+		Executor:        resource.PrimaryExecutor(sub.ProviderNode),
+		ResourceVersion: "1",
+	}, nil
+}
+
 func (v *Version_1_0_0) migrateSubscriptionResources(state *resource.State, params *v1_0_0_databaseParams) error {
-	resources, ok := state.Resources[v0_0_0.ResourceTypeSubscription]
+	slots := state.Resources[v0_0_0.ResourceTypeReplicationSlot]
+	subs, ok := state.Resources[v0_0_0.ResourceTypeSubscription]
 	if !ok {
 		return nil
 	}
-	adds := make([]*resource.ResourceData, 0, len(resources))
-	for oldID, data := range resources {
+	adds := make([]*resource.ResourceData, 0, len(subs)*2)
+	for oldID, data := range subs {
 		var old v0_0_0.SubscriptionResource
 		if err := json.Unmarshal(data.Attributes, &old); err != nil {
 			return fmt.Errorf("failed to unmarshal old subscription resource: %w", err)
@@ -350,7 +377,18 @@ func (v *Version_1_0_0) migrateSubscriptionResources(state *resource.State, para
 			Error:            data.Error,
 			TypeDependencies: data.TypeDependencies,
 		})
-		delete(resources, oldID)
+		// We're checking both identifier versions here so that we're not
+		// dependent on the order of migration calls.
+		_, v0SlotExists := slots[v0_0_0.ReplicationSlotResourceIdentifier(new.ProviderNode, new.SubscriberNode).ID]
+		_, v1SlotExists := slots[v1_0_0.ReplicationSlotResourceIdentifier(new.ProviderNode, new.SubscriberNode, new.DatabaseName).ID]
+		if !v0SlotExists && !v1SlotExists {
+			slot, err := v.newReplicationSlotResource(new)
+			if err != nil {
+				return err
+			}
+			adds = append(adds, slot)
+		}
+		delete(subs, oldID)
 	}
 	state.Add(adds...)
 
