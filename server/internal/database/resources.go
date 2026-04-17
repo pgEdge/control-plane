@@ -14,4 +14,6 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*ReplicationSlotAdvanceFromCTSResource](registry, ResourceTypeReplicationSlotAdvanceFromCTS)
 	resource.RegisterResourceType[*SwitchoverResource](registry, ResourceTypeSwitchover)
 	resource.RegisterResourceType[*PostgresDatabaseResource](registry, ResourceTypePostgresDatabase)
+	resource.RegisterResourceType[*DumpRolesResource](registry, ResourceTypeDumpRoles)
+	resource.RegisterResourceType[*RolesSourceResource](registry, ResourceTypeRolesSource)
 }

@@ -43,6 +43,24 @@
     [
       {
         "type": "create",
+        "resource_id": "database.dump_roles::n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.roles_source::n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "create",
         "resource_id": "orchestrator.resource::n3-instance-1-dep-1-id",
         "reason": "does_not_exist",
         "diff": null
@@ -152,6 +170,11 @@
     [
       {
         "type": "delete",
+        "resource_id": "database.roles_source::n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
         "resource_id": "database.subscription::n1:n2:test",
         "diff": null
       },
@@ -172,6 +195,11 @@
       }
     ],
     [
+      {
+        "type": "delete",
+        "resource_id": "database.dump_roles::n1",
+        "diff": null
+      },
       {
         "type": "delete",
         "resource_id": "database.replication_slot::n1:n2:test",

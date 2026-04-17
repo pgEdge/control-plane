@@ -54,7 +54,7 @@ func CreateDatabase(name string) ConditionalStatement {
 			},
 		},
 		Then: Statement{
-			SQL: fmt.Sprintf("CREATE DATABASE %q;", name),
+			SQL: fmt.Sprintf("CREATE DATABASE %s;", QuoteIdentifier(name)),
 		},
 	}
 }
@@ -80,7 +80,7 @@ func RenameDB(oldName, newName string) ConditionalStatement {
 		Then: Statements{
 			TerminateOtherConnections(oldName),
 			Statement{
-				SQL: fmt.Sprintf("ALTER DATABASE %q RENAME TO %q;", oldName, newName),
+				SQL: fmt.Sprintf("ALTER DATABASE %s RENAME TO %s;", QuoteIdentifier(oldName), QuoteIdentifier(newName)),
 			},
 		},
 	}
