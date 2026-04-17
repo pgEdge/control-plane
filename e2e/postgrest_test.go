@@ -96,6 +96,8 @@ func serviceURL(db *DatabaseFixture, hostID string) string {
 func TestProvisionPostgREST(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -132,6 +134,8 @@ func TestProvisionPostgREST(t *testing.T) {
 func TestProvisionPostgRESTWithJWT(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -161,6 +165,8 @@ func TestProvisionPostgRESTWithJWT(t *testing.T) {
 // a deployment when the configured schema does not exist.
 func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -193,6 +199,8 @@ func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 func TestPostgRESTPreflight_MissingAnonRole(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -222,6 +230,8 @@ func TestPostgRESTPreflight_MissingAnonRole(t *testing.T) {
 // TestPostgRESTHealthCheck verifies the service responds to HTTP requests once running.
 func TestPostgRESTHealthCheck(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -256,6 +266,8 @@ func TestPostgRESTHealthCheck(t *testing.T) {
 // roles for the PostgREST authenticator.
 func TestPostgRESTServiceUserRoles(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -325,6 +337,8 @@ func TestPostgRESTServiceUserRoles(t *testing.T) {
 func TestPostgRESTAddToExistingDatabase(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
@@ -359,6 +373,8 @@ func TestPostgRESTAddToExistingDatabase(t *testing.T) {
 // roles are dropped when the service is removed from the spec.
 func TestPostgRESTRemove(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -407,6 +423,8 @@ func TestPostgRESTRemove(t *testing.T) {
 func TestPostgRESTConfigUpdate(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
@@ -452,6 +470,8 @@ func TestPostgRESTConfigUpdate(t *testing.T) {
 // and verifies the db-uri in postgrest.conf contains all 3 node hostnames.
 func TestPostgRESTMultiHostDBURI(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
 
 	hosts := fixture.HostIDs()
 	if len(hosts) < 3 {
@@ -518,6 +538,8 @@ func TestPostgRESTMultiHostDBURI(t *testing.T) {
 // switchover, and verifies PostgREST reconnects without a redeploy.
 func TestPostgRESTFailover(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
 
 	hosts := fixture.HostIDs()
 	if len(hosts) < 3 {
