@@ -66,18 +66,16 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
 	}
 
-	// MCP and RAG get credentials from database_users (connect_as) —
-	// no ServiceUserRole dependency. PostgREST still uses ServiceUserRole.
-	if s.ServiceSpec.ServiceType == "postgrest" {
-		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRO))
-		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, ServiceUserRoleRW))
-	}
-
 	switch s.ServiceSpec.ServiceType {
 	case "mcp":
 		deps = append(deps, MCPConfigResourceIdentifier(s.ServiceInstanceID))
 	case "postgrest":
 		deps = append(deps, PostgRESTConfigResourceIdentifier(s.ServiceInstanceID))
+		// Wait for preflight (which waits for the DB to exist) before starting
+		// the container. Without this the Docker service starts before Patroni
+		// has bootstrapped the database and PostgREST fails with "database
+		// does not exist".
+		deps = append(deps, PostgRESTPreflightResourceIdentifier(s.ServiceSpec.ServiceID))
 	case "rag":
 		deps = append(deps,
 			RAGConfigResourceIdentifier(s.ServiceInstanceID),
@@ -94,33 +92,10 @@ func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
 }
 
 func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
-	// MCP and RAG source credentials from database_users (connect_as).
-	// RAG credentials go into the config file via RAGConfigResource, not the
-	// container spec, so s.Credentials remains nil for RAG regardless.
-	// Clear any stale credentials that may have been persisted by the legacy
-	// ServiceUserRole path before this migration.
-	if s.ServiceSpec.ServiceType == "mcp" || s.ServiceSpec.ServiceType == "rag" {
-		s.Credentials = nil
-		return nil
-	}
-
-	// PostgREST authenticates to Postgres as the RW service user (NOINHERIT,
-	// granted the anon role). All other service types use the RO service user.
-	mode := ServiceUserRoleRO
-	role := "pgedge_application_read_only"
-	if s.ServiceSpec.ServiceType == "postgrest" {
-		mode = ServiceUserRoleRW
-		role = "postgrest_authenticator"
-	}
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID, mode))
-	if err != nil {
-		return fmt.Errorf("failed to get service user role from state: %w", err)
-	}
-	s.Credentials = &database.ServiceUser{
-		Username: userRole.Username,
-		Password: userRole.Password,
-		Role:     role,
-	}
+	// All current service types (mcp, postgrest, rag) source credentials from
+	// database_users (connect_as) — credentials go into the config file, not
+	// the container spec.
+	s.Credentials = nil
 	return nil
 }
 
@@ -130,7 +105,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to get database network from state: %w", err)
 	}
 
-	// Populate credentials from the ServiceUserRole resource
+	// Credentials are nil for all current service types — they use config files.
 	if err := s.populateCredentials(rc); err != nil {
 		return err
 	}

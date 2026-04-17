@@ -26,8 +26,8 @@ func PostgRESTAuthenticatorIdentifier(serviceID, nodeName string) resource.Ident
 }
 
 // PostgRESTAuthenticatorResource configures a PostgreSQL role as a PostgREST
-// authenticator. It depends on the corresponding ServiceUserRole (which creates
-// the basic LOGIN+group-role user) and adds PostgREST-specific configuration:
+// authenticator. It targets the connect_as database user and adds
+// PostgREST-specific configuration:
 //
 //   - ALTER ROLE ... WITH NOINHERIT (required for PostgREST's SET ROLE mechanism)
 //   - GRANT CONNECT ON DATABASE to the authenticator user
@@ -35,15 +35,13 @@ func PostgRESTAuthenticatorIdentifier(serviceID, nodeName string) resource.Ident
 //
 // On Update, the anonymous role grant is reconciled within a single transaction
 // to prevent transient loss of anon-role membership when the anon role changes.
-// The actual DROP ROLE is handled by ServiceUserRole.Delete; this resource only
-// revokes the CONNECT privilege it added.
 type PostgRESTAuthenticatorResource struct {
-	ServiceID    string              `json:"service_id"`
-	DatabaseID   string              `json:"database_id"`
-	DatabaseName string              `json:"database_name"`
-	NodeName     string              `json:"node_name"`
-	DBAnonRole   string              `json:"db_anon_role"`
-	UserRoleID   resource.Identifier `json:"user_role_id"` // the RW ServiceUserRole this wraps
+	ServiceID         string `json:"service_id"`
+	DatabaseID        string `json:"database_id"`
+	DatabaseName      string `json:"database_name"`
+	NodeName          string `json:"node_name"`
+	DBAnonRole        string `json:"db_anon_role"`
+	ConnectAsUsername string `json:"connect_as_username"` // the database_users entry PostgREST connects as
 }
 
 func (r *PostgRESTAuthenticatorResource) ResourceVersion() string { return "1" }
@@ -60,7 +58,7 @@ func (r *PostgRESTAuthenticatorResource) Executor() resource.Executor {
 func (r *PostgRESTAuthenticatorResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		database.NodeResourceIdentifier(r.NodeName),
-		r.UserRoleID,
+		database.PostgresDatabaseResourceIdentifier(r.NodeName, r.DatabaseName),
 	}
 }
 
@@ -76,7 +74,7 @@ func (r *PostgRESTAuthenticatorResource) desiredAnonRole() string {
 }
 
 func (r *PostgRESTAuthenticatorResource) authenticatorUsername() string {
-	return database.GenerateServiceUsername(r.ServiceID, ServiceUserRoleRW)
+	return r.ConnectAsUsername
 }
 
 // Refresh checks whether the role has NOINHERIT. If not — new deployment or

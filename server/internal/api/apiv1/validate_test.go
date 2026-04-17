@@ -1284,9 +1284,10 @@ func TestValidateDatabaseSpec(t *testing.T) {
 
 func TestValidateServiceSpec(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		svc      *api.ServiceSpec
-		expected []string
+		name               string
+		svc                *api.ServiceSpec
+		expected           []string
+		noDefaultConnectAs bool // skip auto-filling ConnectAs so missing-connect_as cases work
 	}{
 		{
 			name: "valid MCP service with Anthropic",
@@ -1506,6 +1507,34 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 			expected: []string{
 				"config: jwt_secret must be at least 32 characters",
+			},
+		},
+		{
+			name: "postgrest missing connect_as",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				// ConnectAs intentionally left empty
+			},
+			noDefaultConnectAs: true,
+			expected: []string{
+				"connect_as: connect_as is required",
+			},
+		},
+		{
+			name: "postgrest connect_as references unknown user",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				ConnectAs:   "nonexistent",
+			},
+			noDefaultConnectAs: true,
+			expected: []string{
+				`connect_as: connect_as "nonexistent" does not match any database_users entry`,
 			},
 		},
 		{
@@ -1826,8 +1855,9 @@ func TestValidateServiceSpec(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// Default connect_as to "app" for tests that don't set it
-			if tc.svc.ConnectAs == "" {
+			// Default connect_as to "app" for tests that don't set it,
+			// unless noDefaultConnectAs is true (used to test missing connect_as).
+			if tc.svc.ConnectAs == "" && !tc.noDefaultConnectAs {
 				tc.svc.ConnectAs = "app"
 			}
 			testDBUsers := []*api.DatabaseUserSpec{
