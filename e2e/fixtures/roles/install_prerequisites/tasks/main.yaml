@@ -49,3 +49,15 @@
       - "--strip-components=1"
       - "{{ etcd_archive_name }}/etcdctl"
     creates: /usr/bin/etcdctl
+- name: Allow large time jumps in chronyd
+  ansible.builtin.lineinfile:
+    path: /etc/chrony.conf
+    regexp: '^makestep'
+    line: 'makestep 1 -1'
+  register: chronycfg
+  when: provider == "lima"
+- name: Restart chronyd
+  ansible.builtin.systemd_service:
+    name: chronyd
+    state: restarted
+  when: provider == "lima" and chronycfg.changed
