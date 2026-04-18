@@ -78,6 +78,7 @@ func makeInstance(t testing.TB, node string, num int, dependencies ...resource.R
 		},
 		dependencies,
 		nil,
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -303,4 +304,33 @@ func makeServiceResources(t testing.TB, databaseID, serviceID, hostID string, no
 		Resources:         resourceData,
 		MonitorResource:   monitorResource,
 	}
+}
+
+var _ resource.Resource = (*nodeDependentResource)(nil)
+
+func makeNodeDependentResource(t testing.TB, node string, depNum int) *nodeDependentResource {
+	t.Helper()
+
+	return &nodeDependentResource{
+		orchestratorResource: orchestratorResource{
+			ID: fmt.Sprintf("%s-node-dependent-%d-id", node, depNum),
+		},
+		node: node,
+	}
+}
+
+type nodeDependentResource struct {
+	orchestratorResource
+	node string
+}
+
+func (r *nodeDependentResource) Identifier() resource.Identifier {
+	return resource.Identifier{
+		ID:   r.ID,
+		Type: "orchestrator.node_dependent_resource",
+	}
+}
+
+func (r *nodeDependentResource) Dependencies() []resource.Identifier {
+	return []resource.Identifier{database.NodeResourceIdentifier(r.node)}
 }

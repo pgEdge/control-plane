@@ -149,12 +149,12 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, status *host.Host
 }
 
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
-	instance, orchestratorResources, err := o.instanceResources(spec, scripts)
+	instance, instanceDependencies, nodeDependents, err := o.instanceResources(spec, scripts)
 	if err != nil {
 		return nil, err
 	}
 
-	resources, err := database.NewInstanceResources(instance, orchestratorResources, nil)
+	resources, err := database.NewInstanceResources(instance, instanceDependencies, nil, nodeDependents)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create instance resources: %w", err)
 	}
@@ -171,10 +171,10 @@ func ServiceInstanceName(databaseID, serviceID, hostID string) string {
 	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, base36[:8])
 }
 
-func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, error) {
+func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
 	images, err := o.versions.GetImages(spec.PgEdgeVersion)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get images: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to get images: %w", err)
 	}
 
 	instanceHostname := fmt.Sprintf("postgres-%s", spec.InstanceID)
@@ -300,7 +300,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		},
 	}
 
-	orchestratorResources := []resource.Resource{
+	instanceDependencies := []resource.Resource{
 		databaseNetwork,
 		patroniCluster,
 		patroniMember,
@@ -317,8 +317,10 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		service,
 	}
 
+	var nodeDependents []resource.Resource
+
 	if spec.BackupConfig != nil {
-		orchestratorResources = append(orchestratorResources,
+		instanceDependencies = append(instanceDependencies,
 			&PgBackRestConfig{
 				InstanceID:   spec.InstanceID,
 				HostID:       spec.HostID,
@@ -330,12 +332,14 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 				OwnerUID:     o.cfg.DatabaseOwnerUID,
 				OwnerGID:     o.cfg.DatabaseOwnerUID,
 			},
+		)
+		nodeDependents = append(nodeDependents,
 			&PgBackRestStanza{
 				NodeName: spec.NodeName,
 			},
 		)
 		for _, schedule := range spec.BackupConfig.Schedules {
-			orchestratorResources = append(orchestratorResources, scheduler.NewScheduledJobResource(
+			nodeDependents = append(nodeDependents, scheduler.NewScheduledJobResource(
 				fmt.Sprintf("%s-%s-%s", schedule.ID, spec.DatabaseID, spec.NodeName),
 				schedule.CronExpression,
 				scheduler.WorkflowCreatePgBackRestBackup,
@@ -350,7 +354,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 	}
 
 	if spec.RestoreConfig != nil {
-		orchestratorResources = append(orchestratorResources, &PgBackRestConfig{
+		instanceDependencies = append(instanceDependencies, &PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
 			HostID:       spec.HostID,
 			DatabaseID:   spec.RestoreConfig.SourceDatabaseID,
@@ -363,7 +367,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		})
 	}
 
-	return instance, orchestratorResources, nil
+	return instance, instanceDependencies, nodeDependents, nil
 }
 
 func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceSpec, taskID uuid.UUID) (*database.InstanceResources, error) {
@@ -373,12 +377,12 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 
 	spec.InPlaceRestore = true
 
-	instance, resources, err := o.instanceResources(spec, nil)
+	instance, instanceDependencies, nodeDependents, err := o.instanceResources(spec, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}
 
-	resources = append(resources,
+	instanceDependencies = append(instanceDependencies,
 		&ScaleService{
 			InstanceID:     spec.InstanceID,
 			ScaleDirection: ScaleDirectionDOWN,
@@ -401,7 +405,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 
 	instance.OrchestratorDependencies = append(instance.OrchestratorDependencies, ScaleServiceResourceIdentifier(spec.InstanceID, ScaleDirectionUP))
 
-	instanceResources, err := database.NewInstanceResources(instance, resources, nil)
+	instanceResources, err := database.NewInstanceResources(instance, instanceDependencies, nil, nodeDependents)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize instance resources: %w", err)
 	}
@@ -750,14 +754,14 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 	// KeysDirID is the parent data dir; the actual keys subdir path is derived at runtime.
 	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceSpec:       spec.ServiceSpec,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		ServiceName:       serviceName,
-		Hostname:          serviceName,
-		CohortMemberID:    o.swarmNodeID,
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceSpec:        spec.ServiceSpec,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		HostID:             spec.HostID,
+		ServiceName:        serviceName,
+		Hostname:           serviceName,
+		CohortMemberID:     o.swarmNodeID,
 		ServiceImage:       serviceImage,
 		Credentials:        spec.Credentials,
 		DatabaseNetworkID:  databaseNetwork.Name,
@@ -1019,7 +1023,7 @@ func (o *Orchestrator) NodeDSN(ctx context.Context, rc *resource.Context, nodeNa
 	return node.DSN(ctx, rc, instance, dbName)
 }
 
-func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (database.InstancePaths, error) {
+func (o *Orchestrator) InstancePaths(_ *ds.Version, instanceID string) (database.InstancePaths, error) {
 	return database.InstancePaths{
 		Instance:       database.Paths{BaseDir: "/opt/pgedge"},
 		Host:           database.Paths{BaseDir: filepath.Join(o.cfg.DataDir, "instances", instanceID)},

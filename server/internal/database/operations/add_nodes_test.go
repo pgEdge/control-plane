@@ -15,6 +15,16 @@ func TestAddNode(t *testing.T) {
 	instance1 := makeInstance(t, "n1", 1)
 	instance2 := makeInstance(t, "n1", 2)
 	instance3 := makeInstance(t, "n1", 3)
+	// This is similar to how the PgBackRestStanza resource is returned with the
+	// instance resources, but it's not a dependency of the instance and it
+	// depends on the node resource.
+	n1NodeDependent := makeNodeDependentResource(t, "n1", 1)
+	instance1OrchestratorResource := makeOrchestratorResource(t, "n1", 1, 1)
+	instance1WithNodeDependent := makeInstance(t, "n1", 1, instance1OrchestratorResource)
+	instance1WithNodeDependent.AddNodeDependents(n1NodeDependent)
+	instance2OrchestratorResource := makeOrchestratorResource(t, "n1", 2, 1)
+	instance2WithNodeDependent := makeInstance(t, "n1", 2, instance2OrchestratorResource)
+	instance2WithNodeDependent.AddNodeDependents(n1NodeDependent)
 
 	for _, tc := range []struct {
 		name        string
@@ -40,7 +50,7 @@ func TestAddNode(t *testing.T) {
 							InstanceIDs: []string{instance1.InstanceID()},
 						},
 					},
-					instance1.Resources,
+					instance1.InstanceDependencies,
 				),
 			},
 		},
@@ -62,7 +72,7 @@ func TestAddNode(t *testing.T) {
 					[]resource.Resource{
 						instance1.Instance,
 					},
-					instance1.Resources,
+					instance1.InstanceDependencies,
 				),
 				makeState(t,
 					[]resource.Resource{
@@ -75,7 +85,7 @@ func TestAddNode(t *testing.T) {
 							},
 						},
 					},
-					instance2.Resources,
+					instance2.InstanceDependencies,
 				),
 			},
 		},
@@ -98,7 +108,7 @@ func TestAddNode(t *testing.T) {
 					[]resource.Resource{
 						instance1.Instance,
 					},
-					instance1.Resources,
+					instance1.InstanceDependencies,
 				),
 				makeState(t,
 					[]resource.Resource{
@@ -114,8 +124,8 @@ func TestAddNode(t *testing.T) {
 						},
 					},
 					slices.Concat(
-						instance2.Resources,
-						instance3.Resources,
+						instance2.InstanceDependencies,
+						instance3.InstanceDependencies,
 					),
 				),
 			},
@@ -124,6 +134,41 @@ func TestAddNode(t *testing.T) {
 			name:        "no instances",
 			input:       &operations.NodeResources{NodeName: "n1"},
 			expectedErr: "got empty instances for node n1",
+		},
+		{
+			name: "two instances with node dependent resource",
+			input: &operations.NodeResources{
+				DatabaseName: "test",
+				NodeName:     "n1",
+				InstanceResources: []*database.InstanceResources{
+					instance1WithNodeDependent,
+					instance2WithNodeDependent,
+				},
+			},
+			expected: []*resource.State{
+				makeState(t,
+					[]resource.Resource{
+						instance1WithNodeDependent.Instance,
+						instance1OrchestratorResource,
+					},
+					nil,
+				),
+				makeState(t,
+					[]resource.Resource{
+						instance2WithNodeDependent.Instance,
+						instance2OrchestratorResource,
+						&database.NodeResource{
+							Name: "n1",
+							InstanceIDs: []string{
+								instance1WithNodeDependent.InstanceID(),
+								instance2WithNodeDependent.InstanceID(),
+							},
+						},
+						n1NodeDependent,
+					},
+					nil,
+				),
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -170,7 +215,7 @@ func TestAddNodes(t *testing.T) {
 							InstanceIDs: []string{n1Instance1.InstanceID()},
 						},
 					},
-					n1Instance1.Resources,
+					n1Instance1.InstanceDependencies,
 				),
 			},
 		},
@@ -204,8 +249,8 @@ func TestAddNodes(t *testing.T) {
 						},
 					},
 					slices.Concat(
-						n1Instance1.Resources,
-						n2Instance1.Resources,
+						n1Instance1.InstanceDependencies,
+						n2Instance1.InstanceDependencies,
 					),
 				),
 			},
@@ -240,8 +285,8 @@ func TestAddNodes(t *testing.T) {
 						},
 					},
 					slices.Concat(
-						n1Instance1.Resources,
-						n2Instance1.Resources,
+						n1Instance1.InstanceDependencies,
+						n2Instance1.InstanceDependencies,
 					),
 				),
 				makeState(t,
@@ -256,7 +301,7 @@ func TestAddNodes(t *testing.T) {
 						},
 					},
 					slices.Concat(
-						n1Instance2.Resources,
+						n1Instance2.InstanceDependencies,
 					),
 				),
 			},
@@ -290,8 +335,8 @@ func TestAddNodes(t *testing.T) {
 						n2Instance1.Instance,
 					},
 					slices.Concat(
-						n1Instance1.Resources,
-						n2Instance1.Resources,
+						n1Instance1.InstanceDependencies,
+						n2Instance1.InstanceDependencies,
 					),
 				),
 				makeState(t,
@@ -314,8 +359,8 @@ func TestAddNodes(t *testing.T) {
 						},
 					},
 					slices.Concat(
-						n1Instance2.Resources,
-						n2Instance2.Resources,
+						n1Instance2.InstanceDependencies,
+						n2Instance2.InstanceDependencies,
 					),
 				),
 			},

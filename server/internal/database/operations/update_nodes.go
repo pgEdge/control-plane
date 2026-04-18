@@ -21,7 +21,7 @@ func UpdateNode(node *NodeResources) ([]*resource.State, error) {
 	for _, inst := range node.InstanceResources {
 		instanceID := inst.InstanceID()
 
-		state, err := instanceState(inst)
+		state, err := inst.InstanceState()
 		if err != nil {
 			return nil, err
 		}

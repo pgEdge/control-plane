@@ -16,7 +16,7 @@ func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.S
 		var resources []resource.Resource
 
 		for _, inst := range node.InstanceResources {
-			state, err := instanceState(inst)
+			state, err := inst.InstanceState()
 			if err != nil {
 				return nil, err
 			}

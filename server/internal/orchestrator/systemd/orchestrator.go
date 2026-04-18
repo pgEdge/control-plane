@@ -280,7 +280,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		},
 	}
 
-	orchestratorResources := []resource.Resource{
+	instanceDependencies := []resource.Resource{
 		patroniCluster,
 		patroniMember,
 		instanceDir,
@@ -293,7 +293,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		patroniUnit,
 	}
 
-	dbDependencyResources := []resource.Resource{&common.PgServiceConf{
+	dbDependencies := []resource.Resource{&common.PgServiceConf{
 		ParentID:   configsDir.ID,
 		HostID:     spec.HostID,
 		InstanceID: spec.InstanceID,
@@ -301,8 +301,9 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		OwnerGID:   o.cfg.DatabaseOwnerUID,
 	}}
 
+	var nodeDependents []resource.Resource
 	if spec.BackupConfig != nil {
-		orchestratorResources = append(orchestratorResources,
+		instanceDependencies = append(instanceDependencies,
 			&common.PgBackRestConfig{
 				InstanceID:   spec.InstanceID,
 				HostID:       spec.HostID,
@@ -316,13 +317,15 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 				Paths:        paths,
 				Port:         postgresPort,
 			},
+		)
+		nodeDependents = append(nodeDependents,
 			&common.PgBackRestStanza{
 				DatabaseID: spec.DatabaseID,
 				NodeName:   spec.NodeName,
 			},
 		)
 		for _, schedule := range spec.BackupConfig.Schedules {
-			orchestratorResources = append(orchestratorResources, scheduler.NewScheduledJobResource(
+			nodeDependents = append(nodeDependents, scheduler.NewScheduledJobResource(
 				fmt.Sprintf("%s-%s-%s", schedule.ID, spec.DatabaseID, spec.NodeName),
 				schedule.CronExpression,
 				scheduler.WorkflowCreatePgBackRestBackup,
@@ -337,7 +340,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 	}
 
 	if spec.RestoreConfig != nil {
-		orchestratorResources = append(orchestratorResources, &common.PgBackRestConfig{
+		instanceDependencies = append(instanceDependencies, &common.PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
 			HostID:       spec.HostID,
 			DatabaseID:   spec.RestoreConfig.SourceDatabaseID,
@@ -352,7 +355,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		})
 	}
 
-	return database.NewInstanceResources(instance, orchestratorResources, dbDependencyResources)
+	return database.NewInstanceResources(instance, instanceDependencies, dbDependencies, nodeDependents)
 }
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
@@ -376,7 +379,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		return nil, err
 	}
 
-	err = instance.AddResources(&PgBackRestRestore{
+	err = instance.AddInstanceDependencies(&PgBackRestRestore{
 		DatabaseID:     spec.DatabaseID,
 		HostID:         spec.HostID,
 		InstanceID:     spec.InstanceID,

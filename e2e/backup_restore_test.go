@@ -526,8 +526,11 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
-					Name:    "n1",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host2)},
+					Name: "n1",
+					HostIds: []controlplane.Identifier{
+						controlplane.Identifier(host1),
+						controlplane.Identifier(host2),
+					},
 				},
 			},
 			RestoreConfig: &controlplane.RestoreConfigSpec{

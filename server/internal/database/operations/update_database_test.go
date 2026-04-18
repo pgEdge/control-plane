@@ -37,7 +37,7 @@ func TestUpdateDatabase(t *testing.T) {
 				DatabaseName: "test",
 			},
 		},
-		n1Instance1.Resources,
+		n1Instance1.InstanceDependencies,
 	)
 	twoNodeState := makeState(t,
 		[]resource.Resource{
@@ -85,8 +85,8 @@ func TestUpdateDatabase(t *testing.T) {
 			},
 		},
 		slices.Concat(
-			n1Instance1.Resources,
-			n2Instance1.Resources,
+			n1Instance1.InstanceDependencies,
+			n2Instance1.InstanceDependencies,
 		),
 	)
 
@@ -187,9 +187,9 @@ func TestUpdateDatabase(t *testing.T) {
 			},
 		},
 		slices.Concat(
-			n1Instance1.Resources,
-			n2Instance1.Resources,
-			n3Instance1.Resources,
+			n1Instance1.InstanceDependencies,
+			n2Instance1.InstanceDependencies,
+			n3Instance1.InstanceDependencies,
 		),
 	)
 
@@ -211,7 +211,7 @@ func TestUpdateDatabase(t *testing.T) {
 			svcRes.MonitorResource,
 		},
 		slices.Concat(
-			n1Instance1.Resources,
+			n1Instance1.InstanceDependencies,
 			svcRes.Resources,
 		),
 	)

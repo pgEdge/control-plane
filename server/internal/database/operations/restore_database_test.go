@@ -39,7 +39,7 @@ func TestRestoreDatabase(t *testing.T) {
 				DatabaseName: "test",
 			},
 		},
-		n1Instance1.Resources,
+		n1Instance1.InstanceDependencies,
 	)
 	twoNodeState := makeState(t,
 		[]resource.Resource{
@@ -87,8 +87,8 @@ func TestRestoreDatabase(t *testing.T) {
 			},
 		},
 		slices.Concat(
-			n1Instance1.Resources,
-			n2Instance1.Resources,
+			n1Instance1.InstanceDependencies,
+			n2Instance1.InstanceDependencies,
 		),
 	)
 	twoNodeStateWithReplica := makeState(t,
@@ -147,9 +147,9 @@ func TestRestoreDatabase(t *testing.T) {
 			},
 		},
 		slices.Concat(
-			n1Instance1.Resources,
-			n1Instance2.Resources,
-			n2Instance1.Resources,
+			n1Instance1.InstanceDependencies,
+			n1Instance2.InstanceDependencies,
+			n2Instance1.InstanceDependencies,
 		),
 	)
 
