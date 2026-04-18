@@ -10,27 +10,17 @@ import (
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-)
-
-type PgBackRestConfigType string
-
-func (t PgBackRestConfigType) String() string {
-	return string(t)
-}
-
-const (
-	PgBackRestConfigTypeBackup  PgBackRestConfigType = "backup"
-	PgBackRestConfigTypeRestore PgBackRestConfigType = "restore"
 )
 
 var _ resource.Resource = (*PgBackRestConfig)(nil)
 
 const ResourceTypePgBackRestConfig resource.Type = "common.pgbackrest_config"
 
-func PgBackRestConfigIdentifier(instanceID string, configType PgBackRestConfigType) resource.Identifier {
+func PgBackRestConfigIdentifier(instanceID string, configType pgbackrest.ConfigType) resource.Identifier {
 	return resource.Identifier{
 		ID:   instanceID + "-" + configType.String(),
 		Type: ResourceTypePgBackRestConfig,
@@ -44,10 +34,10 @@ type PgBackRestConfig struct {
 	NodeName     string                   `json:"node_name"`
 	Repositories []*pgbackrest.Repository `json:"repositories"`
 	ParentID     string                   `json:"parent_id"`
-	Type         PgBackRestConfigType     `json:"type"`
+	Type         pgbackrest.ConfigType    `json:"type"`
 	OwnerUID     int                      `json:"owner_uid"`
 	OwnerGID     int                      `json:"owner_gid"`
-	Paths        InstancePaths            `json:"paths"`
+	Paths        database.InstancePaths   `json:"paths"`
 	Port         int                      `json:"port"`
 }
 

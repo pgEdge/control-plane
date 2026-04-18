@@ -165,4 +165,5 @@ type Orchestrator interface {
 	StopInstance(ctx context.Context, instanceID string) error
 	StartInstance(ctx context.Context, instanceID string) error
 	NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error)
+	InstancePaths(pgVersion *ds.Version, instanceID string) (InstancePaths, error)
 }

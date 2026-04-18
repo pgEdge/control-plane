@@ -87,7 +87,7 @@ type PatroniConfigGeneratorOptions struct {
 	// PostgresPort is the port that Postgres will listen on.
 	PostgresPort int
 	// Paths is used to compute the paths of directories and executables.
-	Paths InstancePaths
+	Paths database.InstancePaths
 }
 
 func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfigGenerator {
@@ -185,9 +185,9 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{
 		"ssl":           "on",
-		"ssl_ca_file":   filepath.Join(p.PostgresCertsDir, postgresCaCertName),
-		"ssl_cert_file": filepath.Join(p.PostgresCertsDir, postgresServerCertName),
-		"ssl_key_file":  filepath.Join(p.PostgresCertsDir, postgresServerKeyName),
+		"ssl_ca_file":   filepath.Join(p.PostgresCertsDir, database.PostgresCaCertName),
+		"ssl_cert_file": filepath.Join(p.PostgresCertsDir, database.PostgresServerCertName),
+		"ssl_key_file":  filepath.Join(p.PostgresCertsDir, database.PostgresServerKeyName),
 	})
 	maps.Copy(parameters, p.OrchestratorParameters)
 	if p.ArchiveCommand != "" {
@@ -253,9 +253,9 @@ func (p *PatroniConfigGenerator) log() *patroni.Log {
 func (p *PatroniConfigGenerator) etcd(hosts []string, creds *EtcdCreds) *patroni.Etcd {
 	return &patroni.Etcd{
 		Hosts:    &hosts,
-		CACert:   utils.PointerTo(filepath.Join(p.EtcdCertsDir, etcdCaCertName)),
-		Cert:     utils.PointerTo(filepath.Join(p.EtcdCertsDir, etcdClientCertName)),
-		Key:      utils.PointerTo(filepath.Join(p.EtcdCertsDir, etcdClientKeyName)),
+		CACert:   utils.PointerTo(filepath.Join(p.EtcdCertsDir, database.EtcdCaCertName)),
+		Cert:     utils.PointerTo(filepath.Join(p.EtcdCertsDir, database.EtcdClientCertName)),
+		Key:      utils.PointerTo(filepath.Join(p.EtcdCertsDir, database.EtcdClientKeyName)),
 		Username: &creds.Username,
 		Password: &creds.Password,
 		Protocol: utils.PointerTo("https"),
@@ -315,16 +315,16 @@ func (p *PatroniConfigGenerator) authentication() *patroni.Authentication {
 	return &patroni.Authentication{
 		Superuser: &patroni.User{
 			Username:    utils.PointerTo("pgedge"),
-			SSLRootCert: utils.PointerTo(filepath.Join(p.PostgresCertsDir, postgresCaCertName)),
-			SSLCert:     utils.PointerTo(filepath.Join(p.PostgresCertsDir, postgresSuperuserCertName)),
-			SSLKey:      utils.PointerTo(filepath.Join(p.PostgresCertsDir, postgresSuperuserKeyName)),
+			SSLRootCert: utils.PointerTo(filepath.Join(p.PostgresCertsDir, database.PostgresCaCertName)),
+			SSLCert:     utils.PointerTo(filepath.Join(p.PostgresCertsDir, database.PostgresSuperuserCertName)),
+			SSLKey:      utils.PointerTo(filepath.Join(p.PostgresCertsDir, database.PostgresSuperuserKeyName)),
 			SSLMode:     utils.PointerTo("verify-full"),
 		},
 		Replication: &patroni.User{
 			Username:    utils.PointerTo("patroni_replicator"),
-			SSLRootCert: utils.PointerTo(filepath.Join(p.PostgresCertsDir, postgresCaCertName)),
-			SSLCert:     utils.PointerTo(filepath.Join(p.PostgresCertsDir, postgresReplicatorCertName)),
-			SSLKey:      utils.PointerTo(filepath.Join(p.PostgresCertsDir, postgresReplicatorKeyName)),
+			SSLRootCert: utils.PointerTo(filepath.Join(p.PostgresCertsDir, database.PostgresCaCertName)),
+			SSLCert:     utils.PointerTo(filepath.Join(p.PostgresCertsDir, database.PostgresReplicatorCertName)),
+			SSLKey:      utils.PointerTo(filepath.Join(p.PostgresCertsDir, database.PostgresReplicatorKeyName)),
 			SSLMode:     utils.PointerTo("verify-full"),
 		},
 	}

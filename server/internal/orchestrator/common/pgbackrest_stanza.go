@@ -24,9 +24,8 @@ func PgBackRestStanzaIdentifier(nodeName string) resource.Identifier {
 }
 
 type PgBackRestStanza struct {
-	DatabaseID string        `json:"database_id"`
-	NodeName   string        `json:"node_name"`
-	Paths      InstancePaths `json:"paths"`
+	DatabaseID string `json:"database_id"`
+	NodeName   string `json:"node_name"`
 }
 
 func (p *PgBackRestStanza) ResourceVersion() string {
@@ -60,14 +59,18 @@ func (p *PgBackRestStanza) Refresh(ctx context.Context, rc *resource.Context) er
 	if err != nil {
 		return err
 	}
-	node, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(p.NodeName))
+	primary, err := database.GetPrimaryInstance(ctx, rc, p.NodeName)
 	if err != nil {
-		return fmt.Errorf("failed to get node %q: %w", p.NodeName, err)
+		return err
+	}
+	paths, err := primary.Paths(orchestrator)
+	if err != nil {
+		return fmt.Errorf("failed to get primary instance paths: %w", err)
 	}
 
 	var output bytes.Buffer
-	infoCmd := p.Paths.PgBackRestBackupCmd("info", "--output=json").StringSlice()
-	err = orchestrator.ExecuteInstanceCommand(ctx, &output, p.DatabaseID, node.PrimaryInstanceID, infoCmd...)
+	infoCmd := paths.PgBackRestBackupCmd("info", "--output=json").StringSlice()
+	err = orchestrator.ExecuteInstanceCommand(ctx, &output, p.DatabaseID, primary.InstanceID(), infoCmd...)
 	if err != nil {
 		// pgbackrest info returns a 0 exit code even if the stanza doesn't
 		// exist, so an error here means something else went wrong.
@@ -96,20 +99,24 @@ func (p *PgBackRestStanza) Create(ctx context.Context, rc *resource.Context) err
 	if err != nil {
 		return err
 	}
-	node, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(p.NodeName))
+	primary, err := database.GetPrimaryInstance(ctx, rc, p.NodeName)
 	if err != nil {
-		return fmt.Errorf("failed to get node %q: %w", p.NodeName, err)
+		return err
+	}
+	paths, err := primary.Paths(orchestrator)
+	if err != nil {
+		return fmt.Errorf("failed to get primary instance paths: %w", err)
 	}
 
 	var stanzaCreateOut bytes.Buffer
-	createCmd := p.Paths.PgBackRestBackupCmd("stanza-create", "--io-timeout=10s").StringSlice()
-	err = orchestrator.ExecuteInstanceCommand(ctx, &stanzaCreateOut, p.DatabaseID, node.PrimaryInstanceID, createCmd...)
+	createCmd := paths.PgBackRestBackupCmd("stanza-create", "--io-timeout=10s").StringSlice()
+	err = orchestrator.ExecuteInstanceCommand(ctx, &stanzaCreateOut, p.DatabaseID, primary.InstanceID(), createCmd...)
 	if err != nil {
 		return fmt.Errorf("failed to exec pgbackrest stanza-create: %w, output: %s", err, stanzaCreateOut.String())
 	}
 	var checkOut bytes.Buffer
-	checkCmd := p.Paths.PgBackRestBackupCmd("check").StringSlice()
-	err = orchestrator.ExecuteInstanceCommand(ctx, &checkOut, p.DatabaseID, node.PrimaryInstanceID, checkCmd...)
+	checkCmd := paths.PgBackRestBackupCmd("check").StringSlice()
+	err = orchestrator.ExecuteInstanceCommand(ctx, &checkOut, p.DatabaseID, primary.InstanceID(), checkCmd...)
 	if err != nil {
 		return fmt.Errorf("failed to exec pgbackrest check: %w, output: %s", err, checkOut.String())
 	}

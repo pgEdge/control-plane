@@ -13,6 +13,17 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+type ConfigType string
+
+func (t ConfigType) String() string {
+	return string(t)
+}
+
+const (
+	ConfigTypeBackup  ConfigType = "backup"
+	ConfigTypeRestore ConfigType = "restore"
+)
+
 type RepositoryType string
 
 const (

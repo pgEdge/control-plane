@@ -63,9 +63,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 				PatroniPort:  8888,
 				PostgresPort: 5432,
-				Paths: common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/opt/pgedge"},
-					Host:           common.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/local/bin/patroni",
 				},
@@ -120,9 +120,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 				PatroniPort:  8888,
 				PostgresPort: 5432,
-				Paths: common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/opt/pgedge"},
-					Host:           common.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/local/bin/patroni",
 				},
@@ -177,9 +177,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 				PatroniPort:  8888,
 				PostgresPort: 5432,
-				Paths: common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/opt/pgedge"},
-					Host:           common.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/local/bin/patroni",
 				},
@@ -235,9 +235,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 				PatroniPort:  8888,
 				PostgresPort: 5432,
-				Paths: common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/opt/pgedge"},
-					Host:           common.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/local/bin/patroni",
 				},
@@ -291,9 +291,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 				PatroniPort:  8888,
 				PostgresPort: 5432,
-				Paths: common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
-					Host:           common.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
+					Host:           database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/local/bin/patroni",
 				},
@@ -332,9 +332,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 				PatroniPort:  8888,
 				PostgresPort: 5432,
-				Paths: common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/var/lib/pgsql/storefront-n1-689qacsi"},
-					Host:           common.Paths{BaseDir: "/var/lib/pgsql/storefront-n1-689qacsi"},
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/var/lib/pgsql/storefront-n1-689qacsi"},
+					Host:           database.Paths{BaseDir: "/var/lib/pgsql/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/local/bin/patroni",
 				},

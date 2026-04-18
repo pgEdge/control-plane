@@ -1019,6 +1019,15 @@ func (o *Orchestrator) NodeDSN(ctx context.Context, rc *resource.Context, nodeNa
 	return node.DSN(ctx, rc, instance, dbName)
 }
 
+func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (database.InstancePaths, error) {
+	return database.InstancePaths{
+		Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+		Host:           database.Paths{BaseDir: filepath.Join(o.cfg.DataDir, "instances", instanceID)},
+		PgBackRestPath: "/usr/bin/pgbackrest",
+		PatroniPath:    "/usr/local/bin/patroni",
+	}, nil
+}
+
 func (o *Orchestrator) scaleInstance(
 	ctx context.Context,
 	instanceID string,
