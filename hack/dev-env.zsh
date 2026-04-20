@@ -248,12 +248,12 @@ use-dev-lima() {
 	export E2E_FIXTURE=dev-lima
 
 	_update-restish-config \
-		http://localhost:3000 \
-		http://localhost:3001 \
-		http://localhost:3002 \
-		http://localhost:3003 \
-		http://localhost:3004 \
-		http://localhost:3005 \
+		http://localhost:3010 \
+		http://localhost:3011 \
+		http://localhost:3012 \
+		http://localhost:3013 \
+		http://localhost:3014 \
+		http://localhost:3015 \
 
 	local i
 	for ((i = 1; i <= 6; i++ )); do
@@ -629,12 +629,15 @@ cp-follow-task() {
 
 cp-etcdctl() {
 	local data_dir
+	local host_1_port
 	case ${CP_ENV} in
 		compose)
 			data_dir="${_cp_dir}/docker/control-plane-dev/data"
+			host_1_port=2379
 			;;
 		dev-lima)
 			data_dir="${_cp_dir}/lima/data"
+			host_1_port=2389
 			;;
 		*)
 			echo "cannot use cp-etcdctl with environment ${CP_ENV}"
@@ -647,7 +650,7 @@ cp-etcdctl() {
 	local host_1_cfg="${host_1_data}/generated.config.json"
 
 	etcdctl \
-		--endpoints=https://localhost:2379 \
+		--endpoints="https://localhost:${host_1_port}" \
 		--cacert "${host_1_certs}/ca.crt" \
 		--cert "${host_1_certs}/etcd-user.crt" \
 		--key "${host_1_certs}/etcd-user.key" \
