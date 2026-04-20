@@ -16,6 +16,7 @@ import (
 )
 
 // postgrestSpec returns a ServiceSpec for a PostgREST service on the given host.
+// PostgREST connects as the "admin" database user (connect_as).
 func postgrestSpec(hostID string, port int, config map[string]any) *controlplane.ServiceSpec {
 	if config == nil {
 		config = map[string]any{}
@@ -27,11 +28,13 @@ func postgrestSpec(hostID string, port int, config map[string]any) *controlplane
 		HostIds:     []controlplane.Identifier{controlplane.Identifier(hostID)},
 		Port:        pointerTo(port),
 		Config:      config,
+		ConnectAs:   "admin",
 	}
 }
 
 // postgrestBaseSpec returns the common database spec used across PostgREST tests.
 // services is appended directly so callers control what services are included.
+// The "admin" user serves as the PostgREST connect_as user.
 func postgrestBaseSpec(dbName string, nodeHosts []string, services []*controlplane.ServiceSpec) *controlplane.DatabaseSpec {
 	nodes := make([]*controlplane.DatabaseNodeSpec, len(nodeHosts))
 	for i, h := range nodeHosts {
@@ -262,9 +265,11 @@ func TestPostgRESTHealthCheck(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "PostgREST root endpoint should return 200")
 }
 
-// TestPostgRESTServiceUserRoles verifies the CP created the correct Postgres
-// roles for the PostgREST authenticator.
-func TestPostgRESTServiceUserRoles(t *testing.T) {
+// TestPostgRESTAuthenticatorRole verifies the connect_as user was configured
+// correctly as a PostgREST authenticator by PostgRESTAuthenticatorResource:
+// NOINHERIT must be set and the db_anon_role must be granted to it.
+// No svc_* auto-created roles should exist for PostgREST.
+func TestPostgRESTAuthenticatorRole(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfServicesUnsupported(t)
@@ -294,29 +299,15 @@ func TestPostgRESTServiceUserRoles(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close(ctx)
 
-	// The RW service user must have NOINHERIT (rolinherit = false).
-	rows, err := conn.Query(ctx, `
-		SELECT rolname, rolinherit
-		FROM pg_roles
-		WHERE rolname LIKE 'svc_%'
-		  AND rolname LIKE '%_rw'
-		ORDER BY rolname
-	`)
-	require.NoError(t, err)
-	defer rows.Close()
+	// The connect_as user ("admin") must have NOINHERIT set by the authenticator resource.
+	var rolinherit bool
+	err = conn.QueryRow(ctx,
+		`SELECT rolinherit FROM pg_roles WHERE rolname = 'admin'`,
+	).Scan(&rolinherit)
+	require.NoError(t, err, "connect_as user 'admin' must exist in pg_roles")
+	assert.False(t, rolinherit, "connect_as user must have NOINHERIT (rolinherit = false)")
 
-	found := false
-	for rows.Next() {
-		var rolname string
-		var rolinherit bool
-		require.NoError(t, rows.Scan(&rolname, &rolinherit))
-		assert.False(t, rolinherit, "RW service role %s must have NOINHERIT (rolinherit = false)", rolname)
-		found = true
-		t.Logf("role %s: rolinherit=%v", rolname, rolinherit)
-	}
-	assert.True(t, found, "expected at least one _rw service role")
-
-	// The RW role must be granted the anon role (pgedge_application_read_only).
+	// The db_anon_role (pgedge_application_read_only by default) must be granted to the connect_as user.
 	var anonGranted bool
 	err = conn.QueryRow(ctx, `
 		SELECT EXISTS (
@@ -324,12 +315,20 @@ func TestPostgRESTServiceUserRoles(t *testing.T) {
 			FROM pg_auth_members m
 			JOIN pg_roles r ON m.member = r.oid
 			JOIN pg_roles g ON m.roleid = g.oid
-			WHERE r.rolname LIKE 'svc_%_rw'
+			WHERE r.rolname = 'admin'
 			  AND g.rolname = 'pgedge_application_read_only'
 		)
 	`).Scan(&anonGranted)
 	require.NoError(t, err)
-	assert.True(t, anonGranted, "RW service role must be granted pgedge_application_read_only")
+	assert.True(t, anonGranted, "connect_as user must be granted the db_anon_role")
+
+	// No auto-created svc_* roles should exist for PostgREST.
+	var svcRoleCount int
+	err = conn.QueryRow(ctx,
+		`SELECT COUNT(*) FROM pg_roles WHERE rolname LIKE 'svc_%'`,
+	).Scan(&svcRoleCount)
+	require.NoError(t, err)
+	assert.Equal(t, 0, svcRoleCount, "no svc_* roles should be created for PostgREST with connect_as")
 }
 
 // TestPostgRESTAddToExistingDatabase verifies PostgREST provisions correctly
@@ -401,7 +400,8 @@ func TestPostgRESTRemove(t *testing.T) {
 
 	assert.Empty(t, db.ServiceInstances, "service instances should be empty after removal")
 
-	// Verify the service user roles are dropped from Postgres.
+	// Verify the connect_as user still exists after removal — it is a
+	// customer-managed database_users entry, not an auto-created service role.
 	conn, err := db.ConnectToInstance(ctx, ConnectionOptions{
 		Matcher:  And(WithNode("n1"), WithRole("primary")),
 		Username: "admin",
@@ -410,12 +410,12 @@ func TestPostgRESTRemove(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close(ctx)
 
-	var count int
-	err = conn.QueryRow(ctx, `
-		SELECT COUNT(*) FROM pg_roles WHERE rolname LIKE 'svc_%'
-	`).Scan(&count)
+	var exists bool
+	err = conn.QueryRow(ctx,
+		`SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'admin')`,
+	).Scan(&exists)
 	require.NoError(t, err)
-	assert.Equal(t, 0, count, "all service roles should be dropped after PostgREST removal")
+	assert.True(t, exists, "connect_as user must not be dropped when PostgREST is removed")
 }
 
 // TestPostgRESTConfigUpdate verifies updating PostgREST config updates the
@@ -505,33 +505,24 @@ func TestPostgRESTMultiHostDBURI(t *testing.T) {
 
 	waitForPostgRESTRunning(ctx, t, db, "postgrest-api", host1, 5*time.Minute)
 
-	// Connect to Postgres and confirm service roles exist on all nodes.
-	for _, nodeName := range []string{"n1"} {
-		conn, err := db.ConnectToInstance(ctx, ConnectionOptions{
-			Matcher:  And(WithNode(nodeName), WithRole("primary")),
-			Username: "admin",
-			Password: "testpassword",
-		})
-		if err != nil {
-			// The primary moved — find it on whichever node is primary.
-			conn, err = db.ConnectToInstance(ctx, ConnectionOptions{
-				Matcher:  WithRole("primary"),
-				Username: "admin",
-				Password: "testpassword",
-			})
-		}
-		require.NoError(t, err, "failed to connect to primary on node %s", nodeName)
-		defer conn.Close(ctx)
+	// Connect to Postgres and confirm the connect_as user was configured
+	// as an authenticator (NOINHERIT + anon role granted).
+	conn, err := db.ConnectToInstance(ctx, ConnectionOptions{
+		Matcher:  WithRole("primary"),
+		Username: "admin",
+		Password: "testpassword",
+	})
+	require.NoError(t, err, "failed to connect to primary")
+	defer conn.Close(ctx)
 
-		var count int
-		err = conn.QueryRow(ctx, `
-			SELECT COUNT(*) FROM pg_roles WHERE rolname LIKE 'svc_%_rw'
-		`).Scan(&count)
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, count, 1, "RW service role must exist on node %s", nodeName)
-	}
+	var rolinherit bool
+	err = conn.QueryRow(ctx,
+		`SELECT rolinherit FROM pg_roles WHERE rolname = 'admin'`,
+	).Scan(&rolinherit)
+	require.NoError(t, err)
+	assert.False(t, rolinherit, "connect_as user must have NOINHERIT on multi-host deployment")
 
-	t.Log("multi-host PostgREST provisioned, service roles present on all nodes")
+	t.Log("multi-host PostgREST provisioned, connect_as user configured as authenticator")
 }
 
 // TestPostgRESTFailover provisions PostgREST on a 3-node database, triggers a

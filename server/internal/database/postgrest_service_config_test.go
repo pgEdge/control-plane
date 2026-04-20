@@ -35,7 +35,7 @@ func parseConf(t *testing.T, data []byte) map[string]string {
 
 func makeTestConn() database.PostgRESTConnParams {
 	return database.PostgRESTConnParams{
-		Username:      "svc_pgrest",
+		Username:      "myapp",
 		Password:      "testpass",
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
@@ -121,7 +121,7 @@ func TestGenerateConf_DBURIContainsCredentials(t *testing.T) {
 		MaxRows:    1000,
 	}
 	conn := database.PostgRESTConnParams{
-		Username:      "svc_pgrest",
+		Username:      "myapp",
 		Password:      "s3cr3t",
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
@@ -131,7 +131,7 @@ func TestGenerateConf_DBURIContainsCredentials(t *testing.T) {
 	m := parseConf(t, data)
 	uri, ok := m["db-uri"]
 	require.True(t, ok, "db-uri must be present in postgrest.conf")
-	assert.Contains(t, uri, "svc_pgrest")
+	assert.Contains(t, uri, "myapp")
 	assert.Contains(t, uri, "s3cr3t")
 	assert.Contains(t, uri, "pg-host1")
 	assert.Contains(t, uri, "mydb")
@@ -145,7 +145,7 @@ func TestGenerateConf_DBURIMultiHost(t *testing.T) {
 		MaxRows:    1000,
 	}
 	conn := database.PostgRESTConnParams{
-		Username:     "svc_pgrest",
+		Username:     "myapp",
 		Password:     "pass",
 		DatabaseName: "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{

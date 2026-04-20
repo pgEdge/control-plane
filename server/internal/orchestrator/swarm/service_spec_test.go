@@ -476,6 +476,7 @@ func makePostgRESTSpecOpts() *ServiceContainerSpecOptions {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "svc-1",
 			ServiceType: "postgrest",
+			ConnectAs:   "myapp",
 		},
 		ServiceInstanceID: "inst-1",
 		DatabaseID:        "db-1",
@@ -485,10 +486,9 @@ func makePostgRESTSpecOpts() *ServiceContainerSpecOptions {
 		Hostname:          "postgrest-host1",
 		CohortMemberID:    "node-abc",
 		ServiceImage:      &ServiceImage{Tag: "postgrest/postgrest:latest"},
-		Credentials: &database.ServiceUser{
-			Username: "svc_postgrest_host1",
-			Password: "supersecret",
-		},
+		// Credentials are nil for PostgREST — the connect_as user's credentials
+		// go into postgrest.conf via PostgRESTConfigResource, not the container spec.
+		Credentials:       nil,
 		DatabaseNetworkID: "net-1",
 		DatabaseHosts:     []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
 		DataPath:          "/var/lib/pgedge/services/inst-1",

@@ -83,15 +83,15 @@ creating one instance per host for redundancy:
 
 ## Database Credentials
 
-Each service instance is automatically provisioned with two dedicated
-database users. The Control Plane manages these credentials; you do not
-need to create or rotate them manually. The credentials are:
+Each service connects to the database as a user you specify with the
+`connect_as` field. The `connect_as` value must reference a username
+in your `database_users` array. The Control Plane uses those
+credentials to generate the service's connection string and to configure
+any required role grants (for example, granting the anonymous role to
+a PostgREST authenticator).
 
-- `svc_{service_id}_ro` is a read-only user with read access to the
-  database; this user is the default for most service types.
-- `svc_{service_id}_rw` is a read-write user with read and write access
-  to the database; this user is provisioned when the service needs
-  read/write access.
+You own and manage the `connect_as` user. Removing a service does not
+drop the underlying database user.
 
 ## Next Steps
 

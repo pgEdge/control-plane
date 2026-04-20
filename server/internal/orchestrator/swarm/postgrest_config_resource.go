@@ -26,15 +26,15 @@ func PostgRESTConfigResourceIdentifier(serviceInstanceID string) resource.Identi
 
 // PostgRESTConfigResource manages the postgrest.conf file on the host filesystem.
 // The file is bind-mounted read-only into the container and includes the db-uri
-// with embedded credentials.
+// with embedded credentials from the connect_as database user.
 type PostgRESTConfigResource struct {
 	ServiceInstanceID  string                           `json:"service_instance_id"`
 	ServiceID          string                           `json:"service_id"`
 	HostID             string                           `json:"host_id"`
 	DirResourceID      string                           `json:"dir_resource_id"`
 	Config             *database.PostgRESTServiceConfig `json:"config"`
-	Username           string                           `json:"username"`
-	Password           string                           `json:"password"`
+	ConnectAsUsername  string                           `json:"connect_as_username"`
+	ConnectAsPassword  string                           `json:"connect_as_password"`
 	DatabaseName       string                           `json:"database_name"`
 	DatabaseHosts      []database.ServiceHostEntry      `json:"database_hosts"`
 	TargetSessionAttrs string                           `json:"target_session_attrs,omitempty"`
@@ -45,7 +45,7 @@ func (r *PostgRESTConfigResource) ResourceVersion() string {
 }
 
 func (r *PostgRESTConfigResource) DiffIgnore() []string {
-	return []string{"/username", "/password"}
+	return nil
 }
 
 func (r *PostgRESTConfigResource) Identifier() resource.Identifier {
@@ -59,7 +59,6 @@ func (r *PostgRESTConfigResource) Executor() resource.Executor {
 func (r *PostgRESTConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
-		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW),
 	}
 }
 
@@ -113,23 +112,16 @@ func (r *PostgRESTConfigResource) Delete(ctx context.Context, rc *resource.Conte
 	return nil
 }
 
-// populateCredentials reads the RW service user's username and password from
-// the corresponding ServiceUserRole resource state. Called at Create/Update
-// time so that credentials are never stale.
-func (r *PostgRESTConfigResource) populateCredentials(rc *resource.Context) error {
-	rwRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW))
-	if err != nil {
-		return fmt.Errorf("failed to get RW service user role: %w", err)
-	}
-	r.Username = rwRole.Username
-	r.Password = rwRole.Password
+// populateCredentials is a no-op — credentials come from ConnectAsUsername/
+// ConnectAsPassword set at construction time from the connect_as database user.
+func (r *PostgRESTConfigResource) populateCredentials(_ *resource.Context) error {
 	return nil
 }
 
 func (r *PostgRESTConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
 	content, err := r.Config.GenerateConf(database.PostgRESTConnParams{
-		Username:           r.Username,
-		Password:           r.Password,
+		Username:           r.ConnectAsUsername,
+		Password:           r.ConnectAsPassword,
 		DatabaseName:       r.DatabaseName,
 		DatabaseHosts:      r.DatabaseHosts,
 		TargetSessionAttrs: r.TargetSessionAttrs,

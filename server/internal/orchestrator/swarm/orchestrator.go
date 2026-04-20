@@ -446,11 +446,11 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	}
 
 	// Service user role resources (manages database user lifecycle).
-	// MCP uses connect_as credentials from database_users — no ServiceUserRole needed.
-	// PostgREST/RAG still uses ServiceUserRole until it adopts connect_as.
+	// MCP and PostgREST use connect_as credentials — no ServiceUserRole needed.
+	// RAG still uses ServiceUserRole.
 	var canonicalROID, canonicalRWID resource.Identifier
 	var serviceUserRoleRO, serviceUserRoleRW *ServiceUserRole
-	if spec.ServiceSpec.ServiceType != "mcp" {
+	if spec.ServiceSpec.ServiceType == "rag" {
 		canonicalROID = ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
 		canonicalRWID = ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
 		serviceUserRoleRO = &ServiceUserRole{
@@ -524,12 +524,12 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			DBAnonRole:   postgrestConfig.DBAnonRole,
 		}
 		authenticator := &PostgRESTAuthenticatorResource{
-			ServiceID:    spec.ServiceSpec.ServiceID,
-			DatabaseID:   spec.DatabaseID,
-			DatabaseName: spec.DatabaseName,
-			NodeName:     spec.NodeName,
-			DBAnonRole:   postgrestConfig.DBAnonRole,
-			UserRoleID:   canonicalRWID,
+			ServiceID:         spec.ServiceSpec.ServiceID,
+			DatabaseID:        spec.DatabaseID,
+			DatabaseName:      spec.DatabaseName,
+			NodeName:          spec.NodeName,
+			DBAnonRole:        postgrestConfig.DBAnonRole,
+			ConnectAsUsername: spec.ConnectAsUsername,
 		}
 		dataDir := &filesystem.DirResource{
 			ID:       dataDirID,
@@ -544,6 +544,8 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			HostID:             spec.HostID,
 			DirResourceID:      dataDirID,
 			Config:             postgrestConfig,
+			ConnectAsUsername:  spec.ConnectAsUsername,
+			ConnectAsPassword:  spec.ConnectAsPassword,
 			DatabaseName:       spec.DatabaseName,
 			DatabaseHosts:      spec.DatabaseHosts,
 			TargetSessionAttrs: spec.TargetSessionAttrs,
@@ -590,16 +592,14 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	orchestratorResources = append(orchestratorResources, serviceSpecificResources...)
 	orchestratorResources = append(orchestratorResources, serviceInstanceSpec, serviceInstance)
 
-	// Append per-node ServiceUserRole resources for each additional database node.
-	// MCP does not use ServiceUserRole — skip for MCP.
-	// The canonical resources (above) cover spec.NodeName; all other nodes get
-	// their own RO and RW role that sources credentials from the canonical.
-	if spec.ServiceSpec.ServiceType != "mcp" {
-		for _, nodeInst := range spec.DatabaseNodes {
-			if nodeInst.NodeName == spec.NodeName {
-				continue
-			}
-			perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
+	// Append per-node resources for each additional database node.
+	// RAG uses per-node ServiceUserRole; PostgREST uses per-node authenticator.
+	// The canonical resources (above) cover spec.NodeName.
+	for _, nodeInst := range spec.DatabaseNodes {
+		if nodeInst.NodeName == spec.NodeName {
+			continue
+		}
+		if spec.ServiceSpec.ServiceType == "rag" {
 			orchestratorResources = append(orchestratorResources,
 				&ServiceUserRole{
 					ServiceID:        spec.ServiceSpec.ServiceID,
@@ -618,18 +618,18 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 					CredentialSource: &canonicalRWID,
 				},
 			)
-			if spec.ServiceSpec.ServiceType == "postgrest" {
-				orchestratorResources = append(orchestratorResources,
-					&PostgRESTAuthenticatorResource{
-						ServiceID:    spec.ServiceSpec.ServiceID,
-						DatabaseID:   spec.DatabaseID,
-						DatabaseName: spec.DatabaseName,
-						NodeName:     nodeInst.NodeName,
-						DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
-						UserRoleID:   perNodeRWID,
-					},
-				)
-			}
+		}
+		if spec.ServiceSpec.ServiceType == "postgrest" {
+			orchestratorResources = append(orchestratorResources,
+				&PostgRESTAuthenticatorResource{
+					ServiceID:         spec.ServiceSpec.ServiceID,
+					DatabaseID:        spec.DatabaseID,
+					DatabaseName:      spec.DatabaseName,
+					NodeName:          nodeInst.NodeName,
+					DBAnonRole:        parsedPostgRESTConfig.DBAnonRole,
+					ConnectAsUsername: spec.ConnectAsUsername,
+				},
+			)
 		}
 	}
 

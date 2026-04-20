@@ -62,16 +62,9 @@ func (s *ServiceInstanceResource) Executor() resource.Executor {
 }
 
 func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
-	deps := []resource.Identifier{
+	return []resource.Identifier{
 		ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID),
 	}
-	// MCP and RAG get credentials from database_users (connect_as) —
-	// no ServiceUserRole dependency. PostgREST still uses ServiceUserRole.
-	if s.ServiceType == "postgrest" {
-		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRO))
-		deps = append(deps, ServiceUserRoleIdentifier(s.ServiceSpecID, ServiceUserRoleRW))
-	}
-	return deps
 }
 
 func (s *ServiceInstanceResource) TypeDependencies() []resource.Type {
