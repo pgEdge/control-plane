@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
@@ -16,6 +17,12 @@ import (
 var _ resource.Resource = (*PostgRESTAuthenticatorResource)(nil)
 
 const ResourceTypePostgRESTAuthenticator resource.Type = "swarm.postgrest_authenticator"
+
+// sanitizeIdentifier quotes a string for use as a PostgreSQL identifier.
+// It doubles any internal double-quotes and wraps the result in double-quotes.
+func sanitizeIdentifier(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
 
 func PostgRESTAuthenticatorIdentifier(serviceID, nodeName string) resource.Identifier {
 	return resource.Identifier{
@@ -135,7 +142,7 @@ func (r *PostgRESTAuthenticatorResource) Create(ctx context.Context, rc *resourc
 	statements := postgres.Statements{
 		postgres.Statement{SQL: fmt.Sprintf("ALTER ROLE %s WITH NOINHERIT;", sanitizeIdentifier(username))},                                           // #nosec G201 -- sanitizeIdentifier quotes all identifiers
 		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(username))}, // #nosec G201
-		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(username))},                          // #nosec G201
+		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(username))},                           // #nosec G201
 	}
 	if err := statements.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to configure PostgREST authenticator %q: %w", username, err)

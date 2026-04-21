@@ -114,7 +114,6 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 	result, err := o.generateRAGInstanceResources(spec)
 	require.NoError(t, err)
 
-	// Multi-node with connect_as: no ServiceUserRole resources regardless of node count.
 	// Network + DirResource + Keys + Preflight + Config + InstanceSpec + ServiceInstance = 7.
 	require.Len(t, result.Resources, 7)
 	assert.Equal(t, ResourceTypeNetwork, result.Resources[0].Identifier.Type)

@@ -34,7 +34,6 @@ type ServiceInstanceSpecResource struct {
 	Hostname           string                      `json:"hostname"`
 	CohortMemberID     string                      `json:"cohort_member_id"`
 	ServiceImage       *ServiceImage               `json:"service_image"`
-	Credentials        *database.ServiceUser       `json:"credentials"`
 	DatabaseNetworkID  string                      `json:"database_network_id"`
 	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`       // Ordered Postgres host:port entries
 	TargetSessionAttrs string                      `json:"target_session_attrs"` // libpq target_session_attrs
@@ -91,23 +90,10 @@ func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
 	return nil
 }
 
-func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
-	// All current service types (mcp, postgrest, rag) source credentials from
-	// database_users (connect_as) — credentials go into the config file, not
-	// the container spec.
-	s.Credentials = nil
-	return nil
-}
-
 func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	network, err := resource.FromContext[*Network](rc, NetworkResourceIdentifier(s.DatabaseNetworkID))
 	if err != nil {
 		return fmt.Errorf("failed to get database network from state: %w", err)
-	}
-
-	// Credentials are nil for all current service types — they use config files.
-	if err := s.populateCredentials(rc); err != nil {
-		return err
 	}
 
 	// Resolve the data directory path from the DirResource (only if one exists).
@@ -135,7 +121,6 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		Hostname:           s.Hostname,
 		CohortMemberID:     s.CohortMemberID,
 		ServiceImage:       s.ServiceImage,
-		Credentials:        s.Credentials,
 		DatabaseNetworkID:  network.NetworkID,
 		DatabaseHosts:      s.DatabaseHosts,
 		TargetSessionAttrs: s.TargetSessionAttrs,
