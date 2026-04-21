@@ -64,6 +64,25 @@ func TestVersion_1_0_0(t *testing.T) {
 			},
 		},
 		{
+			// Databases created before v0.7.0 will not have replication slot
+			// resources.
+			name: "three nodes without slots",
+			in: []*resource.ResourceData{
+				v0_0_0_node(t, "n1", "instance-1"),
+				v0_0_0_node(t, "n2", "instance-2"),
+				v0_0_0_node(t, "n3", "instance-3"),
+				v0_0_0_instance(t, "instance-1", "host-1", "n1"),
+				v0_0_0_instance(t, "instance-2", "host-2", "n2"),
+				v0_0_0_instance(t, "instance-3", "host-3", "n3"),
+				v0_0_0_subscriptionResource(t, "n1", "n2"),
+				v0_0_0_subscriptionResource(t, "n1", "n3"),
+				v0_0_0_subscriptionResource(t, "n2", "n1"),
+				v0_0_0_subscriptionResource(t, "n2", "n3"),
+				v0_0_0_subscriptionResource(t, "n3", "n1"),
+				v0_0_0_subscriptionResource(t, "n3", "n2"),
+			},
+		},
+		{
 			// This is what it would look like if we were to migrate a state
 			// while it's partway through an "add node" operation
 			name: "populate n3 with n1 source",
