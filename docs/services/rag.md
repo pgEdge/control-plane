@@ -332,9 +332,12 @@ python3 load_rag_documents.py
 ## Examples
 
 The following examples show how to configure the RAG service for common
-use cases. All examples use the `scripts.post_database_create` field to
-automatically provision the database schema (pgvector extension, tables,
-and indexes) during database creation.
+use cases. The first example includes the complete
+`scripts.post_database_create` setup to automatically provision the
+database schema (pgvector extension, tables, and indexes). Subsequent
+examples focus on service configuration variations and omit the schema
+setup for brevity — in production, always include the schema setup from
+the first example.
 
 ### Minimal (OpenAI + Anthropic)
 
