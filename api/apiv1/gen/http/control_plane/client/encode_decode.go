@@ -4738,12 +4738,6 @@ func marshalControlplaneServiceSpecToServiceSpecRequestBody(v *controlplane.Serv
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = marshalControlplaneDatabaseConnectionToDatabaseConnectionRequestBody(v.DatabaseConnection)
 	}
-	{
-		var zero string
-		if res.ConnectAs == zero {
-			res.ConnectAs = ""
-		}
-	}
 
 	return res
 }
@@ -5215,12 +5209,6 @@ func marshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecReques
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = marshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
-	}
-	{
-		var zero string
-		if res.ConnectAs == zero {
-			res.ConnectAs = ""
-		}
 	}
 
 	return res
@@ -5790,9 +5778,7 @@ func unmarshalServiceSpecResponseBodyToControlplaneServiceSpec(v *ServiceSpecRes
 		Port:        v.Port,
 		Cpus:        v.Cpus,
 		Memory:      v.Memory,
-	}
-	if v.ConnectAs != nil {
-		res.ConnectAs = *v.ConnectAs
+		ConnectAs:   *v.ConnectAs,
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
@@ -5811,9 +5797,6 @@ func unmarshalServiceSpecResponseBodyToControlplaneServiceSpec(v *ServiceSpecRes
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = unmarshalDatabaseConnectionResponseBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
-	}
-	if v.ConnectAs == nil {
-		res.ConnectAs = ""
 	}
 
 	return res
@@ -6289,12 +6272,6 @@ func marshalControlplaneServiceSpecToServiceSpecRequestBodyRequestBody(v *contro
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = marshalControlplaneDatabaseConnectionToDatabaseConnectionRequestBodyRequestBody(v.DatabaseConnection)
 	}
-	{
-		var zero string
-		if res.ConnectAs == zero {
-			res.ConnectAs = ""
-		}
-	}
 
 	return res
 }
@@ -6768,12 +6745,6 @@ func marshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Servic
 	}
 	if v.DatabaseConnection != nil {
 		res.DatabaseConnection = marshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
-	}
-	{
-		var zero string
-		if res.ConnectAs == zero {
-			res.ConnectAs = ""
-		}
 	}
 
 	return res
