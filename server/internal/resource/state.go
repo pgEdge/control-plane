@@ -15,8 +15,9 @@ import (
 
 var (
 	StateVersion_1_0_0 = ds.MustParseVersion("1.0.0")
+	StateVersion_1_1_0 = ds.MustParseVersion("1.1.0")
 
-	CurrentVersion = StateVersion_1_0_0
+	CurrentVersion = StateVersion_1_1_0
 )
 
 var (

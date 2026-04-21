@@ -158,7 +158,10 @@ func TestVersion_1_0_0(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state := resource.NewState()
+			state := &resource.State{
+				Version:   resource.StateVersion_1_0_0,
+				Resources: map[resource.Type]map[string]*resource.ResourceData{},
+			}
 			state.Add(tc.in...)
 
 			migration := &migrations.Version_1_0_0{}
