@@ -1,21 +1,23 @@
 # pgEdge RAG Server
 
-The RAG (Retrieval-Augmented Generation) service runs an intelligent query
-server alongside your database. The service uses vector and keyword search
-to retrieve relevant document chunks from PostgreSQL and synthesizes
-LLM-generated answers based on the retrieved context. For more information,
-see the [pgEdge RAG Server](https://github.com/pgEdge/pgedge-rag-server)
+The RAG (Retrieval-Augmented Generation) service runs an intelligent
+query server alongside your database. The service uses vector and
+keyword search to retrieve relevant document chunks from PostgreSQL
+and synthesizes LLM-generated answers based on the retrieved context.
+For more information, see the
+[pgEdge RAG Server](https://github.com/pgEdge/pgedge-rag-server)
 project.
 
 ## Overview
 
 The Control Plane provisions a RAG service container on each specified
-host. The service connects to the database using an existing user specified
-in the `connect_as` field (which must be defined in `database_users`). The
-credentials are automatically embedded in the service configuration by the
-Control Plane. Client applications submit natural language queries to the
-service, which performs hybrid vector and keyword search against document
-tables and returns LLM-synthesized answers with source citations.
+host. The service connects to the database using an existing user
+specified in the `connect_as` field, which must be defined in
+`database_users`. The credentials are automatically embedded in the
+service configuration by the Control Plane. Client applications submit
+natural language queries to the service, which performs hybrid vector
+and keyword search against document tables and returns LLM-synthesized
+answers with source citations.
 
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover RAG-specific
@@ -23,34 +25,19 @@ configuration.
 
 ## Database Prerequisites
 
-Before deploying a RAG service, your PostgreSQL database must have:
+Before deploying a RAG service, your PostgreSQL database must have the
+following items configured:
 
-1. **pgvector extension** installed and enabled
-2. **Document table(s)** with text and vector columns
-3. **HNSW index** on vector columns for fast similarity search
-4. **GIN index** on text columns for keyword search (BM25)
+- pgvector extension installed and enabled.
+- document tables with text and vector columns.
+- HNSW index on vector columns for fast similarity search.
+- GIN index on text columns for keyword search (BM25).
 
-The Control Plane can automatically provision all of these during database
-creation using the `scripts.post_database_create` hook. See [Preparing the
-Database](#preparing-the-database) for a complete example. Alternatively,
-you can provision these manually after database creation.
-
-## Automation & Responsibilities
-
-The Control Plane handles certain setup tasks automatically during database
-and service creation:
-
-**Automated (Control Plane)**
-- Creating pgvector extension
-- Creating document tables and indexes (via `scripts.post_database_create`)
-- Embedding RAG service credentials into configuration files
-- Deploying RAG container and health monitoring
-
-**Manual (You Provide)**
-- **Schema Design**: Deciding table structure, column names, vector dimensions
-- **Embedding Generation**: Using external APIs (OpenAI, Voyage, Ollama) to vectorize documents
-- **Document Loading**: Inserting documents and embeddings into the database
-- **API Credentials**: Providing LLM and embedding provider API keys
+The Control Plane can automatically provision all of these during
+database creation using the `scripts.post_database_create` hook. See
+[Preparing the Database](#preparing-the-database) for a complete
+example. Alternatively, you can provision these manually after
+database creation.
 
 ## Configuration Reference
 
@@ -59,12 +46,15 @@ service spec.
 
 ### Service Connection
 
-The `connect_as` field (at the service level) specifies which database user
-the RAG service will authenticate as. This user **must already be defined** in
-the `database_users` array when creating the database. The Control Plane
-automatically embeds that user's credentials in the service configuration.
+The `connect_as` field at the service level specifies which database
+user the RAG service authenticates as. This user must already be
+defined in the `database_users` array when creating the database. The
+Control Plane automatically embeds that user's credentials in the
+service configuration.
 
-Example:
+The following example shows the `connect_as` field in the service
+spec:
+
 ```json
 {
   "service_id": "rag",
@@ -75,6 +65,7 @@ Example:
 ```
 
 In this example, `app_read_only` must be defined in `database_users`:
+
 ```json
 {
   "username": "app_read_only",
@@ -85,9 +76,11 @@ In this example, `app_read_only` must be defined in `database_users`:
 
 ### Pipeline Configuration
 
-The `pipelines` array (required) defines one or more RAG workflows. Each
-pipeline specifies which tables to search, which embedding provider to use,
-and which LLM to use for answer generation.
+The `pipelines` array (required) defines one or more RAG workflows.
+Each pipeline specifies which tables to search, which embedding
+provider to use, and which LLM to use for answer generation.
+
+The following table describes the pipeline configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
@@ -108,6 +101,8 @@ vectorize each incoming query. The embedding vector is then used for
 similarity search against stored document vectors. All required fields
 must be set; `api_key` is not required for `ollama`.
 
+The following table describes the embedding configuration fields:
+
 | Field | Type | Description |
 |---|---|---|
 | `provider` | string | Required. The embedding provider. One of: `openai`, `voyage`, `anthropic`, `ollama`. |
@@ -117,26 +112,30 @@ must be set; `api_key` is not required for `ollama`.
 
 ### LLM Configuration
 
-The `rag_llm` object configures the LLM provider used to synthesize the
-final answer from retrieved documents. `api_key` is required for all
-providers except `ollama`.
+The `rag_llm` object configures the LLM provider used to synthesize
+the final answer from retrieved documents. `api_key` is required for
+all providers except `ollama`.
+
+The following table describes the LLM configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
 | `provider` | string | Required. The LLM provider. One of: `anthropic`, `openai`, `ollama`. |
-| `model` | string | Required. The model name (e.g., `claude-sonnet-4-20250514`, `gpt-4o`, `llama3.2`). |
+| `model` | string | Required. The model name (e.g., `claude-sonnet-4-5`, `gpt-4o`, `llama3.2`). |
 | `api_key` | string | API key for the provider. Required for `anthropic` and `openai`. Not used for `ollama`. |
 | `base_url` | string | Optional. Custom base URL for API gateway routing. For `ollama`, defaults to `http://localhost:11434`. |
 
 !!! note
-    If `embedding_llm` and `rag_llm` share the same provider and both specify
-    an `api_key`, the values must be identical. The RAG server maintains one
-    key slot per provider and cannot reconcile two different values.
+    If `embedding_llm` and `rag_llm` share the same provider and both
+    specify an `api_key`, the values must be identical. The pgEdge RAG
+    Server maintains one key slot per provider and cannot reconcile
+    two different values.
 
 ### Table Configuration
 
 Each table in a pipeline specifies how to access document text and
-embeddings.
+embeddings. The following table describes the table configuration
+fields:
 
 | Field | Type | Description |
 |---|---|---|
@@ -147,18 +146,20 @@ embeddings.
 
 ### Search Configuration
 
-The `search` object tunes how documents are retrieved before being passed
-to the LLM.
+The `search` object tunes how documents are retrieved before being
+passed to the LLM. The following table describes the search
+configuration fields:
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `hybrid_enabled` | boolean | `true` | Enable hybrid search combining vector similarity and BM25 keyword matching. Set to `false` for vector-only search. |
-| `vector_weight` | float | `0.5` | Weight for vector search versus BM25 (0.0–1.0). Higher values prioritize semantic relevance. |
+| `vector_weight` | float | `0.5` | Weight for vector search versus BM25 (0.0-1.0). Higher values prioritize semantic relevance. |
 
 ### Defaults Configuration
 
-The optional `defaults` object sets fallback values applied to any pipeline
-that does not specify its own `token_budget` or `top_n`.
+The optional `defaults` object sets fallback values applied to any
+pipeline that does not specify its own `token_budget` or `top_n`. The
+following table describes the defaults configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
@@ -167,14 +168,15 @@ that does not specify its own `token_budget` or `top_n`.
 
 ## Preparing the Database
 
-Before deploying a RAG service, you must prepare your PostgreSQL database
-with pgvector, document tables, and indexes. The Control Plane automatically
-executes these during database creation when you include them in the
-`scripts.post_database_create` array in your database specification.
+Before deploying a RAG service, you must prepare your PostgreSQL
+database with pgvector, document tables, and indexes. The Control
+Plane automatically executes these during database creation when you
+include them in the `scripts.post_database_create` array in your
+database specification.
 
 ### Required Schema
 
-The following SQL statements should be included in `scripts.post_database_create`
+Include the following SQL statements in `scripts.post_database_create`
 to automatically initialize the database schema during creation:
 
 ```sql
@@ -200,12 +202,13 @@ CREATE INDEX IF NOT EXISTS documents_content_idx
     ON documents_content_chunks USING gin (to_tsvector('english', content));
 ```
 
-These statements are included as individual entries in the `scripts.post_database_create`
-array (see examples below).
+These statements are included as individual entries in the
+`scripts.post_database_create` array (see examples below).
 
 ### Vector Dimensions
 
-Adjust the `vector(N)` dimension based on your embedding model:
+Adjust the `vector(N)` dimension to match your embedding model. The
+following table shows common models and their vector dimensions:
 
 | Provider | Model | Dimensions |
 |----------|-------|-----------|
@@ -214,135 +217,20 @@ Adjust the `vector(N)` dimension based on your embedding model:
 | Voyage AI | `voyage-3` / `voyage-3-large` | 1024 |
 | Ollama | Varies by model | Check model documentation |
 
-### Loading Documents
-
-After the database and RAG service are deployed, you are responsible for
-generating embeddings for your documents and loading them into the database.
-The Control Plane does not automate this step—you must run this process
-separately, typically via an external application or scheduled task.
-
-Here's a Python example using OpenAI to generate embeddings and load documents:
-
-```python
-#!/usr/bin/env python3
-"""Generate embeddings and load documents into the RAG database."""
-
-import psycopg2
-from psycopg2.extras import execute_values
-from openai import OpenAI
-import os
-import sys
-
-# Configuration
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-DB_HOST = os.environ.get("DB_HOST", "localhost")
-DB_USER = os.environ.get("DB_USER", "admin")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "admin_password")
-DB_NAME = os.environ.get("DB_NAME", "knowledge_base")
-
-def chunk_text(text, chunk_size=500, overlap=50):
-    """Split text into overlapping chunks."""
-    chunks = []
-    for i in range(0, len(text), chunk_size - overlap):
-        chunk = text[i:i + chunk_size]
-        if chunk.strip():
-            chunks.append(chunk)
-    return chunks
-
-def generate_embeddings(texts, client):
-    """Generate embeddings for multiple texts."""
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=texts
-    )
-    return [item.embedding for item in response.data]
-
-# Sample documents
-documents = [
-    {
-        "title": "pgEdge Overview",
-        "content": "pgEdge is a distributed PostgreSQL system...",
-        "source": "docs"
-    },
-    {
-        "title": "RAG Guide",
-        "content": "RAG enables intelligent question-answering systems...",
-        "source": "docs"
-    }
-]
-
-if not OPENAI_API_KEY:
-    print("ERROR: OPENAI_API_KEY environment variable not set")
-    sys.exit(1)
-
-client = OpenAI(api_key=OPENAI_API_KEY)
-conn = psycopg2.connect(
-    host=DB_HOST,
-    user=DB_USER,
-    password=DB_PASSWORD,
-    database=DB_NAME
-)
-cur = conn.cursor()
-
-total_inserted = 0
-
-for doc in documents:
-    print(f"Processing: {doc['title']}")
-    chunks = chunk_text(doc["content"])
-    
-    if chunks:
-        # Generate embeddings for all chunks
-        embeddings = generate_embeddings(chunks, client)
-        
-        # Prepare batch insert data
-        insert_data = [
-            (chunk, embedding, doc["title"], doc["source"])
-            for chunk, embedding in zip(chunks, embeddings)
-        ]
-        
-        # Batch insert
-        insert_query = """
-            INSERT INTO documents_content_chunks
-                (content, embedding, title, source)
-            VALUES %s
-        """
-        execute_values(cur, insert_query, insert_data)
-        conn.commit()
-        
-        inserted = len(insert_data)
-        total_inserted += inserted
-        print(f"  Inserted {inserted} chunks")
-
-print(f"\nTotal chunks inserted: {total_inserted}")
-cur.close()
-conn.close()
-```
-
-**Usage:**
-```bash
-pip install psycopg2-binary openai
-export OPENAI_API_KEY="sk-..."
-export DB_HOST="localhost"
-export DB_USER="admin"
-export DB_PASSWORD="admin_password"
-export DB_NAME="knowledge_base"
-python3 load_rag_documents.py
-```
-
 ## Examples
 
-The following examples show how to configure the RAG service for common
-use cases. The first example includes the complete
+The following examples show how to configure the RAG service for
+common use cases. The first example includes the complete
 `scripts.post_database_create` setup to automatically provision the
 database schema (pgvector extension, tables, and indexes). Subsequent
 examples focus on service configuration variations and omit the schema
-setup for brevity — in production, always include the schema setup from
-the first example.
+setup for brevity - in production, always include the schema setup
+from the first example.
 
 ### Minimal (OpenAI + Anthropic)
 
-In the following example, a `curl` command provisions a RAG service with
-OpenAI for embeddings and Anthropic Claude for answer generation:
+In the following example, a `curl` command provisions a RAG service
+with OpenAI for embeddings and Anthropic Claude for answer generation:
 
 === "curl"
 
@@ -400,7 +288,7 @@ OpenAI for embeddings and Anthropic Claude for answer generation:
                                     },
                                     "rag_llm": {
                                         "provider": "anthropic",
-                                        "model": "claude-sonnet-4-20250514",
+                                        "model": "claude-sonnet-4-5",
                                         "api_key": "sk-ant-..."
                                     },
                                     "token_budget": 4000,
@@ -416,8 +304,8 @@ OpenAI for embeddings and Anthropic Claude for answer generation:
 
 ### OpenAI End-to-End
 
-In the following example, OpenAI is used for both embeddings and answer
-generation:
+In the following example, OpenAI is used for both embeddings and
+answer generation:
 
 === "curl"
 
@@ -479,8 +367,9 @@ generation:
 
 ### Voyage AI with Vector-Only Search
 
-In the following example, Voyage AI is used for embeddings and the service
-is configured for vector-only search (disabling BM25 keyword matching):
+In the following example, Voyage AI is used for embeddings and the
+service is configured for vector-only search (disabling BM25 keyword
+matching):
 
 === "curl"
 
@@ -528,7 +417,7 @@ is configured for vector-only search (disabling BM25 keyword matching):
                                     },
                                     "rag_llm": {
                                         "provider": "anthropic",
-                                        "model": "claude-sonnet-4-20250514",
+                                        "model": "claude-sonnet-4-5",
                                         "api_key": "sk-ant-..."
                                     },
                                     "search": {
@@ -546,9 +435,9 @@ is configured for vector-only search (disabling BM25 keyword matching):
 
 ### Ollama (Self-Hosted)
 
-In the following example, the RAG service uses a self-hosted Ollama server
-for both embeddings and answer generation. No API key is required; the
-Ollama server URL is provided via `base_url`:
+In the following example, the RAG service uses a self-hosted Ollama
+server for both embeddings and answer generation. No API key is
+required; the Ollama server URL is provided via `base_url`:
 
 === "curl"
 
@@ -610,8 +499,8 @@ Ollama server URL is provided via `base_url`:
 
 ### Multiple Pipelines with Shared Defaults
 
-In the following example, two pipelines share default `token_budget` and
-`top_n` values set at the `defaults` level:
+In the following example, two pipelines share default `token_budget`
+and `top_n` values set at the `defaults` level:
 
 === "curl"
 
@@ -664,7 +553,7 @@ In the following example, two pipelines share default `token_budget` and
                                     },
                                     "rag_llm": {
                                         "provider": "anthropic",
-                                        "model": "claude-sonnet-4-20250514",
+                                        "model": "claude-sonnet-4-5",
                                         "api_key": "sk-ant-..."
                                     }
                                 },
@@ -685,7 +574,7 @@ In the following example, two pipelines share default `token_budget` and
                                     },
                                     "rag_llm": {
                                         "provider": "anthropic",
-                                        "model": "claude-sonnet-4-20250514",
+                                        "model": "claude-sonnet-4-5",
                                         "api_key": "sk-ant-..."
                                     },
                                     "top_n": 5
@@ -698,12 +587,12 @@ In the following example, two pipelines share default `token_budget` and
         }'
     ```
 
-## End-to-End Walkthrough
+## Deployment Guide
 
-This section shows the complete flow from database creation to a working
-pipeline query.
+This section shows the complete flow from database creation to a
+working pipeline query.
 
-### Step 1 — Create the Database
+### Step 1 - Create the Database
 
 Include `scripts.post_database_create` to automatically provision the
 pgvector schema during database creation. This avoids any manual setup
@@ -786,10 +675,10 @@ URL stays stable across container restarts.
         }'
     ```
 
-### Step 2 — Check the Database and Service Status
+### Step 2 - Check the Database and Service Status
 
-Run the following command after ~60–90 seconds to check the database is
-ready and the RAG service is running:
+Run the following command after approximately 60-90 seconds to check
+that the database is ready and the RAG service is running:
 
 === "curl"
 
@@ -797,14 +686,14 @@ ready and the RAG service is running:
     curl -s http://host-1:3000/v1/databases/knowledge-base
     ```
 
-In the response, look for two things:
+In the response, look for the following items:
 
-- `state: "available"` at the top level — the database is provisioned
-  and healthy
-- `service_ready: true` inside `service_instances[].status` — the RAG
-  container is up and accepting requests
+- `state: "available"` at the top level - the database is provisioned
+  and healthy.
+- `service_ready: true` inside `service_instances[].status` - the RAG
+  container is up and accepting requests.
 
-```
+```text
 {
   state: "available"
   instances: [
@@ -835,17 +724,18 @@ In the response, look for two things:
 }
 ```
 
-The `host_port` value is the port to use when querying the RAG service.
-If you used a fixed `port: 9200` in the service spec, this will always
-be `9200`.
+The `host_port` value is the port to use when querying the RAG
+service. If you used a fixed `port: 9200` in the service spec, the
+host port will always be `9200`.
 
 !!! tip
-    Use a fixed `port` value (e.g. `9200`) in the service spec rather than
-    `port: 0`. When `port: 0` is used, Docker assigns a random host port
-    that changes each time the RAG container is replaced (e.g. after an
-    API key update), requiring you to look up the new port each time.
+    Use a fixed `port` value (e.g. `9200`) in the service spec rather
+    than `port: 0`. When `port: 0` is used, Docker assigns a random
+    host port that changes each time the RAG container is replaced
+    (e.g. after an API key update), requiring you to look up the new
+    port each time.
 
-### Step 3 — Load Documents
+### Step 3 - Load Documents
 
 The RAG service needs documents with embeddings in the database before
 it can answer queries. The following Python script generates embeddings
@@ -890,6 +780,9 @@ cur.close()
 conn.close()
 ```
 
+Install the dependencies and run the script with the following
+commands:
+
 ```bash
 pip install psycopg2-binary openai
 export OPENAI_API_KEY="sk-..."
@@ -900,14 +793,16 @@ export DB_NAME="knowledge_base"
 python3 load_documents.py
 ```
 
-Verify documents were inserted:
+To verify that documents were inserted, run the following query:
 
 ```bash
 psql "postgresql://admin:admin_password@host-1:5432/knowledge_base" \
   -c "SELECT COUNT(*), COUNT(embedding) FROM documents_content_chunks;"
 ```
 
-### Step 4 — Query the Pipeline
+### Step 4 - Query the Pipeline
+
+Send a query to the RAG service using the following command:
 
 ```bash
 curl -X POST http://host-1:9200/v1/pipelines/default \
@@ -918,7 +813,7 @@ curl -X POST http://host-1:9200/v1/pipelines/default \
   }'
 ```
 
-A successful response:
+A successful response looks like this:
 
 ```json
 {
@@ -931,15 +826,16 @@ A successful response:
 }
 ```
 
-`sources` is only populated when `include_sources: true` is set in the
-request.
+`sources` is only populated when `include_sources: true` is set in
+the request.
 
-### Step 5 — Update the Service Config
+### Step 5 - Update the Service Config
 
-To update the service (for example, to rotate an API key or change the
-LLM model), submit a `POST /v1/databases/{id}` with the complete updated
-spec. The update endpoint requires all fields — include `database_name`,
-`nodes`, `database_users`, and the full `services` array:
+To update the service (for example, to rotate an API key or change
+the LLM model), submit a `POST /v1/databases/{id}` with the complete
+updated spec. The update endpoint requires all fields - include
+`database_name`, `nodes`, `database_users`, and the full `services`
+array:
 
 === "curl"
 
@@ -1006,16 +902,18 @@ spec. The update endpoint requires all fields — include `database_name`,
         }'
     ```
 
-The RAG service container is replaced with the new configuration. Poll
-the database status until `state` is `"available"` and `service_ready`
-is `true` before sending queries.
+The RAG service container is replaced with the new configuration.
+Poll the database status until `state` is `"available"` and
+`service_ready` is `true` before sending queries.
 
 ## Querying the RAG Service
 
-Once the service is running, submit queries to retrieve answers based on
-your documents.
+Once the service is running, submit queries to retrieve answers based
+on your documents.
 
 ### List Available Pipelines
+
+To list all configured pipelines, send the following request:
 
 === "curl"
 
@@ -1024,6 +922,9 @@ your documents.
     ```
 
 ### Query a Pipeline
+
+To submit a query to a pipeline, send a POST request with the query
+text:
 
 === "curl"
 
@@ -1038,14 +939,18 @@ your documents.
 
 ### Request Fields
 
+The following table describes the query request fields:
+
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `query` | string | — | Required. The natural language question to answer. |
+| `query` | string | - | Required. The natural language question to answer. |
 | `include_sources` | boolean | `false` | Return the source documents used to generate the answer. |
-| `top_n` | integer | — | Override the pipeline's `top_n` for this request. |
+| `top_n` | integer | - | Override the pipeline's `top_n` for this request. |
 | `stream` | boolean | `false` | Stream the answer as Server-Sent Events. |
 
 ### Response Format
+
+A successful query response looks like this:
 
 ```json
 {
@@ -1061,147 +966,113 @@ your documents.
 }
 ```
 
-`sources` is only populated when `include_sources` is `true` in the request.
+`sources` is only populated when `include_sources` is `true` in the
+request.
 
-The RAG service uses **hybrid search**, combining two complementary search
-techniques that are merged using **Reciprocal Rank Fusion (RRF)**:
+The RAG service's hybrid search combines two complementary techniques,
+merged using Reciprocal Rank Fusion (RRF):
 
-1. **Vector Similarity Search**: Retrieves documents semantically similar to
-   the query using cosine distance on embeddings.
-2. **BM25 Keyword Search**: Retrieves documents with exact keyword matches
-   using TF-IDF scoring.
+- vector similarity search, which retrieves documents semantically
+  similar to the query using cosine distance on embeddings.
+- BM25 keyword search, which retrieves documents with exact keyword
+  matches using TF-IDF scoring.
 
-This combination ensures the LLM receives context that is both semantically
-relevant and keyword-relevant. Documents appearing in both result sets receive
-higher scores, naturally prioritizing highly-relevant results.
-
-### Search Configuration
-
-Configure search behavior in the pipeline:
-
-```json
-"search": {
-    "hybrid_enabled": true,
-    "vector_weight": 0.7
-}
-```
-
-| Parameter | Range | Description |
-|-----------|-------|-------------|
-| `hybrid_enabled` | `true` / `false` | Enable hybrid search (default: `true`). Set to `false` for vector-only search. |
-| `vector_weight` | 0.0–1.0 | Weight for vector search vs BM25 (default: `0.5`). Higher values prioritize semantic relevance. |
+This combination ensures the LLM receives context that is both
+semantically relevant and keyword-relevant. Documents appearing in
+both result sets receive higher scores, naturally prioritizing
+highly-relevant results.
 
 ### Token Budget
 
-The `token_budget` field controls how much context is sent to the LLM:
-
-- Documents are ranked and packed in order until the budget is exhausted
-- The final document is truncated at a sentence boundary (not mid-word)
-
-Increase the budget to send more context, or decrease it to reduce LLM costs.
-
-## User-Managed Responsibilities
-
-You are responsible for:
-
-1. **Embedding Generation**: Using embedding provider APIs (OpenAI, Voyage AI,
-   Ollama) to generate vector embeddings for your documents
-2. **Document Ingestion**: Loading document text and embeddings into the
-   `documents_content_chunks` table
-3. **API Keys**: Providing credentials for embedding and LLM providers in the
-   service `config`
-4. **Chunking Strategy**: Deciding how to split large documents for optimal
-   retrieval (e.g., 500-1000 character chunks with overlap)
-
-The Control Plane handles:
-
-1. **Schema Provisioning**: Automatically creating pgvector extension, tables,
-   and indexes via `scripts.post_database_create` during database creation
-2. **Service Deployment**: Provisioning and managing the RAG container
-3. **Database Credentials**: Automatically embedding the `connect_as` user's
-   credentials in the service configuration (credentials must be defined in
-   `database_users` during database creation)
-4. **Health Monitoring**: Checking service health and restarting on failure
+The `token_budget` field controls how much context is sent to the LLM.
+The service ranks documents and packs them in order until the budget
+is exhausted. The final document is truncated at a sentence boundary.
+Increase the budget to send more context, or decrease it to reduce
+LLM costs.
 
 ## Troubleshooting
 
+The following sections describe common issues and how to resolve them.
+
 ### About Automated Scripts
 
-The `scripts.post_database_create` field executes SQL automatically during
-database creation. Some important details:
+The `scripts.post_database_create` field executes SQL automatically
+during database creation. The following details apply:
 
-- **Execution Timing**: Scripts run once, immediately after Spock is initialized
-- **Transactional**: All statements execute within a single transaction
-- **No Re-Execution**: If you update the database spec later, scripts are not re-run
-- **Constraints**: Some SQL commands are not allowed within transactions:
-  - `VACUUM`, `ANALYZE` (use `REINDEX` instead)
-  - `CREATE INDEX CONCURRENTLY`
-  - `CREATE DATABASE`, `DROP DATABASE`
+- Execution timing: scripts run once, immediately after Spock is
+  initialized
+- Transactional: all statements execute within a single transaction
+- No re-execution: if you update the database spec later, scripts are
+  not re-run
+- Constraints: some SQL commands are not allowed within transactions,
+  including `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`,
+  `CREATE DATABASE`, and `DROP DATABASE`
 
-If a script fails during database creation, you can use `update-database` to
-retry after fixing the problematic statement.
+If a script fails during database creation, you can use
+`update-database` to retry after fixing the problematic statement.
 
 ### Service Fails to Start
 
-**Check database connectivity:**
+To diagnose a service that fails to start, check database
+connectivity and user permissions.
+
+To verify that the database is accessible, run the following command:
 
 ```bash
-# From host, verify database is accessible
 psql -h localhost -U admin -d knowledge_base -c "SELECT 1"
 ```
 
-**Check user permissions:**
+To verify that the service user exists and has table access, run the
+following query:
 
 ```sql
--- Verify the service user exists and has table access
 \du+ admin
 \dt documents_content_chunks
 ```
 
 ### Poor Query Results
 
-**Verify documents are loaded:**
+To diagnose poor query results, verify that documents are loaded and
+embeddings are present.
+
+To check document counts and embedding coverage, run the following
+queries:
 
 ```sql
--- Check document count
 SELECT COUNT(*) FROM documents_content_chunks;
 
--- Verify embeddings exist
 SELECT COUNT(*) FROM documents_content_chunks WHERE embedding IS NOT NULL;
 ```
 
-**Inspect embedding quality:**
+To find documents similar to a test query embedding, run the following
+query:
 
 ```sql
--- Find documents similar to a test query embedding
 SELECT id, content, 1 - (embedding <=> '[0.1, 0.2, ...]'::vector) as similarity
 FROM documents_content_chunks
 ORDER BY similarity DESC
 LIMIT 5;
 ```
 
-**Try simpler queries:**
-
-Start with factual, keyword-based questions before complex analytical questions.
+Start with factual, keyword-based questions before complex analytical
+questions to verify that the pipeline is working correctly.
 
 ### Empty Context Window
 
-If the RAG service returns limited context, the token budget may be exhausted. Increase it:
+If the RAG service returns limited context, the token budget may be
+exhausted. Increase the budget in the pipeline configuration:
 
 ```json
 "token_budget": 8000
 ```
 
-Or store smaller, more focused document chunks.
-
-## Next Steps
-
-- Once you've validated the RAG service with manual documents, consider automating embedding generation
-- Implement document versioning and updates for evolving knowledge bases
-- Set up monitoring for query latency and answer quality
-- Explore pgedge_vectorizer for automated chunking and embedding in high-volume scenarios
+Alternatively, store smaller, more focused document chunks to fit more
+context within the budget.
 
 ## Responsibility Summary
+
+The following table summarizes which tasks are handled by the Control
+Plane and which are your responsibility:
 
 | Step | Who | How |
 |---|---|---|
@@ -1213,9 +1084,15 @@ Or store smaller, more focused document chunks.
 | Load documents into table | You | `INSERT` using psycopg2 or any Postgres client |
 | Submit queries | Your application | `POST /v1/pipelines/{name}` on the RAG service |
 
-## Additional Resources
+## Next Steps
 
-- [RAG Server Repository](https://github.com/pgEdge/pgedge-rag-server)
-- [RAG Server Documentation](https://docs.pgedge.com/pgedge-rag-server/)
-- [pgvector Documentation](https://github.com/pgvector/pgvector)
-- [Managing Services](managing.md)
+The following resources provide more information on related topics.
+
+- The [Managing Services](managing.md) guide describes how to add,
+  update, and remove services.
+- The [pgEdge RAG Server](https://github.com/pgEdge/pgedge-rag-server)
+  repository contains the pgEdge RAG Server source code.
+- The [pgEdge RAG Server Documentation](https://docs.pgedge.com/pgedge-rag-server/)
+  covers the pgEdge RAG Server API and configuration in detail.
+- The [pgvector Documentation](https://github.com/pgvector/pgvector)
+  explains how to install and use the pgvector extension.
