@@ -1473,7 +1473,8 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "latest",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
-					"db_pool": float64(99),
+					"db_anon_role": "anon",
+					"db_pool":      float64(99),
 				},
 			},
 			expected: []string{
@@ -1488,7 +1489,8 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "latest",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
-					"invalid_key": "value",
+					"db_anon_role": "anon",
+					"invalid_key":  "value",
 				},
 			},
 			expected: []string{
@@ -1503,7 +1505,8 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "latest",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
-					"jwt_secret": "tooshort",
+					"db_anon_role": "anon",
+					"jwt_secret":   "tooshort",
 				},
 			},
 			expected: []string{

@@ -9,11 +9,11 @@ import (
 )
 
 // PostgRESTServiceConfig is the typed internal representation of PostgREST service
-// configuration. Parsed from ServiceSpec.Config map[string]any. All fields are
-// optional; defaults are applied when absent.
+// configuration. Parsed from ServiceSpec.Config map[string]any. DBAnonRole is
+// required; all other fields are optional with defaults applied when absent.
 type PostgRESTServiceConfig struct {
 	DBSchemas    string `json:"db_schemas"`    // default: "public"
-	DBAnonRole   string `json:"db_anon_role"`
+	DBAnonRole   string `json:"db_anon_role"`  // required: no default
 	DBPool       int    `json:"db_pool"`       // default: 10, range: 1-30
 	MaxRows      int    `json:"max_rows"`      // default: 1000, range: 1-10000
 	JWTSecret    *string `json:"jwt_secret,omitempty"`
