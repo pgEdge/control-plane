@@ -45,7 +45,7 @@ func makeTestConn() database.PostgRESTConnParams {
 func TestGenerateConf_CoreFields(t *testing.T) {
 	cfg := &database.PostgRESTServiceConfig{
 		DBSchemas:  "public",
-		DBAnonRole: "pgedge_application_read_only",
+		DBAnonRole: "web_anon",
 		DBPool:     10,
 		MaxRows:    1000,
 	}
@@ -53,7 +53,7 @@ func TestGenerateConf_CoreFields(t *testing.T) {
 	require.NoError(t, err)
 	m := parseConf(t, data)
 	assert.Equal(t, "public", m["db-schemas"])
-	assert.Equal(t, "pgedge_application_read_only", m["db-anon-role"])
+	assert.Equal(t, "web_anon", m["db-anon-role"])
 	assert.Equal(t, "10", m["db-pool"])
 	assert.Equal(t, "1000", m["db-max-rows"])
 }
@@ -164,17 +164,10 @@ func TestGenerateConf_DBURIMultiHost(t *testing.T) {
 }
 
 func TestParsePostgRESTServiceConfig(t *testing.T) {
-	t.Run("defaults applied for empty config", func(t *testing.T) {
-		cfg, errs := database.ParsePostgRESTServiceConfig(map[string]any{})
-		require.Empty(t, errs)
-		assert.Equal(t, "public", cfg.DBSchemas)
-		assert.Equal(t, "pgedge_application_read_only", cfg.DBAnonRole)
-		assert.Equal(t, 10, cfg.DBPool)
-		assert.Equal(t, 1000, cfg.MaxRows)
-		assert.Nil(t, cfg.JWTSecret)
-		assert.Nil(t, cfg.JWTAud)
-		assert.Nil(t, cfg.JWTRoleClaimKey)
-		assert.Nil(t, cfg.ServerCORSAllowedOrigins)
+	t.Run("db_anon_role required — empty config returns error", func(t *testing.T) {
+		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{})
+		require.Len(t, errs, 1)
+		assert.Contains(t, errs[0].Error(), "db_anon_role is required")
 	})
 
 	t.Run("all fields overridden", func(t *testing.T) {
@@ -205,7 +198,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_schemas wrong type", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_schemas": 123,
+			"db_anon_role": "web_anon",
+			"db_schemas":   123,
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "db_schemas must be a string")
@@ -213,7 +207,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_schemas empty string", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_schemas": "",
+			"db_anon_role": "web_anon",
+			"db_schemas":   "",
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "db_schemas must not be empty")
@@ -237,7 +232,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_pool below range", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_pool": float64(0),
+			"db_anon_role": "web_anon",
+			"db_pool":      float64(0),
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "db_pool must be between 1 and 30")
@@ -245,7 +241,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_pool above range", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_pool": float64(31),
+			"db_anon_role": "web_anon",
+			"db_pool":      float64(31),
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "db_pool must be between 1 and 30")
@@ -253,7 +250,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_pool wrong type", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_pool": "ten",
+			"db_anon_role": "web_anon",
+			"db_pool":      "ten",
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "db_pool must be an integer")
@@ -261,7 +259,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_pool non-integer float", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_pool": float64(5.5),
+			"db_anon_role": "web_anon",
+			"db_pool":      float64(5.5),
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "db_pool must be an integer")
@@ -269,13 +268,15 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("db_pool boundary values", func(t *testing.T) {
 		cfg, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_pool": float64(1),
+			"db_anon_role": "web_anon",
+			"db_pool":      float64(1),
 		})
 		require.Empty(t, errs)
 		assert.Equal(t, 1, cfg.DBPool)
 
 		cfg, errs = database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_pool": float64(30),
+			"db_anon_role": "web_anon",
+			"db_pool":      float64(30),
 		})
 		require.Empty(t, errs)
 		assert.Equal(t, 30, cfg.DBPool)
@@ -283,7 +284,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("max_rows below range", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"max_rows": float64(0),
+			"db_anon_role": "web_anon",
+			"max_rows":     float64(0),
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "max_rows must be between 1 and 10000")
@@ -291,7 +293,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("max_rows above range", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"max_rows": float64(10001),
+			"db_anon_role": "web_anon",
+			"max_rows":     float64(10001),
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "max_rows must be between 1 and 10000")
@@ -299,13 +302,15 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("max_rows boundary values", func(t *testing.T) {
 		cfg, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"max_rows": float64(1),
+			"db_anon_role": "web_anon",
+			"max_rows":     float64(1),
 		})
 		require.Empty(t, errs)
 		assert.Equal(t, 1, cfg.MaxRows)
 
 		cfg, errs = database.ParsePostgRESTServiceConfig(map[string]any{
-			"max_rows": float64(10000),
+			"db_anon_role": "web_anon",
+			"max_rows":     float64(10000),
 		})
 		require.Empty(t, errs)
 		assert.Equal(t, 10000, cfg.MaxRows)
@@ -313,7 +318,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("jwt_secret too short", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"jwt_secret": "short",
+			"db_anon_role": "web_anon",
+			"jwt_secret":   "short",
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "jwt_secret must be at least 32 characters")
@@ -321,7 +327,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("jwt_secret exactly 32 chars", func(t *testing.T) {
 		cfg, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"jwt_secret": "12345678901234567890123456789012",
+			"db_anon_role": "web_anon",
+			"jwt_secret":   "12345678901234567890123456789012",
 		})
 		require.Empty(t, errs)
 		require.NotNil(t, cfg.JWTSecret)
@@ -330,7 +337,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("jwt_secret wrong type", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"jwt_secret": 12345,
+			"db_anon_role": "web_anon",
+			"jwt_secret":   12345,
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "jwt_secret must be a string")
@@ -338,7 +346,8 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("unknown config key", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"unknown_key": "value",
+			"db_anon_role": "web_anon",
+			"unknown_key":  "value",
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), `unknown config key "unknown_key"`)
@@ -346,8 +355,9 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("multiple unknown config keys", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"foo": "bar",
-			"baz": 123,
+			"db_anon_role": "web_anon",
+			"foo":          "bar",
+			"baz":          123,
 		})
 		require.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "unknown config keys:")
@@ -357,9 +367,10 @@ func TestParsePostgRESTServiceConfig(t *testing.T) {
 
 	t.Run("multiple errors collected", func(t *testing.T) {
 		_, errs := database.ParsePostgRESTServiceConfig(map[string]any{
-			"db_schemas": "",
-			"db_pool":    float64(0),
-			"max_rows":   "not-a-number",
+			"db_anon_role": "web_anon",
+			"db_schemas":   "",
+			"db_pool":      float64(0),
+			"max_rows":     "not-a-number",
 		})
 		require.Len(t, errs, 3)
 	})

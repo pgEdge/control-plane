@@ -65,7 +65,7 @@ func TestPostgRESTConfigResource_WriteConfigFile(t *testing.T) {
 
 	cfg := &database.PostgRESTServiceConfig{
 		DBSchemas:  "public",
-		DBAnonRole: "pgedge_application_read_only",
+		DBAnonRole: "web_anon",
 		DBPool:     10,
 		MaxRows:    1000,
 	}
@@ -92,7 +92,7 @@ func TestPostgRESTConfigResource_WriteConfigFile(t *testing.T) {
 	assert.Contains(t, content, "db-schemas")
 	assert.Contains(t, content, "public")
 	assert.Contains(t, content, "db-anon-role")
-	assert.Contains(t, content, "pgedge_application_read_only")
+	assert.Contains(t, content, "web_anon")
 }
 
 func TestPostgRESTConfigResource_WriteConfigFile_JWTFields(t *testing.T) {
