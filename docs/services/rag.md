@@ -1000,13 +1000,13 @@ The `scripts.post_database_create` field executes SQL automatically
 during database creation. The following details apply:
 
 - Execution timing: scripts run once, immediately after Spock is
-  initialized
-- Transactional: all statements execute within a single transaction
+  initialized.
+- Transactional: all statements execute within a single transaction.
 - No re-execution: if you update the database spec later, scripts are
-  not re-run
+  not re-run.
 - Constraints: some SQL commands are not allowed within transactions,
   including `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`,
-  `CREATE DATABASE`, and `DROP DATABASE`
+  `CREATE DATABASE`, and `DROP DATABASE`.
 
 If a script fails during database creation, you can use
 `update-database` to retry after fixing the problematic statement.
