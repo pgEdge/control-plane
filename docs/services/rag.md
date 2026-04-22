@@ -105,10 +105,10 @@ The following table describes the embedding configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `provider` | string | Required. The embedding provider. One of: `openai`, `voyage`, `anthropic`, `ollama`. |
+| `provider` | string | Required. The embedding provider. One of: `openai`, `voyage`, `ollama`. |
 | `model` | string | Required. The embedding model name (e.g., `text-embedding-3-small`, `voyage-3`, `nomic-embed-text`). |
-| `api_key` | string | API key for the provider. Required for `openai`, `voyage`, and `anthropic`. Not used for `ollama`. |
-| `base_url` | string | Optional. Custom base URL for the provider API. For `ollama`, defaults to `http://localhost:11434`. |
+| `api_key` | string | API key for the provider. Required for `openai` and `voyage`. Not used for `ollama`. |
+| `base_url` | string | Optional. Custom base URL for the provider API. Required for `ollama` — set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
 
 ### LLM Configuration
 
@@ -123,7 +123,7 @@ The following table describes the LLM configuration fields:
 | `provider` | string | Required. The LLM provider. One of: `anthropic`, `openai`, `ollama`. |
 | `model` | string | Required. The model name (e.g., `claude-sonnet-4-5`, `gpt-4o`, `llama3.2`). |
 | `api_key` | string | API key for the provider. Required for `anthropic` and `openai`. Not used for `ollama`. |
-| `base_url` | string | Optional. Custom base URL for API gateway routing. For `ollama`, defaults to `http://localhost:11434`. |
+| `base_url` | string | Optional. Custom base URL for API gateway routing. Required for `ollama` — set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
 
 !!! note
     If `embedding_llm` and `rag_llm` share the same provider and both
@@ -215,17 +215,20 @@ following table shows common models and their vector dimensions:
 | OpenAI | `text-embedding-3-small` | 1536 |
 | OpenAI | `text-embedding-3-large` | 3072 |
 | Voyage AI | `voyage-3` / `voyage-3-large` | 1024 |
-| Ollama | Varies by model | Check model documentation |
+| Ollama | `nomic-embed-text` | 768 |
+| Ollama | Other models | Check model documentation |
 
 ## Examples
 
 The following examples show how to configure the RAG service for
 common use cases. The first example includes the complete
 `scripts.post_database_create` setup to automatically provision the
-database schema (pgvector extension, tables, and indexes). Subsequent
-examples focus on service configuration variations and omit the schema
-setup for brevity - in production, always include the schema setup
-from the first example.
+database schema (pgvector extension, tables, and indexes) using
+`vector(1536)` for OpenAI embeddings. Subsequent examples focus on
+service configuration variations and omit the schema setup for brevity.
+If you use a different embedding model, adjust the `vector(N)` dimension
+in your schema to match - for example, `vector(1024)` for `voyage-3` or
+`vector(768)` for `nomic-embed-text`.
 
 ### Minimal (OpenAI + Anthropic)
 
@@ -238,7 +241,7 @@ with OpenAI for embeddings and Anthropic Claude for answer generation:
     curl -X POST http://host-1:3000/v1/databases \
         -H 'Content-Type: application/json' \
         --data '{
-            "id": "knowledge_base",
+            "id": "knowledge-base",
             "spec": {
                 "database_name": "knowledge_base",
                 "database_users": [
@@ -313,7 +316,7 @@ answer generation:
     curl -X POST http://host-1:3000/v1/databases \
         -H 'Content-Type: application/json' \
         --data '{
-            "id": "knowledge_base",
+            "id": "knowledge-base",
             "spec": {
                 "database_name": "knowledge_base",
                 "database_users": [
@@ -377,7 +380,7 @@ matching):
     curl -X POST http://host-1:3000/v1/databases \
         -H 'Content-Type: application/json' \
         --data '{
-            "id": "knowledge_base",
+            "id": "knowledge-base",
             "spec": {
                 "database_name": "knowledge_base",
                 "database_users": [
@@ -421,8 +424,7 @@ matching):
                                         "api_key": "sk-ant-..."
                                     },
                                     "search": {
-                                        "hybrid_enabled": false,
-                                        "vector_weight": 1.0
+                                        "hybrid_enabled": false
                                     }
                                 }
                             ]
@@ -445,7 +447,7 @@ required; the Ollama server URL is provided via `base_url`:
     curl -X POST http://host-1:3000/v1/databases \
         -H 'Content-Type: application/json' \
         --data '{
-            "id": "knowledge_base",
+            "id": "knowledge-base",
             "spec": {
                 "database_name": "knowledge_base",
                 "database_users": [
@@ -508,7 +510,7 @@ and `top_n` values set at the `defaults` level:
     curl -X POST http://host-1:3000/v1/databases \
         -H 'Content-Type: application/json' \
         --data '{
-            "id": "knowledge_base",
+            "id": "knowledge-base",
             "spec": {
                 "database_name": "knowledge_base",
                 "database_users": [
@@ -1022,11 +1024,11 @@ To verify that the database is accessible, run the following command:
 psql -h localhost -U admin -d knowledge_base -c "SELECT 1"
 ```
 
-To verify that the service user exists and has table access, run the
-following query:
+To verify that the service user (`app_read_only`) exists and has table
+access, run the following query:
 
 ```sql
-\du+ admin
+\du+ app_read_only
 \dt documents_content_chunks
 ```
 
