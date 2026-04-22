@@ -109,6 +109,7 @@ database with a PostgREST service instance. The service exposes the
                         "port": 3100,
                         "connect_as": "app",
                         "config": {
+                            "db_anon_role": "web_anon",
                             "jwt_secret": "a-secret-key-of-at-least-32-characters"
                         }
                     }
@@ -154,6 +155,7 @@ use a different model:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
                             "llm_enabled": true,
                             "llm_provider": "anthropic",

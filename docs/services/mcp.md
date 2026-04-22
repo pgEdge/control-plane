@@ -1,18 +1,14 @@
 # pgEdge Postgres MCP Server
 
 The MCP service runs a [Model Context Protocol](https://modelcontextprotocol.io)
-server alongside your database. AI agents and LLM-powered applications
-use the MCP server to query and interact with your data. For more
-information, see the
+server alongside your database. The Control Plane provisions an MCP
+server container on each specified host; the server connects to the
+database using the credentials of the `connect_as` user. AI agents
+and LLM-powered applications call the server's tools to query data,
+inspect schemas, run EXPLAIN plans, and perform vector similarity
+searches. For more information, see the
 [pgEdge Postgres MCP](https://github.com/pgEdge/pgedge-postgres-mcp)
 project.
-
-## Overview
-
-The Control Plane provisions an MCP server container on each specified
-host. The server connects to the database using the credentials of the
-`connect_as` user. AI agents call the server's tools to query data, inspect
-schemas, run EXPLAIN plans, and perform vector similarity searches.
 
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover MCP-specific
