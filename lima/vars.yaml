@@ -1,20 +1,20 @@
 ---
 machines:
   - name: control-plane-dev-1
-    http_port: 3000
+    http_port: 3010
     host_id: host-1
   - name: control-plane-dev-2
-    http_port: 3001
+    http_port: 3011
     host_id: host-2
   - name: control-plane-dev-3
-    http_port: 3002
+    http_port: 3012
     host_id: host-3
   - name: control-plane-dev-4
-    http_port: 3003
+    http_port: 3013
     host_id: host-4
   - name: control-plane-dev-5
-    http_port: 3004
+    http_port: 3014
     host_id: host-5
   - name: control-plane-dev-6
-    http_port: 3005
+    http_port: 3015
     host_id: host-6

@@ -8,32 +8,35 @@ set_env() {
     case ${HOSTNAME} in
         lima-control-plane-dev-1)
             export PGEDGE_HOST_ID=host-1
+            export PGEDGE_HTTP__PORT=3010
+            export PGEDGE_ETCD_SERVER__PEER_PORT=2390
+            export PGEDGE_ETCD_SERVER__CLIENT_PORT=2389
             ;;
         lima-control-plane-dev-2)
             export PGEDGE_HOST_ID=host-2
-            export PGEDGE_HTTP__PORT=3001
-            export PGEDGE_ETCD_SERVER__PEER_PORT=2480
-            export PGEDGE_ETCD_SERVER__CLIENT_PORT=2479
+            export PGEDGE_HTTP__PORT=3011
+            export PGEDGE_ETCD_SERVER__PEER_PORT=2490
+            export PGEDGE_ETCD_SERVER__CLIENT_PORT=2489
             ;;
         lima-control-plane-dev-3)
             export PGEDGE_HOST_ID=host-3
-            export PGEDGE_HTTP__PORT=3002
-            export PGEDGE_ETCD_SERVER__PEER_PORT=2580
-            export PGEDGE_ETCD_SERVER__CLIENT_PORT=2579
+            export PGEDGE_HTTP__PORT=3012
+            export PGEDGE_ETCD_SERVER__PEER_PORT=2590
+            export PGEDGE_ETCD_SERVER__CLIENT_PORT=2589
             ;;
         lima-control-plane-dev-4)
             export PGEDGE_HOST_ID=host-4
-            export PGEDGE_HTTP__PORT=3003
+            export PGEDGE_HTTP__PORT=3013
             export PGEDGE_ETCD_MODE=client
             ;;
         lima-control-plane-dev-5)
             export PGEDGE_HOST_ID=host-5
-            export PGEDGE_HTTP__PORT=3004
+            export PGEDGE_HTTP__PORT=3014
             export PGEDGE_ETCD_MODE=client
             ;;
         lima-control-plane-dev-6)
             export PGEDGE_HOST_ID=host-6
-            export PGEDGE_HTTP__PORT=3005
+            export PGEDGE_HTTP__PORT=3015
             export PGEDGE_ETCD_MODE=client
             ;;
         *)
