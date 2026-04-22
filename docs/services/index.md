@@ -1,22 +1,15 @@
 # Supporting Services (Beta)
 
-The pgEdge Control Plane lets you run services alongside your
-databases. Services are applications that attach to a database, run on
-any host in the cluster, and connect via automatically-managed
-database credentials.
-
-## What Are Supporting Services?
-
-A supporting service is an application that runs alongside a database.
-Each service instance runs on a single host and receives its own set of
-database credentials scoped to that instance. The Control Plane supports
-the following service types:
+The pgEdge Control Plane lets you run services alongside your databases.
+A supporting service is an application that attaches to a database,
+runs on any host in the cluster, and connects using a database user you
+specify with the `connect_as` field. The Control Plane supports the
+following service types:
 
 - The [pgEdge Postgres MCP Server](mcp.md) connects AI agents and
-  LLM-powered applications to your database, enabling natural language
-  queries and AI-powered data access.
-- The pgEdge RAG Server *(coming soon)* enables retrieval-augmented
-  generation workflows using your database as a knowledge store.
+  LLM-powered applications to your database.
+- The [pgEdge RAG Server](rag.md) enables retrieval-augmented generation
+  workflows using your database as a knowledge store.
 - [PostgREST](postgrest.md) automatically generates a REST API from
   your PostgreSQL schema, making your data accessible over HTTP without
   writing backend code.
@@ -25,9 +18,9 @@ the following service types:
 
 When you add a service to a database, the Control Plane creates one
 service instance per host listed in the service's `host_ids`. Each
-instance runs on a single host and receives its own database
-credentials. Services can run on any host in the cluster; they do not
-need to be co-located with database instances.
+instance runs on a single host and connects to the database using the
+credentials of the `connect_as` user. Services can run on any host in
+the cluster; they do not need to be co-located with database instances.
 
 The following table describes the lifecycle states for service
 instances:
@@ -52,8 +45,8 @@ deployment patterns are common:
   with no database instance, which isolates the service workload from
   the database.
 - In a multiple-instances topology, one service instance runs per host
-  for redundancy or regional proximity; each instance receives its own
-  credentials and connects to the database independently.
+  for redundancy or regional proximity; each instance connects to the
+  database independently using the same `connect_as` credentials.
 
 In the following example, the service runs on the same host as the
 database node (`host-1`):

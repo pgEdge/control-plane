@@ -46,6 +46,14 @@ database with one MCP service instance:
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "mcp_user",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "mcp-server",
@@ -53,8 +61,9 @@ database with one MCP service instance:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
-                             "llm_enabled": true,
+                            "llm_enabled": true,
                             "llm_provider": "anthropic",
                             "llm_model": "claude-sonnet-4-5",
                             "anthropic_api_key": "sk-ant-..."
@@ -100,6 +109,7 @@ database with a PostgREST service instance. The service exposes the
                         "port": 3100,
                         "connect_as": "app",
                         "config": {
+                            "db_anon_role": "web_anon",
                             "jwt_secret": "a-secret-key-of-at-least-32-characters"
                         }
                     }
@@ -145,6 +155,7 @@ use a different model:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
                             "llm_enabled": true,
                             "llm_provider": "anthropic",
@@ -161,7 +172,7 @@ use a different model:
 
 To remove a service, submit an update request that omits the service
 from the `services` array. The Control Plane stops and deletes all
-service instances for that service and revokes its database credentials.
+service instances for that service.
 
 !!! warning
 
