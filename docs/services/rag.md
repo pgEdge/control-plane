@@ -819,8 +819,8 @@ A successful response looks like this:
 {
     "answer": "Multi-active replication allows multiple PostgreSQL nodes to accept writes simultaneously...",
     "sources": [
-        {"id": "5", "content": "...", "score": 0.82},
-        {"id": "1", "content": "...", "score": 0.79}
+        {"id": "5", "content": "...", "score": 0.00820},
+        {"id": "1", "content": "...", "score": 0.00806}
     ],
     "tokens_used": 1243
 }
@@ -959,7 +959,7 @@ A successful query response looks like this:
         {
             "id": "42",
             "content": "The RAG service enables retrieval-augmented generation workflows...",
-            "score": 0.87
+            "score": 0.00820
         }
     ],
     "tokens_used": 1243
