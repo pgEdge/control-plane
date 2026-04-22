@@ -56,9 +56,9 @@ func TestPostgRESTAuthenticatorResource_Dependencies(t *testing.T) {
 }
 
 func TestPostgRESTAuthenticatorResource_DesiredAnonRole(t *testing.T) {
-	t.Run("empty string falls back to default", func(t *testing.T) {
+	t.Run("empty string returns empty", func(t *testing.T) {
 		r := &PostgRESTAuthenticatorResource{DBAnonRole: ""}
-		assert.Equal(t, "pgedge_application_read_only", r.desiredAnonRole())
+		assert.Equal(t, "", r.desiredAnonRole())
 	})
 
 	t.Run("custom anon role is preserved", func(t *testing.T) {

@@ -66,10 +66,7 @@ func (r *PostgRESTAuthenticatorResource) TypeDependencies() []resource.Type {
 }
 
 func (r *PostgRESTAuthenticatorResource) desiredAnonRole() string {
-	if r.DBAnonRole != "" {
-		return r.DBAnonRole
-	}
-	return "pgedge_application_read_only"
+	return r.DBAnonRole
 }
 
 func (r *PostgRESTAuthenticatorResource) authenticatorUsername() string {

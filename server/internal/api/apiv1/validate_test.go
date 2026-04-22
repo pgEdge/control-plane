@@ -797,7 +797,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
-						Config:      map[string]any{},
+						Config:      map[string]any{"db_anon_role": "web_anon"},
 					},
 				},
 			},
@@ -841,7 +841,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds:     []api.Identifier{"host-2"},
 						ConnectAs:   "app",
 						Port:        utils.PointerTo(8080),
-						Config:      map[string]any{},
+						Config:      map[string]any{"db_anon_role": "web_anon"},
 					},
 				},
 			},
@@ -912,7 +912,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
-						Config:      map[string]any{},
+						Config:      map[string]any{"db_anon_role": "web_anon"},
 					},
 				},
 			},
@@ -953,7 +953,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
 						Port:        utils.PointerTo(0),
-						Config:      map[string]any{},
+						Config:      map[string]any{"db_anon_role": "web_anon"},
 					},
 				},
 			},
@@ -1341,7 +1341,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				ServiceType: "postgrest",
 				Version:     "14.5",
 				HostIds:     []api.Identifier{"host-1"},
-				Config:      map[string]any{},
+				Config:      map[string]any{"db_anon_role": "web_anon"},
 			},
 		},
 		{
@@ -1417,13 +1417,14 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 		},
 		{
-			name: "valid postgrest with nil config",
+			name: "postgrest with nil config fails — db_anon_role required",
 			svc: &api.ServiceSpec{
 				ServiceID:   "my-postgrest",
 				ServiceType: "postgrest",
 				Version:     "latest",
 				HostIds:     []api.Identifier{"host-1"},
 			},
+			expected: []string{"db_anon_role is required"},
 		},
 		{
 			name: "RAG service with nil config requires pipelines",
@@ -1438,7 +1439,7 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 		},
 		{
-			name: "valid postgrest with defaults",
+			name: "postgrest with empty config fails — db_anon_role required",
 			svc: &api.ServiceSpec{
 				ServiceID:   "my-postgrest",
 				ServiceType: "postgrest",
@@ -1446,7 +1447,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				HostIds:     []api.Identifier{"host-1"},
 				Config:      map[string]any{},
 			},
-			expected: []string{},
+			expected: []string{"db_anon_role is required"},
 		},
 		{
 			name: "valid postgrest with all config fields",

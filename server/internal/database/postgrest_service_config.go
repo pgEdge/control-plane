@@ -13,7 +13,7 @@ import (
 // optional; defaults are applied when absent.
 type PostgRESTServiceConfig struct {
 	DBSchemas    string `json:"db_schemas"`    // default: "public"
-	DBAnonRole   string `json:"db_anon_role"`  // default: "pgedge_application_read_only"
+	DBAnonRole   string `json:"db_anon_role"`
 	DBPool       int    `json:"db_pool"`       // default: 10, range: 1-30
 	MaxRows      int    `json:"max_rows"`      // default: 1000, range: 1-10000
 	JWTSecret    *string `json:"jwt_secret,omitempty"`
@@ -53,9 +53,11 @@ func ParsePostgRESTServiceConfig(config map[string]any) (*PostgRESTServiceConfig
 		}
 	}
 
-	// db_anon_role — optional string, default "pgedge_application_read_only"
-	dbAnonRole := "pgedge_application_read_only"
-	if v, ok := config["db_anon_role"]; ok {
+	// db_anon_role — required string
+	var dbAnonRole string
+	if v, ok := config["db_anon_role"]; !ok {
+		errs = append(errs, fmt.Errorf("db_anon_role is required"))
+	} else {
 		s, sOk := v.(string)
 		if !sOk {
 			errs = append(errs, fmt.Errorf("db_anon_role must be a string"))
