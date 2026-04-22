@@ -106,8 +106,7 @@ cp1-req create-database '{
       {
         "username": "app",
         "password": "password",
-        "attributes": ["LOGIN"],
-        "roles": ["pgedge_application"]
+        "attributes": ["LOGIN"]
       }
     ],
     "nodes": [
@@ -133,8 +132,7 @@ restish control-plane-local-1 create-database '{
       {
         "username": "app",
         "password": "password",
-        "attributes": ["LOGIN"],
-        "roles": ["pgedge_application"]
+        "attributes": ["LOGIN"]
       }
     ],
     "nodes": [

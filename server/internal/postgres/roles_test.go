@@ -118,7 +118,7 @@ func TestCreateUserRole(t *testing.T) {
 		{
 			name: "role conflict",
 			opts: postgres.UserRoleOptions{
-				Name: "pgedge_application",
+				Name: "pgedge_superuser",
 			},
 			expectedErr: `conflicts with a builtin role`,
 		},
