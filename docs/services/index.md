@@ -7,8 +7,7 @@ specify with the `connect_as` field. The Control Plane supports the
 following service types:
 
 - The [pgEdge Postgres MCP Server](mcp.md) connects AI agents and
-  LLM-powered applications to your database, enabling natural language
-  queries and AI-powered data access.
+  LLM-powered applications to your database.
 - The [pgEdge RAG Server](rag.md) enables retrieval-augmented generation
   workflows using your database as a knowledge store, returning
   LLM-synthesized answers grounded in your data.
