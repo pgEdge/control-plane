@@ -61,7 +61,6 @@ func (w *Workflows) PlanUpdate(ctx workflow.Context, input *PlanUpdateInput) (*P
 	}
 
 	// Generate service instance resources.
-	// Use first node as canonical node for ServiceUserRole credential generation.
 	var nodeName string
 	if len(nodeInstances) > 0 {
 		nodeName = nodeInstances[0].NodeName
