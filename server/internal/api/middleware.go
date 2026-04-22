@@ -15,8 +15,10 @@ func addMiddleware(logger zerolog.Logger, next http.Handler) http.Handler {
 
 			var evt *zerolog.Event
 			switch {
-			case status >= 400 && status <= 599:
+			case status >= 500:
 				evt = log.Error()
+			case status >= 400:
+				evt = log.Warn()
 			case r.URL.Path == "/v1/version":
 				// The version endpoint is used for health checks
 				evt = log.Debug()

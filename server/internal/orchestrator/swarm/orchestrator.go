@@ -445,30 +445,6 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		Allocator: o.dbNetworkAllocator,
 	}
 
-	// Service user role resources (manages database user lifecycle).
-	// MCP uses connect_as credentials from database_users — no ServiceUserRole needed.
-	// PostgREST/RAG still uses ServiceUserRole until it adopts connect_as.
-	var canonicalROID, canonicalRWID resource.Identifier
-	var serviceUserRoleRO, serviceUserRoleRW *ServiceUserRole
-	if spec.ServiceSpec.ServiceType != "mcp" {
-		canonicalROID = ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
-		canonicalRWID = ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
-		serviceUserRoleRO = &ServiceUserRole{
-			ServiceID:    spec.ServiceSpec.ServiceID,
-			DatabaseID:   spec.DatabaseID,
-			DatabaseName: spec.DatabaseName,
-			NodeName:     spec.NodeName,
-			Mode:         ServiceUserRoleRO,
-		}
-		serviceUserRoleRW = &ServiceUserRole{
-			ServiceID:    spec.ServiceSpec.ServiceID,
-			DatabaseID:   spec.DatabaseID,
-			DatabaseName: spec.DatabaseName,
-			NodeName:     spec.NodeName,
-			Mode:         ServiceUserRoleRW,
-		}
-	}
-
 	// Service data directory resource (host-side bind mount directory)
 	dataDirID := spec.ServiceInstanceID + "-data"
 
@@ -524,12 +500,12 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			DBAnonRole:   postgrestConfig.DBAnonRole,
 		}
 		authenticator := &PostgRESTAuthenticatorResource{
-			ServiceID:    spec.ServiceSpec.ServiceID,
-			DatabaseID:   spec.DatabaseID,
-			DatabaseName: spec.DatabaseName,
-			NodeName:     spec.NodeName,
-			DBAnonRole:   postgrestConfig.DBAnonRole,
-			UserRoleID:   canonicalRWID,
+			ServiceID:         spec.ServiceSpec.ServiceID,
+			DatabaseID:        spec.DatabaseID,
+			DatabaseName:      spec.DatabaseName,
+			NodeName:          spec.NodeName,
+			DBAnonRole:        postgrestConfig.DBAnonRole,
+			ConnectAsUsername: spec.ConnectAsUsername,
 		}
 		dataDir := &filesystem.DirResource{
 			ID:       dataDirID,
@@ -544,6 +520,8 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			HostID:             spec.HostID,
 			DirResourceID:      dataDirID,
 			Config:             postgrestConfig,
+			ConnectAsUsername:  spec.ConnectAsUsername,
+			ConnectAsPassword:  spec.ConnectAsPassword,
 			DatabaseName:       spec.DatabaseName,
 			DatabaseHosts:      spec.DatabaseHosts,
 			TargetSessionAttrs: spec.TargetSessionAttrs,
@@ -563,7 +541,6 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		Hostname:           serviceName,
 		CohortMemberID:     o.swarmNodeID,
 		ServiceImage:       serviceImage,
-		Credentials:        spec.Credentials,
 		DatabaseNetworkID:  databaseNetwork.Name,
 		DatabaseHosts:      spec.DatabaseHosts,
 		TargetSessionAttrs: spec.TargetSessionAttrs,
@@ -584,52 +561,25 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 
 	// Build the full resource list.
 	orchestratorResources := []resource.Resource{databaseNetwork}
-	if serviceUserRoleRO != nil {
-		orchestratorResources = append(orchestratorResources, serviceUserRoleRO, serviceUserRoleRW)
-	}
 	orchestratorResources = append(orchestratorResources, serviceSpecificResources...)
 	orchestratorResources = append(orchestratorResources, serviceInstanceSpec, serviceInstance)
 
-	// Append per-node ServiceUserRole resources for each additional database node.
-	// MCP does not use ServiceUserRole — skip for MCP.
-	// The canonical resources (above) cover spec.NodeName; all other nodes get
-	// their own RO and RW role that sources credentials from the canonical.
-	if spec.ServiceSpec.ServiceType != "mcp" {
+	// Append per-node PostgREST authenticator resources for each additional database node.
+	if spec.ServiceSpec.ServiceType == "postgrest" {
 		for _, nodeInst := range spec.DatabaseNodes {
 			if nodeInst.NodeName == spec.NodeName {
 				continue
 			}
-			perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
 			orchestratorResources = append(orchestratorResources,
-				&ServiceUserRole{
-					ServiceID:        spec.ServiceSpec.ServiceID,
-					DatabaseID:       spec.DatabaseID,
-					DatabaseName:     spec.DatabaseName,
-					NodeName:         nodeInst.NodeName,
-					Mode:             ServiceUserRoleRO,
-					CredentialSource: &canonicalROID,
-				},
-				&ServiceUserRole{
-					ServiceID:        spec.ServiceSpec.ServiceID,
-					DatabaseID:       spec.DatabaseID,
-					DatabaseName:     spec.DatabaseName,
-					NodeName:         nodeInst.NodeName,
-					Mode:             ServiceUserRoleRW,
-					CredentialSource: &canonicalRWID,
+				&PostgRESTAuthenticatorResource{
+					ServiceID:         spec.ServiceSpec.ServiceID,
+					DatabaseID:        spec.DatabaseID,
+					DatabaseName:      spec.DatabaseName,
+					NodeName:          nodeInst.NodeName,
+					DBAnonRole:        parsedPostgRESTConfig.DBAnonRole,
+					ConnectAsUsername: spec.ConnectAsUsername,
 				},
 			)
-			if spec.ServiceSpec.ServiceType == "postgrest" {
-				orchestratorResources = append(orchestratorResources,
-					&PostgRESTAuthenticatorResource{
-						ServiceID:    spec.ServiceSpec.ServiceID,
-						DatabaseID:   spec.DatabaseID,
-						DatabaseName: spec.DatabaseName,
-						NodeName:     nodeInst.NodeName,
-						DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
-						UserRoleID:   perNodeRWID,
-					},
-				)
-			}
 		}
 	}
 
@@ -661,8 +611,7 @@ func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInsta
 }
 
 // generateRAGInstanceResources returns the resources needed for one RAG service
-// instance. RAG only requires read access, so a single ServiceUserRoleRO is
-// created per database node using the same canonical+per-node pattern as MCP.
+// instance.
 func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
 	// Get service image.
 	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
@@ -750,16 +699,15 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 	// KeysDirID is the parent data dir; the actual keys subdir path is derived at runtime.
 	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceSpec:       spec.ServiceSpec,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		ServiceName:       serviceName,
-		Hostname:          serviceName,
-		CohortMemberID:    o.swarmNodeID,
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceSpec:        spec.ServiceSpec,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		HostID:             spec.HostID,
+		ServiceName:        serviceName,
+		Hostname:           serviceName,
+		CohortMemberID:     o.swarmNodeID,
 		ServiceImage:       serviceImage,
-		Credentials:        spec.Credentials,
 		DatabaseNetworkID:  databaseNetwork.Name,
 		DatabaseHosts:      spec.DatabaseHosts,
 		TargetSessionAttrs: spec.TargetSessionAttrs,

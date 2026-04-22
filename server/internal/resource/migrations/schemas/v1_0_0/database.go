@@ -1,4 +1,4 @@
-// produced by schematool ceff237ed3d249af64e61b8343cc37c859f17ac2 server/internal/database InstanceResource LagTrackerCommitTimestampResource PostgresDatabaseResource ReplicationSlotAdvanceFromCTSResource ReplicationSlotCreateResource ReplicationSlotResource SubscriptionResource SyncEventResource WaitForSyncEventResource
+// produced by schematool d9a1e0f9656f56130752f6c62ede08acfb3fe9bd server/internal/database InstanceResource LagTrackerCommitTimestampResource PostgresDatabaseResource ReplicationSlotAdvanceFromCTSResource ReplicationSlotCreateResource ReplicationSlotResource SubscriptionResource SyncEventResource WaitForSyncEventResource
 package v1_0_0
 
 import (
@@ -108,7 +108,8 @@ type InstanceResource struct {
 				ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 			} `json:"docker,omitempty"`
 		} `json:"orchestrator_opts,omitempty"`
-		InPlaceRestore bool `json:"in_place_restore,omitempty"`
+		InPlaceRestore bool     `json:"in_place_restore,omitempty"`
+		AllHostIDs     []string `json:"all_host_ids"`
 	} `json:"spec"`
 	InstanceHostname         string `json:"instance_hostname"`
 	PrimaryInstanceID        string `json:"primary_instance_id"`
@@ -129,6 +130,14 @@ type InstanceResource struct {
 		ClientPort       int
 		InstanceHostname string
 	} `json:"connection_info"`
+	PostInit *struct {
+		DatabaseID string   `json:"database_id"`
+		NodeName   string   `json:"node_name"`
+		Name       string   `json:"name"`
+		Statements []string `json:"statements"`
+		Succeeded  bool     `json:"succeeded"`
+		NeedsToRun bool     `json:"needs_to_run"`
+	} `json:"post_init"`
 }
 
 const ResourceTypeLagTrackerCommitTS resource.Type = "database.lag_tracker_commit_ts"
@@ -161,6 +170,7 @@ func PostgresDatabaseResourceIdentifier(nodeName, dbName string) resource.Identi
 }
 
 type PostgresDatabaseResource struct {
+	DatabaseID        string `json:"database_id"`
 	NodeName          string `json:"node_name"`
 	DatabaseName      string `json:"database_name"`
 	Owner             string `json:"owner"`
@@ -170,6 +180,14 @@ type PostgresDatabaseResource struct {
 		ID   string `json:"id"`
 		Type string `json:"type"`
 	} `json:"extra_dependencies"`
+	PostDatabaseCreate *struct {
+		DatabaseID string   `json:"database_id"`
+		NodeName   string   `json:"node_name"`
+		Name       string   `json:"name"`
+		Statements []string `json:"statements"`
+		Succeeded  bool     `json:"succeeded"`
+		NeedsToRun bool     `json:"needs_to_run"`
+	} `json:"post_database_create,omitempty"`
 }
 
 const ResourceTypeReplicationSlotAdvanceFromCTS resource.Type = "database.replication_slot_advance_from_cts"

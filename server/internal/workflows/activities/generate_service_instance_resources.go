@@ -42,7 +42,12 @@ func (a *Activities) GenerateServiceInstanceResources(
 	)
 	logger.Debug("generating service instance resources")
 
-	resources, err := a.Orchestrator.GenerateServiceInstanceResources(input.Spec)
+	spec, err := a.DatabaseService.ReconcileServiceInstanceSpec(ctx, input.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconcile service instance spec: %w", err)
+	}
+
+	resources, err := a.Orchestrator.GenerateServiceInstanceResources(spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate service instance resources: %w", err)
 	}

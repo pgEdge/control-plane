@@ -1,18 +1,14 @@
 # pgEdge Postgres MCP Server
 
 The MCP service runs a [Model Context Protocol](https://modelcontextprotocol.io)
-server alongside your database. AI agents and LLM-powered applications
-use the MCP server to query and interact with your data. For more
-information, see the
+server alongside your database. The Control Plane provisions an MCP
+server container on each specified host; the server connects to the
+database using the credentials of the `connect_as` user. AI agents
+and LLM-powered applications call the server's tools to query data,
+inspect schemas, run EXPLAIN plans, and perform vector similarity
+searches. For more information, see the
 [pgEdge Postgres MCP](https://github.com/pgEdge/pgedge-postgres-mcp)
 project.
-
-## Overview
-
-The Control Plane provisions an MCP server container on each specified
-host. The server connects to the database using automatically-managed
-credentials. AI agents call the server's tools to query data, inspect
-schemas, run EXPLAIN plans, and perform vector similarity searches.
 
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover MCP-specific
@@ -49,7 +45,7 @@ security configuration fields:
 
 | Field            | Type    | Default | Description |
 |------------------|---------|---------|-------------|
-| `allow_writes`   | boolean | `false` | When `true`, the service connects using the read-write database user (`svc_{service_id}_rw`) and the `query_database` tool can execute write statements. When `false`, the read-only user (`svc_{service_id}_ro`) is used and write statements are rejected at the database level. |
+| `allow_writes`   | boolean | `false` | When `true`, the `query_database` tool can execute write statements and the service connects to the primary node. When `false`, write statements are rejected by the MCP server and the service prefers a standby node. |
 | `init_token`     | string  | —       | A bootstrap token for initial access to the MCP server. See [Bootstrapping](#bootstrapping). |
 | `init_users`     | array   | —       | Initial user accounts to create on the MCP server. See [Bootstrapping](#bootstrapping). |
 
@@ -161,6 +157,14 @@ you connect via an MCP client that supplies its own LLM:
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "mcp_user",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "mcp-server",
@@ -168,6 +172,7 @@ you connect via an MCP client that supplies its own LLM:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
                             "init_token": "my-bootstrap-token",
                             "init_users": [
@@ -197,6 +202,14 @@ Anthropic as the provider:
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "mcp_user",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "mcp-server",
@@ -204,6 +217,7 @@ Anthropic as the provider:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
                             "llm_enabled": true,
                             "llm_provider": "anthropic",
@@ -237,6 +251,14 @@ OpenAI and configures embedding support:
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "mcp_user",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "mcp-server",
@@ -244,6 +266,7 @@ OpenAI and configures embedding support:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
                             "llm_enabled": true,
                             "llm_provider": "openai",
@@ -280,6 +303,14 @@ to use a self-hosted Ollama server for both the LLM and embeddings:
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "mcp_user",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "mcp-server",
@@ -287,6 +318,7 @@ to use a self-hosted Ollama server for both the LLM and embeddings:
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 8080,
+                        "connect_as": "mcp_user",
                         "config": {
                             "llm_enabled": true,
                             "llm_provider": "ollama",

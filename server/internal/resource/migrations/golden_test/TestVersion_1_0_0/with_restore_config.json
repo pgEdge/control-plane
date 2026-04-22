@@ -86,6 +86,7 @@
           "type": "database.postgres_database"
         },
         "attributes": {
+          "database_id": "database-1",
           "node_name": "n1",
           "database_name": "test",
           "owner": "admin",

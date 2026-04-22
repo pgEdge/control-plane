@@ -8900,7 +8900,6 @@
         "connect_as": {
           "type": "string",
           "description": "Username of the database_users entry this service connects as. The user must exist in database_users and have appropriate roles for the service's needs.",
-          "default": "",
           "example": "app"
         },
         "cpus": {
@@ -9051,7 +9050,8 @@
         "service_id",
         "service_type",
         "version",
-        "host_ids"
+        "host_ids",
+        "connect_as"
       ]
     },
     "StartInstanceResponse": {

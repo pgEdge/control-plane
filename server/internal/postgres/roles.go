@@ -22,6 +22,15 @@ func UserRoleNeedsCreate(name string) Query[bool] {
 	}
 }
 
+func CreateRoleIfNotExists(name string) ConditionalStatement {
+	return ConditionalStatement{
+		If: UserRoleNeedsCreate(name),
+		Then: Statement{
+			SQL: fmt.Sprintf("CREATE ROLE %s;", QuoteIdentifier(name)),
+		},
+	}
+}
+
 type UserRoleOptions struct {
 	Name       string
 	Password   string
@@ -31,38 +40,28 @@ type UserRoleOptions struct {
 
 func CreateUserRole(opts UserRoleOptions) (Statements, error) {
 	if slices.Contains(builtinRoles, opts.Name) {
-		return nil, fmt.Errorf("role name %q conflicts with a builtin role", opts.Name)
+		return nil, fmt.Errorf("role name '%s' conflicts with a builtin role", opts.Name)
 	}
 
 	statements := Statements{
-		ConditionalStatement{
-			If: Query[bool]{
-				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);",
-				Args: pgx.NamedArgs{
-					"name": opts.Name,
-				},
-			},
-			Then: Statement{
-				SQL: fmt.Sprintf("CREATE ROLE %q", opts.Name),
-			},
-		},
+		CreateRoleIfNotExists(opts.Name),
 	}
 	if opts.Password != "" {
 		statements = append(statements, Statement{
 			// Passwords don't work with pgx.NamedArgs, so we have to escape
 			// them manually
-			SQL: fmt.Sprintf("ALTER ROLE %q WITH PASSWORD '%s';", opts.Name, strings.ReplaceAll(opts.Password, "'", "''")),
+			SQL: fmt.Sprintf("ALTER ROLE %s WITH PASSWORD '%s';", QuoteIdentifier(opts.Name), strings.ReplaceAll(opts.Password, "'", "''")),
 		})
 	}
 	for _, attr := range opts.Attributes {
 		statements = append(statements, Statement{
 			// Attributes can't be quoted, so we're using %s instead of %q
-			SQL: fmt.Sprintf("ALTER ROLE %q WITH %s;", opts.Name, attr),
+			SQL: fmt.Sprintf("ALTER ROLE %s WITH %s;", QuoteIdentifier(opts.Name), attr),
 		})
 	}
 	for _, role := range opts.Roles {
 		statements = append(statements, Statement{
-			SQL: fmt.Sprintf("GRANT %q TO %q WITH INHERIT TRUE;", role, opts.Name),
+			SQL: fmt.Sprintf("GRANT %s TO %s WITH INHERIT TRUE;", QuoteIdentifier(role), QuoteIdentifier(opts.Name)),
 		})
 	}
 
@@ -148,7 +147,7 @@ func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
 
 func AlterOwner(dbName, owner string) Statement {
 	return Statement{
-		SQL: fmt.Sprintf("ALTER DATABASE %q OWNER TO %q;", dbName, owner),
+		SQL: fmt.Sprintf("ALTER DATABASE %s OWNER TO %s;", QuoteIdentifier(dbName), QuoteIdentifier(owner)),
 	}
 }
 
@@ -167,7 +166,7 @@ func (o BuiltinRolePrivilegeOptions) Schemas() []string {
 func GrantBuiltinRolePrivileges(opts BuiltinRolePrivilegeOptions) Statements {
 	statements := Statements{
 		Statement{
-			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON DATABASE %q TO pgedge_superuser;", opts.DBName),
+			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON DATABASE %s TO pgedge_superuser;", QuoteIdentifier(opts.DBName)),
 		},
 		dbConnect(opts.DBName, "pgedge_superuser"),
 		dbConnect(opts.DBName, "pgedge_application"),
@@ -184,40 +183,44 @@ func GrantBuiltinRolePrivileges(opts BuiltinRolePrivilegeOptions) Statements {
 
 func dbConnect(dbName, role string) Statement {
 	return Statement{
-		SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %q TO %q;", dbName, role),
+		SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", QuoteIdentifier(dbName), QuoteIdentifier(role)),
 	}
 }
 
 func schemaAdmin(schema, role string) Statements {
+	schema = QuoteIdentifier(schema)
+	role = QuoteIdentifier(role)
 	return Statements{
 		Statement{
-			SQL: fmt.Sprintf("GRANT USAGE, CREATE ON SCHEMA %q TO %q;", schema, role),
+			SQL: fmt.Sprintf("GRANT USAGE, CREATE ON SCHEMA %s TO %s;", schema, role),
 		},
 		Statement{
-			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA %q TO %q;", schema, role),
+			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA %s TO %s;", schema, role),
 		},
 		Statement{
-			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA %q TO %q;", schema, role),
+			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA %s TO %s;", schema, role),
 		},
 		Statement{
-			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %q GRANT ALL PRIVILEGES ON TABLES TO %q;", schema, role),
+			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT ALL PRIVILEGES ON TABLES TO %s;", schema, role),
 		},
 		Statement{
-			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %q GRANT ALL PRIVILEGES ON SEQUENCES TO %q;", schema, role),
+			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT ALL PRIVILEGES ON SEQUENCES TO %s;", schema, role),
 		},
 	}
 }
 
 func schemaReadOnly(schema, role string) Statements {
+	schema = QuoteIdentifier(schema)
+	role = QuoteIdentifier(role)
 	return Statements{
 		Statement{
-			SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA %q TO %q;", schema, role),
+			SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA %s TO %s;", schema, role),
 		},
 		Statement{
-			SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA %q TO %q;", schema, role),
+			SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA %s TO %s;", schema, role),
 		},
 		Statement{
-			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %q GRANT SELECT ON TABLES TO %q;", schema, role),
+			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT SELECT ON TABLES TO %s;", schema, role),
 		},
 	}
 }

@@ -7,28 +7,30 @@ import (
 )
 
 type Store struct {
-	client                *clientv3.Client
-	Spec                  *SpecStore
-	Database              *DatabaseStore
-	Instance              *InstanceStore
-	InstanceStatus        *InstanceStatusStore
-	InstanceSpec          *InstanceSpecStore
-	ScriptResult          *ScriptResultStore
-	ServiceInstance       *ServiceInstanceStore
-	ServiceInstanceStatus *ServiceInstanceStatusStore
+	client                  *clientv3.Client
+	Spec                    *SpecStore
+	Database                *DatabaseStore
+	Instance                *InstanceStore
+	InstanceStatus          *InstanceStatusStore
+	InstanceSpec            *InstanceSpecStore
+	ScriptResult            *ScriptResultStore
+	ServiceInstance         *ServiceInstanceStore
+	ServiceInstanceStatus   *ServiceInstanceStatusStore
+	ServiceInstanceSpec     *ServiceInstanceSpecStore
 }
 
 func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
-		client:                client,
-		Spec:                  NewSpecStore(client, root),
-		Database:              NewDatabaseStore(client, root),
-		Instance:              NewInstanceStore(client, root),
-		InstanceStatus:        NewInstanceStatusStore(client, root),
-		InstanceSpec:          NewInstanceSpecStore(client, root),
-		ScriptResult:          NewScriptResultStore(client, root),
-		ServiceInstance:       NewServiceInstanceStore(client, root),
-		ServiceInstanceStatus: NewServiceInstanceStatusStore(client, root),
+		client:                  client,
+		Spec:                    NewSpecStore(client, root),
+		Database:                NewDatabaseStore(client, root),
+		Instance:                NewInstanceStore(client, root),
+		InstanceStatus:          NewInstanceStatusStore(client, root),
+		InstanceSpec:            NewInstanceSpecStore(client, root),
+		ScriptResult:            NewScriptResultStore(client, root),
+		ServiceInstance:         NewServiceInstanceStore(client, root),
+		ServiceInstanceStatus:   NewServiceInstanceStatusStore(client, root),
+		ServiceInstanceSpec:     NewServiceInstanceSpecStore(client, root),
 	}
 }
 

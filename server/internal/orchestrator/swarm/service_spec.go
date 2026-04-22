@@ -63,7 +63,6 @@ type ServiceContainerSpecOptions struct {
 	Hostname           string
 	CohortMemberID     string
 	ServiceImage       *ServiceImage
-	Credentials        *database.ServiceUser
 	DatabaseNetworkID  string
 	DatabaseHosts      []database.ServiceHostEntry // Ordered Postgres host:port entries
 	TargetSessionAttrs string                      // libpq target_session_attrs

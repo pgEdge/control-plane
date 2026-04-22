@@ -51,11 +51,6 @@ func TestServiceContainerSpec(t *testing.T) {
 				ServiceImage: &ServiceImage{
 					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
-				Credentials: &database.ServiceUser{
-					Username: "svc_db1mcp",
-					Password: "testpassword",
-					Role:     "pgedge_application_read_only",
-				},
 				DatabaseNetworkID: "db1-database",
 				Port:              intPtr(8080),
 				DataPath:          "/var/lib/pgedge/services/db1-mcp-server-host1",
@@ -333,7 +328,6 @@ func TestServiceContainerSpec_ExtraNetworks(t *testing.T) {
 		Hostname:          "mcp-host1",
 		CohortMemberID:    "node-123",
 		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/postgres-mcp:latest"},
-		Credentials:       &database.ServiceUser{Username: "svc_mcp", Password: "pw"},
 		DatabaseNetworkID: "db1-database",
 		Port:              intPtr(8080),
 		DataPath:          "/var/lib/pgedge/services/db1-mcp-host1",
@@ -401,7 +395,6 @@ func TestServiceContainerSpec_RAGHasConfigVersionEnv(t *testing.T) {
 		Hostname:          "rag-host1",
 		CohortMemberID:    "node-123",
 		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/rag-server:latest"},
-		Credentials:       &database.ServiceUser{Username: "svc_rag", Password: "pw"},
 		DatabaseNetworkID: "db1-database",
 		Port:              intPtr(0),
 		DataPath:          "/var/lib/pgedge/services/db1-rag-host1",
@@ -452,7 +445,6 @@ func TestServiceContainerSpec_NoExtraNetworks(t *testing.T) {
 		Hostname:          "mcp-host1",
 		CohortMemberID:    "node-123",
 		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/postgres-mcp:latest"},
-		Credentials:       &database.ServiceUser{Username: "svc_mcp", Password: "pw"},
 		DatabaseNetworkID: "db1-database",
 		Port:              intPtr(8080),
 		DataPath:          "/var/lib/pgedge/services/db1-mcp-host1",
@@ -476,6 +468,7 @@ func makePostgRESTSpecOpts() *ServiceContainerSpecOptions {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "svc-1",
 			ServiceType: "postgrest",
+			ConnectAs:   "myapp",
 		},
 		ServiceInstanceID: "inst-1",
 		DatabaseID:        "db-1",
@@ -485,10 +478,6 @@ func makePostgRESTSpecOpts() *ServiceContainerSpecOptions {
 		Hostname:          "postgrest-host1",
 		CohortMemberID:    "node-abc",
 		ServiceImage:      &ServiceImage{Tag: "postgrest/postgrest:latest"},
-		Credentials: &database.ServiceUser{
-			Username: "svc_postgrest_host1",
-			Password: "supersecret",
-		},
 		DatabaseNetworkID: "net-1",
 		DatabaseHosts:     []database.ServiceHostEntry{{Host: "pg-host1", Port: 5432}},
 		DataPath:          "/var/lib/pgedge/services/inst-1",
@@ -555,7 +544,7 @@ func TestServiceContainerSpec_PostgREST_EnvVars(t *testing.T) {
 			t.Errorf("env var %s = %q, want %q", key, got, want)
 		}
 	}
-	// Credentials and connection details must not appear as env vars.
+	// Connection details must not appear as env vars.
 	for _, forbidden := range []string{"PGUSER", "PGPASSWORD", "PGHOST", "PGPORT", "PGDATABASE", "PGRST_DB_URI", "PGTARGETSESSIONATTRS"} {
 		if _, ok := envMap[forbidden]; ok {
 			t.Errorf("env var %s must not be set (credentials belong in postgrest.conf)", forbidden)

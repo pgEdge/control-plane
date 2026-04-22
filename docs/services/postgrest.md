@@ -8,11 +8,11 @@ on every deploy.
 ## Overview
 
 The Control Plane provisions a PostgREST container on each host you
-specify. The container connects to the database using
-automatically-managed credentials and serves HTTP at your configured
-port. Anonymous requests run as the configured `db_anon_role`.
-JWT-authenticated requests switch to any role granted to the
-authenticator.
+specify. The container connects to the database as the user specified
+in `connect_as` (a `database_users` entry you control) and serves HTTP
+at your configured port. Anonymous requests run as the configured
+`db_anon_role`. JWT-authenticated requests switch to any role granted
+to the `connect_as` user.
 
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover
@@ -54,7 +54,8 @@ using a signed token. Omit these fields to run in anonymous-only mode.
 ### Read-Only API (No JWT)
 
 This example provisions a PostgREST service with default settings. All
-requests run as the anonymous role.
+requests run as the anonymous role. The `connect_as` field names the
+`database_users` entry PostgREST connects to Postgres as.
 
 === "curl"
 
@@ -68,6 +69,14 @@ requests run as the anonymous role.
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "app",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "api",
@@ -75,6 +84,7 @@ requests run as the anonymous role.
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 3100,
+                        "connect_as": "app",
                         "config": {}
                     }
                 ]
@@ -85,7 +95,8 @@ requests run as the anonymous role.
 ### JWT-Authenticated API
 
 This example enables JWT authentication. Clients send a signed token to
-switch to a specific PostgreSQL role.
+switch to a specific PostgreSQL role. Every role a JWT can claim must be
+granted to the `connect_as` user.
 
 === "curl"
 
@@ -99,6 +110,14 @@ switch to a specific PostgreSQL role.
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "app",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "api",
@@ -106,6 +125,7 @@ switch to a specific PostgreSQL role.
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 3100,
+                        "connect_as": "app",
                         "config": {
                             "jwt_secret": "a-secret-key-of-at-least-32-characters"
                         }
@@ -132,6 +152,14 @@ before deploying.
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] }
                 ],
+                "database_users": [
+                    {
+                        "username": "app",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
                 "services": [
                     {
                         "service_id": "api",
@@ -139,6 +167,7 @@ before deploying.
                         "version": "latest",
                         "host_ids": ["host-1"],
                         "port": 3100,
+                        "connect_as": "app",
                         "config": {
                             "db_schemas": "public,api",
                             "jwt_secret": "a-secret-key-of-at-least-32-characters"
@@ -198,10 +227,9 @@ the PostgreSQL role PostgREST uses for the request.
         --data '{"name": "Widget", "price": 9.99}'
     ```
 
-The `role` claim must name a PostgreSQL role granted to the PostgREST
-authenticator user. The authenticator username is visible in the
-`service_instances` field of your database status response. Grant your
-application roles to that user before sending authenticated requests.
+The `role` claim must name a PostgreSQL role granted to the `connect_as`
+user. Grant your application roles to the `connect_as` user in
+PostgreSQL before sending authenticated requests.
 
 ## Preflight Checks
 
