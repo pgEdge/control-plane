@@ -920,7 +920,7 @@ To list all configured pipelines, send the following request:
 === "curl"
 
     ```bash
-    curl http://localhost:9200/v1/pipelines
+    curl http://host-1:9200/v1/pipelines
     ```
 
 ### Query a Pipeline
@@ -931,7 +931,7 @@ text:
 === "curl"
 
     ```bash
-    curl -X POST http://localhost:9200/v1/pipelines/default \
+    curl -X POST http://host-1:9200/v1/pipelines/default \
       -H "Content-Type: application/json" \
       -d '{
         "query": "How does RAG improve LLM responses?",
@@ -1021,7 +1021,7 @@ connectivity and user permissions.
 To verify that the database is accessible, run the following command:
 
 ```bash
-psql -h localhost -U admin -d knowledge_base -c "SELECT 1"
+psql -h host-1 -U admin -d knowledge_base -c "SELECT 1"
 ```
 
 To verify that the service user (`app_read_only`) exists and has table
@@ -1088,7 +1088,7 @@ Plane and which are your responsibility:
 
 ## Next Steps
 
-The following resources provide more information on related topics.
+The following resources provide more information on related topics:
 
 - The [Managing Services](managing.md) guide describes how to add,
   update, and remove services.
