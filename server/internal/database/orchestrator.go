@@ -24,22 +24,27 @@ const ResourceTypeServiceInstance = "swarm.service_instance"
 
 type InstanceResources struct {
 	Instance             *InstanceResource
-	Resources            []*resource.ResourceData
+	InstanceDependencies []*resource.ResourceData
 	DatabaseDependencies []*resource.ResourceData
+	NodeDependents       []*resource.ResourceData
 }
 
 func NewInstanceResources(
 	instance *InstanceResource,
-	resources []resource.Resource,
+	instanceDependencies []resource.Resource,
 	databaseDependencies []resource.Resource,
+	nodeDependents []resource.Resource,
 ) (*InstanceResources, error) {
 	inst := &InstanceResources{
 		Instance: instance,
 	}
-	if err := inst.AddResources(resources...); err != nil {
+	if err := inst.AddInstanceDependencies(instanceDependencies...); err != nil {
 		return nil, err
 	}
 	if err := inst.AddDatabaseDependencies(databaseDependencies...); err != nil {
+		return nil, err
+	}
+	if err := inst.AddNodeDependents(nodeDependents...); err != nil {
 		return nil, err
 	}
 
@@ -55,12 +60,12 @@ func (r *InstanceResources) DatabaseDependencyIdentifiers() []resource.Identifie
 	return ids
 }
 
-func (r *InstanceResources) AddResources(resources ...resource.Resource) error {
+func (r *InstanceResources) AddInstanceDependencies(resources ...resource.Resource) error {
 	resourceDataSlice, err := resource.ToResourceDataSlice(resources...)
 	if err != nil {
 		return fmt.Errorf("failed to convert instance resources: %w", err)
 	}
-	r.Resources = append(r.Resources, resourceDataSlice...)
+	r.InstanceDependencies = append(r.InstanceDependencies, resourceDataSlice...)
 
 	return nil
 }
@@ -71,6 +76,16 @@ func (r *InstanceResources) AddDatabaseDependencies(resources ...resource.Resour
 		return fmt.Errorf("failed to convert database dependency resources: %w", err)
 	}
 	r.DatabaseDependencies = append(r.DatabaseDependencies, databaseDataSlice...)
+
+	return nil
+}
+
+func (r *InstanceResources) AddNodeDependents(resources ...resource.Resource) error {
+	nodeDataSlice, err := resource.ToResourceDataSlice(resources...)
+	if err != nil {
+		return fmt.Errorf("failed to convert node dependent resources: %w", err)
+	}
+	r.NodeDependents = append(r.NodeDependents, nodeDataSlice...)
 
 	return nil
 }
@@ -95,9 +110,9 @@ func (r *InstanceResources) NodeName() string {
 	return r.Instance.Spec.NodeName
 }
 
-func (r *InstanceResources) State() (*resource.State, error) {
+func (r *InstanceResources) InstanceState() (*resource.State, error) {
 	state := resource.NewState()
-	state.Add(r.Resources...)
+	state.Add(r.InstanceDependencies...)
 
 	if err := state.AddResource(r.Instance); err != nil {
 		return nil, fmt.Errorf("failed to add instance to state: %w", err)
@@ -165,4 +180,5 @@ type Orchestrator interface {
 	StopInstance(ctx context.Context, instanceID string) error
 	StartInstance(ctx context.Context, instanceID string) error
 	NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error)
+	InstancePaths(pgVersion *ds.Version, instanceID string) (InstancePaths, error)
 }

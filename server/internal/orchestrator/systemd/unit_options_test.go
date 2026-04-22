@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/coreos/go-systemd/v22/unit"
-	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/systemd"
 	"github.com/pgEdge/control-plane/server/internal/testutils"
 )
@@ -45,9 +45,9 @@ func TestUnitOptions(t *testing.T) {
 	}
 
 	t.Run("PatroniUnitOptions", func(t *testing.T) {
-		paths := common.InstancePaths{
-			Instance:       common.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
-			Host:           common.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
+		paths := database.InstancePaths{
+			Instance:       database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
+			Host:           database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 			PgBackRestPath: "/usr/bin/pgbackrest",
 			PatroniPath:    "/usr/local/bin/patroni",
 		}
@@ -55,7 +55,7 @@ func TestUnitOptions(t *testing.T) {
 
 		for _, tc := range []struct {
 			name        string
-			paths       common.InstancePaths
+			paths       database.InstancePaths
 			pgBinPath   string
 			cpus        float64
 			memoryBytes uint64

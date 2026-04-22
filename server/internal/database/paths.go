@@ -1,4 +1,4 @@
-package common
+package database
 
 import (
 	"fmt"
@@ -7,6 +7,22 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+)
+
+const (
+	EtcdCaCertName     = "ca.crt"
+	EtcdClientCertName = "client.crt"
+	EtcdClientKeyName  = "client.key"
+)
+
+const (
+	PostgresCaCertName         = "ca.crt"
+	PostgresServerCertName     = "server.crt"
+	PostgresServerKeyName      = "server.key"
+	PostgresSuperuserCertName  = "superuser.crt"
+	PostgresSuperuserKeyName   = "superuser.key"
+	PostgresReplicatorCertName = "replication.crt"
+	PostgresReplicatorKeyName  = "replication.key"
 )
 
 type InstancePaths struct {
@@ -27,7 +43,7 @@ func (p *InstancePaths) InstanceMvRestoreToDataCmd() []string {
 func (p *InstancePaths) PgBackRestBackupCmd(command string, args ...string) pgbackrest.Cmd {
 	return pgbackrest.Cmd{
 		PgBackrestCmd: p.PgBackRestPath,
-		Config:        p.Instance.PgBackRestConfig(PgBackRestConfigTypeBackup),
+		Config:        p.Instance.PgBackRestConfig(pgbackrest.ConfigTypeBackup),
 		Stanza:        "db",
 		Command:       command,
 		Args:          args,
@@ -54,8 +70,8 @@ func (p *InstancePaths) PgBackRestRestoreCmd(command string, args ...string) pgb
 		if arg == "--type" && i+1 < len(args) {
 			restoreType = args[i+1]
 			i++ // skip the next arg since it's the value of --type
-		} else if strings.HasPrefix(arg, "--type=") {
-			restoreType = strings.TrimPrefix(arg, "--type=")
+		} else if after, ok := strings.CutPrefix(arg, "--type="); ok {
+			restoreType = after
 		} else {
 			continue
 		}
@@ -69,7 +85,7 @@ func (p *InstancePaths) PgBackRestRestoreCmd(command string, args ...string) pgb
 
 	return pgbackrest.Cmd{
 		PgBackrestCmd: p.PgBackRestPath,
-		Config:        p.Instance.PgBackRestConfig(PgBackRestConfigTypeRestore),
+		Config:        p.Instance.PgBackRestConfig(pgbackrest.ConfigTypeRestore),
 		Stanza:        "db",
 		Command:       command,
 		Args:          args,
@@ -104,7 +120,7 @@ func (p *Paths) PatroniConfig() string {
 	return filepath.Join(p.Configs(), "patroni.yaml")
 }
 
-func (p *Paths) PgBackRestConfig(confType PgBackRestConfigType) string {
+func (p *Paths) PgBackRestConfig(confType pgbackrest.ConfigType) string {
 	return filepath.Join(p.Configs(), fmt.Sprintf("pgbackrest.%s.conf", confType))
 }
 
@@ -113,15 +129,15 @@ func (p *Paths) EtcdCertificates() string {
 }
 
 func (p *Paths) EtcdCaCert() string {
-	return filepath.Join(p.EtcdCertificates(), etcdCaCertName)
+	return filepath.Join(p.EtcdCertificates(), EtcdCaCertName)
 }
 
 func (p *Paths) EtcdClientCert() string {
-	return filepath.Join(p.EtcdCertificates(), etcdClientCertName)
+	return filepath.Join(p.EtcdCertificates(), EtcdClientCertName)
 }
 
 func (p *Paths) EtcdClientKey() string {
-	return filepath.Join(p.EtcdCertificates(), etcdClientKeyName)
+	return filepath.Join(p.EtcdCertificates(), EtcdClientKeyName)
 }
 
 func (p *Paths) PostgresCertificates() string {
@@ -129,29 +145,29 @@ func (p *Paths) PostgresCertificates() string {
 }
 
 func (p *Paths) PostgresCaCert() string {
-	return filepath.Join(p.PostgresCertificates(), postgresCaCertName)
+	return filepath.Join(p.PostgresCertificates(), PostgresCaCertName)
 }
 
 func (p *Paths) PostgresServerCert() string {
-	return filepath.Join(p.PostgresCertificates(), postgresServerCertName)
+	return filepath.Join(p.PostgresCertificates(), PostgresServerCertName)
 }
 
 func (p *Paths) PostgresServerKey() string {
-	return filepath.Join(p.PostgresCertificates(), postgresServerKeyName)
+	return filepath.Join(p.PostgresCertificates(), PostgresServerKeyName)
 }
 
 func (p *Paths) PostgresSuperuserCert() string {
-	return filepath.Join(p.PostgresCertificates(), postgresSuperuserCertName)
+	return filepath.Join(p.PostgresCertificates(), PostgresSuperuserCertName)
 }
 
 func (p *Paths) PostgresSuperuserKey() string {
-	return filepath.Join(p.PostgresCertificates(), postgresSuperuserKeyName)
+	return filepath.Join(p.PostgresCertificates(), PostgresSuperuserKeyName)
 }
 
 func (p *Paths) PostgresReplicatorCert() string {
-	return filepath.Join(p.PostgresCertificates(), postgresReplicatorCertName)
+	return filepath.Join(p.PostgresCertificates(), PostgresReplicatorCertName)
 }
 
 func (p *Paths) PostgresReplicatorKey() string {
-	return filepath.Join(p.PostgresCertificates(), postgresReplicatorKeyName)
+	return filepath.Join(p.PostgresCertificates(), PostgresReplicatorKeyName)
 }

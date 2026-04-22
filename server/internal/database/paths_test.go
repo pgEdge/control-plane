@@ -1,11 +1,11 @@
-package common_test
+package database_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
@@ -79,9 +79,9 @@ func TestInstancePaths(t *testing.T) {
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				paths := &common.InstancePaths{
-					Instance:       common.Paths{BaseDir: "/opt/pgedge"},
-					Host:           common.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+				paths := &database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
 					PatroniPath:    "/usr/bin/patroni",
 				}

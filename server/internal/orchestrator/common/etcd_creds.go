@@ -11,16 +11,11 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-)
-
-const (
-	etcdCaCertName     = "ca.crt"
-	etcdClientCertName = "client.crt"
-	etcdClientKeyName  = "client.key"
 )
 
 var _ resource.Resource = (*EtcdCreds)(nil)
@@ -93,15 +88,15 @@ func (c *EtcdCreds) Refresh(ctx context.Context, rc *resource.Context) error {
 	}
 	certsDir := filepath.Join(parentFullPath, "etcd")
 
-	caCert, err := ReadResourceFile(fs, filepath.Join(certsDir, etcdCaCertName))
+	caCert, err := ReadResourceFile(fs, filepath.Join(certsDir, database.EtcdCaCertName))
 	if err != nil {
 		return fmt.Errorf("failed to read CA cert: %w", err)
 	}
-	clientCert, err := ReadResourceFile(fs, filepath.Join(certsDir, etcdClientCertName))
+	clientCert, err := ReadResourceFile(fs, filepath.Join(certsDir, database.EtcdClientCertName))
 	if err != nil {
 		return fmt.Errorf("failed to read client cert: %w", err)
 	}
-	clientKey, err := ReadResourceFile(fs, filepath.Join(certsDir, etcdClientKeyName))
+	clientKey, err := ReadResourceFile(fs, filepath.Join(certsDir, database.EtcdClientKeyName))
 	if err != nil {
 		return fmt.Errorf("failed to read client key: %w", err)
 	}
@@ -160,9 +155,9 @@ func (c *EtcdCreds) Create(ctx context.Context, rc *resource.Context) error {
 	}
 
 	files := map[string][]byte{
-		etcdCaCertName:     c.CaCert,
-		etcdClientCertName: c.ClientCert,
-		etcdClientKeyName:  c.ClientKey,
+		database.EtcdCaCertName:     c.CaCert,
+		database.EtcdClientCertName: c.ClientCert,
+		database.EtcdClientKeyName:  c.ClientKey,
 	}
 
 	for name, content := range files {

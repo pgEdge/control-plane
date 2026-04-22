@@ -35,6 +35,7 @@ func (n *NodeResources) nodeResourceState() (*resource.State, error) {
 	state := resource.NewState()
 	for _, instance := range n.InstanceResources {
 		instanceIDs = append(instanceIDs, instance.InstanceID())
+		state.Add(instance.NodeDependents...)
 	}
 
 	err := state.AddResource(&database.NodeResource{
@@ -88,14 +89,6 @@ func (n *NodeResources) databaseResourceState() (*resource.State, error) {
 		return nil, fmt.Errorf("failed to add database resources to state: %w", err)
 	}
 
-	return state, nil
-}
-
-func instanceState(inst *database.InstanceResources) (*resource.State, error) {
-	state, err := inst.State()
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute updated instance state: %w", err)
-	}
 	return state, nil
 }
 

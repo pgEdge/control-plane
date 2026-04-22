@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/coreos/go-systemd/v22/unit"
-	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
+	"github.com/pgEdge/control-plane/server/internal/database"
 )
 
 func PatroniUnitOptions(
-	paths common.InstancePaths,
+	paths database.InstancePaths,
 	pgBinPath string,
 	cpus float64,
 	memoryBytes uint64,

@@ -13,6 +13,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -30,13 +31,13 @@ func PgBackRestRestoreResourceIdentifier(instanceID string) resource.Identifier 
 }
 
 type PgBackRestRestore struct {
-	DatabaseID     string               `json:"database_id"`
-	HostID         string               `json:"host_id"`
-	InstanceID     string               `json:"instance_id"`
-	TaskID         uuid.UUID            `json:"task_id"`
-	NodeName       string               `json:"node_name"`
-	Paths          common.InstancePaths `json:"paths"`
-	RestoreOptions map[string]string    `json:"restore_options"`
+	DatabaseID     string                 `json:"database_id"`
+	HostID         string                 `json:"host_id"`
+	InstanceID     string                 `json:"instance_id"`
+	TaskID         uuid.UUID              `json:"task_id"`
+	NodeName       string                 `json:"node_name"`
+	Paths          database.InstancePaths `json:"paths"`
+	RestoreOptions map[string]string      `json:"restore_options"`
 }
 
 func (p *PgBackRestRestore) ResourceVersion() string {
@@ -57,7 +58,7 @@ func (p *PgBackRestRestore) Identifier() resource.Identifier {
 
 func (p *PgBackRestRestore) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		common.PgBackRestConfigIdentifier(p.InstanceID, common.PgBackRestConfigTypeRestore),
+		common.PgBackRestConfigIdentifier(p.InstanceID, pgbackrest.ConfigTypeRestore),
 		common.PatroniClusterResourceIdentifier(p.NodeName),
 		UnitResourceIdentifier(patroniServiceName(p.InstanceID), p.DatabaseID, p.HostID),
 	}

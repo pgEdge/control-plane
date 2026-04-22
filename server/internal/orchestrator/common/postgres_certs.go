@@ -10,19 +10,10 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-)
-
-const (
-	postgresCaCertName         = "ca.crt"
-	postgresServerCertName     = "server.crt"
-	postgresServerKeyName      = "server.key"
-	postgresSuperuserCertName  = "superuser.crt"
-	postgresSuperuserKeyName   = "superuser.key"
-	postgresReplicatorCertName = "replication.crt"
-	postgresReplicatorKeyName  = "replication.key"
 )
 
 var _ resource.Resource = (*PostgresCerts)(nil)
@@ -98,31 +89,31 @@ func (c *PostgresCerts) Refresh(ctx context.Context, rc *resource.Context) error
 	}
 	certsDir := filepath.Join(parentFullPath, "postgres")
 
-	caCert, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresCaCertName))
+	caCert, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresCaCertName))
 	if err != nil {
 		return fmt.Errorf("failed to read CA cert: %w", err)
 	}
-	serverCert, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresServerCertName))
+	serverCert, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresServerCertName))
 	if err != nil {
 		return fmt.Errorf("failed to read server cert: %w", err)
 	}
-	serverKey, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresServerKeyName))
+	serverKey, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresServerKeyName))
 	if err != nil {
 		return fmt.Errorf("failed to read server key: %w", err)
 	}
-	superuserCert, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresSuperuserCertName))
+	superuserCert, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresSuperuserCertName))
 	if err != nil {
 		return fmt.Errorf("failed to read superuser cert: %w", err)
 	}
-	superuserKey, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresSuperuserKeyName))
+	superuserKey, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresSuperuserKeyName))
 	if err != nil {
 		return fmt.Errorf("failed to read superuser key: %w", err)
 	}
-	replicationCert, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresReplicatorCertName))
+	replicationCert, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresReplicatorCertName))
 	if err != nil {
 		return fmt.Errorf("failed to read replication cert: %w", err)
 	}
-	replicationKey, err := ReadResourceFile(fs, filepath.Join(certsDir, postgresReplicatorKeyName))
+	replicationKey, err := ReadResourceFile(fs, filepath.Join(certsDir, database.PostgresReplicatorKeyName))
 	if err != nil {
 		return fmt.Errorf("failed to read replication key: %w", err)
 	}
@@ -190,13 +181,13 @@ func (c *PostgresCerts) Create(ctx context.Context, rc *resource.Context) error 
 	}
 
 	files := map[string][]byte{
-		postgresCaCertName:         c.CaCert,
-		postgresServerCertName:     c.ServerCert,
-		postgresServerKeyName:      c.ServerKey,
-		postgresSuperuserCertName:  c.SuperuserCert,
-		postgresSuperuserKeyName:   c.SuperuserKey,
-		postgresReplicatorCertName: c.ReplicationCert,
-		postgresReplicatorKeyName:  c.ReplicationKey,
+		database.PostgresCaCertName:         c.CaCert,
+		database.PostgresServerCertName:     c.ServerCert,
+		database.PostgresServerKeyName:      c.ServerKey,
+		database.PostgresSuperuserCertName:  c.SuperuserCert,
+		database.PostgresSuperuserKeyName:   c.SuperuserKey,
+		database.PostgresReplicatorCertName: c.ReplicationCert,
+		database.PostgresReplicatorKeyName:  c.ReplicationKey,
 	}
 
 	for name, content := range files {

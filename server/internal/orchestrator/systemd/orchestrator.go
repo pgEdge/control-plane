@@ -147,7 +147,7 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, h *host.HostStatu
 }
 
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
-	paths, err := o.instancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
+	paths, err := o.InstancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		},
 	}
 
-	orchestratorResources := []resource.Resource{
+	instanceDependencies := []resource.Resource{
 		patroniCluster,
 		patroniMember,
 		instanceDir,
@@ -293,7 +293,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		patroniUnit,
 	}
 
-	dbDependencyResources := []resource.Resource{&common.PgServiceConf{
+	dbDependencies := []resource.Resource{&common.PgServiceConf{
 		ParentID:   configsDir.ID,
 		HostID:     spec.HostID,
 		InstanceID: spec.InstanceID,
@@ -301,8 +301,9 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		OwnerGID:   o.cfg.DatabaseOwnerUID,
 	}}
 
+	var nodeDependents []resource.Resource
 	if spec.BackupConfig != nil {
-		orchestratorResources = append(orchestratorResources,
+		instanceDependencies = append(instanceDependencies,
 			&common.PgBackRestConfig{
 				InstanceID:   spec.InstanceID,
 				HostID:       spec.HostID,
@@ -310,20 +311,21 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 				NodeName:     spec.NodeName,
 				Repositories: spec.BackupConfig.Repositories,
 				ParentID:     configsDir.ID,
-				Type:         common.PgBackRestConfigTypeBackup,
+				Type:         pgbackrest.ConfigTypeBackup,
 				OwnerUID:     o.cfg.DatabaseOwnerUID,
 				OwnerGID:     o.cfg.DatabaseOwnerUID,
 				Paths:        paths,
 				Port:         postgresPort,
 			},
+		)
+		nodeDependents = append(nodeDependents,
 			&common.PgBackRestStanza{
 				DatabaseID: spec.DatabaseID,
 				NodeName:   spec.NodeName,
-				Paths:      paths,
 			},
 		)
 		for _, schedule := range spec.BackupConfig.Schedules {
-			orchestratorResources = append(orchestratorResources, scheduler.NewScheduledJobResource(
+			nodeDependents = append(nodeDependents, scheduler.NewScheduledJobResource(
 				fmt.Sprintf("%s-%s-%s", schedule.ID, spec.DatabaseID, spec.NodeName),
 				schedule.CronExpression,
 				scheduler.WorkflowCreatePgBackRestBackup,
@@ -338,14 +340,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 	}
 
 	if spec.RestoreConfig != nil {
-		orchestratorResources = append(orchestratorResources, &common.PgBackRestConfig{
+		instanceDependencies = append(instanceDependencies, &common.PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
 			HostID:       spec.HostID,
 			DatabaseID:   spec.RestoreConfig.SourceDatabaseID,
 			NodeName:     spec.RestoreConfig.SourceNodeName,
 			Repositories: []*pgbackrest.Repository{spec.RestoreConfig.Repository},
 			ParentID:     configsDir.ID,
-			Type:         common.PgBackRestConfigTypeRestore,
+			Type:         pgbackrest.ConfigTypeRestore,
 			OwnerUID:     o.cfg.DatabaseOwnerUID,
 			OwnerGID:     o.cfg.DatabaseOwnerUID,
 			Paths:        paths,
@@ -353,7 +355,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		})
 	}
 
-	return database.NewInstanceResources(instance, orchestratorResources, dbDependencyResources)
+	return database.NewInstanceResources(instance, instanceDependencies, dbDependencies, nodeDependents)
 }
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
@@ -364,7 +366,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 	if spec.RestoreConfig == nil {
 		return nil, fmt.Errorf("missing restore config for node %s instance %s", spec.NodeName, spec.InstanceID)
 	}
-	paths, err := o.instancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
+	paths, err := o.InstancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +379,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		return nil, err
 	}
 
-	err = instance.AddResources(&PgBackRestRestore{
+	err = instance.AddInstanceDependencies(&PgBackRestRestore{
 		DatabaseID:     spec.DatabaseID,
 		HostID:         spec.HostID,
 		InstanceID:     spec.InstanceID,
@@ -408,7 +410,7 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
 		return nil, fmt.Errorf("postgres version is not yet recorded for this instance")
 	}
 
-	paths, err := o.instancePaths(pgEdgeVersion.PostgresVersion, instanceID)
+	paths, err := o.InstancePaths(pgEdgeVersion.PostgresVersion, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +457,7 @@ func (o *Orchestrator) ExecuteInstanceCommand(ctx context.Context, w io.Writer, 
 }
 
 func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, spec *database.InstanceSpec, options *pgbackrest.BackupOptions) error {
-	paths, err := o.instancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
+	paths, err := o.InstancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {
 		return err
 	}
@@ -559,10 +561,10 @@ func (o *Orchestrator) NodeDSN(ctx context.Context, rc *resource.Context, nodeNa
 	}, nil
 }
 
-func (o *Orchestrator) instancePaths(pgVersion *ds.Version, instanceID string) (common.InstancePaths, error) {
+func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (database.InstancePaths, error) {
 	pgMajor, ok := pgVersion.MajorString()
 	if !ok {
-		return common.InstancePaths{}, errors.New("got empty postgres version")
+		return database.InstancePaths{}, errors.New("got empty postgres version")
 	}
 
 	var baseDir string
@@ -572,9 +574,9 @@ func (o *Orchestrator) instancePaths(pgVersion *ds.Version, instanceID string) (
 		baseDir = filepath.Join(o.packageManager.InstanceDataBaseDir(pgMajor), instanceID)
 	}
 
-	return common.InstancePaths{
-		Instance:       common.Paths{BaseDir: baseDir},
-		Host:           common.Paths{BaseDir: baseDir},
+	return database.InstancePaths{
+		Instance:       database.Paths{BaseDir: baseDir},
+		Host:           database.Paths{BaseDir: baseDir},
 		PgBackRestPath: o.cfg.SystemD.PgBackRestPath,
 		PatroniPath:    o.cfg.SystemD.PatroniPath,
 	}, nil

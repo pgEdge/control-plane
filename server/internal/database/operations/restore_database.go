@@ -67,25 +67,25 @@ func RestoreNode(node *NodeRestoreResources) ([]*resource.State, error) {
 
 	// The pre-restore state only contains the orchestrator resources.
 	preRestoreState := resource.NewState()
-	preRestoreState.Add(node.PrimaryInstance.Resources...)
+	preRestoreState.Add(node.PrimaryInstance.InstanceDependencies...)
 	states = append(states, preRestoreState)
 
 	// The restore state has the restore resources, the instance and the
 	// instance monitor.
-	restoreState, err := instanceState(node.RestoreInstance)
+	restoreState, err := node.RestoreInstance.InstanceState()
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute state for restore resources: %w", err)
 	}
 	states = append(states, restoreState)
 
-	postRestore, err := instanceState(node.PrimaryInstance)
+	postRestore, err := node.PrimaryInstance.InstanceState()
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute post-restore state for primary instance: %w", err)
 	}
 	states = append(states, postRestore)
 
 	for _, inst := range node.ReplicaInstances {
-		replica, err := instanceState(inst)
+		replica, err := inst.InstanceState()
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute post-restore state for replica instance: %w", err)
 		}

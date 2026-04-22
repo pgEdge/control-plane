@@ -18,7 +18,7 @@ func AddNode(node *NodeResources) ([]*resource.State, error) {
 
 	states := make([]*resource.State, 0, 2)
 
-	primary, err := instanceState(node.InstanceResources[0])
+	primary, err := node.InstanceResources[0].InstanceState()
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func AddNode(node *NodeResources) ([]*resource.State, error) {
 
 	var replicas *resource.State
 	for _, inst := range node.InstanceResources[1:] {
-		replica, err := instanceState(inst)
+		replica, err := inst.InstanceState()
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute replica instance resource state: %w", err)
 		}

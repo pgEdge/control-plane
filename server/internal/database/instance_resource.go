@@ -12,6 +12,7 @@ import (
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -161,6 +162,32 @@ func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context,
 	}
 
 	return conn, nil
+}
+
+func (r *InstanceResource) InstanceID() string {
+	return r.Spec.InstanceID
+}
+
+func (r *InstanceResource) PostgresVersion() (*ds.Version, error) {
+	if r.Spec.PgEdgeVersion == nil {
+		return nil, errors.New("instance spec is missing a pgedge version")
+	}
+	if r.Spec.PgEdgeVersion.PostgresVersion == nil {
+		return nil, errors.New("instance spec is missing a postgres version")
+	}
+	return r.Spec.PgEdgeVersion.PostgresVersion, nil
+}
+
+func (r *InstanceResource) Paths(orchestrator Orchestrator) (InstancePaths, error) {
+	postgresVersion, err := r.PostgresVersion()
+	if err != nil {
+		return InstancePaths{}, err
+	}
+	paths, err := orchestrator.InstancePaths(postgresVersion, r.InstanceID())
+	if err != nil {
+		return InstancePaths{}, fmt.Errorf("failed to compute instance paths: %w", err)
+	}
+	return paths, nil
 }
 
 func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.Context) error {
