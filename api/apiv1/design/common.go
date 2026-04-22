@@ -5,14 +5,14 @@ import (
 )
 
 var Identifier = g.Type("Identifier", g.String, func() {
-	g.Description("A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.")
+	g.Description("A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.")
 	// Intentionally not using a pattern here for two reasons:
 	// - Go regex doesn't support lookahead, so we can't express the consecutive
 	//   hyphen rule.
 	// - The pattern is somewhat complex, so the error message is hard to
 	//   interpret when the value doesn't match.
 	g.MinLength(1)
-	g.MaxLength(63)
+	g.MaxLength(36)
 	g.Example("Human-readable", func() {
 		g.Description("Identifiers can be human-readable for ease of use.")
 		g.Value("production")

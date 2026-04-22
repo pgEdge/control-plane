@@ -647,7 +647,7 @@ type HostStatus struct {
 	Components map[string]*ComponentStatus `json:"components"`
 }
 
-// A user-specified identifier. Must be 1-63 characters, contain only
+// A user-specified identifier. Must be 1-36 characters, contain only
 // lower-cased letters and hyphens, start and end with a letter or number, and
 // not contain consecutive hyphens.
 type Identifier string

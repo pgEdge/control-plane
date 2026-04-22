@@ -2,6 +2,7 @@ package utils
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -64,6 +65,45 @@ func TestBuildOptionArgs(t *testing.T) {
 			actual := BuildOptionArgs(tt.input)
 			if !reflect.DeepEqual(sortStrings(actual), sortStrings(tt.expected)) {
 				t.Errorf("got %v, want %v", actual, tt.expected)
+			}
+		})
+	}
+}
+
+func TestValidateID(t *testing.T) {
+	valid := []string{
+		"a",                                    // single char
+		"ab",                                   // two chars
+		"my-db",                                // typical short ID
+		"production",                           // letters only
+		"db-1",                                 // trailing digit
+		"1-db",                                 // leading digit
+		"abcdefghijklmnopqrstuvwxyz1234567890", // 36 chars (max)
+		"76f9b8c0-4958-11f0-a489-3bb29577c696", // UUID (36 chars)
+	}
+	for _, id := range valid {
+		t.Run("valid/"+id, func(t *testing.T) {
+			if err := ValidateID(id); err != nil {
+				t.Errorf("ValidateID(%q) = %v, want nil", id, err)
+			}
+		})
+	}
+
+	invalid := []string{
+		"",                                      // empty
+		strings.Repeat("a", 37),                 // 37 chars (one over max)
+		"UPPERCASE",                             // uppercase letters
+		"-leading-hyphen",                       // leading hyphen
+		"trailing-hyphen-",                      // trailing hyphen
+		"double--hyphen",                        // consecutive hyphens
+		"has spaces",                            // spaces
+		"has.dot",                               // dots
+		"has_underscore",                        // underscores
+	}
+	for _, id := range invalid {
+		t.Run("invalid/"+id, func(t *testing.T) {
+			if err := ValidateID(id); err == nil {
+				t.Errorf("ValidateID(%q) = nil, want error", id)
 			}
 		})
 	}

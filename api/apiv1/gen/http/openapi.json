@@ -81,7 +81,7 @@
           {
             "name": "cluster_id",
             "in": "query",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": false,
             "type": "string"
           }
@@ -402,7 +402,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -501,7 +501,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -595,7 +595,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -674,14 +674,14 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
           {
             "name": "instance_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -784,14 +784,14 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
           {
             "name": "instance_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -878,14 +878,14 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
           {
             "name": "instance_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -972,7 +972,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -1067,7 +1067,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -1162,7 +1162,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -1265,7 +1265,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -1384,7 +1384,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -1463,7 +1463,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -1555,14 +1555,14 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
           {
             "name": "task_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -1651,7 +1651,7 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -1792,7 +1792,7 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -1882,7 +1882,7 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -1992,7 +1992,7 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           }
@@ -2071,7 +2071,7 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -2178,7 +2178,7 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
           },
@@ -2280,7 +2280,7 @@
           {
             "name": "entity_id",
             "in": "query",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": false,
             "type": "string"
           },
@@ -2738,7 +2738,7 @@
           "description": "The unique identifier of this repository.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "retention_full": {
           "type": "integer",
@@ -3020,7 +3020,7 @@
           "description": "Unique identifier for the cluster.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "status": {
           "$ref": "#/definitions/ClusterStatus"
@@ -3296,7 +3296,7 @@
           "description": "Unique identifier for the database.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "spec": {
           "$ref": "#/definitions/DatabaseSpec"
@@ -3306,7 +3306,7 @@
           "description": "Unique identifier for the database's owner.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         }
       },
       "example": {
@@ -3436,7 +3436,7 @@
           "description": "Unique identifier for the database.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "instances": {
           "type": "array",
@@ -3663,7 +3663,7 @@
           "description": "Unique identifier for the database's owner.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "updated_at": {
           "type": "string",
@@ -3891,7 +3891,7 @@
             "type": "string",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
           "example": [
@@ -5652,7 +5652,7 @@
           "description": "Unique identifier for the database.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "instances": {
           "type": "array",
@@ -5819,7 +5819,7 @@
           "description": "Unique identifier for the database's owner.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "updated_at": {
           "type": "string",
@@ -6267,7 +6267,7 @@
           "description": "Unique identifier for the host.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "memory": {
           "type": "string",
@@ -8198,7 +8198,7 @@
           "description": "The ID of the database to restore this database from.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "source_database_name": {
           "type": "string",
@@ -8601,7 +8601,7 @@
           "description": "The unique identifier of this repository.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "s3_bucket": {
           "type": "string",
@@ -8688,7 +8688,7 @@
           "description": "The ID of the database this service belongs to.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "error": {
           "type": "string",
@@ -8917,7 +8917,7 @@
             "type": "string",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
           "example": [
@@ -8949,7 +8949,7 @@
           "description": "The unique identifier for this service.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         },
         "service_type": {
           "type": "string",
@@ -9559,7 +9559,7 @@
           "description": "Unique identifier for the database's owner.",
           "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
           "minLength": 1,
-          "maxLength": 63
+          "maxLength": 36
         }
       },
       "example": {

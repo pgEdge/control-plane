@@ -5848,8 +5848,8 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.PostgresVersion != nil {
@@ -5939,8 +5939,8 @@ func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBo
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
@@ -6093,8 +6093,8 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 	if utf8.RuneCountInString(body.SourceDatabaseID) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 1, true))
 	}
-	if utf8.RuneCountInString(body.SourceDatabaseID) > 63 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 63, false))
+	if utf8.RuneCountInString(body.SourceDatabaseID) > 36 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 36, false))
 	}
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
 	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
@@ -6123,8 +6123,8 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
@@ -6325,8 +6325,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if utf8.RuneCountInString(body.ServiceID) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 1, true))
 	}
-	if utf8.RuneCountInString(body.ServiceID) > 63 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
+	if utf8.RuneCountInString(body.ServiceID) > 36 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 36, false))
 	}
 	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest" || body.ServiceType == "rag") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest", "rag"}))
@@ -6339,8 +6339,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.Port != nil {
@@ -6654,8 +6654,8 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.PostgresVersion != nil {
@@ -6745,8 +6745,8 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
@@ -6899,8 +6899,8 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 	if utf8.RuneCountInString(body.SourceDatabaseID) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 1, true))
 	}
-	if utf8.RuneCountInString(body.SourceDatabaseID) > 63 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 63, false))
+	if utf8.RuneCountInString(body.SourceDatabaseID) > 36 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 36, false))
 	}
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
 	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
@@ -6929,8 +6929,8 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
@@ -7131,8 +7131,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	if utf8.RuneCountInString(body.ServiceID) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 1, true))
 	}
-	if utf8.RuneCountInString(body.ServiceID) > 63 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
+	if utf8.RuneCountInString(body.ServiceID) > 36 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 36, false))
 	}
 	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest" || body.ServiceType == "rag") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest", "rag"}))
@@ -7145,8 +7145,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.Port != nil {

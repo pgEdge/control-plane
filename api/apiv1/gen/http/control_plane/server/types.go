@@ -5039,8 +5039,8 @@ func ValidateGetJoinOptionsRequestBody(body *GetJoinOptionsRequestBody) (err err
 		}
 	}
 	if body.HostID != nil {
-		if utf8.RuneCountInString(*body.HostID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_id", *body.HostID, utf8.RuneCountInString(*body.HostID), 63, false))
+		if utf8.RuneCountInString(*body.HostID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_id", *body.HostID, utf8.RuneCountInString(*body.HostID), 36, false))
 		}
 	}
 	for _, e := range body.Addresses {
@@ -5066,8 +5066,8 @@ func ValidateCreateDatabaseRequestBody(body *CreateDatabaseRequestBody) (err err
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if body.TenantID != nil {
@@ -5076,8 +5076,8 @@ func ValidateCreateDatabaseRequestBody(body *CreateDatabaseRequestBody) (err err
 		}
 	}
 	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
+		if utf8.RuneCountInString(*body.TenantID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 36, false))
 		}
 	}
 	if body.Spec != nil {
@@ -5100,8 +5100,8 @@ func ValidateUpdateDatabaseRequestBody(body *UpdateDatabaseRequestBody) (err err
 		}
 	}
 	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
+		if utf8.RuneCountInString(*body.TenantID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 36, false))
 		}
 	}
 	if body.Spec != nil {
@@ -5280,8 +5280,8 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.PostgresVersion != nil {
@@ -5374,8 +5374,8 @@ func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBo
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if body.Type != nil {
@@ -5557,8 +5557,8 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 		}
 	}
 	if body.SourceDatabaseID != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 63, false))
+		if utf8.RuneCountInString(*body.SourceDatabaseID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 36, false))
 		}
 	}
 	if body.SourceNodeName != nil {
@@ -5597,8 +5597,8 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if body.Type != nil {
@@ -5834,8 +5834,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 		}
 	}
 	if body.ServiceID != nil {
-		if utf8.RuneCountInString(*body.ServiceID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 63, false))
+		if utf8.RuneCountInString(*body.ServiceID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 36, false))
 		}
 	}
 	if body.ServiceType != nil {
@@ -5853,8 +5853,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.Port != nil {
@@ -6061,8 +6061,8 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.PostgresVersion != nil {
@@ -6155,8 +6155,8 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if body.Type != nil {
@@ -6338,8 +6338,8 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 		}
 	}
 	if body.SourceDatabaseID != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 63, false))
+		if utf8.RuneCountInString(*body.SourceDatabaseID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 36, false))
 		}
 	}
 	if body.SourceNodeName != nil {
@@ -6378,8 +6378,8 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 		}
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		if utf8.RuneCountInString(*body.ID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 36, false))
 		}
 	}
 	if body.Type != nil {
@@ -6615,8 +6615,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 		}
 	}
 	if body.ServiceID != nil {
-		if utf8.RuneCountInString(*body.ServiceID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 63, false))
+		if utf8.RuneCountInString(*body.ServiceID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", *body.ServiceID, utf8.RuneCountInString(*body.ServiceID), 36, false))
 		}
 	}
 	if body.ServiceType != nil {
@@ -6634,8 +6634,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 		if utf8.RuneCountInString(e) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
 		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		if utf8.RuneCountInString(e) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 36, false))
 		}
 	}
 	if body.Port != nil {

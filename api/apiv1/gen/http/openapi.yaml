@@ -59,7 +59,7 @@ paths:
       parameters:
         - name: cluster_id
           in: query
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: false
           type: string
       responses:
@@ -278,7 +278,7 @@ paths:
       parameters:
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -348,7 +348,7 @@ paths:
           collectionFormat: multi
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: Update-DatabaseRequestBody
@@ -413,7 +413,7 @@ paths:
           default: false
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -467,12 +467,12 @@ paths:
       parameters:
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: instance_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: object
@@ -543,12 +543,12 @@ paths:
           default: false
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: instance_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -608,12 +608,12 @@ paths:
           default: false
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: instance_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -673,7 +673,7 @@ paths:
           default: false
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: node_name
@@ -738,7 +738,7 @@ paths:
       parameters:
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: node_name
@@ -803,7 +803,7 @@ paths:
       parameters:
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: node_name
@@ -874,7 +874,7 @@ paths:
           default: false
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: Restore-DatabaseRequestBody
@@ -958,7 +958,7 @@ paths:
             - descending
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -1012,7 +1012,7 @@ paths:
       parameters:
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: task_id
@@ -1077,12 +1077,12 @@ paths:
       parameters:
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: task_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -1145,7 +1145,7 @@ paths:
           type: integer
         - name: database_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: task_id
@@ -1243,7 +1243,7 @@ paths:
       parameters:
         - name: host_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -1307,7 +1307,7 @@ paths:
           default: false
         - name: host_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -1385,7 +1385,7 @@ paths:
             - descending
         - name: host_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
       responses:
@@ -1439,7 +1439,7 @@ paths:
       parameters:
         - name: host_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: task_id
@@ -1515,7 +1515,7 @@ paths:
           type: integer
         - name: host_id
           in: path
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: true
           type: string
         - name: task_id
@@ -1587,7 +1587,7 @@ paths:
             - host
         - name: entity_id
           in: query
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           required: false
           type: string
         - name: after_task_id
@@ -1931,7 +1931,7 @@ definitions:
         description: The unique identifier of this repository.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       retention_full:
         type: integer
         description: The count of full backups to retain or the time to retain full backups.
@@ -2144,7 +2144,7 @@ definitions:
         description: Unique identifier for the cluster.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       status:
         $ref: '#/definitions/ClusterStatus'
     example:
@@ -2339,7 +2339,7 @@ definitions:
         description: Unique identifier for the database.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       spec:
         $ref: '#/definitions/DatabaseSpec'
       tenant_id:
@@ -2347,7 +2347,7 @@ definitions:
         description: Unique identifier for the database's owner.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
     example:
       id: storefront
       spec:
@@ -2432,7 +2432,7 @@ definitions:
         description: Unique identifier for the database.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       instances:
         type: array
         items:
@@ -2595,7 +2595,7 @@ definitions:
         description: Unique identifier for the database's owner.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       updated_at:
         type: string
         description: The time that the database was last updated.
@@ -2757,7 +2757,7 @@ definitions:
           type: string
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
         example:
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -4019,7 +4019,7 @@ definitions:
         description: Unique identifier for the database.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       instances:
         type: array
         items:
@@ -4141,7 +4141,7 @@ definitions:
         description: Unique identifier for the database's owner.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       updated_at:
         type: string
         description: The time that the database was last updated.
@@ -4475,7 +4475,7 @@ definitions:
         description: Unique identifier for the host.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       memory:
         type: string
         description: The amount of memory available on this host.
@@ -5855,7 +5855,7 @@ definitions:
         description: The ID of the database to restore this database from.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       source_database_name:
         type: string
         description: The name of the database in this repository. The database will be renamed to the database_name in the DatabaseSpec after it's restored.
@@ -6155,7 +6155,7 @@ definitions:
         description: The unique identifier of this repository.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       s3_bucket:
         type: string
         description: The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -6228,7 +6228,7 @@ definitions:
         description: The ID of the database this service belongs to.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       error:
         type: string
         description: An error message if the service instance is in an error state.
@@ -6400,7 +6400,7 @@ definitions:
           type: string
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         description: The IDs of the hosts that should run this service. One service instance will be created per host.
         example:
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -6426,7 +6426,7 @@ definitions:
         description: The unique identifier for this service.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
       service_type:
         type: string
         description: The type of service to run.
@@ -6861,7 +6861,7 @@ definitions:
         description: Unique identifier for the database's owner.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
-        maxLength: 63
+        maxLength: 36
     example:
       spec:
         database_name: storefront
