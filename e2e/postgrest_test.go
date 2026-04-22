@@ -16,10 +16,14 @@ import (
 )
 
 // postgrestSpec returns a ServiceSpec for a PostgREST service on the given host.
-// PostgREST connects as the "admin" database user (connect_as).
+// PostgREST connects as the "admin" database user (connect_as) and defaults to
+// "anon" as the db_anon_role when not explicitly provided.
 func postgrestSpec(hostID string, port int, config map[string]any) *controlplane.ServiceSpec {
 	if config == nil {
 		config = map[string]any{}
+	}
+	if _, ok := config["db_anon_role"]; !ok {
+		config["db_anon_role"] = "anon"
 	}
 	return &controlplane.ServiceSpec{
 		ServiceID:   "postgrest-api",
@@ -54,6 +58,10 @@ func postgrestBaseSpec(dbName string, nodeHosts []string, services []*controlpla
 				Password:   pointerTo("testpassword"),
 				DbOwner:    pointerTo(true),
 				Attributes: []string{"LOGIN", "SUPERUSER"},
+			},
+			{
+				Username:   "anon",
+				Attributes: []string{"NOLOGIN"},
 			},
 		},
 		Port:     pointerTo(0),
@@ -307,7 +315,7 @@ func TestPostgRESTAuthenticatorRole(t *testing.T) {
 	require.NoError(t, err, "connect_as user 'admin' must exist in pg_roles")
 	assert.False(t, rolinherit, "connect_as user must have NOINHERIT (rolinherit = false)")
 
-	// The db_anon_role (pgedge_application_read_only by default) must be granted to the connect_as user.
+	// The db_anon_role ("anon") must be granted to the connect_as user.
 	var anonGranted bool
 	err = conn.QueryRow(ctx, `
 		SELECT EXISTS (
@@ -316,7 +324,7 @@ func TestPostgRESTAuthenticatorRole(t *testing.T) {
 			JOIN pg_roles r ON m.member = r.oid
 			JOIN pg_roles g ON m.roleid = g.oid
 			WHERE r.rolname = 'admin'
-			  AND g.rolname = 'pgedge_application_read_only'
+			  AND g.rolname = 'anon'
 		)
 	`).Scan(&anonGranted)
 	require.NoError(t, err)
@@ -492,6 +500,10 @@ func TestPostgRESTMultiHostDBURI(t *testing.T) {
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
+				{
+					Username:   "anon",
+					Attributes: []string{"NOLOGIN"},
+				},
 			},
 			Port: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
@@ -550,6 +562,10 @@ func TestPostgRESTFailover(t *testing.T) {
 					Password:   pointerTo("testpassword"),
 					DbOwner:    pointerTo(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+				{
+					Username:   "anon",
+					Attributes: []string{"NOLOGIN"},
 				},
 			},
 			Port: pointerTo(0),
