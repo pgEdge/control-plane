@@ -13,11 +13,11 @@ project.
 The Control Plane provisions a RAG service container on each specified
 host. The service connects to the database using an existing user
 specified in the `connect_as` field, which must be defined in
-`database_users`. The credentials are automatically embedded in the
-service configuration by the Control Plane. Client applications submit
-natural language queries to the service, which performs hybrid vector
-and keyword search against document tables and returns LLM-synthesized
-answers with source citations.
+`database_users`, and automatically embeds that user's credentials in
+the service configuration. Client applications submit natural language
+queries to the service, which performs hybrid vector and keyword search
+against document tables and returns LLM-synthesized answers with source
+citations.
 
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover RAG-specific
@@ -108,7 +108,7 @@ The following table describes the embedding configuration fields:
 | `provider` | string | Required. The embedding provider. One of: `openai`, `voyage`, `ollama`. |
 | `model` | string | Required. The embedding model name (e.g., `text-embedding-3-small`, `voyage-3`, `nomic-embed-text`). |
 | `api_key` | string | API key for the provider. Required for `openai` and `voyage`. Not used for `ollama`. |
-| `base_url` | string | Optional. Custom base URL for the provider API. Required for `ollama` — set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
+| `base_url` | string | Optional. Custom base URL for the provider API. Required for `ollama` - set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
 
 ### LLM Configuration
 
@@ -123,7 +123,7 @@ The following table describes the LLM configuration fields:
 | `provider` | string | Required. The LLM provider. One of: `anthropic`, `openai`, `ollama`. |
 | `model` | string | Required. The model name (e.g., `claude-sonnet-4-5`, `gpt-4o`, `llama3.2`). |
 | `api_key` | string | API key for the provider. Required for `anthropic` and `openai`. Not used for `ollama`. |
-| `base_url` | string | Optional. Custom base URL for API gateway routing. Required for `ollama` — set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
+| `base_url` | string | Optional. Custom base URL for API gateway routing. Required for `ollama` - set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
 
 !!! note
     If `embedding_llm` and `rag_llm` share the same provider and both
@@ -1002,13 +1002,13 @@ The `scripts.post_database_create` field executes SQL automatically
 during database creation. The following details apply:
 
 - Execution timing: scripts run once, immediately after Spock is
-  initialized.
-- Transactional: all statements execute within a single transaction.
+  initialized
+- Transactional: all statements execute within a single transaction
 - No re-execution: if you update the database spec later, scripts are
-  not re-run.
+  not re-run
 - Constraints: some SQL commands are not allowed within transactions,
   including `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`,
-  `CREATE DATABASE`, and `DROP DATABASE`.
+  `CREATE DATABASE`, and `DROP DATABASE`
 
 If a script fails during database creation, you can use
 `update-database` to retry after fixing the problematic statement.
