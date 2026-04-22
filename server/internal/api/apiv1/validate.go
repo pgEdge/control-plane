@@ -137,19 +137,28 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSp
 	portOwner := make(servicePortOwnerMap)
 	seedPostgresPorts(spec, portOwner)
 
-	seenServiceIDs := make(ds.Set[string], len(spec.Services))
-	for i, svc := range spec.Services {
-		svcPath := []string{"services", arrayIndexPath(i)}
+	servicesPath := []string{"services"}
 
-		// Check for duplicate service IDs
-		if seenServiceIDs.Has(string(svc.ServiceID)) {
-			err := errors.New("service IDs must be unique within a database")
-			errs = append(errs, newValidationError(err, svcPath))
+	switch orchestrator {
+	case config.OrchestratorSystemD:
+		if len(spec.Services) != 0 {
+			errs = append(errs, newValidationError(errors.New("services are not yet supported for systemd clusters"), servicesPath))
 		}
-		seenServiceIDs.Add(string(svc.ServiceID))
+	default:
+		seenServiceIDs := make(ds.Set[string], len(spec.Services))
+		for i, svc := range spec.Services {
+			svcPath := appendPath(servicesPath, arrayIndexPath(i))
 
-		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
-		errs = append(errs, validateServiceSpec(svc, svcPath, false, spec.DatabaseUsers, seenNodeNames)...)
+			// Check for duplicate service IDs
+			if seenServiceIDs.Has(string(svc.ServiceID)) {
+				err := errors.New("service IDs must be unique within a database")
+				errs = append(errs, newValidationError(err, svcPath))
+			}
+			seenServiceIDs.Add(string(svc.ServiceID))
+
+			errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
+			errs = append(errs, validateServiceSpec(svc, svcPath, false, spec.DatabaseUsers, seenNodeNames)...)
+		}
 	}
 
 	return errors.Join(errs...)
