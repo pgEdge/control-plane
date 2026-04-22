@@ -37,3 +37,7 @@
 - name: Reload systemd
   ansible.builtin.command: systemctl daemon-reload
   changed_when: false
+
+- name: Clear journalctl
+  ansible.builtin.command: journalctl --flush --rotate --vacuum-time=1s
+  changed_when: false

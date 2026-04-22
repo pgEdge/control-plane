@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/url"
 	"path/filepath"
+	"time"
 
 	"github.com/alessio/shellescape"
 	"github.com/samber/do"
@@ -178,7 +179,11 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 }
 
 func (c *PatroniConfig) Update(ctx context.Context, rc *resource.Context) error {
-	return c.Create(ctx, rc)
+	if err := c.Create(ctx, rc); err != nil {
+		return err
+	}
+
+	return c.signalReload(ctx, rc)
 }
 
 func (c *PatroniConfig) Delete(ctx context.Context, rc *resource.Context) error {
@@ -212,6 +217,27 @@ func (c *PatroniConfig) isNewNode(rc *resource.Context) (bool, error) {
 	default:
 		return false, nil
 	}
+}
+
+func (c *PatroniConfig) signalReload(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+	// Signal the container if it exists
+	container, err := GetPostgresContainer(ctx, client, c.Spec.InstanceID)
+	if errors.Is(err, ErrNoPostgresContainer) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to check if postgres container exists: %w", err)
+	}
+	if err := client.ContainerSignal(ctx, container.ID, "SIGHUP"); err != nil {
+		return fmt.Errorf("failed to signal patroni to reload: %w", err)
+	}
+	// It can take up to loop_wait seconds for Patroni to reload the config.
+	// We'll want to update this code to read loop_wait from c.Spec if we make
+	// loop_wait configurable.
+	return utils.SleepContext(ctx, patroni.DefaultLoopWaitSeconds*time.Second)
 }
 
 func generatePatroniConfig(
@@ -305,7 +331,7 @@ func generatePatroniConfig(
 					{Plugin: utils.PointerTo("spock_output")},
 				},
 				TTL:          utils.PointerTo(30),
-				LoopWait:     utils.PointerTo(10),
+				LoopWait:     utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
 				RetryTimeout: utils.PointerTo(10),
 			},
 			InitDB: utils.PointerTo([]string{"data-checksums"}),

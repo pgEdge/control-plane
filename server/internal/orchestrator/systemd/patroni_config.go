@@ -2,13 +2,17 @@ package systemd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/samber/do"
 )
 
@@ -79,9 +83,35 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 }
 
 func (c *PatroniConfig) Update(ctx context.Context, rc *resource.Context) error {
-	return c.Create(ctx, rc)
+	if err := c.Create(ctx, rc); err != nil {
+		return err
+	}
+
+	return c.signalReload(ctx, rc)
 }
 
 func (c *PatroniConfig) Delete(ctx context.Context, rc *resource.Context) error {
 	return c.Base.Delete(ctx, rc)
+}
+
+func (c *PatroniConfig) signalReload(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*Client](rc.Injector)
+	if err != nil {
+		return err
+	}
+	// Reload patroni unit if it exists
+	name := patroniServiceName(c.Base.InstanceID)
+	err = client.UnitExists(ctx, name)
+	if errors.Is(err, ErrUnitNotFound) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to check if patroni unit exists: %w", err)
+	}
+	if err := client.ReloadUnit(ctx, name); err != nil {
+		return fmt.Errorf("failed to reload patroni: %w", err)
+	}
+	// It can take up to loop_wait seconds for Patroni to reload the config.
+	// We'll want to update this code to read loop_wait from c.Base if we make
+	// loop_wait configurable.
+	return utils.SleepContext(ctx, patroni.DefaultLoopWaitSeconds*time.Second)
 }
