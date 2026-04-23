@@ -28,10 +28,10 @@ configuration.
 Before deploying a RAG service, your PostgreSQL database must have the
 following items configured:
 
-- pgvector extension installed and enabled.
-- document tables with text and vector columns.
-- HNSW index on vector columns for fast similarity search.
-- GIN index on text columns for keyword search (BM25).
+- The pgvector extension must be installed and enabled.
+- The database must have document tables with text and vector columns.
+- An HNSW index on vector columns enables fast similarity search.
+- A GIN index on text columns enables keyword search (BM25).
 
 The Control Plane can automatically provision all of these during
 database creation using the `scripts.post_database_create` hook. See
@@ -78,7 +78,7 @@ In this example, `app_read_only` must be defined in `database_users`:
 
 The `pipelines` array (required) defines one or more RAG workflows.
 Each pipeline specifies which tables to search, which embedding
-provider to use, and which LLM to use for answer generation.
+provider to use, and which LLM to use to generate answers.
 
 The following table describes the pipeline configuration fields:
 
@@ -233,7 +233,7 @@ in your schema to match - for example, `vector(1024)` for `voyage-3` or
 ### Minimal (OpenAI + Anthropic)
 
 In the following example, a `curl` command provisions a RAG service
-with OpenAI for embeddings and Anthropic Claude for answer generation:
+that uses OpenAI for embeddings and Anthropic Claude to generate answers:
 
 === "curl"
 
@@ -307,8 +307,8 @@ with OpenAI for embeddings and Anthropic Claude for answer generation:
 
 ### OpenAI End-to-End
 
-In the following example, OpenAI is used for both embeddings and
-answer generation:
+In the following example, OpenAI is used for both embeddings and to generate
+answers:
 
 === "curl"
 
@@ -690,10 +690,10 @@ that the database is ready and the RAG service is running:
 
 In the response, look for the following items:
 
-- `state: "available"` at the top level - the database is provisioned
-  and healthy.
-- `service_ready: true` inside `service_instances[].status` - the RAG
-  container is up and accepting requests.
+- The `state: "available"` field at the top level confirms that the
+  database is provisioned and healthy.
+- The `service_ready: true` field inside `service_instances[].status`
+  confirms that the RAG container is up and accepting requests.
 
 ```text
 {
@@ -974,10 +974,10 @@ request.
 The RAG service's hybrid search combines two complementary techniques,
 merged using Reciprocal Rank Fusion (RRF):
 
-- vector similarity search, which retrieves documents semantically
-  similar to the query using cosine distance on embeddings.
-- BM25 keyword search, which retrieves documents with exact keyword
-  matches using TF-IDF scoring.
+- Vector similarity search retrieves documents semantically similar to
+  the query using cosine distance on embeddings.
+- BM25 keyword search retrieves documents with exact keyword matches
+  using TF-IDF scoring.
 
 This combination ensures the LLM receives context that is both
 semantically relevant and keyword-relevant. Documents appearing in
@@ -1001,14 +1001,12 @@ The following sections describe common issues and how to resolve them.
 The `scripts.post_database_create` field executes SQL automatically
 during database creation. The following details apply:
 
-- Execution timing: scripts run once, immediately after Spock is
-  initialized
-- Transactional: all statements execute within a single transaction
-- No re-execution: if you update the database spec later, scripts are
-  not re-run
-- Constraints: some SQL commands are not allowed within transactions,
-  including `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`,
-  `CREATE DATABASE`, and `DROP DATABASE`
+| Property | Details |
+|---|---|
+| Execution timing | Scripts run once, immediately after Spock is initialized. |
+| Transactional | All statements execute within a single transaction. |
+| No re-execution | If you update the database spec later, scripts are not re-run. |
+| Constraints | Some SQL commands are not allowed within transactions, including `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`, `CREATE DATABASE`, and `DROP DATABASE`. |
 
 If a script fails during database creation, you can use
 `update-database` to retry after fixing the problematic statement.
