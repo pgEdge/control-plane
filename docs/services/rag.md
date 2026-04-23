@@ -501,8 +501,9 @@ required; the Ollama server URL is provided via `base_url`:
 
 ### Multiple Pipelines with Shared Defaults
 
-In the following example, two pipelines share default `token_budget`
-and `top_n` values set at the `defaults` level:
+In the following example, two pipelines share default values for
+`token_budget` and `top_n`, set with the `defaults` properties:
+
 
 === "curl"
 
