@@ -4,6 +4,8 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
+const DefaultLoopWaitSeconds = 10
+
 func Namespace() string {
 	return storage.Prefix("/", "patroni")
 }

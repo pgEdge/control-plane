@@ -57,6 +57,15 @@ func Retry(maxAttempts int, initialDelay time.Duration, f func() error) error {
 	return nil
 }
 
+func SleepContext(ctx context.Context, duration time.Duration) error {
+	select {
+	case <-time.After(duration):
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func PointerTo[T any](v T) *T {
 	return &v
 }

@@ -95,8 +95,8 @@ func (r *UnitResource) Create(ctx context.Context, rc *resource.Context) error {
 	if err := client.EnableUnit(ctx, r.Name); err != nil {
 		return fmt.Errorf("failed to enable unit '%s': %w", path, err)
 	}
-	if err := client.RestartUnit(ctx, r.Name); err != nil {
-		return fmt.Errorf("failed to restart unit '%s': %w", path, err)
+	if err := client.ReloadOrRestartUnit(ctx, r.Name); err != nil {
+		return fmt.Errorf("failed to reload or restart unit '%s': %w", path, err)
 	}
 
 	return nil

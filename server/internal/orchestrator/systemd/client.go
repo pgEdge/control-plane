@@ -114,24 +114,46 @@ func (c *Client) StopUnit(ctx context.Context, name string, wait bool) error {
 	return nil
 }
 
-func (c *Client) RestartUnit(ctx context.Context, name string) error {
+func (c *Client) ReloadUnit(ctx context.Context, name string) error {
 	logger := c.logger.With().Str("unit", name).Logger()
-	logger.Debug().Msg("restarting unit")
+	logger.Debug().Msg("reloading unit")
 
 	resCh := make(chan string, 1)
-	pid, err := c.conn.ReloadOrRestartUnitContext(ctx, name, "replace", resCh)
+	pid, err := c.conn.ReloadUnitContext(ctx, name, "replace", resCh)
 	if err != nil {
-		return fmt.Errorf("failed to restart unit '%s': %w", name, err)
+		return fmt.Errorf("failed to reload unit '%s': %w", name, err)
 	}
 	res, err := awaitJob(ctx, resCh)
 	if err != nil {
-		return fmt.Errorf("failed to restart unit '%s': %w", name, err)
+		return fmt.Errorf("failed to reload unit '%s': %w", name, err)
 	}
 
 	c.logger.Debug().
 		Str("response", res).
 		Int("pid", pid).
-		Msg("restarted unit")
+		Msg("reloaded unit")
+
+	return nil
+}
+
+func (c *Client) ReloadOrRestartUnit(ctx context.Context, name string) error {
+	logger := c.logger.With().Str("unit", name).Logger()
+	logger.Debug().Msg("reloading or restarting unit")
+
+	resCh := make(chan string, 1)
+	pid, err := c.conn.ReloadOrRestartUnitContext(ctx, name, "replace", resCh)
+	if err != nil {
+		return fmt.Errorf("failed to reload or restart unit '%s': %w", name, err)
+	}
+	res, err := awaitJob(ctx, resCh)
+	if err != nil {
+		return fmt.Errorf("failed to reload or restart unit '%s': %w", name, err)
+	}
+
+	c.logger.Debug().
+		Str("response", res).
+		Int("pid", pid).
+		Msg("reloaded or restarted unit")
 
 	return nil
 }

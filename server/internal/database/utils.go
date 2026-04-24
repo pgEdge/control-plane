@@ -9,6 +9,13 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+// WaitForPatroniRunning polls the Patroni instance status endpoint until one of
+// the following is true:
+// - Patroni reports a running state
+// - The context is canceled
+// - The timeout has elapsed
+// - We encounter more than 3 connection errors
+// Giving a timeout of 0 will disable the timeout condition.
 func WaitForPatroniRunning(ctx context.Context, patroniClient *patroni.Client, timeout time.Duration) error {
 	var cancel context.CancelFunc
 	if timeout > 0 {

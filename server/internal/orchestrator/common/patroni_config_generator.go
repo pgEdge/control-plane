@@ -215,7 +215,7 @@ func (p *PatroniConfigGenerator) bootstrap(dcsParameters map[string]any) *patron
 				{Plugin: utils.PointerTo("spock_output")},
 			},
 			TTL:          utils.PointerTo(30),
-			LoopWait:     utils.PointerTo(10),
+			LoopWait:     utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
 			RetryTimeout: utils.PointerTo(10),
 		},
 		InitDB: utils.PointerTo([]string{"data-checksums"}),

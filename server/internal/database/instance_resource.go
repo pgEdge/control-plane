@@ -94,6 +94,13 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
+	if err := r.updateConnectionInfo(ctx, rc); err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+	if err := WaitForPatroniRunning(ctx, r.patroniClient(), 0); err != nil {
+		err = fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
+		return r.recordError(ctx, rc, err)
+	}
 	if err := r.initializeInstance(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
@@ -102,25 +109,17 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
-	// Get connection info from previous instance state in case the ports have
-	// changed.
-	previous, err := resource.FromContext[*InstanceResource](rc, r.Identifier())
-	if err != nil {
-		return r.recordError(ctx, rc, fmt.Errorf("failed to get previous instance state: %w", err))
-	}
-	// We fallback to computing the connection info from the spec if the
-	// previous instance state is malformed.
-	if previous.ConnectionInfo != nil {
-		r.ConnectionInfo = previous.ConnectionInfo
-	} else if err := r.updateConnectionInfo(ctx, rc); err != nil {
+	if err := r.updateConnectionInfo(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
-
-	if err := r.patroniClient().Reload(ctx); err != nil {
-		err = fmt.Errorf("failed to reload patroni conf: %w", err)
+	patroniClient := r.patroniClient()
+	if err := WaitForPatroniRunning(ctx, patroniClient, 0); err != nil {
+		err = fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
 		return r.recordError(ctx, rc, err)
 	}
-
+	if err := r.restartIfNeeded(ctx, patroniClient); err != nil {
+		return r.recordError(ctx, rc, err)
+	}
 	if err := r.initializeInstance(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
@@ -191,20 +190,7 @@ func (r *InstanceResource) Paths(orchestrator Orchestrator) (InstancePaths, erro
 }
 
 func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.Context) error {
-	if err := r.updateConnectionInfo(ctx, rc); err != nil {
-		return err
-	}
-
-	patroniClient := r.patroniClient()
-
-	if err := WaitForPatroniRunning(ctx, patroniClient, 0); err != nil {
-		return fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
-	}
-	if err := r.restartIfNeeded(ctx, patroniClient); err != nil {
-		return err
-	}
-
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, patroniClient, time.Minute)
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, r.patroniClient(), time.Minute)
 	if err != nil {
 		return err
 	}
