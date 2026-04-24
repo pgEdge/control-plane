@@ -9,7 +9,7 @@ import (
 )
 
 var defaultSchemas = []string{"public", "spock", "pg_catalog", "information_schema"}
-var builtinRoles = []string{"pgedge_application", "pgedge_application_read_only", "pgedge_superuser"}
+var builtinRoles = []string{"pgedge_superuser"}
 
 // UserRoleNeedsCreate returns a query that evaluates to true when the named
 // role does not yet exist in pg_catalog.pg_roles.
@@ -73,43 +73,7 @@ type BuiltinRoleOptions struct {
 }
 
 func CreateBuiltInRoles(opts BuiltinRoleOptions) (Statements, error) {
-	statements, err := CreatePgEdgeSuperuserRole(opts)
-	if err != nil {
-		return nil, err
-	}
-	statements = append(statements, CreateApplicationReadOnlyRole(opts)...)
-	statements = append(statements, CreateApplicationRole(opts)...)
-	return statements, nil
-}
-
-func CreateApplicationRole(opts BuiltinRoleOptions) Statements {
-	statements := Statements{
-		ConditionalStatement{
-			If: Query[bool]{
-				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_application');",
-			},
-			Then: Statement{
-				SQL: "CREATE ROLE pgedge_application WITH NOLOGIN;",
-			},
-		},
-	}
-
-	return statements
-}
-
-func CreateApplicationReadOnlyRole(opts BuiltinRoleOptions) Statements {
-	statements := Statements{
-		ConditionalStatement{
-			If: Query[bool]{
-				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_application_read_only');",
-			},
-			Then: Statement{
-				SQL: "CREATE ROLE pgedge_application_read_only WITH NOLOGIN;",
-			},
-		},
-	}
-
-	return statements
+	return CreatePgEdgeSuperuserRole(opts)
 }
 
 func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
@@ -169,13 +133,9 @@ func GrantBuiltinRolePrivileges(opts BuiltinRolePrivilegeOptions) Statements {
 			SQL: fmt.Sprintf("GRANT ALL PRIVILEGES ON DATABASE %s TO pgedge_superuser;", QuoteIdentifier(opts.DBName)),
 		},
 		dbConnect(opts.DBName, "pgedge_superuser"),
-		dbConnect(opts.DBName, "pgedge_application"),
-		dbConnect(opts.DBName, "pgedge_application_read_only"),
 	}
 	for _, schema := range opts.Schemas() {
 		statements = append(statements, schemaAdmin(schema, "pgedge_superuser")...)
-		statements = append(statements, schemaAdmin(schema, "pgedge_application")...)
-		statements = append(statements, schemaReadOnly(schema, "pgedge_application_read_only")...)
 	}
 
 	return statements
@@ -205,22 +165,6 @@ func schemaAdmin(schema, role string) Statements {
 		},
 		Statement{
 			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT ALL PRIVILEGES ON SEQUENCES TO %s;", schema, role),
-		},
-	}
-}
-
-func schemaReadOnly(schema, role string) Statements {
-	schema = QuoteIdentifier(schema)
-	role = QuoteIdentifier(role)
-	return Statements{
-		Statement{
-			SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA %s TO %s;", schema, role),
-		},
-		Statement{
-			SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA %s TO %s;", schema, role),
-		},
-		Statement{
-			SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT SELECT ON TABLES TO %s;", schema, role),
 		},
 	}
 }

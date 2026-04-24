@@ -278,8 +278,7 @@ read-only access to the `public` schema. Credentials are persisted in the
 resource state and reused on subsequent reconciliation cycles. The role is
 created on the primary instance and Spock replicates it to all other nodes
 automatically. On `Delete`, it drops the role. Runs on
-`PrimaryExecutor(nodeName)`. See `docs/development/service-credentials.md` for
-full details on credential generation.
+`PrimaryExecutor(nodeName)`.
 
 **DirResource** (`server/internal/filesystem/dir_resource.go`): Creates and
 manages a host-side directory for the service instance's data files. The
@@ -686,8 +685,7 @@ name is `"{databaseID}-database"` (set in the `Network.Name` field in
 
 Usernames longer than 63 characters are truncated with a deterministic hash
 suffix. Because the username is now per-service (not per-instance), all
-instances of the same service share one set of credentials. See
-`docs/development/service-credentials.md` for details.
+instances of the same service share one set of credentials.
 
 ### ServiceResources
 
@@ -1109,11 +1107,7 @@ The following are service-type-agnostic and require no modification:
 
 ## Future Work
 
-- **Read/write service user accounts**: Service users are currently provisioned
-  with the `pgedge_application_read_only` role. Some service types will require
-  write access (`INSERT`, `UPDATE`, `DELETE`, DDL). This will require a
-  mechanism for the service spec to declare the required access level and for
-  `ServiceUserRole` to provision the appropriate role accordingly.
+
 - **Primary-aware database connection routing** *(in progress — PLAT-463)*:
   `BuildServiceHostList` and `resolveTargetSessionAttrs` provide multi-host
   connection topology with `target_session_attrs` support. Services receive an
