@@ -765,7 +765,7 @@ func apiToDatabaseSpec(
 		}
 		tenantID = &t
 	}
-	if err := validateDatabaseSpec(orchestrator, apiSpec); err != nil {
+	if err := validateDatabaseSpec(orchestrator, databaseID, apiSpec); err != nil {
 		return nil, err
 	}
 

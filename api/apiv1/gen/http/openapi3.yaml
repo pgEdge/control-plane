@@ -159,10 +159,10 @@ paths:
           allowEmptyValue: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           examples:
             Human-readable:
               summary: Human-readable
@@ -878,10 +878,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
       responses:
         "200":
@@ -955,10 +955,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
       responses:
         "200":
@@ -1159,10 +1159,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
       requestBody:
         required: true
@@ -1413,10 +1413,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: 68f50878-44d2-4524-a823-e31bd478706d
         - name: instance_id
           in: path
@@ -1424,10 +1424,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
       requestBody:
         required: true
@@ -1532,10 +1532,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: 68f50878-44d2-4524-a823-e31bd478706d
         - name: instance_id
           in: path
@@ -1543,10 +1543,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
       responses:
         "200":
@@ -1635,10 +1635,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: 68f50878-44d2-4524-a823-e31bd478706d
         - name: instance_id
           in: path
@@ -1646,10 +1646,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
       responses:
         "200":
@@ -1738,10 +1738,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
         - name: node_name
           in: path
@@ -1847,10 +1847,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
         - name: node_name
           in: path
@@ -1944,10 +1944,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
         - name: node_name
           in: path
@@ -2051,10 +2051,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
       requestBody:
         required: true
@@ -2323,10 +2323,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
       responses:
         "200":
@@ -2429,10 +2429,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
         - name: task_id
           in: path
@@ -2519,10 +2519,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: abc123
         - name: task_id
           in: path
@@ -2530,10 +2530,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: def456
       responses:
         "200":
@@ -2621,10 +2621,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
         - name: task_id
           in: path
@@ -2932,10 +2932,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: host-1
       responses:
         "200":
@@ -3045,10 +3045,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: host-1
       responses:
         "200":
@@ -3187,10 +3187,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: host-1
       responses:
         "200":
@@ -3268,10 +3268,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: host-1
         - name: task_id
           in: path
@@ -3378,10 +3378,10 @@ paths:
           required: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: host-1
         - name: task_id
           in: path
@@ -3552,10 +3552,10 @@ paths:
           allowEmptyValue: true
           schema:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           example: my-app
         - name: after_task_id
           in: query
@@ -3980,10 +3980,10 @@ components:
           maxLength: 1024
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         retention_full:
           type: integer
           description: The count of full backups to retain or the time to retain full backups.
@@ -4092,16 +4092,16 @@ components:
       properties:
         database_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         task_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
       example:
         database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
         task_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -4212,10 +4212,10 @@ components:
                   spock_version: "5"
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         status:
           $ref: '#/components/schemas/ClusterStatus'
       example:
@@ -4412,10 +4412,10 @@ components:
           example: true
         host_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         token:
           type: string
           description: Token to join the cluster.
@@ -4500,18 +4500,18 @@ components:
       properties:
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         spec:
           $ref: '#/components/schemas/DatabaseSpec'
         tenant_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
       example:
         id: storefront
         spec:
@@ -4546,7 +4546,7 @@ components:
           description: Unique identifier for the database.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         spec:
           $ref: '#/components/schemas/DatabaseSpec2'
         tenant_id:
@@ -4554,7 +4554,7 @@ components:
           description: Unique identifier for the database's owner.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
       example:
         id: storefront
         spec:
@@ -4677,10 +4677,10 @@ components:
           format: date-time
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         instances:
           type: array
           items:
@@ -4857,10 +4857,10 @@ components:
             - unknown
         tenant_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         updated_at:
           type: string
           description: The time that the database was last updated.
@@ -4989,7 +4989,7 @@ components:
           description: Unique identifier for the database.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         instances:
           type: array
           items:
@@ -5250,7 +5250,7 @@ components:
           description: Unique identifier for the database's owner.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         updated_at:
           type: string
           description: The time that the database was last updated.
@@ -5379,7 +5379,7 @@ components:
           description: Unique identifier for the database.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         instances:
           type: array
           items:
@@ -5574,7 +5574,7 @@ components:
           description: Unique identifier for the database's owner.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         updated_at:
           type: string
           description: The time that the database was last updated.
@@ -5703,7 +5703,7 @@ components:
           description: Unique identifier for the database.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         instances:
           type: array
           items:
@@ -5996,7 +5996,7 @@ components:
           description: Unique identifier for the database's owner.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         updated_at:
           type: string
           description: The time that the database was last updated.
@@ -6125,7 +6125,7 @@ components:
           description: Unique identifier for the database.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         instances:
           type: array
           items:
@@ -6352,7 +6352,7 @@ components:
           description: Unique identifier for the database's owner.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         updated_at:
           type: string
           description: The time that the database was last updated.
@@ -6510,10 +6510,10 @@ components:
           type: array
           items:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
@@ -6702,7 +6702,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -6913,7 +6913,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -7125,7 +7125,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -7335,7 +7335,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -7546,7 +7546,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -7756,7 +7756,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -15324,10 +15324,10 @@ components:
           format: date-time
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         instances:
           type: array
           items:
@@ -15437,10 +15437,10 @@ components:
             - unknown
         tenant_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         updated_at:
           type: string
           description: The time that the database was last updated.
@@ -15734,10 +15734,10 @@ components:
           example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
         database_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         node_name:
           type: string
           description: Name of the node to initiate the failover from.
@@ -15847,10 +15847,10 @@ components:
             - client
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         memory:
           type: string
           description: The amount of memory available on this host.
@@ -16030,10 +16030,10 @@ components:
       properties:
         cluster_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
       description: Request to initialize a cluster
       example:
         cluster_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -17310,10 +17310,10 @@ components:
             example: Dolor autem eum.
         source_database_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         source_database_name:
           type: string
           description: The name of the database in this repository. The database will be renamed to the database_name in the DatabaseSpec after it's restored.
@@ -17798,10 +17798,10 @@ components:
           maxLength: 1024
         id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         s3_bucket:
           type: string
           description: The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -17884,10 +17884,10 @@ components:
           format: date-time
         database_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         error:
           type: string
           description: An error message if the service instance is in an error state.
@@ -18058,10 +18058,10 @@ components:
           type: array
           items:
             type: string
-            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
@@ -18083,10 +18083,10 @@ components:
           maximum: 65535
         service_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -18184,7 +18184,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -18208,7 +18208,7 @@ components:
           description: The unique identifier for this service.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -18307,7 +18307,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -18331,7 +18331,7 @@ components:
           description: The unique identifier for this service.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -18431,7 +18431,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -18456,7 +18456,7 @@ components:
           description: The unique identifier for this service.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -18556,7 +18556,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -18582,7 +18582,7 @@ components:
           description: The unique identifier for this service.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -18682,7 +18682,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -18708,7 +18708,7 @@ components:
           description: The unique identifier for this service.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -18808,7 +18808,7 @@ components:
             type: string
             example: 76f9b8c0-4958-11f0-a489-3bb29577c696
             minLength: 1
-            maxLength: 63
+            maxLength: 36
           description: The IDs of the hosts that should run this service. One service instance will be created per host.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -18832,7 +18832,7 @@ components:
           description: The unique identifier for this service.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         service_type:
           type: string
           description: The type of service to run.
@@ -19028,10 +19028,10 @@ components:
           example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
         database_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
         node_name:
           type: string
           description: Name of the node to initiate the switchover from (informational).
@@ -19311,10 +19311,10 @@ components:
           $ref: '#/components/schemas/DatabaseSpec'
         tenant_id:
           type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
       example:
         spec:
           database_name: storefront
@@ -19366,7 +19366,7 @@ components:
           description: Unique identifier for the database's owner.
           example: 76f9b8c0-4958-11f0-a489-3bb29577c696
           minLength: 1
-          maxLength: 63
+          maxLength: 36
       example:
         spec:
           database_name: storefront

@@ -234,10 +234,10 @@
             "allowEmptyValue": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "examples": {
               "Human-readable": {
@@ -1359,10 +1359,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           }
@@ -1474,10 +1474,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           }
@@ -1773,10 +1773,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           }
@@ -2169,10 +2169,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "68f50878-44d2-4524-a823-e31bd478706d"
           },
@@ -2183,10 +2183,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
           }
@@ -2343,10 +2343,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "68f50878-44d2-4524-a823-e31bd478706d"
           },
@@ -2357,10 +2357,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
           }
@@ -2493,10 +2493,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "68f50878-44d2-4524-a823-e31bd478706d"
           },
@@ -2507,10 +2507,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
           }
@@ -2643,10 +2643,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           },
@@ -2805,10 +2805,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           },
@@ -2949,10 +2949,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           },
@@ -3106,10 +3106,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           }
@@ -3498,10 +3498,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           }
@@ -3651,10 +3651,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           },
@@ -3782,10 +3782,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "abc123"
           },
@@ -3796,10 +3796,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "def456"
           }
@@ -3926,10 +3926,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           },
@@ -4399,10 +4399,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "host-1"
           }
@@ -4559,10 +4559,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "host-1"
           }
@@ -4763,10 +4763,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "host-1"
           }
@@ -4885,10 +4885,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "host-1"
           },
@@ -5042,10 +5042,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "host-1"
           },
@@ -5310,10 +5310,10 @@
             "allowEmptyValue": true,
             "schema": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "example": "my-app"
           },
@@ -5883,10 +5883,10 @@
           },
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "retention_full": {
             "type": "integer",
@@ -6019,17 +6019,17 @@
         "properties": {
           "database_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "task_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           }
         },
         "example": {
@@ -6190,10 +6190,10 @@
           },
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "status": {
             "$ref": "#/components/schemas/ClusterStatus"
@@ -6465,10 +6465,10 @@
           },
           "host_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "token": {
             "type": "string",
@@ -6586,20 +6586,20 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "spec": {
             "$ref": "#/components/schemas/DatabaseSpec"
           },
           "tenant_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           }
         },
         "example": {
@@ -6655,7 +6655,7 @@
             "description": "Unique identifier for the database.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "spec": {
             "$ref": "#/components/schemas/DatabaseSpec2"
@@ -6665,7 +6665,7 @@
             "description": "Unique identifier for the database's owner.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           }
         },
         "example": {
@@ -6856,10 +6856,10 @@
           },
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "instances": {
             "type": "array",
@@ -7103,10 +7103,10 @@
           },
           "tenant_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "updated_at": {
             "type": "string",
@@ -7291,7 +7291,7 @@
             "description": "Unique identifier for the database.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "instances": {
             "type": "array",
@@ -7657,7 +7657,7 @@
             "description": "Unique identifier for the database's owner.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "updated_at": {
             "type": "string",
@@ -7842,7 +7842,7 @@
             "description": "Unique identifier for the database.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "instances": {
             "type": "array",
@@ -8114,7 +8114,7 @@
             "description": "Unique identifier for the database's owner.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "updated_at": {
             "type": "string",
@@ -8299,7 +8299,7 @@
             "description": "Unique identifier for the database.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "instances": {
             "type": "array",
@@ -8710,7 +8710,7 @@
             "description": "Unique identifier for the database's owner.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "updated_at": {
             "type": "string",
@@ -8895,7 +8895,7 @@
             "description": "Unique identifier for the database.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "instances": {
             "type": "array",
@@ -9212,7 +9212,7 @@
             "description": "Unique identifier for the database's owner.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "updated_at": {
             "type": "string",
@@ -9436,10 +9436,10 @@
             "type": "array",
             "items": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -9691,7 +9691,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -9968,7 +9968,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -10246,7 +10246,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -10522,7 +10522,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -10799,7 +10799,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -11075,7 +11075,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
@@ -21832,10 +21832,10 @@
           },
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "instances": {
             "type": "array",
@@ -21984,10 +21984,10 @@
           },
           "tenant_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "updated_at": {
             "type": "string",
@@ -22386,10 +22386,10 @@
           },
           "database_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "node_name": {
             "type": "string",
@@ -22534,10 +22534,10 @@
           },
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "memory": {
             "type": "string",
@@ -22796,10 +22796,10 @@
         "properties": {
           "cluster_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           }
         },
         "description": "Request to initialize a cluster",
@@ -24583,10 +24583,10 @@
           },
           "source_database_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "source_database_name": {
             "type": "string",
@@ -25251,10 +25251,10 @@
           },
           "id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "s3_bucket": {
             "type": "string",
@@ -25354,10 +25354,10 @@
           },
           "database_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "error": {
             "type": "string",
@@ -25587,10 +25587,10 @@
             "type": "array",
             "items": {
               "type": "string",
-              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -25618,10 +25618,10 @@
           },
           "service_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -25759,7 +25759,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -25789,7 +25789,7 @@
             "description": "The unique identifier for this service.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -25928,7 +25928,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -25958,7 +25958,7 @@
             "description": "The unique identifier for this service.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -26098,7 +26098,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -26129,7 +26129,7 @@
             "description": "The unique identifier for this service.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -26269,7 +26269,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -26301,7 +26301,7 @@
             "description": "The unique identifier for this service.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -26441,7 +26441,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -26473,7 +26473,7 @@
             "description": "The unique identifier for this service.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -26613,7 +26613,7 @@
               "type": "string",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "minLength": 1,
-              "maxLength": 63
+              "maxLength": 36
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
@@ -26643,7 +26643,7 @@
             "description": "The unique identifier for this service.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "service_type": {
             "type": "string",
@@ -26938,10 +26938,10 @@
           },
           "database_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           },
           "node_name": {
             "type": "string",
@@ -27313,10 +27313,10 @@
           },
           "tenant_id": {
             "type": "string",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           }
         },
         "example": {
@@ -27403,7 +27403,7 @@
             "description": "Unique identifier for the database's owner.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "minLength": 1,
-            "maxLength": 63
+            "maxLength": 36
           }
         },
         "example": {

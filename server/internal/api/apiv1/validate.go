@@ -64,7 +64,7 @@ func appendPath(path []string, new ...string) []string {
 	return append(slices.Clone(path), new...)
 }
 
-func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSpec) error {
+func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, spec *api.DatabaseSpec) error {
 	var errs []error
 
 	errs = append(errs, validateCPUs(spec.Cpus, []string{"cpus"})...)
@@ -157,7 +157,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, spec *api.DatabaseSp
 			seenServiceIDs.Add(string(svc.ServiceID))
 
 			errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
-			errs = append(errs, validateServiceSpec(svc, svcPath, false, spec.DatabaseUsers, seenNodeNames)...)
+			errs = append(errs, validateServiceSpec(svc, svcPath, false, databaseID, spec.DatabaseUsers, seenNodeNames)...)
 		}
 	}
 
@@ -225,7 +225,7 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
 
 		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
-		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, new.DatabaseUsers, newNodeNames)...)
+		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
 	}
 
 	return errors.Join(errs...)
@@ -312,12 +312,18 @@ func validateNode(
 	return errs
 }
 
-func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, dbUsers []*api.DatabaseUserSpec, nodeNames ...ds.Set[string]) []error {
+func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, databaseID string, dbUsers []*api.DatabaseUserSpec, nodeNames ...ds.Set[string]) []error {
 	var errs []error
 
 	// Validate service_id
 	serviceIDPath := appendPath(path, "service_id")
 	errs = append(errs, validateIdentifier(string(svc.ServiceID), serviceIDPath))
+
+	// Enforce Docker Swarm service name budget: "{databaseID}-{serviceID}-{8charHash}" must be ≤63 chars.
+	if len(databaseID)+len(string(svc.ServiceID)) > 53 {
+		err := fmt.Errorf("database ID and service ID combined must not exceed 53 characters (got %d)", len(databaseID)+len(string(svc.ServiceID)))
+		errs = append(errs, newValidationError(err, serviceIDPath))
+	}
 
 	// Validate service_type allowlist
 	supportedServiceTypes := []string{"mcp", "postgrest", "rag"}

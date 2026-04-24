@@ -1270,7 +1270,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDatabaseSpec(config.OrchestratorSwarm, tc.spec)
+			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
@@ -1867,7 +1867,7 @@ func TestValidateServiceSpec(t *testing.T) {
 			testDBUsers := []*api.DatabaseUserSpec{
 				{Username: "app", DbOwner: utils.PointerTo(true)},
 			}
-			err := errors.Join(validateServiceSpec(tc.svc, nil, false, testDBUsers)...)
+			err := errors.Join(validateServiceSpec(tc.svc, nil, false, "test-db", testDBUsers)...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
@@ -1877,6 +1877,37 @@ func TestValidateServiceSpec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateServiceSpec_NameBudget(t *testing.T) {
+	testDBUsers := []*api.DatabaseUserSpec{
+		{Username: "app", DbOwner: utils.PointerTo(true)},
+	}
+	baseSvc := func(serviceID string) *api.ServiceSpec {
+		return &api.ServiceSpec{
+			ServiceID:   api.Identifier(serviceID),
+			ServiceType: "mcp",
+			Version:     "latest",
+			HostIds:     []api.Identifier{"host-1"},
+			ConnectAs:   "app",
+			Config:      map[string]any{},
+		}
+	}
+
+	// 26-char DB ID + 27-char service ID = 53 (at the limit, valid)
+	dbID26 := "abcdefghijklmnopqrstuvwxyz"           // 26 chars
+	svcID27 := "svc-aaaaaaaaaaaaaaaaaaaaaaa"          // 27 chars
+	err := errors.Join(validateServiceSpec(baseSvc(svcID27), nil, false, dbID26, testDBUsers)...)
+	assert.NoError(t, err, "combined length of 53 should be valid")
+
+	// 27-char DB ID + 27-char service ID = 54 (one over the limit, invalid)
+	dbID27 := "abcdefghijklmnopqrstuvwxyz1"          // 27 chars
+	err = errors.Join(validateServiceSpec(baseSvc(svcID27), nil, false, dbID27, testDBUsers)...)
+	assert.ErrorContains(t, err, "database ID and service ID combined must not exceed 53 characters (got 54)")
+
+	// Short IDs well within budget
+	err = errors.Join(validateServiceSpec(baseSvc("my-svc"), nil, false, "my-db", testDBUsers)...)
+	assert.NoError(t, err, "short IDs should always be valid")
 }
 
 func TestValidateDatabaseConnection(t *testing.T) {
@@ -1984,7 +2015,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 				TargetSessionAttrs: utils.PointerTo("prefer-standby"),
 			},
 		}
-		err := errors.Join(validateServiceSpec(svc, nil, false, testDBUsers, nodeNames)...)
+		err := errors.Join(validateServiceSpec(svc, nil, false, "test-db", testDBUsers, nodeNames)...)
 		assert.ErrorContains(t, err, "allow_writes requires target_session_attrs 'primary' or 'read-write'")
 	})
 
@@ -2006,7 +2037,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 				TargetSessionAttrs: utils.PointerTo("primary"),
 			},
 		}
-		err := errors.Join(validateServiceSpec(svc, nil, false, testDBUsers, nodeNames)...)
+		err := errors.Join(validateServiceSpec(svc, nil, false, "test-db", testDBUsers, nodeNames)...)
 		assert.NoError(t, err)
 	})
 
@@ -2027,7 +2058,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 				TargetNodes: []string{"n1", "nonexistent"},
 			},
 		}
-		err := errors.Join(validateServiceSpec(svc, nil, false, testDBUsers, nodeNames)...)
+		err := errors.Join(validateServiceSpec(svc, nil, false, "test-db", testDBUsers, nodeNames)...)
 		assert.ErrorContains(t, err, `node "nonexistent" does not exist in the database spec`)
 	})
 }
