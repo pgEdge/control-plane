@@ -409,7 +409,8 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 	}
 
 	cfg := e.cfg.Config()
-	clientCfg, err := clientConfig(cfg, e.logger, e.etcd.Server.Cluster().ClientURLs()...)
+	// We only want to connect to our own Etcd endpoint.
+	clientCfg, err := clientConfig(cfg, e.logger, e.ClientEndpoints()...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client config: %w", err)
 	}

@@ -3,6 +3,7 @@
 package clustertest
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -197,4 +198,26 @@ func TestForcedHostRemovalWithDatabase(t *testing.T) {
 	require.NoError(t, err, "database deletion task failed")
 
 	tLog(t, "test completed successfully")
+}
+
+func TestRollingAddRemove(t *testing.T) {
+	// Regression test for PLAT-581
+	t.Parallel()
+
+	// Initialize a four-host cluster, then remove host-1, and add another host.
+	// The order of adds is important because this bug originates in the
+	// endpoint list for host-2+, so we add each host individually.
+	cluster := NewCluster(t, ClusterConfig{
+		Hosts: []HostConfig{
+			{ID: "host-1"},
+		},
+	})
+	cluster.Init(t)
+	for i := 2; i <= 4; i++ {
+		cluster.Add(t, HostConfig{ID: fmt.Sprintf("host-%d", i)})
+		cluster.Init(t)
+	}
+	cluster.Remove(t, "host-1")
+	cluster.Add(t, HostConfig{ID: "host-5"})
+	cluster.Init(t)
 }
