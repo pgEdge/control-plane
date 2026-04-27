@@ -101,6 +101,9 @@ func (c *Cluster) Add(t testing.TB, hostCfg HostConfig) {
 func (c *Cluster) Remove(t testing.TB, hostID string) {
 	t.Helper()
 
+	delete(c.hosts, hostID)
+	c.client = hostsClient(t, c.hosts)
+
 	resp, err := c.client.RemoveHost(t.Context(), &controlplane.RemoveHostPayload{
 		HostID: controlplane.Identifier(hostID),
 	})
@@ -114,9 +117,6 @@ func (c *Cluster) Remove(t testing.TB, hostID string) {
 		TaskID: resp.Task.TaskID,
 	})
 	require.NoError(t, err)
-
-	delete(c.hosts, hostID)
-	c.client = hostsClient(t, c.hosts)
 }
 
 // RefreshClient recreates the client with updated host configurations.
