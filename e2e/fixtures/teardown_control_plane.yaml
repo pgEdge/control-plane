@@ -27,7 +27,7 @@
       file:
         path: /data/control-plane
         state: absent
-        owner: '{{ ansible_env.SUDO_USER }}'
+        owner: '{{ ansible_facts.env.SUDO_USER }}'
 
 - name: Remove S3 repository data
   hosts: "{{ hostvars['localhost'].first_manager_host }}"

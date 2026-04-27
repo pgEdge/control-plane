@@ -25,12 +25,12 @@
       add_host:
         name: "{{ target_host }}"
         groups: new_host
-        ansible_ssh_common_args: "-F {{ ansible_env.HOME }}/.lima/{{ target_host }}/ssh.config"
+        ansible_ssh_common_args: "-F {{ ansible_facts.env.HOME }}/.lima/{{ target_host }}/ssh.config"
         ansible_host: "lima-{{ target_host }}"
       when: provider == 'lima'
 
     - name: Wait for SSH to be available
-      command: ssh -F {{ ansible_env.HOME }}/.lima/{{ target_host }}/ssh.config lima-{{ target_host }} echo ok
+      command: ssh -F {{ ansible_facts.env.HOME }}/.lima/{{ target_host }}/ssh.config lima-{{ target_host }} echo ok
       register: ssh_result
       until: ssh_result.rc == 0
       retries: 24

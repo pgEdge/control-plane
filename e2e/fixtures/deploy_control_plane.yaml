@@ -22,7 +22,7 @@
       file:
         path: /data/control-plane
         state: directory
-        owner: '{{ ansible_env.SUDO_USER }}'
+        owner: '{{ ansible_facts.env.SUDO_USER }}'
 
 - name: Build and deploy control-plane
   hosts: "{{ hostvars['localhost'].first_manager_host }}"

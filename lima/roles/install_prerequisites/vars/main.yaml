@@ -5,8 +5,8 @@ _arch_transform:
   aarch64: arm64
   arm64: arm64
 etcd_version: v3.6.5
-etcd_archive_name: etcd-{{ etcd_version }}-linux-{{ _arch_transform[ansible_architecture] }}
+etcd_archive_name: etcd-{{ etcd_version }}-linux-{{ _arch_transform[ansible_facts.architecture] }}
 etcd_download_url: https://github.com/etcd-io/etcd/releases/download/{{ etcd_version }}/{{ etcd_archive_name }}.tar.gz
 go_version: 1.25.5
-go_archive_name: go{{ go_version }}.linux-{{ _arch_transform[ansible_architecture] }}.tar.gz
+go_archive_name: go{{ go_version }}.linux-{{ _arch_transform[ansible_facts.architecture] }}.tar.gz
 go_download_url: https://dl.google.com/go/{{ go_archive_name }}
