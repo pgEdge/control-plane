@@ -27,33 +27,19 @@
         "reason": "does_not_exist",
         "diff": null
       }
-    ]
-  ],
-  [
+    ],
     [
       {
         "type": "update",
         "resource_id": "database.node::n1",
-        "reason": "has_diff",
-        "diff": [
-          {
-            "value": "n1-instance-2-id",
-            "op": "add",
-            "path": "/instance_ids/-"
-          }
-        ]
+        "reason": "dependency_updated",
+        "diff": null
       },
       {
         "type": "update",
         "resource_id": "database.node::n2",
-        "reason": "has_diff",
-        "diff": [
-          {
-            "value": "n2-instance-2-id",
-            "op": "add",
-            "path": "/instance_ids/-"
-          }
-        ]
+        "reason": "dependency_updated",
+        "diff": null
       }
     ],
     [
@@ -97,20 +83,6 @@
         "reason": "dependency_updated",
         "diff": null
       }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.switchover::n1-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
-      },
-      {
-        "type": "create",
-        "resource_id": "database.switchover::n2-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
-      }
     ]
   ],
   [
@@ -124,6 +96,20 @@
       {
         "type": "create",
         "resource_id": "monitor.instance::n2-instance-2-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.switchover::n1-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.switchover::n2-instance-1-id",
         "reason": "does_not_exist",
         "diff": null
       }
