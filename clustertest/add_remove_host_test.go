@@ -68,12 +68,10 @@ func TestJoin(t *testing.T) {
 	tLog(t, "adding an etcd server host")
 
 	cluster.Add(t, HostConfig{ID: "host-2"})
-	cluster.Init(t)
 
 	tLog(t, "adding an etcd client host")
 
 	cluster.Add(t, HostConfig{ID: "host-3", EtcdMode: EtcdModeClient})
-	cluster.Init(t)
 }
 
 func TestRemove(t *testing.T) {
@@ -215,9 +213,7 @@ func TestRollingAddRemove(t *testing.T) {
 	cluster.Init(t)
 	for i := 2; i <= 4; i++ {
 		cluster.Add(t, HostConfig{ID: fmt.Sprintf("host-%d", i)})
-		cluster.Init(t)
 	}
 	cluster.Remove(t, "host-1")
 	cluster.Add(t, HostConfig{ID: "host-5"})
-	cluster.Init(t)
 }

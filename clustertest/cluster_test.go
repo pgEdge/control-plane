@@ -96,6 +96,7 @@ func (c *Cluster) Add(t testing.TB, hostCfg HostConfig) {
 	host := NewHost(t, hostCfg)
 	c.hosts[host.id] = host
 	c.client = hostsClient(t, c.hosts)
+	c.Init(t)
 }
 
 func (c *Cluster) Remove(t testing.TB, hostID string) {
