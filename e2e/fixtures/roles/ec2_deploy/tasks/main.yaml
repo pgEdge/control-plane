@@ -8,7 +8,7 @@
 # Get the current region using the default credential chain
 - name: Get current region
   ansible.builtin.command: |
-    {{ ansible_playbook_python | default(ansible_python.executable) }}
+    {{ ansible_playbook_python | default(ansible_facts.python.executable) }}
     -c "import boto3; print(boto3.session.Session().region_name or '')"
   register: boto3_region
   changed_when: false
