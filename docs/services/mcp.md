@@ -90,15 +90,15 @@ the LLM tuning fields:
 | `llm_temperature`  | number  | `0.0`–`2.0`     | Controls randomness in LLM responses. Lower values produce more deterministic output. |
 | `llm_max_tokens`   | integer | Positive integer | Maximum number of tokens in the LLM response. |
 
-### Connection Pool
+### Connection Pool and Caching
 
-The connection pool fields control how many database connections the
-MCP server maintains. The following table describes the connection pool
-configuration fields:
+The following fields control the database connection pool and metadata
+caching behavior:
 
-| Field              | Type    | Description |
-|--------------------|---------|-------------|
-| `pool_max_conns`   | integer | Maximum number of database connections the service maintains in its pool. Must be a positive integer. |
+| Field              | Type    | Default | Description |
+|--------------------|---------|---------|-------------|
+| `pool_max_conns`   | integer | `4`     | Maximum number of database connections the service maintains in its pool. Must be a positive integer. |
+| `metadata_ttl`     | string  | `"5m"`  | How long the MCP server caches database metadata (e.g., `"5m"`, `"1h"`). Shorter values surface schema changes faster; longer values reduce load on the database. |
 
 ## Bootstrapping
 
