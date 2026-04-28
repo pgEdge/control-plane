@@ -60,7 +60,7 @@ func UpdateDatabase(
 	// is available to be a source node.
 	var states []*resource.State
 	if len(updates) > 0 {
-		u, err := update(updates)
+		u, err := update(start, updates)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func partitionNodes(start *resource.State, nodes []*NodeResources) ([]*NodeResou
 	return updates, adds, nil
 }
 
-func updateFunc(options UpdateDatabaseOptions) (func([]*NodeResources) ([]*resource.State, error), error) {
+func updateFunc(options UpdateDatabaseOptions) (func(*resource.State, []*NodeResources) ([]*resource.State, error), error) {
 	switch options.NodeUpdateStrategy {
 	case "", NodeUpdateStrategyRolling:
 		return RollingUpdateNodes, nil

@@ -342,6 +342,28 @@ func TestUpdateDatabase(t *testing.T) {
 			},
 		},
 		{
+			name:    "adding a replica with primary update",
+			options: operations.UpdateDatabaseOptions{},
+			start:   twoNodeState,
+			// The primary instance should get updated before the replica is
+			// added.
+			nodes: []*operations.NodeResources{
+				{
+					NodeName: "n1",
+					InstanceResources: []*database.InstanceResources{
+						n1Instance1WithNewDependency,
+						n1Instance2,
+					},
+					DatabaseName: "test",
+				},
+				{
+					NodeName:          "n2",
+					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
+				},
+			},
+		},
+		{
 			name: "add an instance dependency with forced update",
 			options: operations.UpdateDatabaseOptions{
 				PlanOptions: resource.PlanOptions{
