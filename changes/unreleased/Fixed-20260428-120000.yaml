@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed new replicas failing to bootstrap when added to a node — Configuration updates are now applied to existing instances before new replicas start, ensuring `pg_hba.conf` is correct when replicas begin syncing.
+time: 2026-04-28T12:00:00.000000-04:00

@@ -1,0 +1,3 @@
+kind: Added
+body: Released RPM packages for Red Hat-based Linux systems — The Control Plane is now available as native RPM packages for amd64 and arm64, with a bundled systemd service file and SELinux compatibility.
+time: 2026-04-03T13:00:00.000000-04:00

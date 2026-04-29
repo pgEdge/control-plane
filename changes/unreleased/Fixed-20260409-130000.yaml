@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed `extra_networks` specified in `orchestrator_opts` not being attached to service containers (MCP, PostgREST, RAG).
+time: 2026-04-09T13:00:00.000000-04:00

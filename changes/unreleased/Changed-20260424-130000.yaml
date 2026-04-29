@@ -1,0 +1,3 @@
+kind: Changed
+body: Removed the `pgedge_application` and `pgedge_application_read_only` built-in database roles — These roles are no longer created for new databases. The names are no longer reserved and may be used freely for custom database users.
+time: 2026-04-24T13:00:00.000000-04:00
