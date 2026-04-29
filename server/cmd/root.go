@@ -41,7 +41,7 @@ var (
 
 func newRootCmd(i *do.Injector) *cobra.Command {
 	return &cobra.Command{
-		Use:   "control-plane",
+		Use:   "pgedge-control-plane",
 		Short: "pgEdge control plane server",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
