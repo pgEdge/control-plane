@@ -49,7 +49,7 @@ func TestUnitOptions(t *testing.T) {
 			Instance:       database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 			Host:           database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 			PgBackRestPath: "/usr/bin/pgbackrest",
-			PatroniPath:    "/usr/local/bin/patroni",
+			PatroniPath:    "/usr/bin/patroni",
 		}
 		pgBinPath := "/usr/pgsql-18/bin"
 

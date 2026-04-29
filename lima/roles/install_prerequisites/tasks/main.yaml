@@ -20,7 +20,6 @@
     name: '{{ item }}'
     state: present
   with_items:
-    - python3-pip
     - pgedge-postgresql18
     - pgedge-postgresql17
     - pgedge-postgresql16
@@ -36,16 +35,11 @@
     - pgedge-postgresql18-contrib
     - pgedge-postgresql17-contrib
     - pgedge-postgresql16-contrib
+    - pgedge-patroni
     - pgedge-pgbackrest
-    - pgedge-python3-psycopg2
     - which
     - wget
     - git
-- name: Install python modules
-  pip:
-    state: present
-    name:
-      - "patroni[etcd,jsonlogger]==4.1.0"
 - name: Install etcdctl and etcdutl
   ansible.builtin.unarchive:
     src: "{{ etcd_download_url }}"

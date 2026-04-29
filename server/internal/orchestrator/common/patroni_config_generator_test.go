@@ -58,6 +58,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				HostCPUs:        4,
 				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
 				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				LogType:         patroni.LogTypeJson,
 				OrchestratorParameters: map[string]any{
 					"shared_preload_libraries": "pg_stat_statements,snowflake,spock,postgis-3",
 				},
@@ -115,6 +116,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				HostCPUs:        4,
 				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
 				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				LogType:         patroni.LogTypeJson,
 				OrchestratorParameters: map[string]any{
 					"shared_preload_libraries": "pg_stat_statements,snowflake,spock,postgis-3",
 				},
@@ -172,6 +174,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				HostCPUs:        4,
 				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
 				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				LogType:         patroni.LogTypeJson,
 				OrchestratorParameters: map[string]any{
 					"shared_preload_libraries": "pg_stat_statements,snowflake,spock,postgis-3",
 				},
@@ -230,6 +233,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				HostCPUs:        4,
 				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
 				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				LogType:         patroni.LogTypeJson,
 				OrchestratorParameters: map[string]any{
 					"shared_preload_libraries": "pg_stat_statements,snowflake,spock,postgis-3",
 				},
@@ -295,7 +299,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 					Instance:       database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 					Host:           database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
-					PatroniPath:    "/usr/local/bin/patroni",
+					PatroniPath:    "/usr/bin/patroni",
 				},
 			},
 			etcdHosts: []string{"i-0123456789abcdef.ec2.internal:2379"},
@@ -333,10 +337,10 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				PatroniPort:  8888,
 				PostgresPort: 5432,
 				Paths: database.InstancePaths{
-					Instance:       database.Paths{BaseDir: "/var/lib/pgsql/storefront-n1-689qacsi"},
-					Host:           database.Paths{BaseDir: "/var/lib/pgsql/storefront-n1-689qacsi"},
+					Instance:       database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
+					Host:           database.Paths{BaseDir: "/var/lib/pgsql/18/storefront-n1-689qacsi"},
 					PgBackRestPath: "/usr/bin/pgbackrest",
-					PatroniPath:    "/usr/local/bin/patroni",
+					PatroniPath:    "/usr/bin/patroni",
 				},
 			},
 			etcdHosts: []string{

@@ -2,7 +2,7 @@ name: storefront-n1-689qacsi
 namespace: /patroni/
 scope: storefront:n1
 log:
-  type: json
+  type: plain
   level: INFO
   static_fields:
     database_id: storefront
