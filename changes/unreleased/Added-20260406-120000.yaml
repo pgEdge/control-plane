@@ -1,3 +1,0 @@
-kind: Added
-body: Added CPU and memory resource limits for systemd-managed database instances — Operators can cap resource consumption per instance using `cpu_quota` and `memory_max` in the instance specification, enforced through systemd cgroup integration.
-time: 2026-04-06T12:00:00.000000-04:00

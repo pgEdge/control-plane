@@ -1,3 +1,3 @@
-kind: Fixed
-body: Fixed cryptic Docker errors when database or service identifiers exceeded Swarm name length limits — Identifiers are now validated at the API layer with clear error messages. Database and service IDs are each limited to 36 characters, and their combined length may not exceed 53 characters.
+kind: Changed
+body: "**Breaking:** Database, host, cluster, and service identifiers are now validated to comply with RFC 1035 name requirements — IDs must be 1–36 characters, contain only lowercase letters, digits, and hyphens, and start and end with a letter or digit. The combined length of a database ID and service ID may not exceed 53 characters."
 time: 2026-04-24T12:00:00.000000-04:00
