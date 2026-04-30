@@ -28,10 +28,10 @@ configuration.
 Before deploying a RAG service, your PostgreSQL database must have the
 following items configured:
 
-- The pgvector extension must be installed and enabled.
-- The database must have document tables with text and vector columns.
-- An HNSW index on vector columns enables fast similarity search.
-- A GIN index on text columns enables keyword search (BM25).
+- The pgvector extension must be installed and enabled
+- The database must have document tables with text and vector columns
+- An HNSW index on vector columns enables fast similarity search
+- A GIN index on text columns enables keyword search (BM25)
 
 The Control Plane can automatically provision all of these during
 database creation using the `scripts.post_database_create` hook. See
@@ -73,6 +73,17 @@ In this example, `app_read_only` must be defined in `database_users`:
   "attributes": ["LOGIN"]
 }
 ```
+
+If the `connect_as` user is not a database owner or superuser, it must
+have `SELECT` privilege on each document table. Grant this privilege in
+the `scripts.post_database_create` array:
+
+```sql
+GRANT SELECT ON documents_content_chunks TO app_read_only;
+```
+
+Without this grant, the RAG service will silently return
+`"No relevant information found"` for all queries.
 
 ### Pipeline Configuration
 
@@ -187,7 +198,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS documents_content_chunks (
     id BIGSERIAL PRIMARY KEY,
     content TEXT NOT NULL,
-    embedding vector(1536),
+    embedding vector(1536) NOT NULL,
     title TEXT,
     source TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -259,7 +270,7 @@ that uses OpenAI for embeddings and Anthropic Claude to generate answers:
                 "scripts": {
                     "post_database_create": [
                         "CREATE EXTENSION IF NOT EXISTS vector",
-                        "CREATE TABLE IF NOT EXISTS documents_content_chunks (id BIGSERIAL PRIMARY KEY, content TEXT NOT NULL, embedding vector(1536), title TEXT, source TEXT)",
+                        "CREATE TABLE IF NOT EXISTS documents_content_chunks (id BIGSERIAL PRIMARY KEY, content TEXT NOT NULL, embedding vector(1536) NOT NULL, title TEXT, source TEXT)",
                         "CREATE INDEX ON documents_content_chunks USING hnsw (embedding vector_cosine_ops)",
                         "CREATE INDEX ON documents_content_chunks USING gin (to_tsvector('\''english'\'', content))"
                     ]
@@ -307,8 +318,7 @@ that uses OpenAI for embeddings and Anthropic Claude to generate answers:
 
 ### OpenAI End-to-End
 
-In the following example, OpenAI is used for both embeddings and to generate
-answers:
+In the following example, OpenAI handles both embeddings and answer generation:
 
 === "curl"
 
@@ -504,7 +514,6 @@ required; the Ollama server URL is provided via `base_url`:
 In the following example, two pipelines share default values for
 `token_budget` and `top_n`, set with the `defaults` properties:
 
-
 === "curl"
 
     ```sh
@@ -631,7 +640,7 @@ URL stays stable across container restarts.
                 "scripts": {
                     "post_database_create": [
                         "CREATE EXTENSION IF NOT EXISTS vector",
-                        "CREATE TABLE IF NOT EXISTS documents_content_chunks (id BIGSERIAL PRIMARY KEY, content TEXT NOT NULL, embedding vector(1536), title TEXT, source TEXT)",
+                        "CREATE TABLE IF NOT EXISTS documents_content_chunks (id BIGSERIAL PRIMARY KEY, content TEXT NOT NULL, embedding vector(1536) NOT NULL, title TEXT, source TEXT)",
                         "CREATE INDEX ON documents_content_chunks USING hnsw (embedding vector_cosine_ops)",
                         "CREATE INDEX ON documents_content_chunks USING gin (to_tsvector('\''english'\'', content))",
                         "GRANT SELECT ON documents_content_chunks TO app_read_only"
@@ -692,9 +701,9 @@ that the database is ready and the RAG service is running:
 In the response, look for the following items:
 
 - The `state: "available"` field at the top level confirms that the
-  database is provisioned and healthy.
+  database is provisioned and healthy
 - The `service_ready: true` field inside `service_instances[].status`
-  confirms that the RAG container is up and accepting requests.
+  confirms that the RAG container is up and accepting requests
 
 ```text
 {
@@ -976,9 +985,9 @@ The RAG service's hybrid search combines two complementary techniques,
 merged using Reciprocal Rank Fusion (RRF):
 
 - Vector similarity search retrieves documents semantically similar to
-  the query using cosine distance on embeddings.
+  the query using cosine distance on embeddings
 - BM25 keyword search retrieves documents with exact keyword matches
-  using TF-IDF scoring.
+  using TF-IDF scoring
 
 This combination ensures the LLM receives context that is both
 semantically relevant and keyword-relevant. Documents appearing in
@@ -1000,7 +1009,8 @@ The following sections describe common issues and how to resolve them.
 ### About Automated Scripts
 
 The `scripts.post_database_create` field executes SQL automatically
-during database creation. The following details apply:
+during database creation. The following table describes the execution
+properties:
 
 | Property | Details |
 |---|---|
@@ -1023,12 +1033,18 @@ To verify that the database is accessible, run the following command:
 psql -h host-1 -U admin -d knowledge_base -c "SELECT 1"
 ```
 
-To verify that the service user (`app_read_only`) exists and has table
-access, run the following query:
+To verify that the service user (`app_read_only`) exists and has SELECT
+privilege on the document table, run the following queries:
 
 ```sql
 \du+ app_read_only
-\dt documents_content_chunks
+SELECT has_table_privilege('app_read_only', 'documents_content_chunks', 'SELECT');
+```
+
+If `has_table_privilege` returns `false`, grant the privilege:
+
+```sql
+GRANT SELECT ON documents_content_chunks TO app_read_only;
 ```
 
 ### Poor Query Results
@@ -1036,13 +1052,24 @@ access, run the following query:
 To diagnose poor query results, verify that documents are loaded and
 embeddings are present.
 
-To check document counts and embedding coverage, run the following
-queries:
+To check document counts, run the following query:
 
 ```sql
 SELECT COUNT(*) FROM documents_content_chunks;
+```
 
-SELECT COUNT(*) FROM documents_content_chunks WHERE embedding IS NOT NULL;
+The recommended schema sets `embedding NOT NULL`, so all rows should
+have embeddings. If you are using an existing table without that
+constraint, rows with `NULL` embeddings will cause the vector search to
+fail and the service will return `"No relevant information found"` even
+when documents exist. Check for and remove any such rows:
+
+```sql
+-- Check for rows missing embeddings
+SELECT COUNT(*) FROM documents_content_chunks WHERE embedding IS NULL;
+
+-- Remove rows missing embeddings
+DELETE FROM documents_content_chunks WHERE embedding IS NULL;
 ```
 
 To find documents similar to a test query embedding, run the following
