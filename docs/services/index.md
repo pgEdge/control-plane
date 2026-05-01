@@ -1,10 +1,11 @@
-# Supporting Services (Beta)
+# Supporting Services
 
 The pgEdge Control Plane lets you run services alongside your databases.
 A supporting service is an application that attaches to a database,
 runs on any host in the cluster, and connects using a database user you
-specify with the `connect_as` field. The Control Plane supports the
-following service types:
+specify with the `connect_as` field.
+
+The Control Plane supports the following service types:
 
 - The [pgEdge Postgres MCP Server](mcp.md) connects AI agents and
   LLM-powered applications to your database.
@@ -14,6 +15,10 @@ following service types:
 - [PostgREST](postgrest.md) automatically generates a REST API from
   your PostgreSQL schema, making your data accessible over HTTP without
   writing backend code.
+
+> [!NOTE]
+> Supporting Services are not yet supported on systemd clusters; support is
+> coming in a subsequent release.
 
 ## Service Instances
 

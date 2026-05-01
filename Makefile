@@ -386,7 +386,7 @@ dev-down:
 
 .PHONY: dev-reset
 dev-reset: dev-down
-	# remove postgres and supported services
+	# remove postgres and supporting services
 	ids=$$(docker service ls -q); \
 	if [ -n "$$ids" ]; then \
 		echo "$$ids" \
