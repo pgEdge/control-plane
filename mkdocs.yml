@@ -79,10 +79,12 @@ nav:
       - Managing Database Instances: using/database-instances.md
       - Deleting a Database: using/delete-db.md
       - Migrating a Database: using/migrate-db.md
-  - Supporting Services (Beta):
+  - Supporting Services:
       - Overview: services/index.md
       - Managing Services: services/managing.md
       - pgEdge Postgres MCP Server: services/mcp.md
+      - pgEdge RAG Server: services/rag.md
+      - PostgREST: services/postgrest.md
   - Troubleshooting:
       - Recovering a Control Plane Cluster: disaster-recovery/disaster-recovery.md
   - API:
@@ -91,5 +93,7 @@ nav:
   - Development:
       - Development Process: development/development.md
       - Automated End-to-End tests: development/e2e-tests.md
+      - Cluster Integration Tests: development/cluster-tests.md
+      - Adding a Supporting Service: development/supported-services.md
       - Running Locally: development/running-locally.md
   - Control Plane Release Notes: changelog.md

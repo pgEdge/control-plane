@@ -1,32 +1,5 @@
 # Running the Control Plane locally
 
-- [Running the Control Plane locally](#running-the-control-plane-locally)
-  - [Common prerequisites](#common-prerequisites)
-  - [Developing the Swarm orchestrator](#developing-the-swarm-orchestrator)
-    - [Prerequisites](#prerequisites)
-      - [Configuration](#configuration)
-    - [Running the Control Plane](#running-the-control-plane)
-    - [Interact with the Control Plane API](#interact-with-the-control-plane-api)
-    - [Resetting your Development Environment](#resetting-your-development-environment)
-    - [Development Workflow](#development-workflow)
-      - [Rebuilding the `pgedge-control-plane` binary](#rebuilding-the-pgedge-control-plane-binary)
-      - [Debugging](#debugging)
-    - [API Documentation](#api-documentation)
-  - [Optional Development Tools](#optional-development-tools)
-    - [Restish](#restish)
-    - [`dev-env.zsh` Script](#dev-envzsh-script)
-    - [Bruno](#bruno)
-      - [Bruno's `wait_for_task` Helper](#brunos-wait_for_task-helper)
-      - [When Should I Add to the Test Scenarios?](#when-should-i-add-to-the-test-scenarios)
-  - [Developing the SystemD orchestrator](#developing-the-systemd-orchestrator)
-    - [Prerequisites](#prerequisites-1)
-      - [`pipx`](#pipx)
-      - [Circus](#circus)
-      - [Ansible](#ansible)
-      - [Lima](#lima)
-    - [Running the Control Plane](#running-the-control-plane-1)
-    - [Resetting your Development Environment](#resetting-your-development-environment-1)
-
 ## Common prerequisites
 
 - Go >= 1.25

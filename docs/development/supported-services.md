@@ -1,6 +1,6 @@
-# Adding a Supported Service
+# Adding a Supporting Service
 
-This guide explains how to add a new supported service type to the control plane.
+This guide explains how to add a new supporting service type to the control plane.
 MCP is the reference implementation throughout. All touch points are summarized in
 the [checklist](#checklist-adding-a-new-service-type) at the end.
 
@@ -15,7 +15,7 @@ the [checklist](#checklist-adding-a-new-service-type) at the end.
 
 ## Overview
 
-A supported service is a containerized application deployed alongside a pgEdge
+A supporting service is a containerized application deployed alongside a pgEdge
 database. Services are declared in `DatabaseSpec.Services`, provisioned after
 the database is available, and deleted when the database is deleted.
 
