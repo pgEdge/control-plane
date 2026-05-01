@@ -132,7 +132,7 @@ func (s SystemD) validate() []error {
 
 var defaultSystemD = SystemD{
 	PgBackRestPath: "/usr/bin/pgbackrest",
-	PatroniPath:    "/usr/local/bin/patroni",
+	PatroniPath:    "/usr/bin/patroni",
 }
 
 type HTTP struct {

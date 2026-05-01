@@ -2,7 +2,7 @@ name: storefront-n1-689qacsi
 namespace: /patroni/
 scope: storefront:n1
 log:
-  type: json
+  type: plain
   level: INFO
   static_fields:
     database_id: storefront
@@ -31,25 +31,25 @@ etcd3:
   protocol: https
   username: instance.storefront-n1-689qacsi
   password: password
-  cacert: /var/lib/pgsql/storefront-n1-689qacsi/certificates/etcd/ca.crt
-  cert: /var/lib/pgsql/storefront-n1-689qacsi/certificates/etcd/client.crt
-  key: /var/lib/pgsql/storefront-n1-689qacsi/certificates/etcd/client.key
+  cacert: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/etcd/ca.crt
+  cert: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/etcd/client.crt
+  key: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/etcd/client.key
 postgresql:
   authentication:
     superuser:
       username: pgedge
       sslmode: verify-full
-      sslkey: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/superuser.key
-      sslcert: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/superuser.crt
-      sslrootcert: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/ca.crt
+      sslkey: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/superuser.key
+      sslcert: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/superuser.crt
+      sslrootcert: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/ca.crt
     replication:
       username: patroni_replicator
       sslmode: verify-full
-      sslkey: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/replication.key
-      sslcert: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/replication.crt
-      sslrootcert: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/ca.crt
+      sslkey: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/replication.key
+      sslcert: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/replication.crt
+      sslrootcert: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/ca.crt
   connect_address: storefront-n1-689qacsi.storefront-database:5432
-  data_dir: /var/lib/pgsql/storefront-n1-689qacsi/data/pgdata
+  data_dir: /var/lib/pgsql/18/storefront-n1-689qacsi/data/pgdata
   listen: "*:5432"
   parameters:
     archive_command: /bin/true
@@ -76,9 +76,9 @@ postgresql:
     spock.include_ddl_repset: "on"
     spock.save_resolutions: "on"
     ssl: "on"
-    ssl_ca_file: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/ca.crt
-    ssl_cert_file: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/server.crt
-    ssl_key_file: /var/lib/pgsql/storefront-n1-689qacsi/certificates/postgres/server.key
+    ssl_ca_file: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/ca.crt
+    ssl_cert_file: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/server.crt
+    ssl_key_file: /var/lib/pgsql/18/storefront-n1-689qacsi/certificates/postgres/server.key
     track_io_timing: "on"
     wal_log_hints: "on"
     wal_sender_timeout: 5s

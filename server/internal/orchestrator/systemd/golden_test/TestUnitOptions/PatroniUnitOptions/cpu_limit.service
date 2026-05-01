@@ -4,7 +4,7 @@ After=syslog.target network.target
 [Service]
 Type=simple
 User=postgres
-ExecStart=/usr/local/bin/patroni /var/lib/pgsql/18/storefront-n1-689qacsi/configs/patroni.yaml
+ExecStart=/usr/bin/patroni /var/lib/pgsql/18/storefront-n1-689qacsi/configs/patroni.yaml
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=process
 TimeoutSec=30

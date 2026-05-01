@@ -37,6 +37,8 @@ type PatroniConfigGenerator struct {
 	FQDN string `json:"fqdn"`
 	// InstanceID is this instance's ID.
 	InstanceID string `json:"instance_id"`
+	// LogType sets the Patroni log type.
+	LogType patroni.LogType `json:"log_type"`
 	// MemoryBytes is the amount of memory that is allocated for this instance.
 	// This is used for the tunable Postgres parameters.
 	MemoryBytes uint64 `json:"memory_bytes,omitempty"`
@@ -79,6 +81,8 @@ type PatroniConfigGeneratorOptions struct {
 	// FQDN is the fully-qualified domain name for this instance. This name must
 	// be reachable by sibling instances within the Spock node.
 	FQDN string
+	// LogType sets the Patroni log type.
+	LogType patroni.LogType
 	// OrchestratorParameters are additional parameters to be provided by the
 	// orchestrator implementation.
 	OrchestratorParameters map[string]any
@@ -124,6 +128,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		EtcdCertsDir:           opts.Paths.Instance.EtcdCertificates(),
 		FQDN:                   opts.FQDN,
 		InstanceID:             opts.Instance.InstanceID,
+		LogType:                opts.LogType,
 		MemoryBytes:            memoryBytes,
 		NodeName:               opts.Instance.NodeName,
 		NodeOrdinal:            opts.Instance.NodeOrdinal,
@@ -242,9 +247,13 @@ func (p *PatroniConfigGenerator) log() *patroni.Log {
 	if p.TenantID != nil {
 		fields["tenant_id"] = *p.TenantID
 	}
+	logType := p.LogType
+	if logType == "" {
+		logType = patroni.LogTypePlain
+	}
 
 	return &patroni.Log{
-		Type:         utils.PointerTo(patroni.LogTypeJson),
+		Type:         &logType,
 		Level:        utils.PointerTo(patroni.LogLevelInfo),
 		StaticFields: &fields,
 	}
