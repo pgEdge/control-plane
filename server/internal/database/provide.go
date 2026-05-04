@@ -6,6 +6,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/ports"
 )
 
@@ -36,7 +37,11 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(cfg, orch, store, hostSvc, portsSvc), nil
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewService(cfg, orch, store, hostSvc, portsSvc, loggerFactory), nil
 	})
 }
 

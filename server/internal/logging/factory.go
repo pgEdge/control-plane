@@ -16,6 +16,7 @@ func (c Component) String() string {
 
 const (
 	ComponentAPIServer         Component = "api_server"
+	ComponentDatabaseService   Component = "database_service"
 	ComponentElectionCandidate Component = "election_candidate"
 	ComponentEmbeddedEtcd      Component = "embedded_etcd"
 	ComponentMigration         Component = "migration"

@@ -473,6 +473,30 @@ func (s *Spec) RemoveHost(hostId string) (ok bool) {
 	return ok
 }
 
+// NormalizePostgresVersions checks if all nodes have an equal postgres version
+// and, if so, sets the top-level postgres version to that version and sets each
+// node's postgres version to an empty string.
+func (s *Spec) NormalizePostgresVersions() {
+	var common string
+	for _, node := range s.Nodes {
+		nodeVersion := node.PostgresVersion
+		if nodeVersion == "" {
+			nodeVersion = s.PostgresVersion
+		}
+		if common == "" {
+			common = nodeVersion
+		} else if nodeVersion != common {
+			return
+		}
+	}
+	if common != "" {
+		s.PostgresVersion = common
+		for _, node := range s.Nodes {
+			node.PostgresVersion = ""
+		}
+	}
+}
+
 func (s Spec) defaultOptionalFieldFromNodes(other []*Node) {
 	otherNodesByName := make(map[string]*Node)
 	for _, n := range other {

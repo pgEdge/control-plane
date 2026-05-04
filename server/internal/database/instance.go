@@ -111,6 +111,10 @@ func (s *InstanceStatus) IsPrimary() bool {
 	return s.Role != nil && *s.Role == patroni.InstanceRolePrimary
 }
 
+func (s *InstanceStatus) IsStale() bool {
+	return s.StatusUpdatedAt == nil || s.StatusUpdatedAt.Before(time.Now().Add(-2*InstanceMonitorRefreshInterval))
+}
+
 func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *Instance {
 	if instance == nil {
 		return nil
@@ -135,8 +139,7 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 	// We want to infer the instance state if the instance is supposed to be
 	// available.
 	if out.State == InstanceStateAvailable && status != nil {
-		breakpoint := time.Now().Add(-2 * InstanceMonitorRefreshInterval)
-		if out.Status.StatusUpdatedAt.Before(breakpoint) {
+		if out.Status.IsStale() {
 			out.State = InstanceStateUnknown
 			out.Status = nil
 			return out
