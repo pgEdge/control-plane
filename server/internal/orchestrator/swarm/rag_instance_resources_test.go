@@ -227,7 +227,7 @@ func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
 		NodeName:          "n1",
 		ConnectAsUsername: "app_read_only",
 		ConnectAsPassword: "secret",
-		PgEdgeVersion:     ds.MustPgEdgeVersion("17", "5.0.0"),
+		PgEdgeVersion:     ds.MustParsePgEdgeVersion("17", "5.0.0"),
 	}
 
 	_, err := o.generateRAGInstanceResources(spec)

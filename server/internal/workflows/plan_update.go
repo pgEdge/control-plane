@@ -99,7 +99,7 @@ func (w *Workflows) getServiceResources(
 	nodeInstances []*database.NodeInstances,
 ) (*operations.ServiceResources, error) {
 	serviceInstanceID := database.GenerateServiceInstanceID(spec.DatabaseID, serviceSpec.ServiceID, hostID)
-	pgEdgeVersion, err := ds.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
+	pgEdgeVersion, err := ds.ParsePgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pgedge version: %w", err)
 	}

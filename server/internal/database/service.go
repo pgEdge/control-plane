@@ -608,7 +608,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	if spec.SpockVersion == "" {
 		spec.SpockVersion = defaultVersion.SpockVersion.String()
 	}
-	specVersion, err := ds.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
+	specVersion, err := ds.ParsePgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
 	if err != nil {
 		return fmt.Errorf("failed to parse versions from spec: %w", err)
 	}
@@ -628,7 +628,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 				return fmt.Errorf("host %s not found in host list", hostID)
 			}
 			if node.PostgresVersion != "" {
-				nodeVersion, err := ds.NewPgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
+				nodeVersion, err := ds.ParsePgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
 				if err != nil {
 					return fmt.Errorf("failed to parse versions from nodes[%d] spec: %w", idx, err)
 				}

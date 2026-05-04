@@ -622,7 +622,7 @@ func (n *NodeInstances) InstanceIDs() []string {
 }
 
 func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
-	specVersion, err := ds.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
+	specVersion, err := ds.ParsePgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
 	}
@@ -659,7 +659,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		// Respect node-level overrides
 		nodeVersion := specVersion
 		if node.PostgresVersion != "" {
-			nodeVersion, err = ds.NewPgEdgeVersion(node.PostgresVersion, s.SpockVersion)
+			nodeVersion, err = ds.ParsePgEdgeVersion(node.PostgresVersion, s.SpockVersion)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse version from node spec: %w", err)
 			}
