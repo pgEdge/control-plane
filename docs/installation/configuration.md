@@ -16,11 +16,6 @@ Use a comma-separated string to specify string array properties, such as
 PGEDGE_CLIENT_ADDRESSES='192.168.1.2,my-host.internal'
 ```
 
-- [Configuration Reference](#configuration-reference)
-  - [Required Settings](#required-settings)
-  - [Optional Settings](#optional-settings)
-    - [Components](#components)
-
 ## Required Settings
 
 | Property   | Environment variable | Type   | Description                                                                                                                                                                                                                                                          | Constraints |
@@ -55,12 +50,14 @@ PGEDGE_CLIENT_ADDRESSES='192.168.1.2,my-host.internal'
 | `docker_swarm.database_networks_cidr`        | `PGEDGE_DOCKER_SWARM__DATABASE_NETWORKS_CIDR`        | string       | `10.128.128.0/18`                              | The CIDR used to allocate per-database networks.                                                                                                                                                                   | Must not be changed after creating databases.                                                                                                                         |
 | `docker_swarm.database_networks_subnet_bits` | `PGEDGE_DOCKER_SWARM__DATABASE_NETWORKS_SUBNET_BITS` | int          | `26`                                           | The subnet size for per-database networks.                                                                                                                                                                         | Must not be changed after creating databases.                                                                                                                         |
 | `database_owner_uid`                         | `PGEDGE_DATABASE_OWNER_UID`                          | int          | `26`                                           | The UID to use for database configuration and data.                                                                                                                                                                | Must match the UID that owns the Postgres server processes.                                                                                                           |
+| `databases_monitor_interval_seconds`         | `PGEDGE_DATABASES_MONITOR_INTERVAL_SECONDS`          | uint         | `30`                                           | The refresh interval for the 'databases' monitor. This monitor watches for database version changes that happen outside of the Control Plane API, such as through a system package update.                         | Set to `0` to disable this monitor.                                                                                                                                   |
 
 ### Components
 
 This is the current list of components that can be configured in the `logging.component_levels` setting:
 
 - `api_server`
+- `database_service`
 - `election_candidate`
 - `embedded_etcd`
 - `migration`
