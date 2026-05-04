@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -159,42 +160,43 @@ func pointerTo[T any](v T) *T {
 	return &v
 }
 
+func dockerCmd(t testing.TB, ctx context.Context, args ...string) string {
+	t.Helper()
+
+	tLogf(t, "executing command: docker %s", strings.Join(args, " "))
+
+	var w strings.Builder
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = &w
+	cmd.Stderr = &w
+	err := cmd.Run()
+	out := w.String()
+	require.NoError(t, err, "docker command failed: %s", out)
+
+	return strings.TrimSpace(out)
+}
+
 // waitForTaskComplete polls a database task until it completes, fails, or times out.
 func waitForTaskComplete(ctx context.Context, c client.Client, dbID api.Identifier, taskID string, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timeout waiting for task %s to complete", taskID)
-		case <-ticker.C:
-			task, err := c.GetDatabaseTask(ctx, &api.GetDatabaseTaskPayload{
-				DatabaseID: dbID,
-				TaskID:     taskID,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to get task: %w", err)
-			}
-
-			switch task.Status {
-			case client.TaskStatusCompleted:
-				return nil
-			case client.TaskStatusFailed:
-				errMsg := "unknown error"
-				if task.Error != nil {
-					errMsg = *task.Error
-				}
-				return fmt.Errorf("task failed: %s", errMsg)
-			case client.TaskStatusCanceled:
-				return fmt.Errorf("task was canceled")
-				// "pending", "running", "canceling" - continue waiting
-			}
-		}
+	task, err := c.WaitForDatabaseTask(ctx, &api.GetDatabaseTaskPayload{
+		DatabaseID: dbID,
+		TaskID:     taskID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to wait for task: %w", err)
 	}
+	if task.Status != client.TaskStatusCompleted {
+		var taskError string
+		if task.Error != nil {
+			taskError = *task.Error
+		}
+		return fmt.Errorf("task status is '%s' instead of 'completed', error=%s", task.Status, taskError)
+	}
+
+	return nil
 }
 
 // waitForDatabaseAvailable polls a database until it reaches available state or times out.

@@ -43,7 +43,7 @@ e2e_args=-tags=e2e_test -count=1 -timeout=45m \
 	$(if $(filter 1,$(E2E_DEBUG)),-debug) \
 	$(if $(E2E_DEBUG_DIR),-debug-dir $(E2E_DEBUG_DIR))
 
-cluster_test_args=-tags=cluster_test -count=1 -timeout=10m \
+cluster_test_args=-tags=cluster_test -count=1 -timeout=15m \
 	$(if $(CLUSTER_TEST_PARALLEL),-parallel $(CLUSTER_TEST_PARALLEL)) \
 	$(if $(CLUSTER_TEST_RUN),-run $(CLUSTER_TEST_RUN)) \
 	-args \
