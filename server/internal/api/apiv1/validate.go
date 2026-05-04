@@ -414,15 +414,6 @@ func validateConnectAs(svc *api.ServiceSpec, dbUsers []*api.DatabaseUserSpec, pa
 
 	for _, u := range dbUsers {
 		if u.Username == svc.ConnectAs {
-			// For MCP with allow_writes, the connect_as user must be the db owner
-			if svc.ServiceType == "mcp" {
-				if allowWrites, ok := svc.Config["allow_writes"].(bool); ok && allowWrites {
-					if u.DbOwner == nil || !*u.DbOwner {
-						err := errors.New("allow_writes requires connect_as to reference a database_users entry with db_owner: true")
-						return []error{newValidationError(err, connectAsPath)}
-					}
-				}
-			}
 			return nil
 		}
 	}

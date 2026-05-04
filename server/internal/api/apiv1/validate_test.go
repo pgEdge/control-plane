@@ -2100,8 +2100,7 @@ func TestValidateConnectAs(t *testing.T) {
 
 	t.Run("non-owner with allow_writes", func(t *testing.T) {
 		errs := validateConnectAs(baseSvc("app_read_only", true), dbUsers, nil)
-		assert.Len(t, errs, 1)
-		assert.ErrorContains(t, errs[0], "allow_writes requires connect_as to reference a database_users entry with db_owner: true")
+		assert.Empty(t, errs)
 	})
 
 	t.Run("empty connect_as", func(t *testing.T) {
