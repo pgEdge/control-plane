@@ -11,6 +11,7 @@ import (
 type txn struct {
 	ops    []TxnOperation
 	client *clientv3.Client
+	cmps   []clientv3.Cmp
 }
 
 func NewTxn(client *clientv3.Client, ops ...TxnOperation) Txn {
@@ -22,6 +23,10 @@ func NewTxn(client *clientv3.Client, ops ...TxnOperation) Txn {
 
 func (t *txn) AddOps(ops ...TxnOperation) {
 	t.ops = append(t.ops, ops...)
+}
+
+func (t *txn) AddConditions(cmps ...clientv3.Cmp) {
+	t.cmps = append(t.cmps, cmps...)
 }
 
 func (t *txn) Commit(ctx context.Context) error {
@@ -43,6 +48,7 @@ func (t *txn) Commit(ctx context.Context) error {
 			cachedOps = append(cachedOps, c)
 		}
 	}
+	allCmps = append(allCmps, t.cmps...)
 
 	// Etcd will reject the transaction if there are duplicate keys, and it
 	// doesn't give a helpful error message. We can produce a better error by
