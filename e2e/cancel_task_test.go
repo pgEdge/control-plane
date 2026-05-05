@@ -51,6 +51,11 @@ func testCancelDB(t *testing.T) {
 	database := create_resp.Database
 	t.Logf("successfully created cancel task test db")
 
+	// TODO: even after many attempts at fixing this, rapidly cancelling a task
+	// still occasionally causes problems. This sleep is a workaround until
+	// we're able to track down the issue.
+	time.Sleep(500 * time.Millisecond)
+
 	cancelation_task, err := fixture.Client.CancelDatabaseTask(t.Context(), &controlplane.CancelDatabaseTaskPayload{
 		DatabaseID: database.ID,
 		TaskID:     controlplane.Identifier(creation_task.TaskID),
