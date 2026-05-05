@@ -95,9 +95,14 @@ func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
 func (s *ServiceInstanceSpecResource) PostDeploy(ctx context.Context, rc *resource.Context) {
 	switch s.ServiceSpec.ServiceType {
 	case "mcp":
-		if mcpCfg, err := resource.FromContext[*MCPConfigResource](rc, MCPConfigResourceIdentifier(s.ServiceInstanceID)); err == nil {
-			mcpCfg.PostDeploy(ctx, rc)
+		mcpCfg, err := resource.FromContext[*MCPConfigResource](rc, MCPConfigResourceIdentifier(s.ServiceInstanceID))
+		if err != nil {
+			log.Warn().Err(err).
+				Str("service_instance_id", s.ServiceInstanceID).
+				Msg("skipping MCP post-deploy hook: MCP config resource unavailable")
+			return
 		}
+		mcpCfg.PostDeploy(ctx, rc)
 	}
 }
 

@@ -258,7 +258,15 @@ func (r *MCPConfigResource) writeUserFileIfNeeded(fs afero.Fs, usersPath string)
 // running. It sends SIGHUP to trigger a config reload, handling VirtioFS
 // bind-mount propagation delays on initial provisioning.
 func (r *MCPConfigResource) PostDeploy(ctx context.Context, rc *resource.Context) {
-	_ = r.signalConfigReload(ctx, rc)
+	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
+	if err != nil {
+		return
+	}
+	if err := r.signalConfigReload(ctx, rc); err != nil {
+		logger.Warn().Err(err).
+			Str("service_instance_id", r.ServiceInstanceID).
+			Msg("post-deploy config reload signal failed")
+	}
 }
 
 func (r *MCPConfigResource) signalConfigReload(ctx context.Context, rc *resource.Context) error {
