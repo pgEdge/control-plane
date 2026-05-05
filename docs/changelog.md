@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.8.0 - 2026-05-06
+
+### Added
+
+- Renamed the server binary from `control-plane` to `pgedge-control-plane` to reduce conflicts with other system packages.
+- Added PostgREST as a supported service type — Deploy the PostgREST REST API server alongside your database with automatic credential provisioning, upfront schema and role validation, and configurable connection pool settings.
+- Added preliminary support for systemd as an alternative to Docker Swarm. This feature is currently in "preview" status. You can read more about it in the [systemd page](https://docs.pgedge.com/control-plane/v0-8/installation/systemd) of our docs.
+- Added the ability to run user-defined SQL scripts during database creation via the `scripts` field on the database spec.
+- Added `connect_as` field for service credentials — Services can now explicitly specify which database user they authenticate as by referencing a `database_users` entry, replacing auto-generated service accounts with direct, auditable credential assignment.
+- Added automatic role transfer when expanding a database cluster — PostgreSQL roles created outside the standard `database_users` configuration are now automatically transferred to new nodes when they join a database.
+- Extended stable random port assignments to service instances — Ports assigned to MCP, PostgREST, and RAG services are now persisted and reused across restarts and database updates, consistent with the behaviour already in place for database instances.
+- Added RAG as a supported service type — Deploy a retrieval-augmented generation server alongside your database with hybrid vector and keyword search, automatic credential provisioning, and support for OpenAI, Voyage AI, Anthropic, and Ollama providers.
+
+### Changed
+
+- **Breaking:** The `connect_as` field is now required when creating or updating services of any type (MCP, PostgREST, RAG) — requests that omit this field will be rejected with a validation error.
+- **Breaking:** Database, host, cluster, and service identifiers are now validated to comply with RFC 1035 name requirements — IDs must be 1–36 characters, contain only lowercase letters, digits, and hyphens, and start and end with a letter or digit. The combined length of a database ID and service ID may not exceed 53 characters.
+- Removed the `pgedge_application` and `pgedge_application_read_only` built-in database roles — These roles are no longer created for new databases. The names are no longer reserved and may be used freely for custom database users.
+- Promote Supporting Services from beta to generally available
+
+### Fixed
+
+- Fixed port conflicts between services on the same host producing opaque deployment errors — Port conflicts are now detected at creation time and rejected with a clear validation message.
+- Fixed `extra_networks` specified in `orchestrator_opts` not being attached to service containers (MCP, PostgREST, RAG).
+- Fixed upgrade path from v0.6.2 — Databases created before v0.7.0 that were missing replication slot resources are now automatically repaired during state migration.
+- Fixed embedded etcd clients connecting to all cluster members instead of only their own endpoint — This could cause connectivity issues when cluster membership changed.
+
 ## v0.7.0 - 2026-03-25
 
 ### Added

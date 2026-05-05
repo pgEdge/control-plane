@@ -1,3 +1,0 @@
-kind: Added
-body: Added automatic role transfer when expanding a database cluster — PostgreSQL roles created outside the standard `database_users` configuration are now automatically transferred to new nodes when they join a database.
-time: 2026-04-17T12:00:00.000000-04:00

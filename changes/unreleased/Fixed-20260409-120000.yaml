@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed port conflicts between services on the same host producing opaque deployment errors — Port conflicts are now detected at creation time and rejected with a clear validation message.
-time: 2026-04-09T12:00:00.000000-04:00

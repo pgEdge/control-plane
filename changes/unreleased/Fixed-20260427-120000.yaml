@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed embedded etcd clients connecting to all cluster members instead of only their own endpoint — This could cause connectivity issues when cluster membership changed.
-time: 2026-04-27T12:00:00.000000-04:00

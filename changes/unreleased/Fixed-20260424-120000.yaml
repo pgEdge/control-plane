@@ -1,3 +1,0 @@
-kind: Changed
-body: "**Breaking:** Database, host, cluster, and service identifiers are now validated to comply with RFC 1035 name requirements — IDs must be 1–36 characters, contain only lowercase letters, digits, and hyphens, and start and end with a letter or digit. The combined length of a database ID and service ID may not exceed 53 characters."
-time: 2026-04-24T12:00:00.000000-04:00

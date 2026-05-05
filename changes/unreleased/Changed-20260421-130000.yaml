@@ -1,3 +1,0 @@
-kind: Changed
-body: "**Breaking:** The `connect_as` field is now required when creating or updating services of any type (MCP, PostgREST, RAG) — requests that omit this field will be rejected with a validation error."
-time: 2026-04-21T13:00:00.000000-04:00

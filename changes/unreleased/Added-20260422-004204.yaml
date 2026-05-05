@@ -1,3 +1,0 @@
-kind: Added
-body: Added RAG as a supported service type — Deploy a retrieval-augmented generation server alongside your database with hybrid vector and keyword search, automatic credential provisioning, and support for OpenAI, Voyage AI, Anthropic, and Ollama providers.
-time: 2026-04-22T00:42:04.283582+05:30
