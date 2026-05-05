@@ -90,6 +90,17 @@ func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
 	return nil
 }
 
+// PostDeploy is called by ServiceInstanceResource after the container is confirmed
+// running. Each service type can trigger any necessary post-start actions here.
+func (s *ServiceInstanceSpecResource) PostDeploy(ctx context.Context, rc *resource.Context) {
+	switch s.ServiceSpec.ServiceType {
+	case "mcp":
+		if mcpCfg, err := resource.FromContext[*MCPConfigResource](rc, MCPConfigResourceIdentifier(s.ServiceInstanceID)); err == nil {
+			mcpCfg.PostDeploy(ctx, rc)
+		}
+	}
+}
+
 func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	network, err := resource.FromContext[*Network](rc, NetworkResourceIdentifier(s.DatabaseNetworkID))
 	if err != nil {
