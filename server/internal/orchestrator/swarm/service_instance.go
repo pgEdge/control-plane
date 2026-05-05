@@ -203,6 +203,8 @@ func (s *ServiceInstanceResource) deploy(ctx context.Context, rc *resource.Conte
 		Str("service_id", res.ServiceID).
 		Msg("service instance started successfully")
 
+	spec.PostDeploy(ctx, rc)
+
 	// Transition state to "running" immediately after successful deployment.
 	// This mirrors the database instance pattern where state is set
 	// deterministically within the resource activity, not deferred to the monitor.
