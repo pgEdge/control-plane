@@ -541,6 +541,7 @@ type InstanceSpec struct {
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
 	ClusterSize      int               `json:"cluster_size"`
+	NodeSize         int               `json:"node_size"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	InPlaceRestore   bool              `json:"in_place_restore,omitempty"`
 	AllHostIDs       []string          `json:"all_host_ids"` // All host IDs in the database
@@ -594,6 +595,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
 		ClusterSize:      s.ClusterSize,
+		NodeSize:         s.NodeSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
 		AllHostIDs:       slices.Clone(s.AllHostIDs),
 	}
@@ -648,6 +650,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	clusterSize := len(s.Nodes)
 	nodes := make([]*NodeInstances, clusterSize)
 	for nodeIdx, node := range s.Nodes {
+		nodeSize := len(node.HostIDs)
 		nodeOrdinal, err := extractOrdinal(node.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to extract ordinal from node name: %w", err)
@@ -690,6 +693,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				RestoreConfig:    effectiveRestore,
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
+				NodeSize:         nodeSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
 				AllHostIDs:       allHostIDs,
 			}

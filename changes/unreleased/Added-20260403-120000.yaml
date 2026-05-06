@@ -1,3 +1,0 @@
-kind: Added
-body: Added PostgREST as a supported service type — Deploy the PostgREST REST API server alongside your database with automatic credential provisioning, upfront schema and role validation, and configurable connection pool settings.
-time: 2026-04-03T12:00:00.000000-04:00

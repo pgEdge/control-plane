@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed upgrade path from v0.6.2 — Databases created before v0.7.0 that were missing replication slot resources are now automatically repaired during state migration.
-time: 2026-04-21T12:00:00.000000-04:00
