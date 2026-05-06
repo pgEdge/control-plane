@@ -18,7 +18,7 @@
 - **Breaking:** The `connect_as` field is now required when creating or updating services of any type (MCP, PostgREST, RAG) — requests that omit this field will be rejected with a validation error.
 - **Breaking:** Database, host, cluster, and service identifiers are now validated to comply with RFC 1035 name requirements — IDs must be 1–36 characters, contain only lowercase letters, digits, and hyphens, and start and end with a letter or digit. The combined length of a database ID and service ID may not exceed 53 characters.
 - Removed the `pgedge_application` and `pgedge_application_read_only` built-in database roles — These roles are no longer created for new databases. The names are no longer reserved and may be used freely for custom database users.
-- Promote Supporting Services from beta to generally available
+- Promoted Supporting Services from beta to generally available
 - Enable Patroni's failsafe mode in single-host nodes to improve resilience in some Etcd outages. Failsafe mode is not enabled in nodes with more than one host.
 
 ### Fixed
