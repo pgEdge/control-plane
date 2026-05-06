@@ -6,7 +6,7 @@
 
 - Renamed the server binary from `control-plane` to `pgedge-control-plane` to reduce conflicts with other system packages.
 - Added PostgREST as a supported service type — Deploy the PostgREST REST API server alongside your database with automatic credential provisioning, upfront schema and role validation, and configurable connection pool settings.
-- Added preliminary support for systemd as an alternative to Docker Swarm. This feature is currently in "preview" status. You can read more about it in the [systemd page](https://docs.pgedge.com/control-plane/v0-8/installation/systemd) of our docs.
+- Added preliminary support for systemd as an alternative to Docker Swarm. This feature is currently in "preview" status. You can read more about it in the [systemd page](https://docs.pgedge.com/control-plane/installation/systemd) of our docs.
 - Added the ability to run user-defined SQL scripts during database creation via the `scripts` field on the database spec.
 - Added `connect_as` field for service credentials — Services can now explicitly specify which database user they authenticate as by referencing a `database_users` entry, replacing auto-generated service accounts with direct, auditable credential assignment.
 - Added automatic role transfer when expanding a database cluster — PostgreSQL roles created outside the standard `database_users` configuration are now automatically transferred to new nodes when they join a database.
