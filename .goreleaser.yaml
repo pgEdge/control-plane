@@ -35,6 +35,7 @@ nfpms:
     license: PostgreSQL License
     formats:
       - rpm
+      - deb
     bindir: /usr/sbin
     scripts:
       preremove: packaging/preremove.sh
@@ -42,6 +43,9 @@ nfpms:
       rpm:
         scripts:
           postinstall: packaging/rpm/postinstall.sh
+      deb:
+        scripts:
+          postinstall: packaging/deb/postinstall.sh
     contents:
       - src: packaging/pgedge-control-plane.service
         dst: /usr/lib/systemd/system/pgedge-control-plane.service
