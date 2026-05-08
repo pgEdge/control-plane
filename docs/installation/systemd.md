@@ -3,18 +3,19 @@
 !!! warning "Preview Feature"
 
     System package-based installation is a preview feature that is under active
-    development. The core database management API is fully functional and tested,
-    but some features are not yet supported (see [Limitations](#limitations) below).
-    The installation method and upgrade process between releases may change before
-    this feature is finalized. We'd love your feedback - please share your
-    experience in our [GitHub issues](https://github.com/pgedge/control-plane/issues)
-    or join our [Discord](https://discord.com/invite/pgedge/login).
+    development. The core database management API is fully functional and
+    tested, but some features are not yet supported (see
+    [Limitations](#limitations) below). The installation method and upgrade
+    process between releases may change before this feature is finalized. We'd
+    love your feedback - please share your experience in our
+    [GitHub issues](https://github.com/pgedge/control-plane/issues) or join our
+    [Discord](https://discord.com/invite/pgedge/login).
 
 This guide covers installing the pgEdge Control Plane on Linux hosts that use
-the RPM Package Manager (RPM) package format (e.g. Red Hat Enterprise Linux
-(RHEL), Rocky Linux, AlmaLinux) using the RPM package attached to each [GitHub
-release](https://github.com/pgedge/control-plane/releases). Support for
-Debian-based hosts is coming in a future release.
+the RPM Package Manager (RPM) package format (e.g., Red Hat Enterprise Linux
+(RHEL), Rocky Linux, AlmaLinux) or the Debian (deb) package format (e.g.,
+Ubuntu, Debian) using the package files attached to each
+[GitHub release](https://github.com/pgedge/control-plane/releases).
 
 Unlike the Docker Swarm installation method, the system package installation
 runs the Control Plane directly on the host. The Control Plane uses systemd to
@@ -47,18 +48,18 @@ cluster members on each host.
 - Port `2379` uses TCP for Etcd client communication.
 - Port `2380` uses TCP for Etcd peer communication.
 
-You can configure alternate ports by modifying the
-[configuration file](#configuration) after installing the `pgedge-control-plane`
-RPM.
+You can configure alternate ports by modifying the [configuration
+file](#configuration) after installing the `pgedge-control-plane` package.
 
 ### Packages
 
 The Control Plane depends on the pgEdge Enterprise Postgres packages. The
-Control Plane does not yet install Postgres or its supporting packages
-automatically; install the packages on each host before starting the Control
-Plane.
+Control Plane does not yet automatically install Postgres or its supporting
+packages; install the packages on each host before starting the Control Plane.
 
-Run the following commands on each host:
+#### RPM Packages
+
+Run the following commands on each RHEL-like host:
 
 ```sh
 # Install prerequisites for the pgEdge Enterprise Postgres packages
@@ -79,11 +80,48 @@ sudo dnf install -y \
       pgedge-patroni
 ```
 
-## Installing the RPM
+#### Deb Packages
 
-The pgEdge Control Plane RPM is published with each release on the [GitHub
-releases page](https://github.com/pgedge/control-plane/releases) for both
-`amd64` and `arm64` architectures.
+Run the following commands on each Debian-based host:
+
+```sh
+# Install prerequisites for the pgEdge Enterprise Postgres packages
+sudo apt update
+sudo apt install curl gnupg2 lsb-release
+
+# Install the pgEdge Enterprise Postgres repository
+curl -O --output-dir /tmp https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
+sudo apt install -y /tmp/pgedge-release_latest_all.deb
+sudo apt update
+
+# Install the required packages for your Postgres version. We currently support
+# versions 16, 17, and 18. Set POSTGRES_MAJOR_VERSION to your desired version.
+POSTGRES_MAJOR_VERSION='<16|17|18>'
+sudo apt install -y \
+      pgedge-postgresql-${POSTGRES_MAJOR_VERSION} \
+      pgedge-postgresql-${POSTGRES_MAJOR_VERSION}-spock50 \
+      pgedge-pgbackrest \
+      pgedge-patroni
+
+# The postgresql package will create and start a default database. We recommend
+# stopping and disabling that database to avoid confusion or port conflicts.
+sudo systemctl disable --now postgresql.service
+sudo systemctl disable --now postgresql@${POSTGRES_MAJOR_VERSION}-main.service
+```
+
+## Installing the Control Plane
+
+The pgEdge Control Plane packages are published with each release on the
+[GitHub releases page](https://github.com/pgedge/control-plane/releases) for
+both `amd64` and `arm64` architectures.
+
+Every package will install the following files:
+
+- The Control Plane binary is installed at `/usr/sbin/pgedge-control-plane`.
+- The systemd service unit is installed at `/usr/lib/systemd/system/pgedge-control-plane.service`.
+- The default configuration file is installed at `/etc/pgedge-control-plane/config.json`.
+
+### RPM Package
 
 Use the following commands to download and install the RPM:
 
@@ -101,17 +139,29 @@ curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/p
 sudo rpm -i pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
 ```
 
-The RPM installs the following files:
+### Deb Package
 
-- The Control Plane binary is installed at `/usr/sbin/pgedge-control-plane`.
-- The systemd service unit is installed at `/usr/lib/systemd/system/pgedge-control-plane.service`.
-- The default configuration file is installed at `/etc/pgedge-control-plane/config.json`.
+Use the following commands to download and install the deb package:
+
+```sh
+# Detect architecture
+ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
+# Set the version to install
+VERSION="v0.8.0"
+
+# Download the deb package
+curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
+
+# Install the deb package
+sudo apt install ./pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
+```
 
 ## Configuration
 
-The Control Plane reads its configuration from a JSON file at
-`/etc/pgedge-control-plane/config.json`. The following example shows the
-default configuration:
+The Control Plane reads its configuration from
+`/etc/pgedge-control-plane/config.json`. The following example shows the default
+configuration:
 
 ```json
 {
@@ -121,11 +171,27 @@ default configuration:
 ```
 
 The `orchestrator` field must be set to `"systemd"` for this installation
-method. The `data_dir` field specifies where the Control Plane stores its
-state, including the embedded Etcd data.
+method. The `data_dir` field specifies where the Control Plane stores its state,
+including the embedded Etcd data.
 
-The host ID defaults to the machine's short hostname. Add the `host_id` field
-to set an explicit host ID:
+By default, the Control Plane follows the operating system's conventions for
+Postgres data directories. For RHEL-like distributions, the base directory
+defaults to `/var/lib/pgsql`. For Debian-based distributions, the default base
+directory is `/var/lib/postgresql`. Add the `systemd.instance_data_dir` to the
+configuration file to set a custom base directory:
+
+```json
+{
+  "orchestrator": "systemd",
+  "data_dir": "/data/pgedge-control-plane",
+  "systemd": {
+    "instance_data_dir": "/data/postgres"
+  }
+}
+```
+
+The host ID defaults to the machine's short hostname. Add the `host_id` field to
+set an explicit host ID:
 
 ```json
 {
@@ -135,8 +201,8 @@ to set an explicit host ID:
 }
 ```
 
-You can find the full list of configuration settings in the
-[Configuration reference](./configuration.md).
+You can find the full list of configuration settings in the [Configuration
+reference](./configuration.md).
 
 ## Starting the Control Plane
 
@@ -161,8 +227,8 @@ sudo journalctl -u pgedge-control-plane.service --follow
 
 ## Initializing the Control Plane
 
-Once the service is running on all hosts, initialize and join each host the
-same way as a Docker Swarm installation.
+Once the service is running on all hosts, initialize and join each host as in a
+Docker Swarm installation.
 
 Use the following command to initialize the cluster on the first host:
 
@@ -234,8 +300,8 @@ instructions.
 
 > [!NOTE]
 > Unlike with the Swarm orchestrator, `patroni_port` is a required field in
-> systemd clusters. As with other port fields, you can specify `0` to
-> assign a random port.
+> systemd clusters. As with other port fields, you can specify `0` to assign a
+> random port.
 
 ## Performing Postgres Minor Version Upgrades
 
@@ -243,20 +309,25 @@ Database upgrades are not yet supported via the Control Plane API, but system
 administrators can perform minor Postgres version upgrades by updating the
 packages on each machine. Follow these steps on each host in the cluster:
 
-1. Upgrade Postgres and/or other components using `dnf upgrade`. For example:
+1. Upgrade Postgres and/or other components using `dnf upgrade` or
+   `apt install --only-upgrade`. For example, to upgrade Postgres 18:
 
     ```sh
+    # If your system uses dnf, run:
     sudo dnf upgrade pgedge-postgresql18
+
+    # If your system uses apt, run:
+    sudo apt install --only-upgrade pgedge-postgresql-18
     ```
 
-2. Find the systemd unit names for your database instances by listing units that
+1. Find the systemd unit names for your database instances by listing units that
    have the `patroni-*` prefix:
 
     ```sh
     sudo systemctl list-units 'patroni-*'
     ```
 
-3. Restart each service:
+2. Restart each service:
 
     ```sh
     sudo systemctl try-restart <service name>
@@ -270,21 +341,23 @@ new versions to be reflected in the database spec in the Control Plane API.
 
 ## Updating the Control Plane
 
-Updating the Control Plane requires stopping the service, installing the new
-RPM, and restarting the service. Download the new RPM from the [GitHub releases
-page](https://github.com/pgedge/control-plane/releases) and run the following
-commands:
+Updating the Control Plane just involves installing the new package. This will
+automatically restart the Control Plane service after the update is complete.
+Download the new RPM or deb from the
+[GitHub releases page](https://github.com/pgedge/control-plane/releases) and run
+one of the following commands:
 
 ```sh
-sudo systemctl stop pgedge-control-plane.service
-sudo rpm -U pgedge-control-plane-<new-version>.<arch>.rpm
-sudo systemctl start pgedge-control-plane.service
+# If you're using the RPM package, run:
+sudo rpm -U pgedge-control-plane_<new version>_linux_<arch>.rpm
+
+# If you're using the deb package, run:
+sudo apt install pgedge-control-plane_<new version>_linux_<arch>.deb
 ```
 
 > [!NOTE]
-> The RPM upgrade (`rpm -U`) preserves your existing configuration file at
-> `/etc/pgedge-control-plane/config.json` because the RPM marks it as a
-> non-replaceable configuration file.
+> The package upgrade will preserve any modifications to the configuration file
+> at `/etc/pgedge-control-plane/config.json`.
 
 ## Uninstalling the Control Plane
 
@@ -312,22 +385,21 @@ Follow these steps to remove the Control Plane after deleting all databases:
     Deletions are asynchronous; wait for each task to complete before deleting
     the next database.
 
-2. Stop and disable the Control Plane service with the following command:
+2. Use one of the following commands to uninstall the `pgedge-control-plane`
+   package:
 
     ```sh
-    sudo systemctl disable --now pgedge-control-plane.service
-    ```
-
-3. Use the following command to uninstall the `pgedge-control-plane` package:
-
-    ```sh
+    # If you installed the RPM package, run:
     sudo rpm -e pgedge-control-plane
+
+    # If you installed the deb package, run:
+    sudo apt remove pgedge-control-plane
     ```
 
-4. Remove the Control Plane data and configuration directories.
+3. Remove the Control Plane data and configuration directories.
 
-    The data directory defaults to `/var/lib/pgedge-control-plane`; use the
-    path configured in `data_dir` if you specified a custom location. Use the
+    The data directory defaults to `/var/lib/pgedge-control-plane`; use the path
+    configured in `data_dir` if you specified a custom location. Use the
     following commands to remove both directories:
 
     ```sh
@@ -359,14 +431,16 @@ on each host that holds an instance.
 
 2. Delete the instance data directories.
 
-    By default, the Control Plane stores instance data at
-    `/var/lib/pgsql/<major_version>/<instance_id>`; use the path from your
-    configuration file if you set a custom instance data directory. The
-    following example command removes the data directory for a Postgres 17
-    instance with ID `my-instance`:
+    By default, the Control Plane follows the OS conventions for Postgres data
+    directories. On RHEL-like distributions, this defaults to
+    `/var/lib/pgsql/<major_version>/<instance_id>`. On Debian-based
+    distributions, this defaults to `/var/lib/postgresql/<major version>/<instance id>`. 
+    Use the path from your configuration file if you set a custom instance data
+    directory. The following example command removes the data directory for a
+    Postgres 17 instance with ID `my-instance` on an RHEL-like distribution:
 
     ```sh
     sudo rm -rf /var/lib/pgsql/17/my-instance
     ```
 
-Repeat these steps on each host that has an instance of the database.
+Repeat these steps on each host that has a database instance.
