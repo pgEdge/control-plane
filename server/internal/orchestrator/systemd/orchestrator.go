@@ -7,9 +7,11 @@ import (
 	"io"
 	"net"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"syscall"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -150,38 +152,42 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 	if err != nil {
 		return nil, err
 	}
+	databaseOwnerUID, databaseOwnerGID, err := o.databaseOwnerIDs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database owner uid/gid: %w", err)
+	}
 
 	// directory resources
 	instanceDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-instance",
 		HostID:   spec.HostID,
 		Path:     paths.Host.BaseDir,
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 	dataDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-data",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "data",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 	configsDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-configs",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "configs",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 	certificatesDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-certificates",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "certificates",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 
 	// patroni resources - used to clean up etcd on deletion
@@ -202,16 +208,16 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		DatabaseID: spec.DatabaseID,
 		NodeName:   spec.NodeName,
 		ParentID:   certificatesDir.ID,
-		OwnerUID:   o.cfg.DatabaseOwnerUID,
-		OwnerGID:   o.cfg.DatabaseOwnerUID,
+		OwnerUID:   databaseOwnerUID,
+		OwnerGID:   databaseOwnerGID,
 	}
 	postgresCerts := &common.PostgresCerts{
 		InstanceID:        spec.InstanceID,
 		HostID:            spec.HostID,
 		ParentID:          certificatesDir.ID,
 		InstanceAddresses: o.cfg.Addresses(),
-		OwnerUID:          o.cfg.DatabaseOwnerUID,
-		OwnerGID:          o.cfg.DatabaseOwnerUID,
+		OwnerUID:          databaseOwnerUID,
+		OwnerGID:          databaseOwnerGID,
 	}
 
 	// These should be caught by `ValidateInstanceSpecs`, but just in case
@@ -244,8 +250,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 				Paths: paths,
 			}),
 			ParentID: configsDir.ID,
-			OwnerUID: o.cfg.DatabaseOwnerUID,
-			OwnerGID: o.cfg.DatabaseOwnerUID,
+			OwnerUID: databaseOwnerUID,
+			OwnerGID: databaseOwnerGID,
 		},
 	}
 
@@ -254,11 +260,13 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		return nil, errors.New("got empty postgres version")
 	}
 
+	databaseOwnerUser := strconv.Itoa(databaseOwnerUID)
+	databaseOwnerGroup := strconv.Itoa(databaseOwnerGID)
 	patroniUnit := &UnitResource{
 		DatabaseID: spec.DatabaseID,
 		HostID:     spec.HostID,
 		Name:       patroniServiceName(spec.InstanceID),
-		Options:    PatroniUnitOptions(paths, o.packageManager.BinDir(pgMajor), spec.CPUs, spec.MemoryBytes),
+		Options:    PatroniUnitOptions(paths, o.packageManager.BinDir(pgMajor), spec.CPUs, spec.MemoryBytes, databaseOwnerUser, databaseOwnerGroup),
 		ExtraDependencies: []resource.Identifier{
 			patroniConfig.Identifier(),
 			instanceDir.Identifier(),
@@ -296,8 +304,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		ParentID:   configsDir.ID,
 		HostID:     spec.HostID,
 		InstanceID: spec.InstanceID,
-		OwnerUID:   o.cfg.DatabaseOwnerUID,
-		OwnerGID:   o.cfg.DatabaseOwnerUID,
+		OwnerUID:   databaseOwnerUID,
+		OwnerGID:   databaseOwnerGID,
 	}}
 
 	var nodeDependents []resource.Resource
@@ -311,8 +319,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 				Repositories: spec.BackupConfig.Repositories,
 				ParentID:     configsDir.ID,
 				Type:         pgbackrest.ConfigTypeBackup,
-				OwnerUID:     o.cfg.DatabaseOwnerUID,
-				OwnerGID:     o.cfg.DatabaseOwnerUID,
+				OwnerUID:     databaseOwnerUID,
+				OwnerGID:     databaseOwnerGID,
 				Paths:        paths,
 				Port:         postgresPort,
 			},
@@ -347,8 +355,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 			Repositories: []*pgbackrest.Repository{spec.RestoreConfig.Repository},
 			ParentID:     configsDir.ID,
 			Type:         pgbackrest.ConfigTypeRestore,
-			OwnerUID:     o.cfg.DatabaseOwnerUID,
-			OwnerGID:     o.cfg.DatabaseOwnerUID,
+			OwnerUID:     databaseOwnerUID,
+			OwnerGID:     databaseOwnerGID,
 			Paths:        paths,
 			Port:         postgresPort,
 		})
@@ -440,11 +448,15 @@ func (o *Orchestrator) ExecuteInstanceCommand(ctx context.Context, w io.Writer, 
 	if len(args) == 0 {
 		return errors.New("got empty args")
 	}
+	databaseOwnerUID, databaseOwnerGID, err := o.databaseOwnerIDs()
+	if err != nil {
+		return fmt.Errorf("failed to get database owner uid/gid: %w", err)
+	}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{
-			Uid: uint32(o.cfg.DatabaseOwnerUID),
-			Gid: uint32(o.cfg.DatabaseOwnerUID),
+			Uid: uint32(databaseOwnerUID),
+			Gid: uint32(databaseOwnerGID),
 		},
 	}
 	cmd.Stdout = w
@@ -579,6 +591,29 @@ func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (
 		PgBackRestPath: o.cfg.SystemD.PgBackRestPath,
 		PatroniPath:    o.cfg.SystemD.PatroniPath,
 	}, nil
+}
+
+func (o *Orchestrator) databaseOwnerIDs() (int, int, error) {
+	u, err := user.Lookup("postgres")
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to lookup 'postgres' user: %w", err)
+	}
+	uid, err := strconv.Atoi(u.Uid)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse 'postgres' uid: %w", err)
+	}
+	gid, err := strconv.Atoi(u.Gid)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse 'postgres' gid: %w", err)
+	}
+	if o.cfg.DatabaseOwnerUID > 0 {
+		uid = o.cfg.DatabaseOwnerUID
+	}
+	if o.cfg.DatabaseOwnerGID > 0 {
+		gid = o.cfg.DatabaseOwnerGID
+	}
+
+	return uid, gid, nil
 }
 
 func patroniServiceName(instanceID string) string {
