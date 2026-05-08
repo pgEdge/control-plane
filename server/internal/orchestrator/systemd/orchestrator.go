@@ -13,7 +13,6 @@ import (
 	"syscall"
 
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/elastic/gosigar"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
@@ -49,14 +48,14 @@ func NewOrchestrator(
 	logger := loggerFactory.Logger("systemd_orchestrator")
 	logger.Debug().Msg("initializing orchestrator")
 
-	mem := gosigar.Mem{}
-	if err := mem.Get(); err != nil {
-		return nil, fmt.Errorf("failed to inspect system memory: %w", err)
+	mem, err := readTotalMemory()
+	if err != nil {
+		return nil, err
 	}
 	cpu := runtime.NumCPU()
 
 	logger.Debug().
-		Uint64("mem", mem.Total).
+		Uint64("mem", mem).
 		Int("cpu", cpu).
 		Msg("got system stats")
 
@@ -66,7 +65,7 @@ func NewOrchestrator(
 		client:         client,
 		packageManager: packageManager,
 		cpus:           cpu,
-		memBytes:       mem.Total,
+		memBytes:       mem,
 	}, nil
 }
 
