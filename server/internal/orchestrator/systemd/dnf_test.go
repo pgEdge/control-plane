@@ -1,91 +1,447 @@
-package systemd
+package systemd_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/systemd"
+	"github.com/stretchr/testify/require"
 )
 
-func TestToVersion(t *testing.T) {
-	for _, tc := range []struct {
-		in          string
-		expected    *ds.Version
-		expectedErr bool
-	}{
-		{
-			in:       "18.3-1.el9",
-			expected: &ds.Version{Components: []uint64{18, 3}},
-		},
-		{
-			in:       "5.0.6-1.el9",
-			expected: &ds.Version{Components: []uint64{5, 0, 6}},
-		},
-		{
-			in:       "2.6-1.el9",
-			expected: &ds.Version{Components: []uint64{2, 6}},
-		},
-		{
-			in:       "1.3.0^20250625git121ab15-1.el9",
-			expected: &ds.Version{Components: []uint64{1, 3, 0}},
-		},
-		{
-			in:       "2025.05.04.gita084c80-1.el9",
-			expected: &ds.Version{Components: []uint64{2025, 5, 4}},
-		},
-		{
-			in:       "0~git20230917.9b27c3f-1.el9",
-			expected: &ds.Version{Components: []uint64{0}},
-		},
-		{
-			in:       "366-12.el9_6",
-			expected: &ds.Version{Components: []uint64{366}},
-		},
-		{
-			in:       "1:5.9.1-1.el9",
-			expected: &ds.Version{Components: []uint64{5, 9, 1}},
-		},
-		{
-			in:       "20051222-24.el9",
-			expected: &ds.Version{Components: []uint64{20051222}},
-		},
-		{
-			in:       "3.1.12-4.el9_3",
-			expected: &ds.Version{Components: []uint64{3, 1, 12}},
-		},
-		{
-			in:       "4.0ga14-2.el9",
-			expected: &ds.Version{Components: []uint64{4, 0}},
-		},
-		{
-			in:          "final1-3.20210311gitfinal.el9",
-			expectedErr: true,
-		},
-		{
-			in:       "0.20091126-40.el9",
-			expected: &ds.Version{Components: []uint64{0, 20091126}},
-		},
-		{
-			in:       "0.2^1.26e5737-1.el9",
-			expected: &ds.Version{Components: []uint64{0, 2}},
-		},
-		{
-			in:       "2:9.4.146.26-1.16.18.1.3.el9",
-			expected: &ds.Version{Components: []uint64{9, 4, 146}},
-		},
-		{
-			in:       "1.4.0-4.Final.el9",
-			expected: &ds.Version{Components: []uint64{1, 4, 0}},
-		},
-	} {
-		t.Run(tc.in, func(t *testing.T) {
-			out, err := toVersion(tc.in)
-			if tc.expectedErr {
-				assert.Error(t, err)
-			} else {
-				assert.Equal(t, tc.expected, out)
-			}
-		})
-	}
+func TestDnf(t *testing.T) {
+	t.Run("installed packages successful", func(t *testing.T) {
+		dnf := systemd.Dnf{
+			ExecCommand: systemd.MockExecCommand(t, testDnfPackageList, "", nil),
+		}
+		expected := []*systemd.InstalledPostgres{
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "16",
+					Version:       ds.MustParseVersion("16.13"),
+					Name:          "pgedge-postgresql16",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "16",
+						Version:       ds.MustParseVersion("5.0.7"),
+						Name:          "pgedge-spock50_16",
+					},
+				},
+			},
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "17",
+					Version:       ds.MustParseVersion("17.9"),
+					Name:          "pgedge-postgresql17",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "17",
+						Version:       ds.MustParseVersion("5.0.7"),
+						Name:          "pgedge-spock50_17",
+					},
+				},
+			},
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "18",
+					Version:       ds.MustParseVersion("18.3"),
+					Name:          "pgedge-postgresql18",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "18",
+						Version:       ds.MustParseVersion("5.0.7"),
+						Name:          "pgedge-spock50_18",
+					},
+				},
+			},
+		}
+		installed, err := dnf.InstalledPostgresVersions(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, expected, installed)
+	})
 }
+
+const testDnfPackageList = `gawk-all-langpacks 5.1.0
+setup 2.13.7
+filesystem 3.16
+basesystem 11
+python3-setuptools-wheel 53.0.0
+pcre2-syntax 10.40
+ncurses-base 6.2
+ncurses-libs 6.2
+bash 5.1.8
+libgcc 11.5.0
+zlib 1.2.11
+xz-libs 5.2.5
+bzip2-libs 1.0.8
+libzstd 1.5.5
+libxcrypt 4.4.18
+sqlite-libs 3.34.1
+libgpg-error 1.42
+popt 1.18
+libattr 2.5.1
+libacl 2.3.1
+libffi 3.4.2
+libstdc++ 11.5.0
+lua-libs 5.4.4
+readline 8.1
+crypto-policies 20250905
+libgcrypt 1.10.0
+keyutils-libs 1.6.3
+libcap-ng 0.8.2
+audit-libs 3.1.5
+libcom_err 1.46.5
+libtasn1 4.16.0
+p11-kit 0.25.3
+lz4-libs 1.9.3
+libassuan 2.5.5
+file-libs 5.39
+gdbm-libs 1.23
+gmp 6.2.0
+json-c 0.14
+libsepol 3.6
+libsigsegv 2.13
+libunistring 0.9.10
+pcre 8.44
+grep 3.6
+pcre2 10.40
+libselinux 3.6
+coreutils-single 8.32
+sed 4.8
+gzip 1.12
+cracklib 2.9.6
+cracklib-dicts 2.9.6
+findutils 4.8.0
+libsemanage 3.6
+shadow-utils 4.9
+libutempter 1.2.1
+libidn2 2.3.0
+mpfr 4.1.0
+gawk 5.1.0
+keyutils 1.6.3
+libcomps 0.1.18
+acl 2.3.1
+attr 2.5.1
+libksba 1.5.1
+libxcrypt-compat 4.4.18
+alternatives 1.24
+p11-kit-trust 0.25.3
+ca-certificates 2025.2.80_v9.0.305
+dbus-libs 1.12.20
+kmod-libs 28
+libevent 2.1.12
+python3-pip-wheel 21.3.1
+python3-libcomps 0.1.18
+libdb 5.3.28
+libeconf 0.4.1
+libpwquality 1.4.4
+pam 1.5.1
+libgomp 11.5.0
+libseccomp 2.5.2
+libtool-ltdl 2.4.6
+libverto 0.3.2
+rpm 4.16.1.3
+rpm-libs 4.16.1.3
+libsolv 0.7.24
+rpm-plugin-systemd-inhibit 4.16.1.3
+tpm2-tss 3.2.3
+ima-evm-utils 1.6.2
+openldap 2.6.8
+libyaml 0.2.5
+nettle 3.10.1
+libmodulemd 2.13.0
+npth 1.6
+gpgme 1.15.1
+librepo 1.14.5
+python3-gpg 1.15.1
+rpm-sign-libs 4.16.1.3
+dbus 1.12.20
+dbus-common 1.12.20
+dbus-broker 28
+rpm-build-libs 4.16.1.3
+python3-rpm 4.16.1.3
+libreport-filesystem 2.15.2
+fonts-filesystem 2.0.5
+dejavu-sans-fonts 2.37
+langpacks-core-font-en 3.0
+langpacks-core-en 3.0
+langpacks-en 3.0
+crypto-policies-scripts 20250905
+gdb-gdbserver 16.3
+which 2.21
+rootfiles 8.1
+gpg-pubkey 350d275d
+python3-dbus 1.2.18
+dnf-data 4.14.0
+python3-dnf 4.14.0
+dnf 4.14.0
+python3-systemd 234
+python3-six 1.15.0
+python3-dateutil 2.9.0.post0
+python3-dnf-plugins-core 4.3.0
+dnf-plugins-core 4.3.0
+epel-release 9
+yum 4.14.0
+tzdata 2026a
+glibc-common 2.34
+glibc-gconv-extra 2.34
+glibc-langpack-en 2.34
+glibc-minimal-langpack 2.34
+glibc 2.34
+libuuid 2.37.4
+libblkid 2.37.4
+libmount 2.37.4
+libsmartcols 2.37.4
+libcap 2.48
+libfdisk 2.37.4
+gnutls 3.8.3
+glib2 2.68.4
+libdnf 0.69.0
+elfutils-libelf 0.193
+expat 2.5.0
+libnghttp2 1.43.0
+libxml2 2.9.13
+openssl-fips-provider 3.5.1
+openssl-libs 3.5.1
+python-unversioned-command 3.9.25
+python3 3.9.25
+python3-libs 3.9.25
+systemd-libs 252
+krb5-libs 1.21.1
+libcurl-minimal 7.76.1
+util-linux-core 2.37.4
+util-linux 2.37.4
+python3-libdnf 0.69.0
+systemd-rpm-macros 252
+systemd-pam 252
+systemd 252
+elfutils-default-yama-scope 0.193
+rocky-gpg-keys 9.7
+rocky-release 9.7
+rocky-repos 9.7
+elfutils-libs 0.193
+python3-hawkey 0.69.0
+curl-minimal 7.76.1
+cyrus-sasl-lib 2.1.27
+libarchive 3.5.3
+openssl 3.5.1
+gnupg2 2.3.3
+tar 1.34
+vim-minimal 8.2.2637
+pgedge-release 1.0
+gpg-pubkey b212ddac
+gpg-pubkey 3228467c
+nspr 4.36.0
+libjpeg-turbo 2.0.90
+nss-util 3.112.0
+flexiblas 3.0.4
+libquadmath 11.5.0
+libgfortran 11.5.0
+libicu 67.1
+pgedge-libpq5 18.3
+pgedge-geos313 3.13.1
+libpng 1.6.37
+pgedge-postgresql18-libs 18.3
+openjpeg2 2.4.0
+openblas 0.3.29
+openblas-openmp 0.3.29
+libwebp 1.2.0
+numactl-libs 2.0.19
+pgedge-postgresql18 18.3
+libtirpc 1.3.3
+hdf-libs 4.2.15
+libbrotli 1.0.9
+xerces-c 3.2.5
+libaec 1.0.6
+hdf5 1.12.1
+netcdf 4.8.1
+flexiblas-openblas-openmp 3.0.4
+flexiblas-netlib 3.0.4
+openblas-openmp64 0.3.29
+flexiblas-openblas-openmp64 3.0.4
+flexiblas-netlib64 3.0.4
+arpack 3.8.0
+pgedge-librttopo 1.1.0
+blas 3.9.0
+lapack 3.9.0
+nss-softokn-freebl 3.112.0
+nss-softokn 3.112.0
+nss 3.112.0
+nss-sysinit 3.112.0
+libqhull_r 7.2.1
+xml-common 0.6.3
+unixODBC 2.3.9
+poppler-data 0.4.9
+pcre2-utf16 10.40
+mariadb-connector-c-config 3.2.6
+mariadb-connector-c 3.2.6
+llvm-filesystem 20.1.8
+libxslt 1.1.34
+liburing 2.5
+pgedge-postgresql18-server 18.3
+pgedge-pgvector_18 0.8.1
+pgedge-pg_cron_18 1.6.7
+pgedge-pgmq_18 1.8.0
+lcms2 2.12
+jbigkit-libs 2.1
+libtiff 4.4.0
+pgedge-proj96 9.6.2
+pgedge-libgeotiff17 1.7.4
+gmp-c++ 6.2.0
+giflib 5.2.1
+boost-serialization 1.75.0
+pgedge-SFCGAL-libs 2.2.0
+snappy 1.1.8
+protobuf-c 1.3.3
+pkgconf-m4 1.7.3
+ncurses 6.2
+libusbx 1.0.26
+libproxy 0.4.15
+qt5-qtbase-common 5.15.9
+qt5-qtbase 5.15.9
+libpkgconf 1.7.3
+pkgconf 1.7.3
+pkgconf-pkg-config 1.7.3
+libtiff-devel 4.4.0
+pgedge-libgeotiff17-devel 1.7.4
+libedit 3.1
+llvm-libs 20.1.8
+llvm 20.1.8
+jansson 2.14
+groff-base 1.22.4
+perl-Digest 1.19
+perl-Digest-MD5 2.58
+perl-B 1.80
+perl-FileHandle 2.03
+perl-Data-Dumper 2.174
+perl-libnet 3.13
+perl-AutoLoader 5.74
+perl-base 2.27
+perl-URI 5.09
+perl-Mozilla-CA 20200520
+perl-if 0.60.800
+perl-IO-Socket-IP 0.41
+perl-Time-Local 1.300
+perl-File-Path 2.18
+perl-IO-Socket-SSL 2.073
+perl-Net-SSLeay 1.94
+perl-Pod-Escapes 1.07
+perl-Text-Tabs+Wrap 2013.0523
+perl-Class-Struct 0.66
+perl-POSIX 1.94
+perl-Term-ANSIColor 5.01
+perl-IPC-Open3 1.21
+perl-subs 1.03
+perl-File-Temp 0.231.100
+perl-HTTP-Tiny 0.076
+perl-Term-Cap 1.17
+perl-Pod-Simple 3.42
+perl-Socket 2.031
+perl-SelectSaver 1.02
+perl-Symbol 1.08
+perl-File-stat 1.09
+perl-podlators 4.14
+perl-Pod-Perldoc 3.28.01
+perl-Fcntl 1.13
+perl-Text-ParseWords 3.30
+perl-mro 1.23
+perl-IO 1.43
+perl-overloading 0.02
+perl-Pod-Usage 2.01
+perl-Errno 1.30
+perl-File-Basename 2.85
+perl-Getopt-Std 1.12
+perl-MIME-Base64 3.16
+perl-Scalar-List-Utils 1.56
+perl-constant 1.33
+perl-Storable 3.21
+perl-overload 1.31
+perl-parent 0.238
+perl-vars 1.05
+perl-Getopt-Long 2.52
+perl-Carp 1.50
+perl-Exporter 5.74
+perl-NDBM_File 1.15
+perl-PathTools 3.78
+perl-Encode 3.08
+perl-libs 5.32.1
+perl-interpreter 5.32.1
+pgedge-postgresql18-contrib 18.3
+graphite2 1.3.14
+harfbuzz 2.7.4
+freetype 2.10.4
+fontconfig 2.14.0
+poppler 21.01.0
+shapelib 1.5.0
+gpsbabel 1.8.0
+re2 20211101
+libarrow 9.0.0
+minizip 3.0.2
+pgedge-libspatialite50 5.1.0
+pgedge-libspatialite50-devel 5.1.0
+metis 5.1.0
+SuperLU 6.0.1
+armadillo 12.6.6
+libssh2 1.11.1
+libgta 1.2.1
+libdeflate 1.25
+freexl 1.0.6
+cfitsio 4.1.0
+pgedge-gdal311-libs 3.11.5
+pgedge-postgis35_18 3.5.5
+pgedge-pgbackrest 2.58.0
+pgedge-spock50_18 5.0.7
+pgedge-pg-stat-monitor_18 2.3.0
+pgedge-pg-vectorize_18 0.23.0
+pgedge-vectorizer_18 1.0
+pgedge-lolor_18 1.2.2
+pgedge-pg-tokenizer_18 0.1.1
+pgedge-pgaudit_18 18.0
+pgedge-snowflake_18 2.4
+pgedge-system_stats_18 3.2.1
+pgedge-vchord-bm25_18 0.2.2
+pgedge-python3-psycopg2 2.9.10
+pgedge-postgresql16-libs 16.13
+pgedge-postgresql17-libs 17.9
+pgedge-postgresql17 17.9
+pgedge-postgresql17-server 17.9
+pgedge-postgresql16 16.13
+pgedge-postgresql16-server 16.13
+pgedge-python3.12-six 1.17.0
+pgedge-python3.12-dateutil 2.9.0.post0
+python3.12-pip-wheel 23.2.1
+mpdecimal 2.5.1
+libnsl2 2.0.0
+python3.12 3.12.12
+python3.12-libs 3.12.12
+python3.12-idna 3.4
+python3.12-urllib3 1.26.19
+pgedge-python3.12-psutil 6.1.1
+pgedge-python3.12-psycopg2 2.9.10
+python3.12-charset-normalizer 3.3.0
+python3.12-requests 2.28.2
+pgedge-py-consul 1.6.0
+python3.12-ply 3.11
+python3.12-pycparser 2.20
+python3.12-cffi 1.16.0
+python3.12-cryptography 41.0.7
+python3.12-pyyaml 6.0.1
+less 590
+pgedge-python3-ydiff 1.4.2
+pgedge-python3.12-wcwidth 0.2.13
+pgedge-python3.12-prettytable 3.4.0
+pgedge-python3.12-dns 2.6.1
+pgedge-python3-etcd 0.4.5
+pgedge-python3.12-click 8.1.7
+pgedge-patroni 4.1.3
+pgedge-lolor_16 1.2.2
+pgedge-postgresql16-contrib 16.13
+pgedge-snowflake_16 2.4
+pgedge-spock50_16 5.0.7
+pgedge-lolor_17 1.2.2
+pgedge-postgresql17-contrib 17.9
+pgedge-snowflake_17 2.4
+pgedge-spock50_17 5.0.7
+`
