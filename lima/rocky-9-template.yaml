@@ -5,7 +5,7 @@ base: template://rocky-9
 
 cpus: 4
 memory: 8GiB
-disk: 20GiB
+disk: 50GiB
 containerd:
   system: false
   user: false

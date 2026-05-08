@@ -414,7 +414,17 @@ To run the Control Plane, start by deploying the Lima virtual machines where we'
 make dev-lima-deploy
 ```
 
-Note that this may take a while to create, configure, and install the pre-requisites. Once this command exits, you can build and run the Control Plane servers with:
+By default, this creates six-hosts with Rocky Linux 9. Alternatively, you can set the `DEV_LIMA_OS` environment variable to use either Ubuntu 24.04 or Debian 13:
+
+```sh
+make dev-lima-deploy DEV_LIMA_OS=ubuntu-24.04
+
+# OR
+
+make dev-lima-deploy DEV_LIMA_OS=debian-13
+```
+
+Note that it may take a while to create, configure, and install the pre-requisites. Once this command exits, you can build and run the Control Plane servers with:
 
 ```sh
 make dev-lima-run
