@@ -97,6 +97,7 @@ func (c *PgBackRestConfig) Create(ctx context.Context, rc *resource.Context) err
 		Repositories: c.Repositories,
 		DatabaseID:   c.DatabaseID,
 		NodeName:     c.NodeName,
+		InstanceID:   c.InstanceID,
 		PgDataPath:   c.Paths.Instance.PgData(),
 		HostUser:     "pgedge",
 		User:         "pgedge",
