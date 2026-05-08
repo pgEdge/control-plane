@@ -92,7 +92,7 @@
     state: restarted
   when: chronycfg.changed
 - name: Install delve debugger
-  ansible.builtin.command: /usr/local/go/bin/go install github.com/go-delve/delve/cmd/dlv@latest
+  ansible.builtin.command: /usr/local/go/bin/go install github.com/go-delve/delve/cmd/dlv@v1.25.2
   args:
     creates: /root/go/bin/dlv
 - name: Fix clocks

@@ -3,7 +3,7 @@
 
 - name: Create hosts
   loop: '{{ machines }}'
-  command: limactl start --yes --name={{ item.name }} lima-template.yaml
+  command: limactl start --yes --name={{ item.name }} {{ os }}-template.yaml
   when: item.name not in lima_vms
 
 - name: Start stopped hosts
