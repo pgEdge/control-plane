@@ -41,7 +41,9 @@ import (
 )
 
 const (
-	OverlayDriver = "overlay"
+	OverlayDriver               = "overlay"
+	DefaultDatabaseOwnerUID int = 26
+	DefaultDatabaseOwnerGID int = DefaultDatabaseOwnerUID
 )
 
 type Orchestrator struct {
@@ -178,6 +180,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 	}
 
 	instanceHostname := fmt.Sprintf("postgres-%s", spec.InstanceID)
+	databaseOwnerUID, databaseOwnerGID := o.databaseOwnerIDs()
 
 	// If there's more than one instance from the same swarm cluster, each
 	// instance will output this same network. They'll get deduplicated when we
@@ -200,24 +203,24 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "data",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 	configsDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-configs",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "configs",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 	certificatesDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-certificates",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "certificates",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 
 	// patroni resources - used to clean up etcd on deletion
@@ -239,8 +242,8 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		DatabaseID: spec.DatabaseID,
 		NodeName:   spec.NodeName,
 		ParentID:   certificatesDir.ID,
-		OwnerUID:   o.cfg.DatabaseOwnerUID,
-		OwnerGID:   o.cfg.DatabaseOwnerUID,
+		OwnerUID:   databaseOwnerUID,
+		OwnerGID:   databaseOwnerGID,
 	}
 	postgresCerts := &PostgresCerts{
 		InstanceID: spec.InstanceID,
@@ -253,8 +256,8 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 			},
 			o.cfg.Addresses(),
 		),
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
+		OwnerUID: databaseOwnerUID,
+		OwnerGID: databaseOwnerGID,
 	}
 	patroniConfig := &PatroniConfig{
 		Spec:                spec,
@@ -263,8 +266,8 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		DatabaseNetworkName: databaseNetwork.Name,
 		BridgeNetworkInfo:   o.bridgeNetwork,
 		ParentID:            configsDir.ID,
-		OwnerUID:            o.cfg.DatabaseOwnerUID,
-		OwnerGID:            o.cfg.DatabaseOwnerUID,
+		OwnerUID:            databaseOwnerUID,
+		OwnerGID:            databaseOwnerGID,
 		InstanceHostname:    instanceHostname,
 	}
 
@@ -329,8 +332,8 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 				Repositories: spec.BackupConfig.Repositories,
 				ParentID:     configsDir.ID,
 				Type:         PgBackRestConfigTypeBackup,
-				OwnerUID:     o.cfg.DatabaseOwnerUID,
-				OwnerGID:     o.cfg.DatabaseOwnerUID,
+				OwnerUID:     databaseOwnerUID,
+				OwnerGID:     databaseOwnerGID,
 			},
 		)
 		nodeDependents = append(nodeDependents,
@@ -362,8 +365,8 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 			Repositories: []*pgbackrest.Repository{spec.RestoreConfig.Repository},
 			ParentID:     configsDir.ID,
 			Type:         PgBackRestConfigTypeRestore,
-			OwnerUID:     o.cfg.DatabaseOwnerUID,
-			OwnerGID:     o.cfg.DatabaseOwnerUID,
+			OwnerUID:     databaseOwnerUID,
+			OwnerGID:     databaseOwnerGID,
 		})
 	}
 
@@ -1191,6 +1194,18 @@ func (o *Orchestrator) validateNetworks(ctx context.Context, nodeName string, ne
 		return errors.New(msg)
 	}
 	return err
+}
+
+func (o *Orchestrator) databaseOwnerIDs() (int, int) {
+	uid := DefaultDatabaseOwnerUID
+	gid := DefaultDatabaseOwnerGID
+	if o.cfg.DatabaseOwnerUID > 0 {
+		uid = o.cfg.DatabaseOwnerUID
+	}
+	if o.cfg.DatabaseOwnerGID > 0 {
+		gid = o.cfg.DatabaseOwnerGID
+	}
+	return uid, gid
 }
 
 func validationContainerOpts(
