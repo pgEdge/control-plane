@@ -81,32 +81,30 @@ func TestWholeCluster(t *testing.T) {
 				continue
 			}
 
-			for instance := range db.GetInstances(WithNode(read.Name)) {
-				t.Logf("validating table on node %s, instance %s with role %s", read.Name, instance.ID, *instance.Postgres.Role)
+			t.Logf("validating table on node %s", read.Name)
 
-				readOpts := ConnectionOptions{
-					Instance: instance,
-					Username: username,
-					Password: password,
-				}
-				db.WithConnection(ctx, readOpts, t, func(conn *pgx.Conn) {
-					t.Log("waiting for replication to finish")
-
-					var synced bool
-					row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", write.Name, syncLSN)
-
-					require.NoError(t, row.Scan(&synced))
-					require.True(t, synced)
-
-					t.Log("selecting test data")
-
-					var actual string
-					row = conn.QueryRow(ctx, fmt.Sprintf(`SELECT data FROM %s WHERE id = 1;`, write.Name))
-
-					require.NoError(t, row.Scan(&actual))
-					require.Equal(t, "test", actual)
-				})
+			readOpts := ConnectionOptions{
+				Matcher:  And(WithNode(read.Name), WithRole("primary")),
+				Username: username,
+				Password: password,
 			}
+			db.WithConnection(ctx, readOpts, t, func(conn *pgx.Conn) {
+				t.Log("waiting for replication to finish")
+
+				var synced bool
+				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", write.Name, syncLSN)
+
+				require.NoError(t, row.Scan(&synced))
+				require.True(t, synced)
+
+				t.Log("selecting test data")
+
+				var actual string
+				row = conn.QueryRow(ctx, fmt.Sprintf(`SELECT data FROM %s WHERE id = 1;`, write.Name))
+
+				require.NoError(t, row.Scan(&actual))
+				require.Equal(t, "test", actual)
+			})
 		}
 	}
 }
