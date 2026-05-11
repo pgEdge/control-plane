@@ -39,6 +39,7 @@ type ServiceInstanceSpecResource struct {
 	TargetSessionAttrs string                      `json:"target_session_attrs"` // libpq target_session_attrs
 	Port               *int                        `json:"port"`                 // Service published port (optional, 0 = random)
 	DataDirID          string                      `json:"data_dir_id"`          // DirResource ID for the service data directory
+	KBDirPath          string                      `json:"kb_dir_path,omitempty"` // Host-side KB directory for bind mount (MCP only, KB enabled)
 	Spec               swarm.ServiceSpec           `json:"spec"`
 }
 
@@ -143,6 +144,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		Port:               s.Port,
 		DataPath:           dataPath,
 		KeysPath:           keysPath,
+		KBDirPath:          s.KBDirPath,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate service container spec: %w", err)
