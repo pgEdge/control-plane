@@ -84,9 +84,10 @@ following table describes the embedding configuration fields:
 Knowledgebase support enables the `search_knowledgebase` tool to query
 a SQLite-backed knowledge base. The knowledge base file is staged on the
 host; the Control Plane bind-mounts it into the container read-only.
-Knowledgebase support is opt-in: when `kb_enabled` is `false` (the
-default), no KB file is required and no KB validation runs. Only
-`voyage` and `openai` are supported as embedding providers for the
+Knowledgebase support is opt-in. When `kb_enabled` is `false` (the
+default), no KB file is required — and any other `kb_*` fields present
+in the config are **rejected** by the validator, not silently ignored.
+Only `voyage` and `openai` are supported as embedding providers for the
 knowledgebase; Ollama support is planned for a future release.
 
 !!! warning
@@ -106,7 +107,7 @@ The following table describes the knowledgebase configuration fields:
 
 | Field                     | Type    | Description |
 |---------------------------|---------|-------------|
-| `kb_enabled`              | boolean | Set to `true` to enable knowledgebase search. When `false` (the default), all other `kb_*` fields are ignored and the `search_knowledgebase` tool operates without a KB. |
+| `kb_enabled`              | boolean | Set to `true` to enable knowledgebase search. When `false` (the default), any other `kb_*` fields in the config are **rejected** — they must be removed before the config is accepted. |
 | `kb_embedding_provider`   | string  | Embedding provider for the KB. One of: `voyage`, `openai`. Required when `kb_enabled` is `true`. |
 | `kb_embedding_model`      | string  | Embedding model for the KB (e.g., `voyage-3-lite`, `text-embedding-3-small`). Required when `kb_enabled` is `true`. |
 | `kb_embedding_api_key`    | string  | API key for the KB embedding provider. Required for `voyage` and `openai`. Scrubbed from API responses. |
