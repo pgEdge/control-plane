@@ -38,6 +38,7 @@ func PopulateNode(node *NodeResources, existingNodeNames []string) (*resource.St
 		peerWaitForSync = append(
 			peerWaitForSync,
 			database.WaitForSyncEventResourceIdentifier(peer, node.SourceNode, dbName),
+			database.PeerCatchupResourceIdentifier(node.SourceNode, peer, dbName),
 		)
 	}
 
@@ -125,6 +126,13 @@ func addPeerResources(
 			ProviderNode:   peerNode,
 			SubscriberNode: sourceNode,
 		},
+		// Belt-and-suspenders: also wait using remote_lsn, which
+		// tracks actual commit application rather than WAL receipt.
+		&database.PeerCatchupResource{
+			DatabaseName: dbName,
+			SourceNode:   sourceNode,
+			PeerNode:     peerNode,
+		},
 		// After the new node has caught up to the source node, we advance the
 		// replication slots we created earlier.
 		&database.LagTrackerCommitTimestampResource{
@@ -140,6 +148,13 @@ func addPeerResources(
 			},
 		},
 		&database.ReplicationSlotAdvanceFromCTSResource{
+			DatabaseName:   dbName,
+			ProviderNode:   peerNode,
+			SubscriberNode: newNode,
+		},
+		// Origin advance runs on the subscriber's host; must be separate from
+		// slot advance which runs on the provider's host.
+		&database.ReplicationOriginAdvanceResource{
 			DatabaseName:   dbName,
 			ProviderNode:   peerNode,
 			SubscriberNode: newNode,

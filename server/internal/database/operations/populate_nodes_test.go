@@ -114,6 +114,11 @@ func TestPopulateNode(t *testing.T) {
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 					},
+					&database.PeerCatchupResource{
+						DatabaseName: "test",
+						SourceNode:   "n1",
+						PeerNode:     "n2",
+					},
 					&database.ReplicationSlotResource{
 						DatabaseName:   "test",
 						ProviderNode:   "n1",
@@ -127,6 +132,7 @@ func TestPopulateNode(t *testing.T) {
 						SyncData:       true,
 						ExtraDependencies: []resource.Identifier{
 							database.WaitForSyncEventResourceIdentifier("n2", "n1", "test"),
+							database.PeerCatchupResourceIdentifier("n1", "n2", "test"),
 						},
 					},
 					&database.SyncEventResource{
@@ -148,6 +154,11 @@ func TestPopulateNode(t *testing.T) {
 						},
 					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
+						ProviderNode:   "n2",
+						SubscriberNode: "n3",
+					},
+					&database.ReplicationOriginAdvanceResource{
 						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
@@ -304,6 +315,11 @@ func TestPopulateNodes(t *testing.T) {
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 					},
+					&database.PeerCatchupResource{
+						DatabaseName: "test",
+						SourceNode:   "n1",
+						PeerNode:     "n2",
+					},
 					&database.ReplicationSlotResource{
 						DatabaseName:   "test",
 						ProviderNode:   "n1",
@@ -317,6 +333,7 @@ func TestPopulateNodes(t *testing.T) {
 						SyncData:       true,
 						ExtraDependencies: []resource.Identifier{
 							database.WaitForSyncEventResourceIdentifier("n2", "n1", "test"),
+							database.PeerCatchupResourceIdentifier("n1", "n2", "test"),
 						},
 					},
 					&database.SyncEventResource{
@@ -338,6 +355,11 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
+						ProviderNode:   "n2",
+						SubscriberNode: "n3",
+					},
+					&database.ReplicationOriginAdvanceResource{
 						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
@@ -446,10 +468,20 @@ func TestPopulateNodes(t *testing.T) {
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 					},
+					&database.PeerCatchupResource{
+						DatabaseName: "test",
+						SourceNode:   "n1",
+						PeerNode:     "n2",
+					},
 					&database.WaitForSyncEventResource{
 						DatabaseName:   "test",
 						ProviderNode:   "n3",
 						SubscriberNode: "n1",
+					},
+					&database.PeerCatchupResource{
+						DatabaseName: "test",
+						SourceNode:   "n1",
+						PeerNode:     "n3",
 					},
 					&database.ReplicationSlotResource{
 						DatabaseName:   "test",
@@ -464,7 +496,9 @@ func TestPopulateNodes(t *testing.T) {
 						SyncData:       true,
 						ExtraDependencies: []resource.Identifier{
 							database.WaitForSyncEventResourceIdentifier("n2", "n1", "test"),
+							database.PeerCatchupResourceIdentifier("n1", "n2", "test"),
 							database.WaitForSyncEventResourceIdentifier("n3", "n1", "test"),
+							database.PeerCatchupResourceIdentifier("n1", "n3", "test"),
 						},
 					},
 					&database.SyncEventResource{
@@ -498,7 +532,17 @@ func TestPopulateNodes(t *testing.T) {
 						ProviderNode:   "n2",
 						SubscriberNode: "n4",
 					},
+					&database.ReplicationOriginAdvanceResource{
+						DatabaseName:   "test",
+						ProviderNode:   "n2",
+						SubscriberNode: "n4",
+					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
+						ProviderNode:   "n3",
+						SubscriberNode: "n4",
+					},
+					&database.ReplicationOriginAdvanceResource{
 						DatabaseName:   "test",
 						ProviderNode:   "n3",
 						SubscriberNode: "n4",
