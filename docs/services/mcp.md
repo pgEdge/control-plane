@@ -85,8 +85,8 @@ Knowledgebase support enables the `search_knowledgebase` tool to query
 a SQLite-backed knowledge base. The knowledge base file is staged on the
 host; the Control Plane bind-mounts it into the container read-only.
 Knowledgebase support is opt-in: when `kb_enabled` is `false` (the
-default), no KB file is required and no KB validation runs. For V1,
-only `voyage` and `openai` are supported as embedding providers for the
+default), no KB file is required and no KB validation runs. Only
+`voyage` and `openai` are supported as embedding providers for the
 knowledgebase; Ollama support is planned for a future release.
 
 !!! warning
@@ -110,7 +110,15 @@ The following table describes the knowledgebase configuration fields:
 | `kb_embedding_provider`   | string  | Embedding provider for the KB. One of: `voyage`, `openai`. Required when `kb_enabled` is `true`. |
 | `kb_embedding_model`      | string  | Embedding model for the KB (e.g., `voyage-3-lite`, `text-embedding-3-small`). Required when `kb_enabled` is `true`. |
 | `kb_embedding_api_key`    | string  | API key for the KB embedding provider. Required for `voyage` and `openai`. Scrubbed from API responses. |
-| `kb_database_host_path`   | string  | Full path to the KB SQLite file on the host. Defaults to `{data_dir}/kb/nla-kb.db`. |
+| `kb_database_host_path`   | string  | Full path to the KB SQLite file on the host. Defaults to `{data_dir}/kb/nla-kb.db`. Must be an absolute path. |
+
+!!! note
+
+    Changing any `kb_*` field (provider, model, credentials, or path)
+    requires a service redeploy — not just a config reload. SIGHUP only
+    reloads database connection settings and does not reinitialize the
+    knowledgebase. Use `update-database` to apply KB config changes; the
+    Control Plane will restart the container automatically.
 
 ### LLM Tuning
 

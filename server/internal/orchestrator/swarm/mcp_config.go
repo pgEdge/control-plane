@@ -183,27 +183,24 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 	// Build KB config (only when kb_enabled is true)
 	var kb *mcpKBConfig
 	if cfg.KBEnabled != nil && *cfg.KBEnabled {
+		if cfg.KBEmbeddingProvider == nil || cfg.KBEmbeddingModel == nil || cfg.KBEmbeddingAPIKey == nil {
+			return nil, fmt.Errorf("internal: KB provider/model/key nil despite kb_enabled=true; validation was bypassed")
+		}
 		containerPath := "/app/kb/nla-kb.db"
 		if cfg.KBDatabaseHostPath != nil {
 			containerPath = "/app/kb/" + filepath.Base(*cfg.KBDatabaseHostPath)
 		}
 		k := &mcpKBConfig{
-			Enabled:      true,
-			DatabasePath: containerPath,
+			Enabled:           true,
+			DatabasePath:      containerPath,
+			EmbeddingProvider: *cfg.KBEmbeddingProvider,
+			EmbeddingModel:    *cfg.KBEmbeddingModel,
 		}
-		if cfg.KBEmbeddingProvider != nil {
-			k.EmbeddingProvider = *cfg.KBEmbeddingProvider
-		}
-		if cfg.KBEmbeddingModel != nil {
-			k.EmbeddingModel = *cfg.KBEmbeddingModel
-		}
-		if cfg.KBEmbeddingAPIKey != nil && cfg.KBEmbeddingProvider != nil {
-			switch *cfg.KBEmbeddingProvider {
-			case "voyage":
-				k.EmbeddingVoyageAPIKey = *cfg.KBEmbeddingAPIKey
-			case "openai":
-				k.EmbeddingOpenAIAPIKey = *cfg.KBEmbeddingAPIKey
-			}
+		switch *cfg.KBEmbeddingProvider {
+		case "voyage":
+			k.EmbeddingVoyageAPIKey = *cfg.KBEmbeddingAPIKey
+		case "openai":
+			k.EmbeddingOpenAIAPIKey = *cfg.KBEmbeddingAPIKey
 		}
 		kb = k
 	}

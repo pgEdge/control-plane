@@ -943,15 +943,18 @@ func TestParseMCPServiceConfig(t *testing.T) {
 				assert.Equal(t, "/data/custom/my-kb.db", *cfg.KBDatabaseHostPath)
 			})
 
-			t.Run("kb_enabled false ignores invalid KB fields", func(t *testing.T) {
-				// When kb_enabled is false, provider/model/key are not validated.
+			t.Run("kb_enabled false rejects stale KB fields", func(t *testing.T) {
+				// When kb_enabled is false, KB-specific fields must not be set.
 				config := map[string]any{
 					"kb_enabled":            false,
-					"kb_embedding_provider": "ollama",
-					"kb_embedding_model":    "some-model",
+					"kb_embedding_provider": "openai",
+					"kb_embedding_model":    "text-embedding-3-small",
 				}
 				_, errs := database.ParseMCPServiceConfig(config, false)
-				require.Empty(t, errs)
+				require.NotEmpty(t, errs)
+				joined := joinedErr(errs).Error()
+				assert.Contains(t, joined, "kb_embedding_provider must not be set unless kb_enabled is true")
+				assert.Contains(t, joined, "kb_embedding_model must not be set unless kb_enabled is true")
 			})
 		})
 
@@ -1105,6 +1108,73 @@ func TestParseMCPServiceConfig(t *testing.T) {
 				require.NotEmpty(t, errs)
 				assert.Contains(t, joinedErr(errs).Error(), "kb_database_host_path must be a string")
 			})
+
+			t.Run("kb_database_host_path relative path rejected", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  "voy-key",
+					"kb_database_host_path": "kb/nla-kb.db",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_database_host_path must be an absolute path")
+			})
+
+			t.Run("kb_database_host_path with .. rejected", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  "voy-key",
+					"kb_database_host_path": "/data/kb/../../etc/shadow",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_database_host_path must be a clean absolute path")
+			})
+
+			t.Run("ollama provider name case insensitive", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "Ollama",
+					"kb_embedding_model":    "nomic-embed-text",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), `kb_embedding_provider "ollama" is not yet supported`)
+			})
+		})
+	})
+
+	t.Run("kb_enabled false rejects kb_* fields", func(t *testing.T) {
+		t.Run("kb_embedding_provider rejected", func(t *testing.T) {
+			config := map[string]any{"kb_embedding_provider": "openai"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_provider must not be set unless kb_enabled is true")
+		})
+
+		t.Run("kb_embedding_model rejected", func(t *testing.T) {
+			config := map[string]any{"kb_embedding_model": "text-embedding-3-small"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_model must not be set unless kb_enabled is true")
+		})
+
+		t.Run("kb_embedding_api_key rejected", func(t *testing.T) {
+			config := map[string]any{"kb_embedding_api_key": "sk-x"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_api_key must not be set unless kb_enabled is true")
+		})
+
+		t.Run("kb_database_host_path rejected", func(t *testing.T) {
+			config := map[string]any{"kb_database_host_path": "/data/kb/nla-kb.db"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "kb_database_host_path must not be set unless kb_enabled is true")
 		})
 	})
 

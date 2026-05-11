@@ -21,7 +21,7 @@ import (
 func mcpRCAndFs(t *testing.T, dirResourceID, dirPath string) (*resource.Context, afero.Fs) {
 	t.Helper()
 	fs := afero.NewMemMapFs()
-	_ = fs.MkdirAll(dirPath, 0o700)
+	require.NoError(t, fs.MkdirAll(dirPath, 0o700))
 
 	injector := do.New()
 	do.Provide(injector, func(i *do.Injector) (afero.Fs, error) {

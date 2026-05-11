@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -274,8 +275,8 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		if kbEmbeddingProvider == nil {
 			errs = append(errs, fmt.Errorf("kb_embedding_provider is required when kb_enabled is true"))
 		} else {
-			// ollama is not supported in V1
-			if *kbEmbeddingProvider == "ollama" {
+			// ollama is not yet supported as a KB embedding provider
+			if strings.ToLower(*kbEmbeddingProvider) == "ollama" {
 				errs = append(errs, fmt.Errorf("kb_embedding_provider %q is not yet supported; use %q or %q", "ollama", "voyage", "openai"))
 			} else if !slices.Contains(validKBEmbeddingProviders, *kbEmbeddingProvider) {
 				errs = append(errs, fmt.Errorf("kb_embedding_provider must be one of: %s", strings.Join(validKBEmbeddingProviders, ", ")))
@@ -289,6 +290,24 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 
 		if kbEmbeddingModel == nil {
 			errs = append(errs, fmt.Errorf("kb_embedding_model is required when kb_enabled is true"))
+		}
+
+		// Path sanitization: must be absolute and clean (no .. components)
+		if kbDatabaseHostPath != nil {
+			p := *kbDatabaseHostPath
+			if !filepath.IsAbs(p) {
+				errs = append(errs, fmt.Errorf("kb_database_host_path must be an absolute path"))
+			} else if filepath.Clean(p) != p {
+				errs = append(errs, fmt.Errorf("kb_database_host_path must be a clean absolute path (no .. or redundant separators)"))
+			}
+		}
+	} else {
+		// KB is disabled — reject KB-specific fields to prevent silent misconfiguration
+		kbOnlyFields := []string{"kb_embedding_provider", "kb_embedding_model", "kb_embedding_api_key", "kb_database_host_path"}
+		for _, key := range kbOnlyFields {
+			if _, ok := config[key]; ok {
+				errs = append(errs, fmt.Errorf("%s must not be set unless kb_enabled is true", key))
+			}
 		}
 	}
 
