@@ -868,6 +868,246 @@ func TestParseMCPServiceConfig(t *testing.T) {
 		})
 	})
 
+	t.Run("knowledgebase config", func(t *testing.T) {
+		t.Run("happy paths", func(t *testing.T) {
+			t.Run("kb absent - all KB fields nil", func(t *testing.T) {
+				cfg, errs := database.ParseMCPServiceConfig(noLLMBase(), false)
+				require.Empty(t, errs)
+				assert.Nil(t, cfg.KBEnabled)
+				assert.Nil(t, cfg.KBEmbeddingProvider)
+				assert.Nil(t, cfg.KBEmbeddingModel)
+				assert.Nil(t, cfg.KBEmbeddingAPIKey)
+				assert.Nil(t, cfg.KBDatabaseHostPath)
+			})
+
+			t.Run("kb_enabled false with no KB fields", func(t *testing.T) {
+				config := map[string]any{"kb_enabled": false}
+				cfg, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+				require.NotNil(t, cfg.KBEnabled)
+				assert.False(t, *cfg.KBEnabled)
+				assert.Nil(t, cfg.KBEmbeddingProvider)
+				assert.Nil(t, cfg.KBEmbeddingModel)
+				assert.Nil(t, cfg.KBEmbeddingAPIKey)
+				assert.Nil(t, cfg.KBDatabaseHostPath)
+			})
+
+			t.Run("voyage provider", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  "voy-key",
+				}
+				cfg, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+				require.NotNil(t, cfg.KBEnabled)
+				assert.True(t, *cfg.KBEnabled)
+				require.NotNil(t, cfg.KBEmbeddingProvider)
+				assert.Equal(t, "voyage", *cfg.KBEmbeddingProvider)
+				require.NotNil(t, cfg.KBEmbeddingModel)
+				assert.Equal(t, "voyage-3-lite", *cfg.KBEmbeddingModel)
+				require.NotNil(t, cfg.KBEmbeddingAPIKey)
+				assert.Equal(t, "voy-key", *cfg.KBEmbeddingAPIKey)
+				assert.Nil(t, cfg.KBDatabaseHostPath)
+			})
+
+			t.Run("openai provider", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "openai",
+					"kb_embedding_model":    "text-embedding-3-small",
+					"kb_embedding_api_key":  "sk-openai-key",
+				}
+				cfg, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+				require.NotNil(t, cfg.KBEmbeddingProvider)
+				assert.Equal(t, "openai", *cfg.KBEmbeddingProvider)
+				require.NotNil(t, cfg.KBEmbeddingModel)
+				assert.Equal(t, "text-embedding-3-small", *cfg.KBEmbeddingModel)
+				require.NotNil(t, cfg.KBEmbeddingAPIKey)
+				assert.Equal(t, "sk-openai-key", *cfg.KBEmbeddingAPIKey)
+			})
+
+			t.Run("kb_database_host_path override", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":             true,
+					"kb_embedding_provider":  "voyage",
+					"kb_embedding_model":     "voyage-3-lite",
+					"kb_embedding_api_key":   "voy-key",
+					"kb_database_host_path":  "/data/custom/my-kb.db",
+				}
+				cfg, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+				require.NotNil(t, cfg.KBDatabaseHostPath)
+				assert.Equal(t, "/data/custom/my-kb.db", *cfg.KBDatabaseHostPath)
+			})
+
+			t.Run("kb_enabled false ignores invalid KB fields", func(t *testing.T) {
+				// When kb_enabled is false, provider/model/key are not validated.
+				config := map[string]any{
+					"kb_enabled":            false,
+					"kb_embedding_provider": "ollama",
+					"kb_embedding_model":    "some-model",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+			})
+		})
+
+		t.Run("required fields when kb_enabled is true", func(t *testing.T) {
+			t.Run("missing kb_embedding_provider", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":           true,
+					"kb_embedding_model":   "voyage-3-lite",
+					"kb_embedding_api_key": "voy-key",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_provider is required when kb_enabled is true")
+			})
+
+			t.Run("missing kb_embedding_model", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_api_key":  "voy-key",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_model is required when kb_enabled is true")
+			})
+
+			t.Run("voyage without kb_embedding_api_key", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), `kb_embedding_api_key is required when kb_embedding_provider is "voyage"`)
+			})
+
+			t.Run("openai without kb_embedding_api_key", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "openai",
+					"kb_embedding_model":    "text-embedding-3-small",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), `kb_embedding_api_key is required when kb_embedding_provider is "openai"`)
+			})
+		})
+
+		t.Run("provider restrictions", func(t *testing.T) {
+			t.Run("ollama rejected with not yet supported message", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "ollama",
+					"kb_embedding_model":    "nomic-embed-text",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), `"ollama" is not yet supported`)
+			})
+
+			t.Run("unknown provider rejected", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "bedrock",
+					"kb_embedding_model":    "some-model",
+					"kb_embedding_api_key":  "some-key",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_provider must be one of")
+			})
+		})
+
+		t.Run("disable_search_knowledgebase conflict", func(t *testing.T) {
+			t.Run("kb_enabled true and disable_search_knowledgebase true is rejected", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":                   true,
+					"kb_embedding_provider":        "voyage",
+					"kb_embedding_model":           "voyage-3-lite",
+					"kb_embedding_api_key":         "voy-key",
+					"disable_search_knowledgebase": true,
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_enabled and disable_search_knowledgebase cannot both be true")
+			})
+
+			t.Run("disable_search_knowledgebase true without kb_enabled is allowed", func(t *testing.T) {
+				config := map[string]any{"disable_search_knowledgebase": true}
+				cfg, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+				require.NotNil(t, cfg.DisableSearchKnowledgebase)
+				assert.True(t, *cfg.DisableSearchKnowledgebase)
+			})
+		})
+
+		t.Run("type errors", func(t *testing.T) {
+			t.Run("kb_enabled wrong type", func(t *testing.T) {
+				config := map[string]any{"kb_enabled": "yes"}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_enabled must be a boolean")
+			})
+
+			t.Run("kb_embedding_provider wrong type", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": 42,
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  "voy-key",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_provider must be a string")
+			})
+
+			t.Run("kb_embedding_model wrong type", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    123,
+					"kb_embedding_api_key":  "voy-key",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_model must be a string")
+			})
+
+			t.Run("kb_embedding_api_key wrong type", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  true,
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_embedding_api_key must be a string")
+			})
+
+			t.Run("kb_database_host_path wrong type", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  "voy-key",
+					"kb_database_host_path": 99,
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), "kb_database_host_path must be a string")
+			})
+		})
+	})
+
 	t.Run("llm_enabled false rejects LLM fields", func(t *testing.T) {
 		t.Run("llm_provider rejected", func(t *testing.T) {
 			config := map[string]any{"llm_provider": "anthropic"}
