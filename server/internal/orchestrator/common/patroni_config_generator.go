@@ -186,7 +186,7 @@ func (p *PatroniConfigGenerator) Generate(
 
 func (p *PatroniConfigGenerator) parameters() map[string]any {
 	parameters := postgres.DefaultGUCs()
-	maps.Copy(parameters, postgres.Spock4DefaultGUCs())
+	maps.Copy(parameters, postgres.SpockDefaultGUCs())
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{
 		"ssl":           "on",
