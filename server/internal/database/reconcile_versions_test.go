@@ -129,8 +129,16 @@ func TestReconcileVersions(t *testing.T) {
 					PostgresVersion: "17.4",
 					SpockVersion:    "5",
 					Nodes: []*database.Node{
-						{Name: "n1", HostIDs: []string{"host-1"}},
-						{Name: "n2", HostIDs: []string{"host-2"}},
+						{
+							Name:            "n1",
+							HostIDs:         []string{"host-1"},
+							PostgresVersion: "17.5",
+						},
+						{
+							Name:            "n2",
+							HostIDs:         []string{"host-2"},
+							PostgresVersion: "17.5",
+						},
 					},
 				},
 			},
@@ -139,13 +147,13 @@ func TestReconcileVersions(t *testing.T) {
 					InstanceID:    "n1-host-1",
 					NodeName:      "n1",
 					HostID:        "host-1",
-					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", "5"),
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.5", "5"),
 				},
 				{
 					InstanceID:    "n2-host-2",
 					NodeName:      "n2",
 					HostID:        "host-2",
-					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", "5"),
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.5", "5"),
 				},
 			},
 			statuses: []*database.StoredInstanceStatus{
@@ -154,7 +162,7 @@ func TestReconcileVersions(t *testing.T) {
 					Status: &database.InstanceStatus{
 						StatusUpdatedAt: utils.PointerTo(time.Now()),
 						Role:            utils.PointerTo(patroni.InstanceRolePrimary),
-						PostgresVersion: utils.PointerTo("17.4"),
+						PostgresVersion: utils.PointerTo("17.5"),
 						SpockVersion:    utils.PointerTo("6.0.0"),
 					},
 				},
@@ -163,7 +171,7 @@ func TestReconcileVersions(t *testing.T) {
 					Status: &database.InstanceStatus{
 						StatusUpdatedAt: utils.PointerTo(time.Now()),
 						Role:            utils.PointerTo(patroni.InstanceRolePrimary),
-						PostgresVersion: utils.PointerTo("17.4"),
+						PostgresVersion: utils.PointerTo("17.5"),
 						SpockVersion:    utils.PointerTo("6.0.0"),
 					},
 				},
@@ -173,8 +181,16 @@ func TestReconcileVersions(t *testing.T) {
 					PostgresVersion: "17.4",
 					SpockVersion:    "6",
 					Nodes: []*database.Node{
-						{Name: "n1", HostIDs: []string{"host-1"}},
-						{Name: "n2", HostIDs: []string{"host-2"}},
+						{
+							Name:            "n1",
+							HostIDs:         []string{"host-1"},
+							PostgresVersion: "17.5", // These overrides should remain unnormalized since only the spock version changed
+						},
+						{
+							Name:            "n2",
+							HostIDs:         []string{"host-2"},
+							PostgresVersion: "17.5",
+						},
 					},
 				},
 			},
@@ -183,13 +199,13 @@ func TestReconcileVersions(t *testing.T) {
 					InstanceID:    "n1-host-1",
 					NodeName:      "n1",
 					HostID:        "host-1",
-					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", "6"),
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.5", "6"),
 				},
 				{
 					InstanceID:    "n2-host-2",
 					NodeName:      "n2",
 					HostID:        "host-2",
-					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", "6"),
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.5", "6"),
 				},
 			},
 		},
@@ -456,6 +472,56 @@ func TestReconcileVersions(t *testing.T) {
 					SpockVersion:    "5",
 					Nodes: []*database.Node{
 						{Name: "n1"},
+					},
+				},
+			},
+		},
+		{
+			name: "malformed instance records",
+			spec: &database.StoredSpec{
+				Spec: &database.Spec{
+					PostgresVersion: "17.4",
+					SpockVersion:    "5",
+					Nodes: []*database.Node{
+						{Name: "n1", HostIDs: []string{"host-1"}},
+						{Name: "n2", HostIDs: []string{"host-2"}},
+					},
+				},
+			},
+			// These instances are missing a PgEdgeVersion due to a failure
+			// somewhere else in the system.
+			instances: []*database.StoredInstance{
+				{
+					InstanceID: "n1-host-1",
+					NodeName:   "n1",
+					HostID:     "host-1",
+				},
+				{
+					InstanceID: "n2-host-2",
+					NodeName:   "n2",
+					HostID:     "host-2",
+				},
+			},
+			// These instances are up and running even though the instance
+			// records are malformed. Otherwise, reconcileVersions will skip
+			// these instances.
+			statuses: []*database.StoredInstanceStatus{
+				{
+					InstanceID: "n1-host-1",
+					Status: &database.InstanceStatus{
+						StatusUpdatedAt: utils.PointerTo(time.Now()),
+						Role:            utils.PointerTo(patroni.InstanceRoleReplica),
+						PostgresVersion: utils.PointerTo("17.4"),
+						SpockVersion:    utils.PointerTo("5.0.6"),
+					},
+				},
+				{
+					InstanceID: "n2-host-2",
+					Status: &database.InstanceStatus{
+						StatusUpdatedAt: utils.PointerTo(time.Now()),
+						Role:            utils.PointerTo(patroni.InstanceRoleReplica),
+						PostgresVersion: utils.PointerTo("17.4"),
+						SpockVersion:    utils.PointerTo("5.0.6"),
 					},
 				},
 			},

@@ -123,6 +123,9 @@ func reconcileInstanceVersions(
 	}
 	instancesByNodeHost := make(map[nodeHostKey]*StoredInstance, len(instances))
 	for _, instance := range instances {
+		if instance.PgEdgeVersion == nil {
+			continue
+		}
 		status, ok := statusesByID[instance.InstanceID]
 		if !ok || status.Status.IsStale() {
 			continue
@@ -199,15 +202,12 @@ func reconcileNodeVersions(
 			spockMatches = false
 		}
 	}
+	if updatedSpec != nil {
+		updatedSpec.NormalizePostgresVersions()
+	}
 	if spockMatches && commonSpockVersion != "" && commonSpockVersion != spec.SpockVersion {
 		spec.SpockVersion = commonSpockVersion
 		updatedSpec = spec
-	}
-	if updatedSpec != nil {
-		updatedSpec.NormalizePostgresVersions()
-		if spockMatches && commonSpockVersion != "" {
-			updatedSpec.SpockVersion = commonSpockVersion
-		}
 	}
 
 	return updatedSpec
