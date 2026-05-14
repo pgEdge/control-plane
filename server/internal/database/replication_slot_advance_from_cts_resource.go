@@ -68,6 +68,8 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Refresh(ctx context.Context, rc 
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *resource.Context) error {
+	r.AdvancedToLSN = ""
+
 	// Fetch commit timestamp from lag tracker resource
 	lagTracker, err := resource.FromContext[*LagTrackerCommitTimestampResource](
 		rc,

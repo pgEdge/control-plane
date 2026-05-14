@@ -103,7 +103,11 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 			// Worker is running — continue waiting
 		case postgres.SubStatusDisabled, postgres.SubStatusDown:
 			// Worker not yet started; transient — keep polling
-			time.Sleep(pollInterval)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(pollInterval):
+			}
 			continue
 		default:
 			return fmt.Errorf("subscription has unhealthy status %q: provider=%s subscriber=%s",
