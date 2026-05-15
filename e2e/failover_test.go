@@ -17,11 +17,13 @@ import (
 func TestFailoverScenarios(t *testing.T) {
 	t.Parallel()
 
-	host1 := fixture.HostIDs()[0]
-	host2 := fixture.HostIDs()[1]
-	host3 := fixture.HostIDs()[2]
+	hostIDs := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hostIDs), 3, "fixture must provide at least 3 hosts")
+	host1 := hostIDs[0]
+	host2 := hostIDs[1]
+	host3 := hostIDs[2]
 
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
@@ -42,6 +44,10 @@ func TestFailoverScenarios(t *testing.T) {
 					Name:    "n1",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1), controlplane.Identifier(host2), controlplane.Identifier(host3)},
 				},
+				{
+					Name:    "n2",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
 			},
 		},
 	})
@@ -56,15 +62,17 @@ func TestFailoverScenarios(t *testing.T) {
 		return inst.ID
 	}
 
-	waitFor(func() bool {
-		db.Refresh(ctx)
+	require.True(t, waitFor(func() bool {
+		require.NoError(t, db.Refresh(ctx))
 		for _, inst := range db.Instances {
 			if inst.NodeName == "n1" && (inst.State == "modifying" || inst.State == "creating") {
 				return false
 			}
 		}
 		return true
-	}, 60*time.Second)
+	}, 60*time.Second))
+
+	waitForFailoverSlots(ctx, t, db)
 
 	// Returns a non-primary instance that's ready/available, or "" if none found within timeout.
 	waitForReadyReplica := func(timeout time.Duration) string {
@@ -138,6 +146,7 @@ func TestFailoverScenarios(t *testing.T) {
 			"[auto] primary did not change within timeout (still %s)", origPrimary)
 		newPrimary := getPrimaryInstanceID()
 		t.Logf("[auto] new primary: %s", newPrimary)
+		db.WaitForReplication(ctx, t, "admin", "password")
 	})
 
 	t.Run("failover to a specific candidate", func(t *testing.T) {

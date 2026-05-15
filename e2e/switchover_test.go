@@ -9,19 +9,23 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/client"
 )
 
 func TestSwitchoverScenarios(t *testing.T) {
 	t.Parallel()
 
-	host1 := fixture.HostIDs()[0]
-	host2 := fixture.HostIDs()[1]
-	host3 := fixture.HostIDs()[2]
+	hostIDs := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hostIDs), 3, "fixture must provide at least 3 hosts")
+	host1 := hostIDs[0]
+	host2 := hostIDs[1]
+	host3 := hostIDs[2]
 
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
@@ -42,6 +46,10 @@ func TestSwitchoverScenarios(t *testing.T) {
 					Name:    "n1",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1), controlplane.Identifier(host2), controlplane.Identifier(host3)},
 				},
+				{
+					Name:    "n2",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
 			},
 		},
 	})
@@ -60,15 +68,17 @@ func TestSwitchoverScenarios(t *testing.T) {
 		return inst.ID
 	}
 
-	waitFor(func() bool {
-		db.Refresh(ctx)
+	require.True(t, waitFor(func() bool {
+		require.NoError(t, db.Refresh(ctx))
 		for _, inst := range db.Instances {
 			if inst.NodeName == "n1" && (inst.State == "modifying" || inst.State == "creating") {
 				return false
 			}
 		}
 		return true
-	}, 60*time.Second)
+	}, 60*time.Second))
+
+	waitForFailoverSlots(ctx, t, db)
 
 	// Returns a non-primary instance that's ready/available, or "" if none found within timeout.
 	waitForReadyReplica := func(curPrimary string, timeout time.Duration) string {
@@ -140,6 +150,7 @@ func TestSwitchoverScenarios(t *testing.T) {
 			"[auto] primary did not change within timeout (still %s)", origPrimary)
 		newPrimary := getPrimaryInstanceID()
 		t.Logf("[auto] new primary: %s", newPrimary)
+		db.WaitForReplication(ctx, t, "admin", "password")
 	})
 
 	t.Run("switchover to a specific candidate", func(t *testing.T) {
@@ -259,6 +270,32 @@ func waitFor(cond func() bool, timeout time.Duration) bool {
 		time.Sleep(1 * time.Second)
 	}
 	return false
+}
+
+func waitForFailoverSlots(ctx context.Context, t *testing.T, db *DatabaseFixture) {
+	require.NoError(t, db.Refresh(ctx))
+	replicas := db.GetInstances(And(WithRole(client.RoleReplica)))
+	require.NotEmpty(t, replicas)
+	for replica := range replicas {
+		opts := ConnectionOptions{
+			Username: "admin",
+			Password: "password",
+			Instance: replica,
+		}
+		db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
+			tLogf(t, "waiting for failover slot to exist on replica instance %s", replica.ID)
+			start := time.Now()
+
+			require.True(t, waitFor(func() bool {
+				var failoverSlotExists bool
+				row := conn.QueryRow(ctx, `select exists (select 1 from pg_replication_slots where plugin = 'spock_output')`)
+				require.NoError(t, row.Scan(&failoverSlotExists))
+				return failoverSlotExists
+			}, 60*time.Second))
+
+			tLogf(t, "failover slot exists in replica instance %s after %.2f seconds", replica.ID, time.Since(start).Seconds())
+		})
+	}
 }
 
 func serverNowUTC(t *testing.T, baseURL string) time.Time {
