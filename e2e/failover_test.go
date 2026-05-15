@@ -138,6 +138,8 @@ func TestFailoverScenarios(t *testing.T) {
 			"[auto] primary did not change within timeout (still %s)", origPrimary)
 		newPrimary := getPrimaryInstanceID()
 		t.Logf("[auto] new primary: %s", newPrimary)
+
+		assertAllNodesReplicationHealthy(ctx, t, db, "admin", "password", replicationHealthTimeout)
 	})
 
 	t.Run("failover to a specific candidate", func(t *testing.T) {
@@ -162,6 +164,8 @@ func TestFailoverScenarios(t *testing.T) {
 			"[specific] primary did not become %s within timeout (current %s)",
 			candidateInst, getPrimaryInstanceID())
 		t.Logf("[specific] new primary confirmed: %s", candidateInst)
+
+		assertAllNodesReplicationHealthy(ctx, t, db, "admin", "password", replicationHealthTimeout)
 	})
 
 	t.Run("invalid candidate instance", func(t *testing.T) {
@@ -239,5 +243,7 @@ func TestFailoverScenarios(t *testing.T) {
 		require.NoError(t, err, "failover with skip_validation=true should be accepted")
 		// Wait for some short time to let failover proceed — primary may change
 		_ = waitForPrimaryChange(origPrimary, 75*time.Second)
+
+		assertAllNodesReplicationHealthy(ctx, t, db, "admin", "password", replicationHealthTimeout)
 	})
 }
