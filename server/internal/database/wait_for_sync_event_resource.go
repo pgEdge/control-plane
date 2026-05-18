@@ -85,10 +85,11 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 			return ctx.Err()
 		}
 
-		// Check subscription health first — fail early if broken.
-		// Only statuses where the spock worker is running can make
-		// progress. The others ("disabled", "down") mean sync will
-		// never complete.
+		// Check subscription health. "disabled" and "down" are transient
+		// during add-node: the apply worker may not have started yet.
+		// Keep polling until the context deadline rather than failing fast.
+		// Only statuses where the worker is confirmed broken warrant an
+		// immediate error.
 		status, err := postgres.GetSubscriptionStatus(r.ProviderNode, r.SubscriberNode).
 			Scalar(ctx, subscriberConn)
 		if err != nil {
@@ -100,6 +101,14 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		switch status {
 		case postgres.SubStatusInitializing, postgres.SubStatusReplicating, postgres.SubStatusUnknown:
 			// Worker is running — continue waiting
+		case postgres.SubStatusDisabled, postgres.SubStatusDown:
+			// Worker not yet started; transient — keep polling
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(pollInterval):
+			}
+			continue
 		default:
 			return fmt.Errorf("subscription has unhealthy status %q: provider=%s subscriber=%s",
 				status, r.ProviderNode, r.SubscriberNode)

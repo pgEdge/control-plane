@@ -99,6 +99,12 @@
     [
       {
         "type": "create",
+        "resource_id": "database.peer_catchup::n1:n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
         "resource_id": "database.wait_for_sync_event::n2:n1:test",
         "reason": "does_not_exist",
         "diff": null
@@ -140,6 +146,14 @@
       {
         "type": "create",
         "resource_id": "database.replication_slot_advance_from_cts::n2:n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_origin_advance::n2:n3:test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -211,7 +225,7 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.replication_slot_advance_from_cts::n2:n3:test",
+        "resource_id": "database.replication_origin_advance::n2:n3:test",
         "diff": null
       },
       {
@@ -226,6 +240,13 @@
         "resource_id": "database.dump_roles::n1",
         "diff": null
       },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot_advance_from_cts::n2:n3:test",
+        "diff": null
+      }
+    ],
+    [
       {
         "type": "delete",
         "resource_id": "database.lag_tracker_commit_ts::n2:n3:test",
@@ -247,6 +268,11 @@
       }
     ],
     [
+      {
+        "type": "delete",
+        "resource_id": "database.peer_catchup::n1:n2:test",
+        "diff": null
+      },
       {
         "type": "delete",
         "resource_id": "database.wait_for_sync_event::n2:n1:test",

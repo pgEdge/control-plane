@@ -402,6 +402,52 @@ func AdvanceReplicationSlotToLSN(databaseName, providerNode, subscriberNode stri
 	}
 }
 
+func EnsureReplicationOriginExists(slotName string) ConditionalStatement {
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL:  "SELECT NOT EXISTS (SELECT 1 FROM pg_replication_origin WHERE roname = @slot_name);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+		Then: Statement{
+			SQL:  "SELECT pg_replication_origin_create(@slot_name);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+	}
+}
+
+func AdvanceReplicationOrigin(slotName, lsn string) Statement {
+	return Statement{
+		SQL: "SELECT pg_replication_origin_advance(@slot_name, @lsn::pg_lsn);",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+			"lsn":       lsn,
+		},
+	}
+}
+
+// SpockProgressReachedLSN reports whether the local node's apply progress
+// from the named peer has reached targetLSN. Uses remote_lsn (the LSN of the
+// last applied commit in Spock 5.x) rather than received_lsn, which can
+// advance on keepalive messages before any commits have been applied.
+func SpockProgressReachedLSN(peerNodeName, targetLSN string) Query[bool] {
+	return Query[bool]{
+		SQL: `
+			SELECT COALESCE(
+				(SELECT p.remote_lsn >= @target_lsn::pg_lsn
+				 FROM spock.progress p
+				 JOIN spock.node n ON n.node_id = p.remote_node_id
+				 WHERE p.node_id = (SELECT node_id FROM spock.node_info())
+				   AND n.node_name = @peer_node_name),
+				false
+			)
+		`,
+		Args: pgx.NamedArgs{
+			"peer_node_name": peerNodeName,
+			"target_lsn":    targetLSN,
+		},
+	}
+}
+
 // GetSubscriptionStatus returns the current status of a specific subscription
 func GetSubscriptionStatus(providerNode, subscriberNode string) Query[string] {
 	return Query[string]{

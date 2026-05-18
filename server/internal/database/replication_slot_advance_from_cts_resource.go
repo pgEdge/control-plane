@@ -25,16 +25,22 @@ func ReplicationSlotAdvanceFromCTSResourceIdentifier(providerNode, subscriberNod
 
 // ReplicationSlotAdvanceFromCTSResource advances the replication slot on the provider
 // to the LSN derived from the commit timestamp captured in lag_tracker.
+// AdvancedToLSN is written as output after a successful advance so that
+// ReplicationOriginAdvanceResource (running on the subscriber) can read it.
 type ReplicationSlotAdvanceFromCTSResource struct {
 	DatabaseName   string `json:"database_name"`
 	ProviderNode   string `json:"provider_node"`   // slot lives here
 	SubscriberNode string `json:"subscriber_node"` // target/receiver node
+
+	// Output: LSN the slot was advanced to (empty if advance was skipped).
+	AdvancedToLSN string `json:"advanced_to_lsn,omitempty"`
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) ResourceVersion() string { return "1" }
 
-// No diff-ignore fields needed; this always executes idempotently when asked.
-func (r *ReplicationSlotAdvanceFromCTSResource) DiffIgnore() []string { return nil }
+func (r *ReplicationSlotAdvanceFromCTSResource) DiffIgnore() []string {
+	return []string{"advanced_to_lsn"}
+}
 
 // Execute on the provider node (the slot exists there).
 func (r *ReplicationSlotAdvanceFromCTSResource) Executor() resource.Executor {
@@ -62,6 +68,8 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Refresh(ctx context.Context, rc 
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *resource.Context) error {
+	r.AdvancedToLSN = ""
+
 	// Fetch commit timestamp from lag tracker resource
 	lagTracker, err := resource.FromContext[*LagTrackerCommitTimestampResource](
 		rc,
@@ -142,6 +150,9 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 		return fmt.Errorf("failed to advance replication slot: %w", err)
 	}
 
+	// Record the LSN so ReplicationOriginAdvanceResource (running on the
+	// subscriber's host) can advance the origin to the same position.
+	r.AdvancedToLSN = targetLSN
 	return nil
 }
 
