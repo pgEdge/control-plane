@@ -28,8 +28,6 @@ func PeerCatchupResourceIdentifier(sourceNode, peerNode, databaseName string) re
 // Uses spock.progress.remote_lsn (apply progress at last committed
 // transaction) rather than received_lsn, which can advance on keepalive
 // messages before commits have been applied.
-//
-// Ref: zodan.sql lines 1455–1523, spock PR #392
 type PeerCatchupResource struct {
 	DatabaseName string `json:"database_name"`
 	SourceNode   string `json:"source_node"` // node where we check progress

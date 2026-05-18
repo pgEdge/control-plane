@@ -21,7 +21,6 @@ import (
 //
 // Covers: Change 1 — EnsureReplicationOriginExists + AdvanceReplicationOrigin
 // wired into ReplicationSlotAdvanceFromCTSResource.
-// Ref: zodan.sql:2071-2073, 2183-2185; spock PR #397.
 func TestAddNodeOriginAdvanced(t *testing.T) {
 	t.Parallel()
 
