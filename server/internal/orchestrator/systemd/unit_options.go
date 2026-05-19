@@ -85,6 +85,7 @@ func (u UnitSection) Options() []*unit.UnitOption {
 type ServiceSection struct {
 	Type        ServiceType
 	User        string
+	Group       string
 	ExecStart   string
 	ExecReload  string
 	KillMode    ServiceKillMode
@@ -102,6 +103,9 @@ func (s ServiceSection) Options() []*unit.UnitOption {
 	}
 	if s.User != "" {
 		opts = append(opts, ServiceUserOption(s.User))
+	}
+	if s.Group != "" {
+		opts = append(opts, ServiceGroupOption(s.Group))
 	}
 	if s.ExecStart != "" {
 		opts = append(opts, ServiceExecStartOption(s.ExecStart))
@@ -168,6 +172,14 @@ func ServiceUserOption(value string) *unit.UnitOption {
 	return &unit.UnitOption{
 		Section: sectionNameService,
 		Name:    "User",
+		Value:   value,
+	}
+}
+
+func ServiceGroupOption(value string) *unit.UnitOption {
+	return &unit.UnitOption{
+		Section: sectionNameService,
+		Name:    "Group",
 		Value:   value,
 	}
 }

@@ -1,5 +1,8 @@
+DEV_LIMA_OS ?= rocky-9
+
 ansible_playbook=ansible-playbook \
-	--extra-vars='@vars.yaml'
+	--extra-vars='@vars.yaml' \
+	--extra-vars='os=$(DEV_LIMA_OS)'
 
 .PHONY: quit
 quit:

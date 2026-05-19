@@ -266,6 +266,7 @@ type Config struct {
 	DockerSwarm                     DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
 	SystemD                         SystemD      `koanf:"systemd" json:"systemd,omitzero"`
 	DatabaseOwnerUID                int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
+	DatabaseOwnerGID                int          `koanf:"database_owner_gid" json:"database_owner_gid,omitempty"`
 	ProfilingEnabled                bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
 	RandomPorts                     RandomPorts  `koanf:"random_ports" json:"random_ports,omitzero"`
 	DatabasesMonitorIntervalSeconds uint64       `koanf:"databases_monitor_interval_seconds" json:"databases_monitor_interval_seconds,omitempty"`
@@ -418,7 +419,6 @@ func DefaultConfig() (Config, error) {
 		EtcdClient:                      etcdClientDefault,
 		DockerSwarm:                     defaultDockerSwarm,
 		SystemD:                         defaultSystemD,
-		DatabaseOwnerUID:                26,
 		RandomPorts:                     defaultRandomPorts,
 		DatabasesMonitorIntervalSeconds: 30,
 	}, nil

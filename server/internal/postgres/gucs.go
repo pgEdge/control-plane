@@ -6,23 +6,31 @@ import (
 
 func DefaultGUCs() map[string]any {
 	return map[string]any{
-		"password_encryption":          "md5", // TODO: Can we default to scram-sha-256?
-		"dynamic_shared_memory_type":   "posix",
-		"wal_level":                    "logical",
-		"checkpoint_timeout":           "15min",
-		"checkpoint_completion_target": "0.9",
-		"archive_mode":                 "on",
 		"archive_command":              "/bin/true",
-		"wal_sender_timeout":           "5s",
-		"track_commit_timestamp":       "on",
+		"archive_mode":                 "on",
+		"checkpoint_completion_target": "0.9",
+		"checkpoint_timeout":           "15min",
+		"dynamic_shared_memory_type":   "posix",
 		"hot_standby_feedback":         "on",
-		"track_io_timing":              "on",
+		"log_destination":              "stderr",
+		"log_directory":                "log",
+		"log_filename":                 "postgresql-%a.log",
+		"log_line_prefix":              "%m [%p] ",
+		"log_rotation_age":             "1d",
+		"log_rotation_size":            "0",
+		"log_truncate_on_rotation":     "on",
+		"logging_collector":            "on",
+		"password_encryption":          "md5", // TODO: Can we default to scram-sha-256?
 		"shared_preload_libraries":     "pg_stat_statements,snowflake,spock",
+		"track_commit_timestamp":       "on",
+		"track_io_timing":              "on",
+		"wal_level":                    "logical",
 		"wal_log_hints":                "on",
+		"wal_sender_timeout":           "5s",
 	}
 }
 
-func Spock4DefaultGUCs() map[string]any {
+func SpockDefaultGUCs() map[string]any {
 	return map[string]any{
 		"spock.enable_ddl_replication":   "on",
 		"spock.include_ddl_repset":       "on",

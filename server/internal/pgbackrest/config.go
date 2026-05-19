@@ -5,6 +5,7 @@ import (
 	"io"
 	"maps"
 	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -193,6 +194,7 @@ func (r *Repository) Identifier() string {
 type ConfigOptions struct {
 	DatabaseID   string
 	NodeName     string
+	InstanceID   string
 	PgDataPath   string
 	HostUser     string
 	User         string
@@ -205,6 +207,7 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 	global := map[string]string{
 		"start-fast":        "y",
 		"log-level-console": "info",
+		"lock-path":         filepath.Join("/", "tmp", "pgbackrest", opts.InstanceID),
 	}
 
 	for idx, repo := range opts.Repositories {

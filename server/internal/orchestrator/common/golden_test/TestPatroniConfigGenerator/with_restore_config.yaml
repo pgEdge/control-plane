@@ -67,6 +67,14 @@ postgresql:
     dynamic_shared_memory_type: posix
     effective_cache_size: 524288
     hot_standby_feedback: "on"
+    log_destination: stderr
+    log_directory: log
+    log_filename: postgresql-%a.log
+    log_line_prefix: "%m [%p] "
+    log_rotation_age: 1d
+    log_rotation_size: "0"
+    log_truncate_on_rotation: "on"
+    logging_collector: "on"
     lolor.node: 1
     maintenance_work_mem: 137518
     max_parallel_workers: 8

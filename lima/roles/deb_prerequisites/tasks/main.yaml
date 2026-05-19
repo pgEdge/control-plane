@@ -1,0 +1,98 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+- name: Install pgEdge repository package prerequisites
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - curl
+    - gnupg2
+    - lsb-release
+- name: Install pgEdge repository
+  ansible.builtin.apt:
+    deb: https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
+    state: present
+- name: Template control plane stack yaml
+  template:
+    src: pgedge-old.sources.tmpl
+    dest: /etc/apt/sources.list.d/pgedge-old.sources
+- name: Update apt cache again
+  ansible.builtin.apt:
+    update_cache: yes
+  become: true
+- name: Install control-plane prerequisites
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - pgedge-postgresql-18
+    - pgedge-postgresql-17
+    - pgedge-postgresql-16
+    - pgedge-postgresql-18-spock50
+    - pgedge-postgresql-17-spock50
+    - pgedge-postgresql-16-spock50
+    - pgedge-postgresql-18-snowflake
+    - pgedge-postgresql-17-snowflake
+    - pgedge-postgresql-16-snowflake
+    - pgedge-postgresql-18-lolor
+    - pgedge-postgresql-17-lolor
+    - pgedge-postgresql-16-lolor
+    - pgedge-patroni
+    - pgedge-pgbackrest
+    - which
+    - wget
+    - git
+    - chrony
+- name: Disable default postgres units
+  ansible.builtin.systemd_service:
+    name: '{{ item }}'
+    state: stopped
+    enabled: false
+  with_items:
+    - postgresql.service
+    - postgresql@16-main.service
+    - postgresql@17-main.service
+    - postgresql@18-main.service
+- name: Install etcdctl and etcdutl
+  ansible.builtin.unarchive:
+    src: "{{ etcd_download_url }}"
+    dest: /usr/bin
+    remote_src: yes
+    extra_opts:
+      - "--strip-components=1"
+      - "{{ etcd_archive_name }}/etcdctl"
+      - "{{ etcd_archive_name }}/etcdutl"
+    creates: /usr/bin/etcdctl
+- name: Install Go
+  ansible.builtin.unarchive:
+    src: "{{ go_download_url }}"
+    dest: /usr/local
+    remote_src: yes
+    creates: /usr/local/go
+- name: Add profile environment
+  ansible.builtin.copy:
+    content: |
+      export PATH=$PATH:/usr/local/go/bin
+    dest: /etc/profile.d/control-plane-dev.sh
+    mode: '0755'
+- name: Allow large time jumps in chronyd
+  ansible.builtin.lineinfile:
+    path: /etc/chrony/chrony.conf
+    regexp: '^makestep'
+    line: 'makestep 1 -1'
+  register: chronycfg
+- name: Restart chronyd
+  ansible.builtin.systemd_service:
+    name: chrony.service
+    state: restarted
+    enabled: true
+  when: chronycfg.changed
+- name: Install delve debugger
+  ansible.builtin.command: /usr/local/go/bin/go install github.com/go-delve/delve/cmd/dlv@v1.25.2
+  args:
+    creates: /root/go/bin/dlv
+- name: Fix clocks
+  ansible.builtin.command: chronyc -a makestep
+  changed_when: false
