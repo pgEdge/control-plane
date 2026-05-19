@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/goccy/go-yaml"
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -10,11 +11,12 @@ import (
 // mcpYAMLConfig mirrors the MCP server's Config struct for YAML generation.
 // Only fields the CP needs to set are included.
 type mcpYAMLConfig struct {
-	HTTP      mcpHTTPConfig       `yaml:"http"`
-	Databases []mcpDatabaseConfig `yaml:"databases"`
-	LLM       *mcpLLMConfig       `yaml:"llm,omitempty"`
-	Embedding *mcpEmbeddingConfig `yaml:"embedding,omitempty"`
-	Builtins  mcpBuiltinsConfig   `yaml:"builtins"`
+	HTTP          mcpHTTPConfig       `yaml:"http"`
+	Databases     []mcpDatabaseConfig `yaml:"databases"`
+	LLM           *mcpLLMConfig       `yaml:"llm,omitempty"`
+	Embedding     *mcpEmbeddingConfig `yaml:"embedding,omitempty"`
+	Knowledgebase *mcpKBConfig        `yaml:"knowledgebase,omitempty"`
+	Builtins      mcpBuiltinsConfig   `yaml:"builtins"`
 }
 
 type mcpHTTPConfig struct {
@@ -68,6 +70,15 @@ type mcpEmbeddingConfig struct {
 	VoyageAPIKey string `yaml:"voyage_api_key,omitempty"`
 	OpenAIAPIKey string `yaml:"openai_api_key,omitempty"`
 	OllamaURL    string `yaml:"ollama_url,omitempty"`
+}
+
+type mcpKBConfig struct {
+	Enabled               bool   `yaml:"enabled"`
+	DatabasePath          string `yaml:"database_path"`
+	EmbeddingProvider     string `yaml:"embedding_provider"`
+	EmbeddingModel        string `yaml:"embedding_model"`
+	EmbeddingVoyageAPIKey string `yaml:"embedding_voyage_api_key,omitempty"`
+	EmbeddingOpenAIAPIKey string `yaml:"embedding_openai_api_key,omitempty"`
 }
 
 type mcpBuiltinsConfig struct {
@@ -169,6 +180,31 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 		embedding = emb
 	}
 
+	// Build KB config (only when kb_enabled is true)
+	var kb *mcpKBConfig
+	if cfg.KBEnabled != nil && *cfg.KBEnabled {
+		if cfg.KBEmbeddingProvider == nil || cfg.KBEmbeddingModel == nil || cfg.KBEmbeddingAPIKey == nil {
+			return nil, fmt.Errorf("internal: KB provider/model/key nil despite kb_enabled=true; validation was bypassed")
+		}
+		containerPath := "/app/kb/nla-kb.db"
+		if cfg.KBDatabaseHostPath != nil {
+			containerPath = "/app/kb/" + filepath.Base(*cfg.KBDatabaseHostPath)
+		}
+		k := &mcpKBConfig{
+			Enabled:           true,
+			DatabasePath:      containerPath,
+			EmbeddingProvider: *cfg.KBEmbeddingProvider,
+			EmbeddingModel:    *cfg.KBEmbeddingModel,
+		}
+		switch *cfg.KBEmbeddingProvider {
+		case "voyage":
+			k.EmbeddingVoyageAPIKey = *cfg.KBEmbeddingAPIKey
+		case "openai":
+			k.EmbeddingOpenAIAPIKey = *cfg.KBEmbeddingAPIKey
+		}
+		kb = k
+	}
+
 	// Build tool toggles
 	falseVal := false
 	tools := mcpToolsConfig{
@@ -227,8 +263,9 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 				},
 			},
 		},
-		LLM:       llm,
-		Embedding: embedding,
+		LLM:           llm,
+		Embedding:     embedding,
+		Knowledgebase: kb,
 		Builtins: mcpBuiltinsConfig{
 			Tools: tools,
 		},

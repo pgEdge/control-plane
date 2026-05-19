@@ -579,3 +579,57 @@ func TestServiceContainerSpec_PostgREST_User(t *testing.T) {
 		t.Errorf("User = %q, want %q (PostgREST runs as UID 1000 per official Dockerfile)", spec.TaskTemplate.ContainerSpec.User, want)
 	}
 }
+
+func makeMCPSpecOpts() *ServiceContainerSpecOptions {
+	return &ServiceContainerSpecOptions{
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+		},
+		ServiceInstanceID: "db1-mcp-host1",
+		DatabaseID:        "db1",
+		DatabaseName:      "testdb",
+		HostID:            "host1",
+		ServiceName:       "db1-mcp-host1",
+		Hostname:          "mcp-host1",
+		CohortMemberID:    "node-123",
+		ServiceImage:      &ServiceImage{Tag: "ghcr.io/pgedge/postgres-mcp:latest"},
+		DatabaseNetworkID: "db1-database",
+		DataPath:          "/var/lib/pgedge/services/db1-mcp-host1",
+	}
+}
+
+func TestServiceContainerSpec_MCP_NoKBMount(t *testing.T) {
+	// KBDirPath not set → only the data mount.
+	opts := makeMCPSpecOpts()
+	spec, err := ServiceContainerSpec(opts)
+	require.NoError(t, err)
+
+	mounts := spec.TaskTemplate.ContainerSpec.Mounts
+	if len(mounts) != 1 {
+		t.Fatalf("got %d mounts, want 1 (data only)", len(mounts))
+	}
+	if mounts[0].Target != "/app/data" {
+		t.Errorf("mounts[0].Target = %q, want %q", mounts[0].Target, "/app/data")
+	}
+}
+
+func TestServiceContainerSpec_MCP_KBMount(t *testing.T) {
+	// KBDirPath set → data mount + read-only KB dir mount.
+	opts := makeMCPSpecOpts()
+	opts.KBDirPath = "/var/lib/pgedge/kb"
+
+	spec, err := ServiceContainerSpec(opts)
+	require.NoError(t, err)
+
+	mounts := spec.TaskTemplate.ContainerSpec.Mounts
+	if len(mounts) != 2 {
+		t.Fatalf("got %d mounts, want 2 (data + kb)", len(mounts))
+	}
+	assert.Equal(t, "/app/data", mounts[0].Target)
+	assert.Equal(t, "/var/lib/pgedge/kb", mounts[1].Source)
+	assert.Equal(t, "/app/kb", mounts[1].Target)
+	if !mounts[1].ReadOnly {
+		t.Error("KB mount must be read-only")
+	}
+}

@@ -459,6 +459,9 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	// resource block and the per-node authenticator loop below.
 	var parsedPostgRESTConfig *database.PostgRESTServiceConfig
 
+	// Hoisted KB paths — computed in the MCP case, consumed by ServiceInstanceSpecResource.
+	var kbHostPath, kbDirPath string
+
 	switch spec.ServiceSpec.ServiceType {
 	case "mcp":
 		mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
@@ -473,6 +476,17 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			OwnerUID: mcpContainerUID,
 			OwnerGID: mcpContainerUID,
 		}
+		// Compute KB paths when KB is enabled.
+		if mcpConfig.KBEnabled != nil && *mcpConfig.KBEnabled {
+			if mcpConfig.KBDatabaseHostPath != nil {
+				kbHostPath = *mcpConfig.KBDatabaseHostPath
+				kbDirPath = filepath.Dir(*mcpConfig.KBDatabaseHostPath)
+			} else {
+				kbHostPath = filepath.Join(o.cfg.DataDir, "kb", "nla-kb.db")
+				kbDirPath = filepath.Join(o.cfg.DataDir, "kb")
+			}
+		}
+
 		mcpConfigResource := &MCPConfigResource{
 			ServiceInstanceID:  spec.ServiceInstanceID,
 			ServiceID:          spec.ServiceSpec.ServiceID,
@@ -484,6 +498,7 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 			TargetSessionAttrs: spec.TargetSessionAttrs,
 			ConnectAsUsername:  spec.ConnectAsUsername,
 			ConnectAsPassword:  spec.ConnectAsPassword,
+			KBHostPath:         kbHostPath,
 		}
 		serviceSpecificResources = []resource.Resource{dataDir, mcpConfigResource}
 
@@ -550,6 +565,7 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		TargetSessionAttrs: spec.TargetSessionAttrs,
 		Port:               spec.Port,
 		DataDirID:          dataDirID,
+		KBDirPath:          kbDirPath,
 	}
 
 	// Service instance resource (actual Docker service)

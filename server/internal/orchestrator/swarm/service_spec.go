@@ -73,6 +73,9 @@ type ServiceContainerSpecOptions struct {
 	// KeysPath is the host-side directory containing API key files.
 	// When non-empty, it is bind-mounted read-only into the container at /app/keys.
 	KeysPath string
+	// KBDirPath is the host-side directory containing the KB SQLite file.
+	// When non-empty, it is bind-mounted read-only into the container at /app/kb.
+	KBDirPath string
 }
 
 // ServiceContainerSpec builds a Docker Swarm service spec for a service instance.
@@ -188,6 +191,9 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		}
 		mounts = []mount.Mount{
 			docker.BuildMount(opts.DataPath, "/app/data", false),
+		}
+		if opts.KBDirPath != "" {
+			mounts = append(mounts, docker.BuildMount(opts.KBDirPath, "/app/kb", true))
 		}
 	case "rag":
 		user = fmt.Sprintf("%d", ragContainerUID)
