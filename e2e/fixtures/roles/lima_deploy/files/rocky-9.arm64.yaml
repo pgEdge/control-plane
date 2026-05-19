@@ -6,7 +6,7 @@ base: template://rocky-9
 cpus: 1
 plain: true
 memory: 4GiB
-disk: 20GiB
+disk: 50GiB
 networks:
   - lima: user-v2
   - vzNAT: true
