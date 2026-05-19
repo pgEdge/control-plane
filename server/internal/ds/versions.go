@@ -73,6 +73,16 @@ func (v *Version) MajorVersion() *Version {
 	}
 }
 
+func (v *Version) MajorMinorVersion() *Version {
+	components := slices.Clone(v.Components)
+	if len(components) > 2 {
+		components = components[:2]
+	}
+	return &Version{
+		Components: components,
+	}
+}
+
 func (v *Version) String() string {
 	components := make([]string, len(v.Components))
 	for i, c := range v.Components {
@@ -193,24 +203,42 @@ func (v *PgEdgeVersion) GreaterThan(other *PgEdgeVersion) bool {
 	return v.Compare(other) > 0
 }
 
-func MustPgEdgeVersion(postgresVersion, spockVersion string) *PgEdgeVersion {
-	v, err := NewPgEdgeVersion(postgresVersion, spockVersion)
+// Normalize returns the Postgres version in major.minor format and the Spock
+// version in major format. This matches the way that versions are currently
+// provided in our API.
+func (v *PgEdgeVersion) Normalize() (*PgEdgeVersion, error) {
+	pv := v.PostgresVersion.MajorMinorVersion()
+	if len(pv.Components) != 2 {
+		return nil, fmt.Errorf("expected at least a major and minor version for postgres, got '%s'", pv)
+	}
+	sv := v.SpockVersion.MajorVersion()
+	if len(sv.Components) != 1 {
+		return nil, fmt.Errorf("expected at least a major version for spock, got '%s'", sv)
+	}
+
+	return &PgEdgeVersion{
+		PostgresVersion: pv,
+		SpockVersion:    sv,
+	}, nil
+}
+
+func MustParsePgEdgeVersion(postgresVersion, spockVersion string) *PgEdgeVersion {
+	v, err := ParsePgEdgeVersion(postgresVersion, spockVersion)
 	if err != nil {
 		panic(err)
 	}
 	return v
 }
 
-func NewPgEdgeVersion(postgresVersion, spockVersion string) (*PgEdgeVersion, error) {
+func ParsePgEdgeVersion(postgresVersion, spockVersion string) (*PgEdgeVersion, error) {
 	pv, err := ParseVersion(postgresVersion)
 	if err != nil {
-		return nil, fmt.Errorf("invalid postgres version: %q", postgresVersion)
+		return nil, fmt.Errorf("invalid postgres version: '%s'", postgresVersion)
 	}
 	sv, err := ParseVersion(spockVersion)
 	if err != nil {
-		return nil, fmt.Errorf("invalid spock version: %q", spockVersion)
+		return nil, fmt.Errorf("invalid spock version: '%s'", spockVersion)
 	}
-
 	return &PgEdgeVersion{
 		PostgresVersion: pv,
 		SpockVersion:    sv,

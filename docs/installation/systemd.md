@@ -25,8 +25,9 @@ manage Postgres instances rather than Docker containers.
 The systemd installation method has the following known limitations in the
 current release.
 
-- The Postgres version of a database must not be changed after the database is
-  created; support for package upgrades is coming in a subsequent release.
+- Database upgrades are not supported via the API. Minor version upgrades can be
+  performed manually by a system administrator. Further support for package
+  management and database upgrades will be added in subsequent releases.
 - Supporting Services are not yet supported on systemd clusters; support is
   coming in a subsequent release.
 - All hosts in a cluster must use the same orchestrator (either `swarm` or
@@ -235,6 +236,37 @@ instructions.
 > Unlike with the Swarm orchestrator, `patroni_port` is a required field in
 > systemd clusters. As with other port fields, you can specify `0` to
 > assign a random port.
+
+## Performing Postgres Minor Version Upgrades
+
+Database upgrades are not yet supported via the Control Plane API, but system
+administrators can perform minor Postgres version upgrades by updating the
+packages on each machine. Follow these steps on each host in the cluster:
+
+1. Upgrade Postgres and/or other components using `dnf upgrade`. For example:
+
+    ```sh
+    sudo dnf upgrade pgedge-postgresql18
+    ```
+
+2. Find the systemd unit names for your database instances by listing units that
+   have the `patroni-*` prefix:
+
+    ```sh
+    sudo systemctl list-units 'patroni-*'
+    ```
+
+3. Restart each service:
+
+    ```sh
+    sudo systemctl try-restart <service name>
+    ```
+
+To minimize the risk of downtime, we recommend upgrading one host at a time,
+starting with hosts running replica instances.
+
+After completing the upgrade on all hosts, it may take up to 30 seconds for the
+new versions to be reflected in the database spec in the Control Plane API.
 
 ## Updating the Control Plane
 

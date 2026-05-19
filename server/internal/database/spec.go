@@ -473,6 +473,30 @@ func (s *Spec) RemoveHost(hostId string) (ok bool) {
 	return ok
 }
 
+// NormalizePostgresVersions checks if all nodes have an equal postgres version
+// and, if so, sets the top-level postgres version to that version and sets each
+// node's postgres version to an empty string.
+func (s *Spec) NormalizePostgresVersions() {
+	var common string
+	for _, node := range s.Nodes {
+		nodeVersion := node.PostgresVersion
+		if nodeVersion == "" {
+			nodeVersion = s.PostgresVersion
+		}
+		if common == "" {
+			common = nodeVersion
+		} else if nodeVersion != common {
+			return
+		}
+	}
+	if common != "" {
+		s.PostgresVersion = common
+		for _, node := range s.Nodes {
+			node.PostgresVersion = ""
+		}
+	}
+}
+
 func (s Spec) defaultOptionalFieldFromNodes(other []*Node) {
 	otherNodesByName := make(map[string]*Node)
 	for _, n := range other {
@@ -622,7 +646,7 @@ func (n *NodeInstances) InstanceIDs() []string {
 }
 
 func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
-	specVersion, err := ds.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
+	specVersion, err := ds.ParsePgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
 	}
@@ -659,7 +683,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		// Respect node-level overrides
 		nodeVersion := specVersion
 		if node.PostgresVersion != "" {
-			nodeVersion, err = ds.NewPgEdgeVersion(node.PostgresVersion, s.SpockVersion)
+			nodeVersion, err = ds.ParsePgEdgeVersion(node.PostgresVersion, s.SpockVersion)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse version from node spec: %w", err)
 			}

@@ -46,6 +46,7 @@ type TxnOperation interface {
 // on a unique key.
 type Txn interface {
 	AddOps(ops ...TxnOperation)
+	AddConditions(cmps ...clientv3.Cmp)
 	Commit(ctx context.Context) error
 }
 
