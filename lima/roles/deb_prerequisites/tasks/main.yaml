@@ -2,55 +2,62 @@
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: yes
-- name: Install pgEdge repository package prerequisites
+  changed_when: false
+- name: Install base prerequisites
   ansible.builtin.package:
     name: '{{ item }}'
     state: present
-  with_items:
+  loop:
     - curl
     - gnupg2
     - lsb-release
-- name: Install pgEdge repository
-  ansible.builtin.apt:
-    deb: https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
-    state: present
-- name: Template control plane stack yaml
-  template:
-    src: pgedge-old.sources.tmpl
-    dest: /etc/apt/sources.list.d/pgedge-old.sources
-- name: Update apt cache again
-  ansible.builtin.apt:
-    update_cache: yes
-  become: true
-- name: Install control-plane prerequisites
-  ansible.builtin.package:
-    name: '{{ item }}'
-    state: present
-  with_items:
-    - pgedge-postgresql-18
-    - pgedge-postgresql-17
-    - pgedge-postgresql-16
-    - pgedge-postgresql-18-spock50
-    - pgedge-postgresql-17-spock50
-    - pgedge-postgresql-16-spock50
-    - pgedge-postgresql-18-snowflake
-    - pgedge-postgresql-17-snowflake
-    - pgedge-postgresql-16-snowflake
-    - pgedge-postgresql-18-lolor
-    - pgedge-postgresql-17-lolor
-    - pgedge-postgresql-16-lolor
-    - pgedge-patroni
-    - pgedge-pgbackrest
     - which
     - wget
     - git
     - chrony
+- name: Install pgEdge repository
+  ansible.builtin.apt:
+    deb: https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
+    state: present
+- name: Install pgEdge old repository
+  template:
+    src: pgedge-old.sources.tmpl
+    dest: /etc/apt/sources.list.d/pgedge-old.sources
+- name: Reconfigure pgEdge repository for staging packages
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list.d/pgedge.sources
+    regexp: release
+    replace: staging
+  when: use_staging_packages | bool
+  register: repo_reconfigured_to_staging
+- name: Reconfigure pgEdge repository for release packages
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list.d/pgedge.sources
+    regexp: staging
+    replace: release
+  when: not (use_staging_packages | bool)
+  register: repo_reconfigured_to_release
+- name: Update apt cache again
+  ansible.builtin.apt:
+    update_cache: yes
+  changed_when: false
+- name: Remove pgEdge packages for reinstall
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: absent
+  loop: '{{ pgedge_packages }}'
+  when: repo_reconfigured_to_staging.changed or repo_reconfigured_to_release.changed
+- name: Install pgEdge packages
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ pgedge_packages }}'
 - name: Disable default postgres units
   ansible.builtin.systemd_service:
     name: '{{ item }}'
     state: stopped
     enabled: false
-  with_items:
+  loop:
     - postgresql.service
     - postgresql@16-main.service
     - postgresql@17-main.service

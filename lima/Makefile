@@ -1,8 +1,10 @@
 DEV_LIMA_OS ?= rocky-9
+DEV_LIMA_USE_STAGING_PACKAGES ?= false
 
 ansible_playbook=ansible-playbook \
 	--extra-vars='@vars.yaml' \
-	--extra-vars='os=$(DEV_LIMA_OS)'
+	--extra-vars='os=$(DEV_LIMA_OS)' \
+	--extra-vars='use_staging_packages=$(DEV_LIMA_USE_STAGING_PACKAGES)'
 
 .PHONY: quit
 quit:

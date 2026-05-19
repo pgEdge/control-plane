@@ -441,3 +441,28 @@ To reset this environment to its initial state, stop the servers by hitting `ctr
 ```sh
 make dev-lima-reset
 ```
+
+### Prerelease Package Testing
+
+You can deploy the staging package repositories to the `dev-lima` environment using the `DEV_LIMA_USE_STAGING_PACKAGES` environment variable:
+
+```sh
+# If you already have the dev-lima environment running, make sure to stop and
+# remove all databases:
+make dev-lima-reset
+
+# Set DEV_LIMA_USE_STAGING_PACKAGES=true to use the staging packages. If this
+# environment was already running, this will remove existing pgEdge packages and
+# reinstall them from the staging repository:
+make dev-lima-deploy DEV_LIMA_USE_STAGING_PACKAGES=true
+
+# To switch back to the release repositories:
+make dev-lima-reset
+make dev-lima-deploy
+
+# The same works with the debian environments, e.g.:
+make dev-lima-reset
+make dev-lima-deploy DEV_LIMA_OS=debian-13 DEV_LIMA_USE_STAGING_PACKAGES=true
+
+# Remember to run 'make dev-lima-teardown' when switching between distributions.
+```

@@ -10,3 +10,18 @@ etcd_download_url: https://github.com/etcd-io/etcd/releases/download/{{ etcd_ver
 go_version: 1.25.5
 go_archive_name: go{{ go_version }}.linux-{{ _arch_transform[ansible_facts.architecture] }}.tar.gz
 go_download_url: https://dl.google.com/go/{{ go_archive_name }}
+pgedge_packages:
+  - pgedge-postgresql-18
+  - pgedge-postgresql-17
+  - pgedge-postgresql-16
+  - pgedge-postgresql-18-spock50
+  - pgedge-postgresql-17-spock50
+  - pgedge-postgresql-16-spock50
+  - pgedge-postgresql-18-snowflake
+  - pgedge-postgresql-17-snowflake
+  - pgedge-postgresql-16-snowflake
+  - pgedge-postgresql-18-lolor
+  - pgedge-postgresql-17-lolor
+  - pgedge-postgresql-16-lolor
+  - pgedge-patroni
+  - pgedge-pgbackrest
