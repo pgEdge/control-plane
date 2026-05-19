@@ -122,6 +122,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 				"llm_temperature":              float64(0.7),
 				"llm_max_tokens":               float64(2048),
 				"pool_max_conns":               float64(10),
+				"metadata_ttl":                 "10m",
 				"disable_query_database":       true,
 				"disable_get_schema_info":      false,
 				"disable_similarity_search":    true,
@@ -154,6 +155,8 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Equal(t, 2048, *cfg.LLMMaxTokens)
 			require.NotNil(t, cfg.PoolMaxConns)
 			assert.Equal(t, 10, *cfg.PoolMaxConns)
+			require.NotNil(t, cfg.MetadataTTL)
+			assert.Equal(t, "10m", *cfg.MetadataTTL)
 			require.NotNil(t, cfg.DisableQueryDatabase)
 			assert.True(t, *cfg.DisableQueryDatabase)
 			require.NotNil(t, cfg.DisableGetSchemaInfo)
@@ -480,6 +483,32 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			_, errs := database.ParseMCPServiceConfig(config, false)
 			require.NotEmpty(t, errs)
 			assert.Contains(t, joinedErr(errs).Error(), "pool_max_conns must be a positive integer")
+		})
+	})
+
+	t.Run("metadata_ttl", func(t *testing.T) {
+		t.Run("valid metadata_ttl", func(t *testing.T) {
+			config := anthropicBase()
+			config["metadata_ttl"] = "10m"
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.MetadataTTL)
+			assert.Equal(t, "10m", *cfg.MetadataTTL)
+		})
+
+		t.Run("metadata_ttl omitted", func(t *testing.T) {
+			config := anthropicBase()
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.MetadataTTL)
+		})
+
+		t.Run("metadata_ttl wrong type", func(t *testing.T) {
+			config := anthropicBase()
+			config["metadata_ttl"] = 300
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "metadata_ttl must be a string")
 		})
 	})
 

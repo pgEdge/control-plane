@@ -43,6 +43,7 @@ type mcpDatabaseConfig struct {
 	Password           string         `yaml:"password"`
 	SSLMode            string         `yaml:"sslmode"`
 	AllowWrites        bool           `yaml:"allow_writes"`
+	MetadataTTL        string         `yaml:"metadata_ttl,omitempty"`
 	Pool               mcpPoolConfig  `yaml:"pool"`
 }
 
@@ -108,6 +109,10 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 	allowWrites := false
 	if cfg.AllowWrites != nil {
 		allowWrites = *cfg.AllowWrites
+	}
+	var metadataTTL string
+	if cfg.MetadataTTL != nil {
+		metadataTTL = *cfg.MetadataTTL
 	}
 
 	// Build LLM config (only when llm_enabled is true)
@@ -222,6 +227,7 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 				Password:           params.Password,
 				SSLMode:            "prefer",
 				AllowWrites:        allowWrites,
+				MetadataTTL:        metadataTTL,
 				Pool: mcpPoolConfig{
 					MaxConns: poolMaxConns,
 				},
