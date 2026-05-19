@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.8.1 - 2026-05-19
+
+### Added
+
+- Added support for Spock 5.0.8 on Postgres 16.14, 17.10, and 18.4.
+
+### Fixed
+
+- Fixed add-node data safety by ensuring replication slot and origin are correctly advanced before the new node joins.
+
 ## v0.8.0 - 2026-05-06
 
 ### Added
