@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed add-node data safety by ensuring replication slot and origin are correctly advanced before the new node joins.
+time: 2026-05-18T00:00:00.000000-00:00
