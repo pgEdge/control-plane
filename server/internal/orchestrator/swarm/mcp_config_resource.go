@@ -47,7 +47,7 @@ type MCPConfigResource struct {
 	ConnectAsUsername  string                      `json:"connect_as_username"`
 	ConnectAsPassword  string                      `json:"connect_as_password"`
 	// KBHostPath is the full path to the KB SQLite file on the host. When non-empty,
-	// Refresh verifies the file exists before allowing deployment to proceed.
+	// Create and Update verify the file exists before allowing deployment to proceed.
 	KBHostPath         string                      `json:"kb_host_path,omitempty"`
 }
 
@@ -88,21 +88,6 @@ func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	// Check KB file first so a missing file blocks both initial creates and
-	// updates. If this check came after the config.yaml check, a brand-new
-	// service (no config.yaml yet) would return ErrNotFound before reaching
-	// here, skipping the check and allowing the container to be deployed with
-	// a broken bind mount.
-	if r.KBHostPath != "" {
-		exists, err := afero.Exists(fs, r.KBHostPath)
-		if err != nil {
-			return fmt.Errorf("failed to check KB database file at %s: %w", r.KBHostPath, err)
-		}
-		if !exists {
-			return fmt.Errorf("KB database file not found at %s — stage the file on the host before deploying with kb_enabled: true", r.KBHostPath)
-		}
-	}
-
 	// Check if config.yaml exists; ErrNotFound here triggers Create.
 	_, err = readResourceFile(fs, filepath.Join(dirPath, "config.yaml"))
 	if err != nil {
@@ -112,9 +97,31 @@ func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 	return nil
 }
 
+// checkKBFileExists blocks deployment when kb_enabled is set but the host
+// KB file is missing. Called from Create and Update — not Refresh, because
+// Refresh is only invoked for resources already in state, so a check there
+// would not fire on first deploy.
+func (r *MCPConfigResource) checkKBFileExists(fs afero.Fs) error {
+	if r.KBHostPath == "" {
+		return nil
+	}
+	exists, err := afero.Exists(fs, r.KBHostPath)
+	if err != nil {
+		return fmt.Errorf("failed to check KB database file at %s: %w", r.KBHostPath, err)
+	}
+	if !exists {
+		return fmt.Errorf("KB database file not found at %s — stage the file on the host before deploying with kb_enabled: true", r.KBHostPath)
+	}
+	return nil
+}
+
 func (r *MCPConfigResource) Create(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {
+		return err
+	}
+
+	if err := r.checkKBFileExists(fs); err != nil {
 		return err
 	}
 
@@ -146,6 +153,10 @@ func (r *MCPConfigResource) Create(ctx context.Context, rc *resource.Context) er
 func (r *MCPConfigResource) Update(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {
+		return err
+	}
+
+	if err := r.checkKBFileExists(fs); err != nil {
 		return err
 	}
 

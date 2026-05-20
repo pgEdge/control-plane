@@ -75,14 +75,16 @@ func TestMCPConfigResource_Dependencies(t *testing.T) {
 	assert.Equal(t, filesystem.DirResourceIdentifier("db1-mcp-host1-data"), deps[0])
 }
 
-func TestMCPConfigResource_Refresh_KBDisabled(t *testing.T) {
-	// KBHostPath empty (KB not enabled) — Refresh must not block on any KB check.
+// The KB file existence check lives in Create and Update, NOT Refresh.
+// Refresh is only invoked by the planner for resources already in state —
+// it is never called for the initial deployment of a new service instance.
+// Putting the KB check in Refresh would silently skip it on first deploy.
+
+func TestMCPConfigResource_Create_KBDisabled(t *testing.T) {
+	// KBHostPath empty (KB not enabled) — Create must not block on any KB check.
 	dirID := "inst-data"
 	dirPath := "/var/lib/pgedge/services/inst-1"
-	rc, fs := mcpRCAndFs(t, dirID, dirPath)
-
-	// Write config.yaml so the first check passes.
-	require.NoError(t, afero.WriteFile(fs, filepath.Join(dirPath, "config.yaml"), []byte("x: 1"), 0o600))
+	rc, _ := mcpRCAndFs(t, dirID, dirPath)
 
 	r := &MCPConfigResource{
 		ServiceInstanceID: "inst-1",
@@ -91,18 +93,17 @@ func TestMCPConfigResource_Refresh_KBDisabled(t *testing.T) {
 		Config:            &database.MCPServiceConfig{},
 		KBHostPath:        "", // not set
 	}
-	err := r.Refresh(context.Background(), rc)
+	err := r.Create(context.Background(), rc)
 	require.NoError(t, err)
 }
 
-func TestMCPConfigResource_Refresh_KBFilePresent(t *testing.T) {
-	// KBHostPath set and file exists → Refresh succeeds.
+func TestMCPConfigResource_Create_KBFilePresent(t *testing.T) {
+	// KBHostPath set and file exists → Create succeeds.
 	dirID := "inst-data"
 	dirPath := "/var/lib/pgedge/services/inst-kb"
 	kbPath := "/var/lib/pgedge/kb/nla-kb.db"
 	rc, fs := mcpRCAndFs(t, dirID, dirPath)
 
-	require.NoError(t, afero.WriteFile(fs, filepath.Join(dirPath, "config.yaml"), []byte("x: 1"), 0o600))
 	require.NoError(t, fs.MkdirAll("/var/lib/pgedge/kb", 0o700))
 	require.NoError(t, afero.WriteFile(fs, kbPath, []byte("SQLite"), 0o600))
 
@@ -113,45 +114,18 @@ func TestMCPConfigResource_Refresh_KBFilePresent(t *testing.T) {
 		Config:            &database.MCPServiceConfig{},
 		KBHostPath:        kbPath,
 	}
-	err := r.Refresh(context.Background(), rc)
+	err := r.Create(context.Background(), rc)
 	require.NoError(t, err)
 }
 
-func TestMCPConfigResource_Refresh_KBFileMissing(t *testing.T) {
+func TestMCPConfigResource_Create_KBFileMissing(t *testing.T) {
 	// KBHostPath set but file does not exist → plain error, NOT ErrNotFound.
-	// config.yaml is present (update path).
-	dirID := "inst-data"
-	dirPath := "/var/lib/pgedge/services/inst-kb-missing"
-	kbPath := "/var/lib/pgedge/kb/nla-kb.db"
-	rc, fs := mcpRCAndFs(t, dirID, dirPath)
-
-	require.NoError(t, afero.WriteFile(fs, filepath.Join(dirPath, "config.yaml"), []byte("x: 1"), 0o600))
-	// Deliberately do NOT create the KB file.
-
-	r := &MCPConfigResource{
-		ServiceInstanceID: "inst-kb-missing",
-		HostID:            "host-1",
-		DirResourceID:     dirID,
-		Config:            &database.MCPServiceConfig{},
-		KBHostPath:        kbPath,
-	}
-	err := r.Refresh(context.Background(), rc)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), kbPath)
-	// Must NOT be ErrNotFound — a missing KB file blocks deployment, not triggers Create.
-	assert.False(t, errors.Is(err, resource.ErrNotFound), "missing KB file must not return ErrNotFound")
-}
-
-func TestMCPConfigResource_Refresh_KBFileMissing_NoConfigYet(t *testing.T) {
-	// KBHostPath set, file missing, AND config.yaml does not exist yet (initial
-	// create path). The KB check must fire before the config.yaml check so that
-	// the missing file blocks the deployment rather than being silently skipped
-	// because ErrNotFound is returned first.
+	// Covers the initial-deploy gap that the Refresh-based check used to miss.
 	dirID := "inst-data"
 	dirPath := "/var/lib/pgedge/services/inst-kb-missing-new"
 	kbPath := "/var/lib/pgedge/kb/nla-kb.db"
 	rc, _ := mcpRCAndFs(t, dirID, dirPath)
-	// Neither config.yaml nor the KB file are created.
+	// Deliberately do NOT create the KB file.
 
 	r := &MCPConfigResource{
 		ServiceInstanceID: "inst-kb-missing-new",
@@ -160,8 +134,32 @@ func TestMCPConfigResource_Refresh_KBFileMissing_NoConfigYet(t *testing.T) {
 		Config:            &database.MCPServiceConfig{},
 		KBHostPath:        kbPath,
 	}
-	err := r.Refresh(context.Background(), rc)
+	err := r.Create(context.Background(), rc)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), kbPath)
-	assert.False(t, errors.Is(err, resource.ErrNotFound), "missing KB file must not return ErrNotFound even on initial create")
+	// Must NOT be ErrNotFound — a missing KB file blocks deployment, not triggers Create.
+	assert.False(t, errors.Is(err, resource.ErrNotFound), "missing KB file must not return ErrNotFound")
+}
+
+func TestMCPConfigResource_Update_KBFileMissing(t *testing.T) {
+	// KBHostPath set but file does not exist on the update path → blocked.
+	dirID := "inst-data"
+	dirPath := "/var/lib/pgedge/services/inst-kb-missing"
+	kbPath := "/var/lib/pgedge/kb/nla-kb.db"
+	rc, fs := mcpRCAndFs(t, dirID, dirPath)
+
+	// config.yaml present (update path) but KB file not staged.
+	require.NoError(t, afero.WriteFile(fs, filepath.Join(dirPath, "config.yaml"), []byte("x: 1"), 0o600))
+
+	r := &MCPConfigResource{
+		ServiceInstanceID: "inst-kb-missing",
+		HostID:            "host-1",
+		DirResourceID:     dirID,
+		Config:            &database.MCPServiceConfig{},
+		KBHostPath:        kbPath,
+	}
+	err := r.Update(context.Background(), rc)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), kbPath)
+	assert.False(t, errors.Is(err, resource.ErrNotFound), "missing KB file must not return ErrNotFound")
 }

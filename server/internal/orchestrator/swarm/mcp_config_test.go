@@ -694,10 +694,6 @@ func TestGenerateMCPConfig_DatabaseConfig(t *testing.T) {
 	}
 }
 
-// TestGenerateMCPConfig_MultiHostTopology exercises the full path from
-// service spec → BuildServiceHostList → GenerateMCPConfig → YAML output.
-// It verifies that the generated YAML contains the correct ordered hosts
-// array and target_session_attrs for various topologies.
 func TestGenerateMCPConfig_KBDisabled_SectionOmitted(t *testing.T) {
 	params := &MCPConfigParams{
 		Config:        &database.MCPServiceConfig{KBEnabled: utils.PointerTo(false)},
@@ -920,6 +916,10 @@ func TestGenerateMCPConfig_KBEnabled_WithLLMAndEmbedding(t *testing.T) {
 	}
 }
 
+// TestGenerateMCPConfig_MultiHostTopology exercises the full path from
+// service spec → BuildServiceHostList → GenerateMCPConfig → YAML output.
+// It verifies that the generated YAML contains the correct ordered hosts
+// array and target_session_attrs for various topologies.
 func TestGenerateMCPConfig_MultiHostTopology(t *testing.T) {
 	// inst builds a minimal InstanceSpec for testing.
 	inst := func(instanceID, hostID string) *database.InstanceSpec {

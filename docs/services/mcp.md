@@ -93,6 +93,11 @@ knowledgebase; Ollama support is planned for a future release.
 !!! warning
 
     The Control Plane does not generate the knowledgebase SQLite file.
+    Download the `kb.db` file from the latest Knowledge Base release on
+    the [pgEdge Postgres MCP releases page](https://github.com/pgEdge/pgedge-postgres-mcp/releases)
+    — Knowledge Base releases are tagged separately from the normal
+    pgEdge Postgres MCP releases.
+
     You must place the file on every host that will run an MCP service
     instance **before** setting `kb_enabled: true`. If the file is
     missing when the Control Plane attempts to deploy the service, the
@@ -112,14 +117,6 @@ The following table describes the knowledgebase configuration fields:
 | `kb_embedding_model`      | string  | Embedding model for the KB (e.g., `voyage-3-lite`, `text-embedding-3-small`). Required when `kb_enabled` is `true`. |
 | `kb_embedding_api_key`    | string  | API key for the KB embedding provider. Required for `voyage` and `openai`. Scrubbed from API responses. |
 | `kb_database_host_path`   | string  | Full path to the KB SQLite file on the host. Defaults to `{data_dir}/kb/nla-kb.db`. Must be an absolute path. |
-
-!!! note
-
-    Changing any `kb_*` field (provider, model, credentials, or path)
-    requires a service redeploy — not just a config reload. SIGHUP only
-    reloads database connection settings and does not reinitialize the
-    knowledgebase. Use `update-database` to apply KB config changes; the
-    Control Plane will restart the container automatically.
 
 ### LLM Tuning
 
