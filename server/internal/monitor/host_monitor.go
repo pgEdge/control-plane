@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rs/zerolog"
 
@@ -23,7 +24,7 @@ func NewHostMonitor(
 	m.monitor = NewMonitor(
 		logger,
 		host.HostMonitorRefreshInterval,
-		m.checkStatus,
+		m.update,
 	)
 	return m
 }
@@ -36,7 +37,13 @@ func (m *HostMonitor) Stop() {
 	m.monitor.Stop()
 }
 
-func (m *HostMonitor) checkStatus(ctx context.Context) error {
-	return m.svc.UpdateHostStatus(ctx)
+func (m *HostMonitor) update(ctx context.Context) error {
+	if err := m.svc.UpdateHost(ctx); err != nil {
+		return fmt.Errorf("failed to update host: %w", err)
+	}
+	if err := m.svc.UpdateHostStatus(ctx); err != nil {
+		return fmt.Errorf("failed to update host status: %w", err)
+	}
 
+	return nil
 }

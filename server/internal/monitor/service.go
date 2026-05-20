@@ -10,6 +10,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/election"
 	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
@@ -26,6 +27,7 @@ type Service struct {
 	hostMonitor      *HostMonitor
 	instances        map[string]*InstanceMonitor
 	serviceInstances map[string]*ServiceInstanceMonitor
+	databasesMonitor *DatabasesMonitor
 }
 
 func NewService(
@@ -36,7 +38,12 @@ func NewService(
 	dbOrch database.Orchestrator,
 	store *Store,
 	hostSvc *host.Service,
+	candidate *election.Candidate,
 ) *Service {
+	var databasesMonitor *DatabasesMonitor
+	if cfg.DatabasesMonitorIntervalSeconds > 0 {
+		databasesMonitor = NewDatabasesMonitor(logger, dbSvc, candidate, cfg)
+	}
 	return &Service{
 		cfg:              cfg,
 		logger:           logger,
@@ -47,6 +54,7 @@ func NewService(
 		instances:        map[string]*InstanceMonitor{},
 		serviceInstances: map[string]*ServiceInstanceMonitor{},
 		hostMonitor:      NewHostMonitor(logger, hostSvc),
+		databasesMonitor: databasesMonitor,
 	}
 }
 
@@ -57,6 +65,11 @@ func (s *Service) Start(ctx context.Context) error {
 	// the lifetime of a single operation.
 	s.appCtx = ctx
 	s.hostMonitor.Start(ctx)
+	if s.databasesMonitor != nil {
+		if err := s.databasesMonitor.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start databases monitor: %w", err)
+		}
+	}
 
 	stored, err := s.store.InstanceMonitor.
 		GetAllByHostID(s.cfg.HostID).
@@ -106,6 +119,11 @@ func (s *Service) Shutdown() error {
 
 	s.serviceInstances = map[string]*ServiceInstanceMonitor{}
 	s.hostMonitor.Stop()
+	if s.databasesMonitor != nil {
+		if err := s.databasesMonitor.Stop(); err != nil {
+			return fmt.Errorf("failed to stop databases monitor: %w", err)
+		}
+	}
 
 	return nil
 }

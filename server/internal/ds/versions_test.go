@@ -230,7 +230,7 @@ func TestNewPgEdgeVersion(t *testing.T) {
 		},
 	} {
 		t.Run(tc.postgresVersion+"_"+tc.spockVersion, func(t *testing.T) {
-			result, err := ds.NewPgEdgeVersion(tc.postgresVersion, tc.spockVersion)
+			result, err := ds.ParsePgEdgeVersion(tc.postgresVersion, tc.spockVersion)
 			if tc.expectedErr != "" {
 				assert.Nil(t, result)
 				assert.ErrorContains(t, err, tc.expectedErr)
@@ -244,7 +244,7 @@ func TestNewPgEdgeVersion(t *testing.T) {
 
 func TestPgEdgeVersion(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
-		version := ds.MustPgEdgeVersion("17.6", "5.0.0")
+		version := ds.MustParsePgEdgeVersion("17.6", "5.0.0")
 		assert.Equal(t, "17.6_5.0.0", version.String())
 	})
 
@@ -255,28 +255,28 @@ func TestPgEdgeVersion(t *testing.T) {
 			expected int
 		}{
 			{
-				a:        ds.MustPgEdgeVersion("17.6", "5.0.0"),
-				b:        ds.MustPgEdgeVersion("17.6", "5.0.0"),
+				a:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
+				b:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
 				expected: 0,
 			},
 			{
-				a:        ds.MustPgEdgeVersion("18.0", "5.0.0"),
-				b:        ds.MustPgEdgeVersion("17.6", "5.0.0"),
+				a:        ds.MustParsePgEdgeVersion("18.0", "5.0.0"),
+				b:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
 				expected: 1,
 			},
 			{
-				a:        ds.MustPgEdgeVersion("17.6", "5.0.0"),
-				b:        ds.MustPgEdgeVersion("18.0", "5.0.0"),
+				a:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
+				b:        ds.MustParsePgEdgeVersion("18.0", "5.0.0"),
 				expected: -1,
 			},
 			{
-				a:        ds.MustPgEdgeVersion("17.6", "5.0.0"),
-				b:        ds.MustPgEdgeVersion("17.6", "5.0.1"),
+				a:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
+				b:        ds.MustParsePgEdgeVersion("17.6", "5.0.1"),
 				expected: -1,
 			},
 			{
-				a:        ds.MustPgEdgeVersion("17.6", "5.0.0"),
-				b:        ds.MustPgEdgeVersion("17.6", "4.10.0"),
+				a:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
+				b:        ds.MustParsePgEdgeVersion("17.6", "4.10.0"),
 				expected: 1,
 			},
 		} {

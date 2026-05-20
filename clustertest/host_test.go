@@ -294,7 +294,7 @@ func printContainerLogs(ctx context.Context, t testing.TB, hostID string, contai
 		tLog(t, "container is nil")
 		return
 	}
-	logs, err := containerLogs(t.Context(), t, container)
+	logs, err := containerLogs(ctx, t, container)
 	if err != nil {
 		tLogf(t, "failed to extract container logs: %s", err)
 	} else {

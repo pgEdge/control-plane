@@ -31,12 +31,13 @@ func InstanceResourceIdentifier(instanceID string) resource.Identifier {
 }
 
 type InstanceResource struct {
-	Spec                     *InstanceSpec         `json:"spec"`
-	InstanceHostname         string                `json:"instance_hostname"`
-	PrimaryInstanceID        string                `json:"primary_instance_id"`
-	OrchestratorDependencies []resource.Identifier `json:"dependencies"`
-	ConnectionInfo           *ConnectionInfo       `json:"connection_info"`
-	PostInit                 *Script               `json:"post_init"`
+	Spec                       *InstanceSpec         `json:"spec"`
+	InstanceHostname           string                `json:"instance_hostname"`
+	PrimaryInstanceID          string                `json:"primary_instance_id"`
+	PrimaryInstanceIDUpdatedAt time.Time             `json:"primary_instance_id_updated_at"`
+	OrchestratorDependencies   []resource.Identifier `json:"dependencies"`
+	ConnectionInfo             *ConnectionInfo       `json:"connection_info"`
+	PostInit                   *Script               `json:"post_init"`
 }
 
 func (r *InstanceResource) ResourceVersion() string {
@@ -46,6 +47,7 @@ func (r *InstanceResource) ResourceVersion() string {
 func (r *InstanceResource) DiffIgnore() []string {
 	return []string{
 		"/primary_instance_id",
+		"/primary_instance_id_updated_at",
 		"/connection_info",
 	}
 }
@@ -80,13 +82,9 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 	if err := r.updateConnectionInfo(ctx, rc); err != nil {
 		return resource.ErrNotFound
 	}
-
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, r.patroniClient(), 30*time.Second)
-	if err != nil {
+	if err := r.updatePrimaryInstanceID(ctx, 30*time.Second); err != nil {
 		return resource.ErrNotFound
 	}
-	r.PrimaryInstanceID = primaryInstanceID
-
 	if err := SetScriptNeedsToRun(ctx, rc, r.PostInit); err != nil {
 		return err
 	}
@@ -190,16 +188,24 @@ func (r *InstanceResource) Paths(orchestrator Orchestrator) (InstancePaths, erro
 	return paths, nil
 }
 
-func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.Context) error {
-	patroniClient := r.patroniClient()
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, patroniClient, time.Minute)
+func (r *InstanceResource) updatePrimaryInstanceID(ctx context.Context, timeout time.Duration) error {
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, r.patroniClient(), timeout)
 	if err != nil {
 		return err
 	}
 	r.PrimaryInstanceID = primaryInstanceID
+	r.PrimaryInstanceIDUpdatedAt = time.Now()
+
+	return nil
+}
+
+func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.Context) error {
+	if err := r.updatePrimaryInstanceID(ctx, time.Minute); err != nil {
+		return err
+	}
 
 	if r.Spec.InstanceID != r.PrimaryInstanceID {
-		err = r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
+		err := r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
 		if err != nil {
 			return r.recordError(ctx, rc, err)
 		}
@@ -209,7 +215,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 
 	// Enable failsafe mode if this instance is the only one in the node.
 	// Otherwise, disable it.
-	_, err = patroniClient.PatchDynamicConfig(ctx, &patroni.DynamicConfig{
+	_, err := r.patroniClient().PatchDynamicConfig(ctx, &patroni.DynamicConfig{
 		FailsafeMode: utils.PointerTo(r.Spec.NodeSize == 1),
 	})
 	if err != nil {

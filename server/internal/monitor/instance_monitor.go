@@ -89,12 +89,9 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 	if err != nil {
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
-
-	if status.IsPrimary() {
-		err = m.populateFromDbConn(ctx, dbState, info, tlsCfg, status)
-		if err != nil {
-			return m.updateInstanceErrStatus(ctx, status, err)
-		}
+	err = m.populateFromDbConn(ctx, dbState, info, tlsCfg, status)
+	if err != nil {
+		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 	currentInstance, err := m.dbSvc.GetInstance(ctx, m.databaseID, m.instanceID)
 	if err != nil {
@@ -160,22 +157,24 @@ func (m *InstanceMonitor) populateFromDbConn(
 	}
 	status.SpockVersion = utils.PointerTo(spockVersion)
 
-	spockReadOnly, err := postgres.GetSpockReadOnly().Scalar(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to query spock read-only status: %w", err)
-	}
-	status.ReadOnly = utils.PointerTo(spockReadOnly)
+	if status.IsPrimary() {
+		spockReadOnly, err := postgres.GetSpockReadOnly().Scalar(ctx, conn)
+		if err != nil {
+			return fmt.Errorf("failed to query spock read-only status: %w", err)
+		}
+		status.ReadOnly = utils.PointerTo(spockReadOnly)
 
-	subStatuses, err := postgres.GetSubscriptionStatuses().Scalars(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to query subscription statuses: %w", err)
-	}
-	for _, sub := range subStatuses {
-		status.Subscriptions = append(status.Subscriptions, database.SubscriptionStatus{
-			ProviderNode: sub.ProviderNode,
-			Name:         sub.SubscriptionName,
-			Status:       sub.Status,
-		})
+		subStatuses, err := postgres.GetSubscriptionStatuses().Scalars(ctx, conn)
+		if err != nil {
+			return fmt.Errorf("failed to query subscription statuses: %w", err)
+		}
+		for _, sub := range subStatuses {
+			status.Subscriptions = append(status.Subscriptions, database.SubscriptionStatus{
+				ProviderNode: sub.ProviderNode,
+				Name:         sub.SubscriptionName,
+				Status:       sub.Status,
+			})
+		}
 	}
 
 	return nil

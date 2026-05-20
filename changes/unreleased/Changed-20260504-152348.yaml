@@ -1,0 +1,3 @@
+kind: Changed
+body: Changed the instance monitoring system to query the Postgres and Spock versions for replica instances and report them in the databases API.
+time: 2026-05-04T15:23:48.324604-04:00

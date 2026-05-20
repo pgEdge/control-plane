@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/ports"
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -36,6 +38,7 @@ type Service struct {
 	store        *Store
 	hostSvc      *host.Service
 	portsSvc     *ports.Service
+	logger       zerolog.Logger
 }
 
 func NewService(
@@ -44,6 +47,7 @@ func NewService(
 	store *Store,
 	hostSvc *host.Service,
 	portsSvc *ports.Service,
+	loggerFactory *logging.Factory,
 ) *Service {
 	return &Service{
 		cfg:          cfg,
@@ -51,6 +55,7 @@ func NewService(
 		store:        store,
 		hostSvc:      hostSvc,
 		portsSvc:     portsSvc,
+		logger:       loggerFactory.Logger(logging.ComponentDatabaseService),
 	}
 }
 
@@ -608,7 +613,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	if spec.SpockVersion == "" {
 		spec.SpockVersion = defaultVersion.SpockVersion.String()
 	}
-	specVersion, err := ds.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
+	specVersion, err := ds.ParsePgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
 	if err != nil {
 		return fmt.Errorf("failed to parse versions from spec: %w", err)
 	}
@@ -628,7 +633,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 				return fmt.Errorf("host %s not found in host list", hostID)
 			}
 			if node.PostgresVersion != "" {
-				nodeVersion, err := ds.NewPgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
+				nodeVersion, err := ds.ParsePgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
 				if err != nil {
 					return fmt.Errorf("failed to parse versions from nodes[%d] spec: %w", idx, err)
 				}

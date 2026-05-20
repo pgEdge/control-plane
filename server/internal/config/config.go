@@ -245,29 +245,30 @@ var defaultRandomPorts = RandomPorts{
 }
 
 type Config struct {
-	TenantID               string       `koanf:"tenant_id" json:"tenant_id,omitempty"`
-	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
-	Orchestrator           Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
-	DataDir                string       `koanf:"data_dir" json:"data_dir,omitempty"`
-	PeerAddresses          []string     `koanf:"peer_addresses" json:"peer_addresses,omitempty"`
-	ClientAddresses        []string     `koanf:"client_addresses" json:"client_addresses,omitempty"`
-	StopGracePeriodSeconds int64        `koanf:"stop_grace_period_seconds" json:"stop_grace_period_seconds,omitempty"`
-	MQTT                   MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
-	HTTP                   HTTP         `koanf:"http" json:"http,omitzero"`
-	Logging                Logging      `koanf:"logging" json:"logging,omitzero"`
-	EtcdMode               EtcdMode     `koanf:"etcd_mode" json:"etcd_mode,omitempty"`
-	EtcdUsername           string       `koanf:"etcd_username" json:"etcd_username,omitempty"`
-	EtcdPassword           string       `koanf:"etcd_password" json:"etcd_password,omitempty"`
-	EtcdKeyRoot            string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
-	EtcdServer             EtcdServer   `koanf:"etcd_server" json:"etcd_server,omitzero"`
-	EtcdClient             EtcdClient   `koanf:"etcd_client" json:"etcd_client,omitzero"`
-	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
-	VectorEnabled          bool         `koanf:"vector_enabled" json:"vector_enabled,omitempty"`
-	DockerSwarm            DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
-	SystemD                SystemD      `koanf:"systemd" json:"systemd,omitzero"`
-	DatabaseOwnerUID       int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
-	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
-	RandomPorts            RandomPorts  `koanf:"random_ports" json:"random_ports,omitzero"`
+	TenantID                        string       `koanf:"tenant_id" json:"tenant_id,omitempty"`
+	HostID                          string       `koanf:"host_id" json:"host_id,omitempty"`
+	Orchestrator                    Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
+	DataDir                         string       `koanf:"data_dir" json:"data_dir,omitempty"`
+	PeerAddresses                   []string     `koanf:"peer_addresses" json:"peer_addresses,omitempty"`
+	ClientAddresses                 []string     `koanf:"client_addresses" json:"client_addresses,omitempty"`
+	StopGracePeriodSeconds          int64        `koanf:"stop_grace_period_seconds" json:"stop_grace_period_seconds,omitempty"`
+	MQTT                            MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
+	HTTP                            HTTP         `koanf:"http" json:"http,omitzero"`
+	Logging                         Logging      `koanf:"logging" json:"logging,omitzero"`
+	EtcdMode                        EtcdMode     `koanf:"etcd_mode" json:"etcd_mode,omitempty"`
+	EtcdUsername                    string       `koanf:"etcd_username" json:"etcd_username,omitempty"`
+	EtcdPassword                    string       `koanf:"etcd_password" json:"etcd_password,omitempty"`
+	EtcdKeyRoot                     string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
+	EtcdServer                      EtcdServer   `koanf:"etcd_server" json:"etcd_server,omitzero"`
+	EtcdClient                      EtcdClient   `koanf:"etcd_client" json:"etcd_client,omitzero"`
+	TraefikEnabled                  bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
+	VectorEnabled                   bool         `koanf:"vector_enabled" json:"vector_enabled,omitempty"`
+	DockerSwarm                     DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
+	SystemD                         SystemD      `koanf:"systemd" json:"systemd,omitzero"`
+	DatabaseOwnerUID                int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
+	ProfilingEnabled                bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
+	RandomPorts                     RandomPorts  `koanf:"random_ports" json:"random_ports,omitzero"`
+	DatabasesMonitorIntervalSeconds uint64       `koanf:"databases_monitor_interval_seconds" json:"databases_monitor_interval_seconds,omitempty"`
 }
 
 // ClientAddress is a convenience function to return the first client address.
@@ -405,20 +406,21 @@ func DefaultConfig() (Config, error) {
 	}
 
 	return Config{
-		HostID:                 hostID,
-		Orchestrator:           OrchestratorSwarm,
-		EtcdMode:               EtcdModeServer,
-		PeerAddresses:          addresses,
-		ClientAddresses:        addresses,
-		Logging:                loggingDefault,
-		HTTP:                   httpDefault,
-		StopGracePeriodSeconds: 30,
-		EtcdServer:             etcdServerDefault,
-		EtcdClient:             etcdClientDefault,
-		DockerSwarm:            defaultDockerSwarm,
-		SystemD:                defaultSystemD,
-		DatabaseOwnerUID:       26,
-		RandomPorts:            defaultRandomPorts,
+		HostID:                          hostID,
+		Orchestrator:                    OrchestratorSwarm,
+		EtcdMode:                        EtcdModeServer,
+		PeerAddresses:                   addresses,
+		ClientAddresses:                 addresses,
+		Logging:                         loggingDefault,
+		HTTP:                            httpDefault,
+		StopGracePeriodSeconds:          30,
+		EtcdServer:                      etcdServerDefault,
+		EtcdClient:                      etcdClientDefault,
+		DockerSwarm:                     defaultDockerSwarm,
+		SystemD:                         defaultSystemD,
+		DatabaseOwnerUID:                26,
+		RandomPorts:                     defaultRandomPorts,
+		DatabasesMonitorIntervalSeconds: 30,
 	}, nil
 }
 

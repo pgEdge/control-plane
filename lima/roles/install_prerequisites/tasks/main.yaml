@@ -15,6 +15,24 @@
     name: https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
     state: present
     disable_gpg_check: true
+- name: Add pgEdge old repository
+  ansible.builtin.yum_repository:
+    name: pgedge-old
+    description: pgEdge Old RPM Repository
+    baseurl: "https://dnf.pgedge.com/release_old/{{ansible_facts['distribution_major_version']}}/RPMS/{{ansible_facts['architecture']}}/"
+    # We only host one version of our GPG keys and its invalid for these old
+    # packages.
+    gpgcheck: no
+    enabled: yes
+    sslverify: yes
+- name: Add pgEdge noarch old repository
+  ansible.builtin.yum_repository:
+    name: pgedge-noarch-old
+    description: pgEdge Old RPM Repository (noarch)
+    baseurl: "https://dnf.pgedge.com/release_old/{{ansible_facts['distribution_major_version']}}/RPMS/noarch/"
+    gpgcheck: no
+    enabled: yes
+    sslverify: yes
 - name: Install prerequisites
   ansible.builtin.package:
     name: '{{ item }}'
@@ -75,5 +93,8 @@
   when: chronycfg.changed
 - name: Install delve debugger
   ansible.builtin.command: /usr/local/go/bin/go install github.com/go-delve/delve/cmd/dlv@latest
+  args:
+    creates: /root/go/bin/dlv
 - name: Fix clocks
   ansible.builtin.command: chronyc -a makestep
+  changed_when: false

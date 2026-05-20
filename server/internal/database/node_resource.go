@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -72,7 +73,8 @@ func (n *NodeResource) Create(ctx context.Context, rc *resource.Context) error {
 
 	// Some instances may be down or in a bad state. We'll want to check all of
 	// them to find one that knows the primary instance ID.
-	n.PrimaryInstanceID = ""
+	var primaryInstanceID string
+	var primaryInstanceUpdatedAt time.Time
 	for _, id := range n.InstanceIDs {
 		instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(id))
 		if errors.Is(err, resource.ErrNotFound) {
@@ -81,11 +83,18 @@ func (n *NodeResource) Create(ctx context.Context, rc *resource.Context) error {
 			return fmt.Errorf("failed to get instance %q: %w", id, err)
 		}
 
-		if instance.PrimaryInstanceID != "" {
-			n.PrimaryInstanceID = instance.PrimaryInstanceID
-			break
+		if instance.PrimaryInstanceID == "" {
+			continue
+		}
+		// Instances are updated sequentially and a switchover can happen after
+		// an earlier instance update. We use the 'updated at' field to pick the
+		// most recently fetched primary instance ID.
+		if primaryInstanceID == "" || instance.PrimaryInstanceIDUpdatedAt.After(primaryInstanceUpdatedAt) {
+			primaryInstanceID = instance.PrimaryInstanceID
+			primaryInstanceUpdatedAt = instance.PrimaryInstanceIDUpdatedAt
 		}
 	}
+	n.PrimaryInstanceID = primaryInstanceID
 
 	return nil
 }

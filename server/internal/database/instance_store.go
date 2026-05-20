@@ -137,6 +137,11 @@ func (s *InstanceStore) Put(item *StoredInstance) storage.PutOp[*StoredInstance]
 	return storage.NewPutOp(s.client, key, item)
 }
 
+func (s *InstanceStore) Update(item *StoredInstance) storage.PutOp[*StoredInstance] {
+	key := s.Key(item.DatabaseID, item.InstanceID)
+	return storage.NewUpdateOp(s.client, key, item)
+}
+
 func (s *InstanceStore) DeleteByKey(databaseID, instanceID string) storage.DeleteOp {
 	key := s.Key(databaseID, instanceID)
 	return storage.NewDeleteKeyOp(s.client, key)
