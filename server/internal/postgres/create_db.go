@@ -448,6 +448,16 @@ func SpockProgressReachedLSN(peerNodeName, targetLSN string) Query[bool] {
 	}
 }
 
+// LsnAtOrBefore reports whether lsn1 <= lsn2 using PostgreSQL's pg_lsn type.
+// Use this instead of Go string comparison — LSNs are hex-formatted and string
+// ordering produces wrong results across segment boundaries (e.g. "F/..." > "10/...").
+func LsnAtOrBefore(lsn1, lsn2 string) Query[bool] {
+	return Query[bool]{
+		SQL:  "SELECT @lsn1::pg_lsn <= @lsn2::pg_lsn",
+		Args: pgx.NamedArgs{"lsn1": lsn1, "lsn2": lsn2},
+	}
+}
+
 // GetSubscriptionStatus returns the current status of a specific subscription
 func GetSubscriptionStatus(providerNode, subscriberNode string) Query[string] {
 	return Query[string]{
