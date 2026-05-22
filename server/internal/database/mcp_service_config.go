@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -52,6 +53,13 @@ type MCPServiceConfig struct {
 	DisableGenerateEmbedding   *bool `json:"disable_generate_embedding,omitempty"`
 	DisableSearchKnowledgebase *bool `json:"disable_search_knowledgebase,omitempty"`
 	DisableCountRows           *bool `json:"disable_count_rows,omitempty"`
+
+	// Optional - knowledgebase search
+	KBEnabled            *bool   `json:"kb_enabled,omitempty"`
+	KBEmbeddingProvider  *string `json:"kb_embedding_provider,omitempty"`
+	KBEmbeddingModel     *string `json:"kb_embedding_model,omitempty"`
+	KBEmbeddingAPIKey    *string `json:"kb_embedding_api_key,omitempty"`
+	KBDatabaseHostPath   *string `json:"kb_database_host_path,omitempty"`
 }
 
 // mcpKnownKeys is the set of all valid config keys for MCP service configuration.
@@ -78,10 +86,16 @@ var mcpKnownKeys = map[string]bool{
 	"disable_generate_embedding":   true,
 	"disable_search_knowledgebase": true,
 	"disable_count_rows":           true,
+	"kb_enabled":                   true,
+	"kb_embedding_provider":        true,
+	"kb_embedding_model":           true,
+	"kb_embedding_api_key":         true,
+	"kb_database_host_path":        true,
 }
 
 var validLLMProviders = []string{"anthropic", "openai", "ollama"}
 var validEmbeddingProviders = []string{"voyage", "openai", "ollama"}
+var validKBEmbeddingProviders = []string{"voyage", "openai"}
 
 // ParseMCPServiceConfig parses and validates a config map into a typed MCPServiceConfig.
 // If isUpdate is true, bootstrap-only fields (init_token, init_users) are rejected.
@@ -204,6 +218,24 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		}
 	}
 
+	// Parse KB fields
+	kbEnabled, kbeErrs := optionalBool(config, "kb_enabled")
+	errs = append(errs, kbeErrs...)
+
+	isKBEnabled := kbEnabled != nil && *kbEnabled
+
+	kbEmbeddingProvider, kbepErrs := optionalString(config, "kb_embedding_provider")
+	errs = append(errs, kbepErrs...)
+
+	kbEmbeddingModel, kbemErrs := optionalString(config, "kb_embedding_model")
+	errs = append(errs, kbemErrs...)
+
+	kbEmbeddingAPIKey, kbeakErrs := optionalString(config, "kb_embedding_api_key")
+	errs = append(errs, kbeakErrs...)
+
+	kbDatabaseHostPath, kbdhpErrs := optionalString(config, "kb_database_host_path")
+	errs = append(errs, kbdhpErrs...)
+
 	// Parse optional fields
 	allowWrites, awErrs := optionalBool(config, "allow_writes")
 	errs = append(errs, awErrs...)
@@ -232,6 +264,52 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	errs = append(errs, dskErrs...)
 	disableCountRows, dcrErrs := optionalBool(config, "disable_count_rows")
 	errs = append(errs, dcrErrs...)
+
+	// KB cross-validation: only when kb_enabled is true
+	if isKBEnabled {
+		// Conflict: kb_enabled + disable_search_knowledgebase is always broken
+		if disableSearchKB != nil && *disableSearchKB {
+			errs = append(errs, fmt.Errorf("kb_enabled and disable_search_knowledgebase cannot both be true: the search_knowledgebase tool would never register"))
+		}
+
+		if kbEmbeddingProvider == nil {
+			errs = append(errs, fmt.Errorf("kb_embedding_provider is required when kb_enabled is true"))
+		} else {
+			// ollama is not yet supported as a KB embedding provider
+			if strings.ToLower(*kbEmbeddingProvider) == "ollama" {
+				errs = append(errs, fmt.Errorf("kb_embedding_provider %q is not yet supported; use %q or %q", "ollama", "voyage", "openai"))
+			} else if !slices.Contains(validKBEmbeddingProviders, *kbEmbeddingProvider) {
+				errs = append(errs, fmt.Errorf("kb_embedding_provider must be one of: %s", strings.Join(validKBEmbeddingProviders, ", ")))
+			} else {
+				// voyage and openai require an API key
+				if kbEmbeddingAPIKey == nil {
+					errs = append(errs, fmt.Errorf("kb_embedding_api_key is required when kb_embedding_provider is %q", *kbEmbeddingProvider))
+				}
+			}
+		}
+
+		if kbEmbeddingModel == nil {
+			errs = append(errs, fmt.Errorf("kb_embedding_model is required when kb_enabled is true"))
+		}
+
+		// Path sanitization: must be absolute and clean (no .. components)
+		if kbDatabaseHostPath != nil {
+			p := *kbDatabaseHostPath
+			if !filepath.IsAbs(p) {
+				errs = append(errs, fmt.Errorf("kb_database_host_path must be an absolute path"))
+			} else if filepath.Clean(p) != p {
+				errs = append(errs, fmt.Errorf("kb_database_host_path must be a clean absolute path (no .. or redundant separators)"))
+			}
+		}
+	} else {
+		// KB is disabled — reject KB-specific fields to prevent silent misconfiguration
+		kbOnlyFields := []string{"kb_embedding_provider", "kb_embedding_model", "kb_embedding_api_key", "kb_database_host_path"}
+		for _, key := range kbOnlyFields {
+			if _, ok := config[key]; ok {
+				errs = append(errs, fmt.Errorf("%s must not be set unless kb_enabled is true", key))
+			}
+		}
+	}
 
 	if poolMaxConns != nil {
 		if *poolMaxConns <= 0 {
@@ -296,6 +374,11 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		DisableGenerateEmbedding:   disableGenEmbed,
 		DisableSearchKnowledgebase: disableSearchKB,
 		DisableCountRows:           disableCountRows,
+		KBEnabled:                  kbEnabled,
+		KBEmbeddingProvider:        kbEmbeddingProvider,
+		KBEmbeddingModel:           kbEmbeddingModel,
+		KBEmbeddingAPIKey:          kbEmbeddingAPIKey,
+		KBDatabaseHostPath:         kbDatabaseHostPath,
 	}, nil
 }
 

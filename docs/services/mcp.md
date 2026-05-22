@@ -79,6 +79,45 @@ following table describes the embedding configuration fields:
 | `embedding_model`      | string | The embedding model name (e.g., `voyage-3`, `text-embedding-3-small`, `nomic-embed-text`). Required when `embedding_provider` is set. |
 | `embedding_api_key`    | string | API key for the embedding provider. Required for `voyage` and `openai` providers. |
 
+### Knowledgebase
+
+Knowledgebase support enables the `search_knowledgebase` tool to query
+a SQLite-backed knowledge base. The knowledge base file is staged on the
+host; the Control Plane bind-mounts it into the container read-only.
+Knowledgebase support is opt-in. When `kb_enabled` is `false` (the
+default), no KB file is required — and any other `kb_*` fields present
+in the config are **rejected** by the validator, not silently ignored.
+Only `voyage` and `openai` are supported as embedding providers for the
+knowledgebase; Ollama support is planned for a future release.
+
+!!! warning
+
+    The Control Plane does not generate the knowledgebase SQLite file.
+    Download the `kb.db` file from the latest Knowledge Base release on
+    the [pgEdge Postgres MCP releases page](https://github.com/pgEdge/pgedge-postgres-mcp/releases)
+    — Knowledge Base releases are tagged separately from the normal
+    pgEdge Postgres MCP releases.
+
+    You must place the file on every host that will run an MCP service
+    instance **before** setting `kb_enabled: true`. If the file is
+    missing when the Control Plane attempts to deploy the service, the
+    deployment will be blocked with a clear error.
+
+    The default location is `{data_dir}/kb/nla-kb.db` (for example,
+    `/var/lib/pgedge-control-plane/kb/nla-kb.db`). Create the directory
+    and copy your file there, or use `kb_database_host_path` to specify
+    a custom path.
+
+The following table describes the knowledgebase configuration fields:
+
+| Field                     | Type    | Description |
+|---------------------------|---------|-------------|
+| `kb_enabled`              | boolean | Set to `true` to enable knowledgebase search. When `false` (the default), any other `kb_*` fields in the config are **rejected** — they must be removed before the config is accepted. |
+| `kb_embedding_provider`   | string  | Embedding provider for the KB. One of: `voyage`, `openai`. Required when `kb_enabled` is `true`. |
+| `kb_embedding_model`      | string  | Embedding model for the KB (e.g., `voyage-3-lite`, `text-embedding-3-small`). Required when `kb_enabled` is `true`. |
+| `kb_embedding_api_key`    | string  | API key for the KB embedding provider. Required for `voyage` and `openai`. Scrubbed from API responses. |
+| `kb_database_host_path`   | string  | Full path to the KB SQLite file on the host. Defaults to `{data_dir}/kb/nla-kb.db`. Must be an absolute path. |
+
 ### LLM Tuning
 
 The LLM tuning fields control the behavior of the LLM proxy and are
@@ -332,6 +371,65 @@ to use a self-hosted Ollama server for both the LLM and embeddings:
             }
         }'
     ```
+
+### Knowledgebase Search (Voyage AI)
+
+In the following example, a `curl` command provisions an MCP service
+with knowledgebase support enabled, using Voyage AI as the embedding
+provider. Before provisioning, stage the knowledgebase file on every
+host that will run an MCP service instance:
+
+```sh
+sudo mkdir -p /var/lib/pgedge-control-plane/kb
+sudo cp /path/to/your/nla-kb.db /var/lib/pgedge-control-plane/kb/nla-kb.db
+```
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-1:3000/v1/databases \
+        -H 'Content-Type: application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] }
+                ],
+                "database_users": [
+                    {
+                        "username": "mcp_user",
+                        "password": "changeme",
+                        "db_owner": true,
+                        "attributes": ["LOGIN"]
+                    }
+                ],
+                "services": [
+                    {
+                        "service_id": "mcp-server",
+                        "service_type": "mcp",
+                        "version": "latest",
+                        "host_ids": ["host-1"],
+                        "port": 8080,
+                        "connect_as": "mcp_user",
+                        "config": {
+                            "kb_enabled": true,
+                            "kb_embedding_provider": "voyage",
+                            "kb_embedding_model": "voyage-3-lite",
+                            "kb_embedding_api_key": "pa-..."
+                        }
+                    }
+                ]
+            }
+        }'
+    ```
+
+To use a custom path for the knowledgebase file, add
+`kb_database_host_path` to the `config` object:
+
+```json
+"kb_database_host_path": "/data/kb/my-kb.db"
+```
 
 ## Connecting to the MCP Server
 

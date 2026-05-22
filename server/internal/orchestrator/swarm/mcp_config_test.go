@@ -694,6 +694,228 @@ func TestGenerateMCPConfig_DatabaseConfig(t *testing.T) {
 	}
 }
 
+func TestGenerateMCPConfig_KBDisabled_SectionOmitted(t *testing.T) {
+	params := &MCPConfigParams{
+		Config:        &database.MCPServiceConfig{KBEnabled: utils.PointerTo(false)},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase != nil {
+		t.Errorf("knowledgebase section should be absent when kb_enabled is false, got %+v", cfg.Knowledgebase)
+	}
+}
+
+func TestGenerateMCPConfig_KBNotSet_SectionOmitted(t *testing.T) {
+	params := &MCPConfigParams{
+		Config:        &database.MCPServiceConfig{},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase != nil {
+		t.Errorf("knowledgebase section should be absent when kb_enabled is not set, got %+v", cfg.Knowledgebase)
+	}
+}
+
+func TestGenerateMCPConfig_KBEnabled_VoyageProvider(t *testing.T) {
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			KBEnabled:           utils.PointerTo(true),
+			KBEmbeddingProvider: strPtr("voyage"),
+			KBEmbeddingModel:    strPtr("voyage-3-lite"),
+			KBEmbeddingAPIKey:   strPtr("pa-voyage-kb-key"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase == nil {
+		t.Fatal("knowledgebase section should be present when kb_enabled is true")
+	}
+	if !cfg.Knowledgebase.Enabled {
+		t.Error("knowledgebase.enabled should be true")
+	}
+	if cfg.Knowledgebase.EmbeddingProvider != "voyage" {
+		t.Errorf("knowledgebase.embedding_provider = %q, want %q", cfg.Knowledgebase.EmbeddingProvider, "voyage")
+	}
+	if cfg.Knowledgebase.EmbeddingModel != "voyage-3-lite" {
+		t.Errorf("knowledgebase.embedding_model = %q, want %q", cfg.Knowledgebase.EmbeddingModel, "voyage-3-lite")
+	}
+	if cfg.Knowledgebase.EmbeddingVoyageAPIKey != "pa-voyage-kb-key" {
+		t.Errorf("knowledgebase.embedding_voyage_api_key = %q, want %q", cfg.Knowledgebase.EmbeddingVoyageAPIKey, "pa-voyage-kb-key")
+	}
+	if cfg.Knowledgebase.EmbeddingOpenAIAPIKey != "" {
+		t.Errorf("knowledgebase.embedding_openai_api_key should be empty for voyage provider, got %q", cfg.Knowledgebase.EmbeddingOpenAIAPIKey)
+	}
+}
+
+func TestGenerateMCPConfig_KBEnabled_OpenAIProvider(t *testing.T) {
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			KBEnabled:           utils.PointerTo(true),
+			KBEmbeddingProvider: strPtr("openai"),
+			KBEmbeddingModel:    strPtr("text-embedding-3-small"),
+			KBEmbeddingAPIKey:   strPtr("sk-openai-kb-key"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase == nil {
+		t.Fatal("knowledgebase section should be present when kb_enabled is true")
+	}
+	if cfg.Knowledgebase.EmbeddingProvider != "openai" {
+		t.Errorf("knowledgebase.embedding_provider = %q, want %q", cfg.Knowledgebase.EmbeddingProvider, "openai")
+	}
+	if cfg.Knowledgebase.EmbeddingOpenAIAPIKey != "sk-openai-kb-key" {
+		t.Errorf("knowledgebase.embedding_openai_api_key = %q, want %q", cfg.Knowledgebase.EmbeddingOpenAIAPIKey, "sk-openai-kb-key")
+	}
+	if cfg.Knowledgebase.EmbeddingVoyageAPIKey != "" {
+		t.Errorf("knowledgebase.embedding_voyage_api_key should be empty for openai provider, got %q", cfg.Knowledgebase.EmbeddingVoyageAPIKey)
+	}
+}
+
+func TestGenerateMCPConfig_KBEnabled_DefaultPath(t *testing.T) {
+	// No kb_database_host_path → container path defaults to /app/kb/nla-kb.db
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			KBEnabled:           utils.PointerTo(true),
+			KBEmbeddingProvider: strPtr("voyage"),
+			KBEmbeddingModel:    strPtr("voyage-3-lite"),
+			KBEmbeddingAPIKey:   strPtr("pa-voyage-key"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase == nil {
+		t.Fatal("knowledgebase section should be present")
+	}
+	if cfg.Knowledgebase.DatabasePath != "/app/kb/nla-kb.db" {
+		t.Errorf("knowledgebase.database_path = %q, want %q", cfg.Knowledgebase.DatabasePath, "/app/kb/nla-kb.db")
+	}
+}
+
+func TestGenerateMCPConfig_KBEnabled_CustomHostPath(t *testing.T) {
+	// kb_database_host_path set → container path uses basename under /app/kb/
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			KBEnabled:           utils.PointerTo(true),
+			KBEmbeddingProvider: strPtr("voyage"),
+			KBEmbeddingModel:    strPtr("voyage-3-lite"),
+			KBEmbeddingAPIKey:   strPtr("pa-voyage-key"),
+			KBDatabaseHostPath:  strPtr("/data/custom/my-kb.db"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase == nil {
+		t.Fatal("knowledgebase section should be present")
+	}
+	if cfg.Knowledgebase.DatabasePath != "/app/kb/my-kb.db" {
+		t.Errorf("knowledgebase.database_path = %q, want %q", cfg.Knowledgebase.DatabasePath, "/app/kb/my-kb.db")
+	}
+}
+
+func TestGenerateMCPConfig_KBEnabled_WithLLMAndEmbedding(t *testing.T) {
+	// All three sections (LLM, embedding, KB) present together — they must not interfere.
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			LLMEnabled:          utils.PointerTo(true),
+			LLMProvider:         "anthropic",
+			LLMModel:            "claude-sonnet-4-5",
+			AnthropicAPIKey:     strPtr("sk-ant-api03-test"),
+			EmbeddingProvider:   strPtr("voyage"),
+			EmbeddingModel:      strPtr("voyage-3"),
+			EmbeddingAPIKey:     strPtr("pa-emb-key"),
+			KBEnabled:           utils.PointerTo(true),
+			KBEmbeddingProvider: strPtr("voyage"),
+			KBEmbeddingModel:    strPtr("voyage-3-lite"),
+			KBEmbeddingAPIKey:   strPtr("pa-kb-key"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
+	if cfg.Embedding == nil {
+		t.Fatal("embedding section should be present")
+	}
+	if cfg.Knowledgebase == nil {
+		t.Fatal("knowledgebase section should be present")
+	}
+	if cfg.Knowledgebase.EmbeddingProvider != "voyage" {
+		t.Errorf("knowledgebase.embedding_provider = %q, want %q", cfg.Knowledgebase.EmbeddingProvider, "voyage")
+	}
+	// KB uses embedding_voyage_api_key; embedding section uses voyage_api_key — different fields
+	if cfg.Knowledgebase.EmbeddingVoyageAPIKey != "pa-kb-key" {
+		t.Errorf("knowledgebase.embedding_voyage_api_key = %q, want %q", cfg.Knowledgebase.EmbeddingVoyageAPIKey, "pa-kb-key")
+	}
+	if cfg.Embedding.VoyageAPIKey != "pa-emb-key" {
+		t.Errorf("embedding.voyage_api_key = %q, want %q", cfg.Embedding.VoyageAPIKey, "pa-emb-key")
+	}
+}
+
 // TestGenerateMCPConfig_MultiHostTopology exercises the full path from
 // service spec → BuildServiceHostList → GenerateMCPConfig → YAML output.
 // It verifies that the generated YAML contains the correct ordered hosts
