@@ -133,9 +133,11 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 		return fmt.Errorf("failed to query target replication slot lsn: %w", err)
 	}
 
-	if targetLSN <= currentLSN {
-		// No need to advance if the slot is already ahead of the commit
-		// timestamp
+	atOrBefore, err := postgres.LsnAtOrBefore(targetLSN, currentLSN).Scalar(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to compare LSNs: %w", err)
+	}
+	if atOrBefore {
 		return nil
 	}
 
