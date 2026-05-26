@@ -48,6 +48,7 @@ type Host struct {
 	DataDir                 string
 	PeerAddresses           []string
 	ClientAddresses         []string
+	APIClientURLs           []string
 	CPUs                    int
 	MemBytes                uint64
 	EtcdMode                config.EtcdMode
@@ -66,25 +67,6 @@ func (h *Host) Supports(pgEdgeVersion *ds.PgEdgeVersion) bool {
 }
 
 func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
-	// defaultPostgresVersion, err := semver.NewVersion(host.DefaultPostgresVersion)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to unmarshal default postgres version: %w", err)
-	// }
-	// defaultSpockVersion, err := semver.NewVersion(host.DefaultSpockVersion)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to unmarshal default spock version: %w", err)
-	// }
-	// supportedVersions := ds.NewSet[PgEdgeVersion]()
-	// for pgVersion, spockVersions := range host.SupportedVersions {
-	// 	for spockVersion := range spockVersions {
-	// 		pgEdgeVersion, err := pgEdgeVersionFromStrings(pgVersion, spockVersion)
-	// 		if err != nil {
-	// 			return nil, fmt.Errorf("failed to unmarshal supported versions: %w", err)
-	// 		}
-	// 		supportedVersions.Add(pgEdgeVersion)
-	// 	}
-	// }
-
 	var cohort *Cohort
 	if host.Cohort != nil {
 		cohort = &Cohort{
@@ -100,6 +82,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 		DataDir:                 host.DataDir,
 		PeerAddresses:           host.PeerAddresses,
 		ClientAddresses:         host.ClientAddresses,
+		APIClientURLs:           host.APIClientURLs,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
 		EtcdMode:                host.EtcdMode,
@@ -132,16 +115,6 @@ func toStorage(host *Host) *StoredHost {
 		}
 	}
 
-	// supportedVersions := map[string]map[string]bool{}
-	// for pgEdgeVersion := range host.SupportedVersions {
-	// 	pgV := pgEdgeVersion.PostgresVersion.String()
-	// 	spockV := pgEdgeVersion.SpockVersion.String()
-	// 	if _, ok := supportedVersions[pgV]; !ok {
-	// 		supportedVersions[pgV] = map[string]bool{}
-	// 	}
-	// 	supportedVersions[pgV][spockV] = true
-	// }
-
 	return &StoredHost{
 		ID:                      host.ID,
 		Orchestrator:            host.Orchestrator,
@@ -149,6 +122,7 @@ func toStorage(host *Host) *StoredHost {
 		DataDir:                 host.DataDir,
 		PeerAddresses:           host.PeerAddresses,
 		ClientAddresses:         host.ClientAddresses,
+		APIClientURLs:           host.APIClientURLs,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
 		EtcdMode:                host.EtcdMode,

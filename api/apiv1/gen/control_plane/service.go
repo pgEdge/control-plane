@@ -635,6 +635,8 @@ type Host struct {
 	PeerAddresses []string `json:"peer_addresses"`
 	// The addresses that this host advertises to client applications.
 	ClientAddresses []string `json:"client_addresses"`
+	// The URLs where this host's API is reachable by client applications.
+	APIClientUrls []string `json:"api_client_urls"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.

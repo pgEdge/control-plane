@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -175,6 +176,21 @@ func (s *PostInitHandlers) ListHosts(ctx context.Context) (*api.ListHostsRespons
 	for idx, h := range hosts {
 		apiHosts[idx] = hostToAPI(h)
 	}
+
+	// Each host makes itself the first entry in the list. This makes it easier
+	// for clients to know which host they've contacted in the response.
+	slices.SortStableFunc(apiHosts, func(a, b *api.Host) int {
+		aID, bID := string(a.ID), string(b.ID)
+		switch s.cfg.HostID {
+		case aID:
+			return -1
+		case bID:
+			return 1
+		default:
+			return strings.Compare(aID, bID)
+		}
+	})
+
 	return &api.ListHostsResponse{Hosts: apiHosts}, nil
 }
 

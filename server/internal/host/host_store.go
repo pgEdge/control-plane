@@ -22,6 +22,7 @@ type StoredHost struct {
 	DataDir                 string              `json:"data_dir"`
 	PeerAddresses           []string            `json:"peer_addresses"`
 	ClientAddresses         []string            `json:"client_addresses"`
+	APIClientURLs           []string            `json:"api_client_urls"`
 	CPUs                    int                 `json:"cpus"`
 	MemBytes                uint64              `json:"mem_bytes"`
 	EtcdMode                config.EtcdMode     `json:"etcd_mode"`

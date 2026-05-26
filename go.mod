@@ -5,6 +5,7 @@ go 1.25.6
 toolchain go1.25.8
 
 require (
+	github.com/adrg/xdg v0.5.3
 	github.com/alessio/shellescape v1.4.2
 	github.com/cilium/ipam v0.0.0-20230509084518-fd66eae7909b
 	github.com/coreos/go-systemd/v22 v22.5.0
@@ -18,6 +19,8 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/knadh/koanf/parsers/json v0.1.0
+	github.com/knadh/koanf/parsers/toml/v2 v2.2.1
+	github.com/knadh/koanf/parsers/yaml v1.1.0
 	github.com/knadh/koanf/providers/env v1.0.0
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/providers/posflag v0.1.0
@@ -44,12 +47,15 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.23.4
+	golang.org/x/term v0.38.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
+	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 )
 

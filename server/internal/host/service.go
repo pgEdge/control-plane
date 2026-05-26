@@ -34,37 +34,18 @@ func NewService(cfg config.Config, etcd etcd.Etcd, store *Store, orchestrator Or
 }
 
 func (s *Service) UpdateHost(ctx context.Context) error {
-	// resources, err := DetectResources()
-	// if err != nil {
-	// 	return fmt.Errorf("failed to detect system resources: %w", err)
-	// }
 	host := &Host{
 		ID:              s.cfg.HostID,
 		Orchestrator:    s.cfg.Orchestrator,
 		DataDir:         s.cfg.DataDir,
 		PeerAddresses:   s.cfg.PeerAddresses,
 		ClientAddresses: s.cfg.ClientAddresses,
+		APIClientURLs:   s.cfg.APIClientURLs(),
 		EtcdMode:        s.cfg.EtcdMode,
-		// CPUs:         resources.CPUs,
-		// MemBytes:     resources.MemBytes,
-		// UpdatedAt: time.Now(),
-		// Status: HostStatus{
-		// 	State: HostStateHealthy,
-		// 	Components: map[string]common.ComponentStatus{
-		// 		"etcd": s.etcd.HealthCheck(),
-		// 	},
-		// },
 	}
 	if err := s.orchestrator.PopulateHost(ctx, host); err != nil {
 		return fmt.Errorf("failed to populate orchestrator info: %w", err)
 	}
-	// Update host status based on component status
-	// for _, component := range host.Status.Components {
-	// 	if !component.Healthy {
-	// 		host.Status.State = HostStateDegraded
-	// 		break
-	// 	}
-	// }
 	err := s.store.Host.
 		Put(toStorage(host)).
 		Exec(ctx)
@@ -194,10 +175,6 @@ func (s *Service) GetHost(ctx context.Context, hostID string) (*Host, error) {
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to fetch host statuses from storage: %w", err)
 	}
-	// statusMap := make(map[string]*StoredHostStatus, len(storedStatuses))
-	// for _, status := range storedStatuses {
-	// 	statusMap[status.HostID] = status
-	// }
 
 	host, err := fromStorage(storedHost, storedStatus)
 	if err != nil {

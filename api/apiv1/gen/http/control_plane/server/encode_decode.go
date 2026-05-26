@@ -3445,6 +3445,14 @@ func marshalControlplaneHostToHostResponseBody(v *controlplane.Host) *HostRespon
 	} else {
 		res.ClientAddresses = []string{}
 	}
+	if v.APIClientUrls != nil {
+		res.APIClientUrls = make([]string, len(v.APIClientUrls))
+		for i, val := range v.APIClientUrls {
+			res.APIClientUrls[i] = val
+		}
+	} else {
+		res.APIClientUrls = []string{}
+	}
 	if v.Status != nil {
 		res.Status = marshalControlplaneHostStatusToHostStatusResponseBody(v.Status)
 	}

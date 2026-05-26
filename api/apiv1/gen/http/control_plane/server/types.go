@@ -157,6 +157,8 @@ type GetHostResponseBody struct {
 	PeerAddresses []string `json:"peer_addresses"`
 	// The addresses that this host advertises to client applications.
 	ClientAddresses []string `json:"client_addresses"`
+	// The URLs where this host's API is reachable by client applications.
+	APIClientUrls []string `json:"api_client_urls"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -1636,6 +1638,8 @@ type HostResponseBody struct {
 	PeerAddresses []string `json:"peer_addresses"`
 	// The addresses that this host advertises to client applications.
 	ClientAddresses []string `json:"client_addresses"`
+	// The URLs where this host's API is reachable by client applications.
+	APIClientUrls []string `json:"api_client_urls"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -3109,6 +3113,14 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 		}
 	} else {
 		body.ClientAddresses = []string{}
+	}
+	if res.APIClientUrls != nil {
+		body.APIClientUrls = make([]string, len(res.APIClientUrls))
+		for i, val := range res.APIClientUrls {
+			body.APIClientUrls[i] = val
+		}
+	} else {
+		body.APIClientUrls = []string{}
 	}
 	if res.Status != nil {
 		body.Status = marshalControlplaneHostStatusToHostStatusResponseBody(res.Status)

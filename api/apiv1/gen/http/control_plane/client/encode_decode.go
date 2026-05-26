@@ -4068,6 +4068,10 @@ func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlpl
 	for i, val := range v.ClientAddresses {
 		res.ClientAddresses[i] = val
 	}
+	res.APIClientUrls = make([]string, len(v.APIClientUrls))
+	for i, val := range v.APIClientUrls {
+		res.APIClientUrls[i] = val
+	}
 	res.Status = unmarshalHostStatusResponseBodyToControlplaneHostStatus(v.Status)
 	if v.DefaultPgedgeVersion != nil {
 		res.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v.DefaultPgedgeVersion)

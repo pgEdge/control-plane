@@ -54,9 +54,8 @@ func NewServer(
 		mqttSvr *mqttServer
 	)
 
-	if cfg.HTTP.Enabled {
-		httpSvr = newHTTPServer(cfg.HTTP, handler, logger)
-	}
+	httpSvr = newHTTPServer(cfg.HTTP, handler, logger)
+
 	if cfg.MQTT.Enabled {
 		mqttSvr = newMQTTServer(cfg.MQTT, handler, logger)
 	}

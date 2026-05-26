@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -136,7 +137,7 @@ var defaultSystemD = SystemD{
 }
 
 type HTTP struct {
-	Enabled    bool   `koanf:"enabled" json:"enabled,omitempty"`
+	// Enabled    bool   `koanf:"enabled" json:"enabled,omitempty"`
 	BindAddr   string `koanf:"bind_addr" json:"bind_addr,omitempty"`
 	Port       int    `koanf:"port" json:"port,omitempty"`
 	CACert     string `koanf:"ca_cert" json:"ca_cert,omitempty"`
@@ -147,9 +148,9 @@ type HTTP struct {
 }
 
 func (h HTTP) validate() []error {
-	if !h.Enabled {
-		return nil
-	}
+	// if !h.Enabled {
+	// 	return nil
+	// }
 	var errs []error
 	if h.BindAddr == "" {
 		errs = append(errs, errors.New("bind_addr cannot be empty"))
@@ -161,7 +162,7 @@ func (h HTTP) validate() []error {
 }
 
 var httpDefault = HTTP{
-	Enabled:  true,
+	// Enabled:  true,
 	BindAddr: "0.0.0.0",
 	Port:     3000,
 }
@@ -294,6 +295,21 @@ func (c Config) Addresses() []string {
 	combined.Add(c.ClientAddresses...)
 
 	return combined.ToSortedSlice(strings.Compare)
+}
+
+func (c Config) APIClientURLs() []string {
+	if len(c.ClientAddresses) == 0 || c.HTTP.Port == 0 {
+		return []string{}
+	}
+	scheme := "http"
+	if c.HTTP.ServerCert != "" && c.HTTP.ServerKey != "" {
+		scheme = "https"
+	}
+	urls := make([]string, len(c.ClientAddresses))
+	for i, addr := range c.ClientAddresses {
+		urls[i] = scheme + "://" + net.JoinHostPort(addr, strconv.Itoa(c.HTTP.Port))
+	}
+	return urls
 }
 
 var labelRegex = regexp.MustCompile("^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$")

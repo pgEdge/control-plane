@@ -122,6 +122,11 @@ var Host = g.Type("Host", func() {
 		g.Example([]string{"10.24.34.2", "i-0123456789abcdef.ec2.internal"})
 		g.Meta("struct:tag:json", "client_addresses")
 	})
+	g.Attribute("api_client_urls", g.ArrayOf(g.String), func() {
+		g.Description("The URLs where this host's API is reachable by client applications.")
+		g.Example([]string{"http://10.24.34.2:3000", "https://i-0123456789abcdef.ec2.internal:3000"})
+		g.Meta("struct:tag:json", "api_client_urls")
+	})
 	g.Attribute("cpus", g.Int, func() {
 		g.Description("The number of CPUs on this host.")
 		g.Example(4)
@@ -157,6 +162,7 @@ var Host = g.Type("Host", func() {
 		"data_dir",
 		"peer_addresses",
 		"client_addresses",
+		"api_client_urls",
 		"status",
 	)
 })
@@ -182,6 +188,10 @@ var HostsArrayExample = []map[string]any{
 		"client_addresses": []string{
 			"10.24.34.2",
 			"i-0123456789abcdef.ec2.internal",
+		},
+		"api_client_urls": []string{
+			"http://10.24.34.2:3000",
+			"http://i-0123456789abcdef.ec2.internal:3000",
 		},
 		"memory":       "16GB",
 		"orchestrator": "swarm",
@@ -228,6 +238,10 @@ var HostsArrayExample = []map[string]any{
 			"10.24.35.2",
 			"i-058731542fee493f.ec2.internal",
 		},
+		"api_client_urls": []string{
+			"http://10.24.35.2:3000",
+			"http://i-058731542fee493f.ec2.internal:3000",
+		},
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
@@ -272,6 +286,10 @@ var HostsArrayExample = []map[string]any{
 		"client_addresses": []string{
 			"10.24.36.2",
 			"i-494027b7b53f6a23.ec2.internal",
+		},
+		"api_client_urls": []string{
+			"http://10.24.36.2:3000",
+			"http://i-494027b7b53f6a23.ec2.internal:3000",
 		},
 		"memory":       "16GB",
 		"orchestrator": "swarm",

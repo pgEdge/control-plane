@@ -111,6 +111,7 @@ func hostToAPI(h *host.Host) *api.Host {
 		DataDir:         h.DataDir,
 		PeerAddresses:   h.PeerAddresses,
 		ClientAddresses: h.ClientAddresses,
+		APIClientUrls:   h.APIClientURLs,
 		Cpus:            utils.NillablePointerTo(h.CPUs),
 		Memory:          utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
 		Cohort:          cohort,
