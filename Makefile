@@ -24,6 +24,7 @@ CLUSTER_TEST_SKIP_CLEANUP ?= 0
 CLUSTER_TEST_IMAGE_TAG ?=
 CLUSTER_TEST_DATA_DIR ?=
 DEV_LIMA_OS ?= rocky-9
+DEV_LIMA_USE_STAGING_PACKAGES ?= false
 
 ci_enabled=$(filter true,$(CI))
 docker_swarm_state=$(shell docker info --format '{{.Swarm.LocalNodeState}}')
@@ -413,7 +414,9 @@ api-docs:
 
 .PHONY: dev-lima-deploy
 dev-lima-deploy:
-	$(MAKE) -C lima deploy DEV_LIMA_OS=$(DEV_LIMA_OS)
+	$(MAKE) -C lima deploy \
+		DEV_LIMA_OS=$(DEV_LIMA_OS) \
+		DEV_LIMA_USE_STAGING_PACKAGES=$(DEV_LIMA_USE_STAGING_PACKAGES)
 
 .PHONY: dev-lima-build
 dev-lima-build:

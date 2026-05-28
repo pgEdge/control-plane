@@ -1,4 +1,5 @@
 ---
+use_staging_packages: false
 os: rocky-9
 machines:
   - name: control-plane-dev-1
