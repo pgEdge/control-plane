@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "images": {
+    "postgres": [
+      {
+        "postgres_version": "16.10",
+        "spock_version": "5",
+        "image": "pgedge-postgres:16.10-spock5.0.4-standard-3",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "16.11",
+        "spock_version": "5",
+        "image": "pgedge-postgres:16.11-spock5.0.4-standard-4",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "16.12",
+        "spock_version": "5",
+        "image": "pgedge-postgres:16.12-spock5.0.5-standard-1",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "16.13",
+        "spock_version": "5",
+        "image": "pgedge-postgres:16.13-spock5.0.6-standard-2",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "16.14",
+        "spock_version": "5",
+        "image": "pgedge-postgres:16.14-spock5.0.8-standard-1",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "17.6",
+        "spock_version": "5",
+        "image": "pgedge-postgres:17.6-spock5.0.4-standard-3",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "17.7",
+        "spock_version": "5",
+        "image": "pgedge-postgres:17.7-spock5.0.4-standard-4",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "17.8",
+        "spock_version": "5",
+        "image": "pgedge-postgres:17.8-spock5.0.5-standard-1",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "17.9",
+        "spock_version": "5",
+        "image": "pgedge-postgres:17.9-spock5.0.6-standard-2",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "17.10",
+        "spock_version": "5",
+        "image": "pgedge-postgres:17.10-spock5.0.8-standard-1",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "18.0",
+        "spock_version": "5",
+        "image": "pgedge-postgres:18.0-spock5.0.4-standard-3",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "18.1",
+        "spock_version": "5",
+        "image": "pgedge-postgres:18.1-spock5.0.4-standard-4",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "18.2",
+        "spock_version": "5",
+        "image": "pgedge-postgres:18.2-spock5.0.5-standard-1",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "18.3",
+        "spock_version": "5",
+        "image": "pgedge-postgres:18.3-spock5.0.6-standard-2",
+        "stability": "stable"
+      },
+      {
+        "postgres_version": "18.4",
+        "spock_version": "5",
+        "image": "pgedge-postgres:18.4-spock5.0.8-standard-1",
+        "stability": "stable",
+        "default": true
+      }
+    ],
+    "postgrest": [
+      {
+        "version": "latest",
+        "image": "postgrest:latest",
+        "stability": "stable"
+      },
+      {
+        "version": "14.5",
+        "image": "postgrest:14.5",
+        "stability": "stable",
+        "default": true
+      }
+    ],
+    "mcp": [
+      {
+        "version": "latest",
+        "image": "postgres-mcp:latest",
+        "stability": "stable",
+        "default": true
+      }
+    ],
+    "rag": [
+      {
+        "version": "latest",
+        "image": "rag-server:latest",
+        "stability": "stable",
+        "default": true
+      }
+    ]
+  }
+}
