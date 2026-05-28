@@ -261,7 +261,7 @@ func generatePatroniConfig(
 	}
 
 	parameters := postgres.DefaultGUCs()
-	maps.Copy(parameters, postgres.Spock4DefaultGUCs())
+	maps.Copy(parameters, postgres.SpockDefaultGUCs())
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(memoryBytes, cpus, spec.ClusterSize))
 	maps.Copy(parameters, map[string]any{
 		"shared_preload_libraries": "pg_stat_statements,snowflake,spock,postgis-3", // The docker image includes postgis-3

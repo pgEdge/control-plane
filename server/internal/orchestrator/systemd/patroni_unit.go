@@ -14,6 +14,8 @@ func PatroniUnitOptions(
 	pgBinPath string,
 	cpus float64,
 	memoryBytes uint64,
+	databaseOwnerUser string,
+	databaseOwnerGroup string,
 ) []*unit.UnitOption {
 	pathEnv := pgBinPath
 	if p := os.Getenv("PATH"); p != "" {
@@ -28,7 +30,8 @@ func PatroniUnitOptions(
 		},
 		Service: ServiceSection{
 			Type:        ServiceTypeSimple,
-			User:        "postgres",
+			User:        databaseOwnerUser,
+			Group:       databaseOwnerGroup,
 			ExecStart:   patroniCmd,
 			ExecReload:  "/bin/kill -s HUP $MAINPID",
 			KillMode:    ServiceKillModeProcess,

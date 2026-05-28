@@ -8,21 +8,21 @@ import (
 	"time"
 )
 
-var _ PackageManager = (*Dnf)(nil)
+var _ PackageManager = (*Apt)(nil)
 
-type Dnf struct {
+type Apt struct {
 	ExecCommand ExecCommand
 }
 
-func (d *Dnf) InstanceDataBaseDir(pgMajor string) string {
-	return filepath.Join("/var/lib/pgsql", pgMajor)
+func (d *Apt) InstanceDataBaseDir(pgMajor string) string {
+	return filepath.Join("/var/lib/postgresql", pgMajor)
 }
 
-func (d *Dnf) BinDir(pgMajor string) string {
-	return fmt.Sprintf("/usr/pgsql-%s/bin", pgMajor)
+func (d *Apt) BinDir(pgMajor string) string {
+	return filepath.Join("/usr/lib/postgresql", pgMajor, "bin")
 }
 
-func (d *Dnf) InstalledPostgresVersions(ctx context.Context) ([]*InstalledPostgres, error) {
+func (d *Apt) InstalledPostgresVersions(ctx context.Context) ([]*InstalledPostgres, error) {
 	execCmd := d.ExecCommand
 	if execCmd == nil {
 		execCmd = DefaultExecCommand
@@ -32,30 +32,29 @@ func (d *Dnf) InstalledPostgresVersions(ctx context.Context) ([]*InstalledPostgr
 	defer cancel()
 
 	var stdout, stderr strings.Builder
-	err := execCmd(ctx, &stdout, &stderr, "rpm", "--query", "--all", "--qf", "%{NAME} %{VERSION}\n")
+	err := execCmd(ctx, &stdout, &stderr, "dpkg-query", "-f", "${binary:Package} ${Version}\n", "-W")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query installed packages: %w, stderr: %s", err, stderr.String())
 	}
 
 	return processPackageList(
-		dnfPostgresPackageNames,
-		dnfSpockPackageNames,
+		aptPostgresPackageNames,
+		aptSpockPackageNames,
 		stdout.String(),
 	)
 }
 
-var dnfPostgresPackageNames, dnfSpockPackageNames = dnfPackageNames()
+var aptPostgresPackageNames, aptSpockPackageNames = aptPackageNames()
 
-func dnfPackageNames() (map[string]string, map[string]string) {
-
+func aptPackageNames() (map[string]string, map[string]string) {
 	postgresPackageNames := make(map[string]string, len(supportedPostgresVersions))
 	spockPackageNames := make(map[string]string, len(supportedPostgresVersions)*len(supportedSpockVersions))
 
 	for _, postgres := range supportedPostgresVersions {
-		postgresPackageName := fmt.Sprintf("pgedge-postgresql%s", postgres)
+		postgresPackageName := fmt.Sprintf("pgedge-postgresql-%s", postgres)
 		postgresPackageNames[postgresPackageName] = postgres
 		for _, spock := range supportedSpockVersions {
-			spockPackageName := fmt.Sprintf("pgedge-spock%s_%s", spock, postgres)
+			spockPackageName := fmt.Sprintf("pgedge-postgresql-%s-spock%s", postgres, spock)
 			spockPackageNames[spockPackageName] = postgres
 		}
 	}

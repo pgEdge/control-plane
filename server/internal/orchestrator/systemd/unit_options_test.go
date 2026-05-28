@@ -87,7 +87,7 @@ func TestUnitOptions(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Setenv("PATH", "/root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/local/go/bin")
 
-				actual := systemd.PatroniUnitOptions(tc.paths, tc.pgBinPath, tc.cpus, tc.memoryBytes)
+				actual := systemd.PatroniUnitOptions(tc.paths, tc.pgBinPath, tc.cpus, tc.memoryBytes, "26", "27")
 				golden.Run(t, actual, update)
 			})
 		}

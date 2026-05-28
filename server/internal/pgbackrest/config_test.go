@@ -20,6 +20,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -34,6 +35,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-cipher-type         = none",
 				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
@@ -58,6 +60,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -77,6 +80,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-cipher-type         = none",
 				"repo1-path                = /backups/databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
@@ -102,6 +106,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -121,6 +126,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-cipher-pass         = zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO",
 				"repo1-cipher-type         = aes-256-cbc",
@@ -146,6 +152,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -168,6 +175,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-cipher-type         = none",
 				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/time-retention/n1",
@@ -201,6 +209,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -214,6 +223,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-cipher-type         = none",
 				"repo1-gcs-bucket          = backups",
@@ -237,6 +247,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -251,6 +262,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-cipher-type         = none",
 				"repo1-gcs-bucket          = backups",
@@ -314,6 +326,7 @@ func TestWriteConfig(t *testing.T) {
 			opts: pgbackrest.ConfigOptions{
 				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
+				InstanceID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
@@ -329,6 +342,7 @@ func TestWriteConfig(t *testing.T) {
 			},
 			expectedLines: []string{
 				"[global]",
+				"lock-path                 = /tmp/pgbackrest/706fd161-8df5-4ddd-b25a-f85d8b7bb033-n1-n5fe2mcy",
 				"log-level-console         = info",
 				"repo1-azure-account       = backups-account",
 				"repo1-azure-container     = backups",
