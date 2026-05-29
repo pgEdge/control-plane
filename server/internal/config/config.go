@@ -82,6 +82,12 @@ type DockerSwarm struct {
 	BridgeNetworksSubnetBits   int    `koanf:"bridge_networks_subnet_bits" json:"bridge_networks_subnet_bits,omitempty"`
 	DatabaseNetworksCIDR       string `koanf:"database_networks_cidr" json:"database_networks_cidr,omitempty"`
 	DatabaseNetworksSubnetBits int    `koanf:"database_networks_subnet_bits" json:"database_networks_subnet_bits,omitempty"`
+	// ManifestURL is the URL from which the version manifest is fetched.
+	// Defaults to the pgEdge CDN URL if not set.
+	ManifestURL string `koanf:"manifest_url" json:"manifest_url,omitempty"`
+	// ManifestPath points to a local manifest file that bypasses URL fetching
+	// entirely. Useful for air-gapped environments or testing.
+	ManifestPath string `koanf:"manifest_path" json:"manifest_path,omitempty"`
 }
 
 func (d DockerSwarm) validate() []error {
