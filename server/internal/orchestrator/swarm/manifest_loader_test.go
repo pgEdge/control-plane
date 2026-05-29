@@ -76,7 +76,10 @@ func TestManifestLoader_LoadFromEmbedded(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -110,7 +113,10 @@ func TestManifestLoader_LoadFromURL(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -154,7 +160,10 @@ func TestManifestLoader_LoadFromCache(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -230,7 +239,10 @@ func TestManifestLoader_InvalidSchemaVersion(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -251,7 +263,10 @@ func TestManifestLoader_MalformedJSON(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -261,9 +276,13 @@ func TestManifestLoader_MalformedJSON(t *testing.T) {
 	}
 }
 
-// TestManifestLoader_NoManifestPathNoRefresh verifies that when manifest_path
-// is set the background refresh goroutine is NOT started (we check indirectly
-// by confirming versions don't change after a URL update).
+// TestManifestLoader_NoRefreshWhenManifestPathSet verifies that when
+// manifest_path is set the background refresh goroutine is NOT started.
+//
+// Strategy: inject a pre-fired ticker via withTickerC. If the goroutine were
+// started, it would immediately consume the tick, fetch the URL (which returns
+// PG 16.14), and update the default version. We then assert the version is
+// still 17.10 (from the local file), proving no goroutine ran.
 func TestManifestLoader_NoRefreshWhenManifestPathSet(t *testing.T) {
 	manifest := validManifest(t)
 	mfFile := filepath.Join(t.TempDir(), "local-manifest.json")
@@ -271,25 +290,55 @@ func TestManifestLoader_NoRefreshWhenManifestPathSet(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Serve a different default version at the URL so any refresh would be detectable.
+	updated, _ := json.Marshal(map[string]any{
+		"schema_version": 1,
+		"images": map[string]any{
+			"postgres": []map[string]any{
+				{
+					"postgres_version": "16.14",
+					"spock_version":    "5",
+					"image":            "pgedge-postgres:16.14-spock5.0.8-standard-1",
+					"stability":        "stable",
+					"default":          true,
+				},
+			},
+		},
+	})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write(updated)
+	}))
+	defer srv.Close()
+
 	_, cachePath := testCfg(t)
 	cfg := config.Config{
 		DockerSwarm: config.DockerSwarm{
 			ImageRepositoryHost: "ghcr.io/pgedge",
 			ManifestPath:        mfFile,
+			ManifestURL:         srv.URL,
 		},
 	}
+
+	// Pre-fired ticker: if the refresh goroutine were started it would consume
+	// this tick immediately and refresh from the URL.
+	immediateTick := make(chan time.Time, 1)
+	immediateTick <- time.Now()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(), withCachePath(cachePath))
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+		withCachePath(cachePath),
+		withHTTPClient(srv.Client()),
+		withTickerC(immediateTick),
+	)
 
-	origDefault := loader.Versions().Default().PostgresVersion.String()
+	// Allow enough time for the goroutine (if it existed) to process the tick
+	// and complete an HTTP round-trip to localhost.
+	time.Sleep(50 * time.Millisecond)
 
-	// Even after a brief wait the versions should not change (no refresh goroutine).
-	time.Sleep(20 * time.Millisecond)
-	if loader.Versions().Default().PostgresVersion.String() != origDefault {
-		t.Error("versions changed unexpectedly when manifest_path is set")
+	if got := loader.Versions().Default().PostgresVersion.String(); got != "17.10" {
+		t.Errorf("default version = %q; refresh goroutine must not run when manifest_path is set", got)
 	}
 }
 
@@ -327,7 +376,10 @@ func TestManifestLoader_RefreshSuccess(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -357,7 +409,10 @@ func TestManifestLoader_RefreshFailure(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
@@ -484,7 +539,10 @@ func TestManifestLoader_RealURL(t *testing.T) {
 		},
 	}
 
-	loader := NewManifestLoader(context.Background(), cfg, zerolog.New(os.Stderr).With().Timestamp().Logger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, zerolog.New(os.Stderr).With().Timestamp().Logger(),
 		withCachePath(cachePath),
 	)
 
@@ -536,7 +594,10 @@ func TestManifestLoader_ImageTagsHaveRegistryPrefix(t *testing.T) {
 	defer srv.Close()
 	cfg.DockerSwarm.ManifestURL = srv.URL
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := NewManifestLoader(ctx, cfg, nopLogger(),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
