@@ -68,6 +68,10 @@ func withHTTPClient(c *http.Client) manifestLoaderOption {
 	return func(m *ManifestLoader) { m.httpClient = c }
 }
 
+func withTickerC(ch <-chan time.Time) manifestLoaderOption {
+	return func(m *ManifestLoader) { m.tickerC = ch }
+}
+
 // ManifestLoader loads the version manifest from a remote URL (with disk
 // caching and hourly refresh) or from a local file, and exposes the parsed
 // *Versions and *ServiceVersions it produces.
@@ -83,6 +87,7 @@ type ManifestLoader struct {
 	logger     zerolog.Logger
 	cachePath  string
 	httpClient *http.Client
+	tickerC    <-chan time.Time // nil → use default hourly ticker; injectable for tests
 
 	mu          sync.RWMutex
 	versions    *Versions
@@ -134,8 +139,10 @@ func (m *ManifestLoader) load() {
 	data, src := m.resolve()
 	v, sv, err := m.parseManifestData(data)
 	if err != nil {
-		// Embedded manifest is malformed — this is a build-time error.
-		panic(fmt.Sprintf("manifest_loader: failed to parse manifest from %s: %v", src, err))
+		// resolve() fully parse-validates every non-embedded source before
+		// returning it, so this branch is only reachable when the embedded
+		// manifest itself is corrupt — a build-time error.
+		panic(fmt.Sprintf("manifest_loader: failed to parse embedded manifest (%s): %v", src, err))
 	}
 	m.mu.Lock()
 	m.versions = v
@@ -230,13 +237,18 @@ func (m *ManifestLoader) writeCache(data []byte) error {
 // refreshLoop runs in the background and refreshes the manifest every hour.
 // It stops when ctx is cancelled.
 func (m *ManifestLoader) refreshLoop(ctx context.Context) {
-	ticker := time.NewTicker(refreshInterval)
-	defer ticker.Stop()
+	tickC := m.tickerC
+	var ticker *time.Ticker
+	if tickC == nil {
+		ticker = time.NewTicker(refreshInterval)
+		defer ticker.Stop()
+		tickC = ticker.C
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-tickC:
 			m.refresh(ctx)
 		}
 	}
@@ -270,8 +282,11 @@ func (m *ManifestLoader) refresh(ctx context.Context) {
 	m.logger.Info().Str("url", u).Msg("version manifest refreshed")
 }
 
-// validateManifest checks that data is valid JSON and has a supported
-// schema_version.
+// validateManifest checks that data is valid JSON, has a supported
+// schema_version, and can be fully parsed into *Versions/*ServiceVersions.
+// Performing a full parse here means resolve() only returns data that will
+// succeed in parseManifestData, so load()'s panic is truly unreachable except
+// for a corrupt embedded manifest.
 func (m *ManifestLoader) validateManifest(data []byte) error {
 	var mf versionManifest
 	if err := json.Unmarshal(data, &mf); err != nil {
@@ -279,6 +294,9 @@ func (m *ManifestLoader) validateManifest(data []byte) error {
 	}
 	if mf.SchemaVersion != supportedSchemaVersion {
 		return fmt.Errorf("unsupported schema_version %d (want %d)", mf.SchemaVersion, supportedSchemaVersion)
+	}
+	if _, _, err := m.parseManifestData(data); err != nil {
+		return fmt.Errorf("manifest not parseable: %w", err)
 	}
 	return nil
 }
