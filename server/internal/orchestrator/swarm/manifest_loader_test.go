@@ -11,9 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/zerolog"
-
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/testutils"
 )
 
 // testCfg returns a config with an isolated cache directory in t.TempDir().
@@ -30,8 +29,6 @@ func testCfg(t *testing.T, extra ...func(*config.DockerSwarm)) (config.Config, s
 	}
 	return cfg, filepath.Join(cacheDir, "manifest-cache.json")
 }
-
-func nopLogger() zerolog.Logger { return zerolog.Nop() }
 
 // validManifest returns a well-formed manifest JSON matching the embedded one.
 func validManifest(t *testing.T) []byte {
@@ -79,15 +76,16 @@ func TestManifestLoader_LoadFromEmbedded(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
+		withEmbeddedFallback(),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	v := loader.Versions()
-	if v == nil {
-		t.Fatal("expected non-nil Versions from embedded manifest")
-	}
 	if v.Default() == nil {
 		t.Fatal("expected non-nil default version from embedded manifest")
 	}
@@ -96,8 +94,8 @@ func TestManifestLoader_LoadFromEmbedded(t *testing.T) {
 	}
 
 	sv := loader.ServiceVersions()
-	if sv == nil {
-		t.Fatal("expected non-nil ServiceVersions from embedded manifest")
+	if _, err := sv.SupportedServiceVersions("mcp"); err != nil {
+		t.Fatalf("expected ServiceVersions to be populated from embedded manifest: %v", err)
 	}
 }
 
@@ -116,15 +114,15 @@ func TestManifestLoader_LoadFromURL(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	v := loader.Versions()
-	if v == nil {
-		t.Fatal("expected non-nil Versions")
-	}
 	def := v.Default()
 	if def == nil {
 		t.Fatal("expected non-nil default version")
@@ -146,10 +144,10 @@ func TestManifestLoader_LoadFromCache(t *testing.T) {
 	manifest := validManifest(t)
 
 	// Pre-populate the cache.
-	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(cachePath, manifest, 0o644); err != nil {
+	if err := os.WriteFile(cachePath, manifest, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -163,17 +161,42 @@ func TestManifestLoader_LoadFromCache(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	v := loader.Versions()
-	if v == nil {
-		t.Fatal("expected Versions from cache")
-	}
 	if v.Default() == nil {
 		t.Fatal("expected non-nil default version from cache")
+	}
+}
+
+// TestManifestLoader_CustomURLNoFallbackToEmbedded verifies that a custom
+// manifest_url that fails does NOT fall back to the embedded manifest and
+// instead returns an error.
+func TestManifestLoader_CustomURLNoFallbackToEmbedded(t *testing.T) {
+	cfg, cachePath := testCfg(t)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	// Use a non-default URL to trigger the custom-URL chain.
+	cfg.DockerSwarm.ManifestURL = srv.URL + "/custom"
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
+		withCachePath(cachePath),
+		withHTTPClient(srv.Client()),
+	)
+	if err == nil {
+		t.Fatal("expected error for custom URL with no cache and failing server")
 	}
 }
 
@@ -193,21 +216,21 @@ func TestManifestLoader_LoadFromManifestPath(t *testing.T) {
 		},
 	}
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	loader, err := NewManifestLoader(context.Background(), cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	v := loader.Versions()
-	if v == nil {
-		t.Fatal("expected Versions from manifest_path")
-	}
 	if v.Default().PostgresVersion.String() != "17.10" {
 		t.Errorf("default version = %s, want 17.10", v.Default().PostgresVersion)
 	}
 }
 
-// TestManifestLoader_ManifestPathMissing verifies fallback to embedded when
-// manifest_path points to a non-existent file.
+// TestManifestLoader_ManifestPathMissing verifies that a missing manifest_path
+// returns an error (no fallback to embedded).
 func TestManifestLoader_ManifestPathMissing(t *testing.T) {
 	_, cachePath := testCfg(t)
 	cfg := config.Config{
@@ -217,18 +240,17 @@ func TestManifestLoader_ManifestPathMissing(t *testing.T) {
 		},
 	}
 
-	loader := NewManifestLoader(context.Background(), cfg, nopLogger(),
+	_, err := NewManifestLoader(context.Background(), cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 	)
-
-	// Should have fallen back to embedded.
-	if loader.Versions() == nil {
-		t.Fatal("expected non-nil Versions after fallback to embedded")
+	if err == nil {
+		t.Fatal("expected error when manifest_path points to a non-existent file")
 	}
 }
 
 // TestManifestLoader_InvalidSchemaVersion verifies that a manifest with an
-// unsupported schema_version causes URL/cache to be skipped and falls back.
+// unsupported schema_version causes URL/cache to be skipped and falls back to
+// the embedded manifest (default URL chain).
 func TestManifestLoader_InvalidSchemaVersion(t *testing.T) {
 	cfg, cachePath := testCfg(t)
 	badManifest := []byte(`{"schema_version":99,"images":{}}`)
@@ -242,13 +264,17 @@ func TestManifestLoader_InvalidSchemaVersion(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
+		withEmbeddedFallback(),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	// Falls back to embedded — should still work.
-	if loader.Versions() == nil {
+	if loader.Versions().Default() == nil {
 		t.Fatal("expected fallback to embedded on invalid schema_version")
 	}
 }
@@ -266,12 +292,16 @@ func TestManifestLoader_MalformedJSON(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
+		withEmbeddedFallback(),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
-	if loader.Versions() == nil {
+	if loader.Versions().Default() == nil {
 		t.Fatal("expected fallback to embedded on malformed JSON")
 	}
 }
@@ -327,11 +357,14 @@ func TestManifestLoader_NoRefreshWhenManifestPathSet(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 		withTickerC(immediateTick),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	// Allow enough time for the goroutine (if it existed) to process the tick
 	// and complete an HTTP round-trip to localhost.
@@ -379,10 +412,13 @@ func TestManifestLoader_RefreshSuccess(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	if loader.Versions().Default().PostgresVersion.String() != "17.10" {
 		t.Fatalf("expected initial default 17.10, got %s", loader.Versions().Default().PostgresVersion)
@@ -412,10 +448,13 @@ func TestManifestLoader_RefreshFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	origDefault := loader.Versions().Default().PostgresVersion.String()
 
@@ -542,13 +581,16 @@ func TestManifestLoader_RealURL(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, zerolog.New(os.Stderr).With().Timestamp().Logger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	v := loader.Versions()
-	if v == nil {
-		t.Fatal("expected non-nil Versions from real URL")
+	if v.Default() == nil {
+		t.Fatal("expected non-nil default version from real URL")
 	}
 	t.Logf("loaded %d supported versions; default=%s", len(v.Supported()), v.Default().PostgresVersion)
 
@@ -567,7 +609,7 @@ func TestManifestLoader_RealURL(t *testing.T) {
 
 // TestValidateManifest covers schema_version and JSON validation.
 func TestValidateManifest(t *testing.T) {
-	m := &ManifestLoader{logger: nopLogger()}
+	m := &ManifestLoader{logger: testutils.Logger(t)}
 
 	if err := m.validateManifest(embeddedManifest); err != nil {
 		t.Errorf("embedded manifest should be valid: %v", err)
@@ -597,10 +639,14 @@ func TestManifestLoader_ImageTagsHaveRegistryPrefix(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	loader := NewManifestLoader(ctx, cfg, nopLogger(),
+	loader, err := NewManifestLoader(ctx, cfg, testutils.LoggerFactory(t),
 		withCachePath(cachePath),
 		withHTTPClient(srv.Client()),
+		withEmbeddedFallback(),
 	)
+	if err != nil {
+		t.Fatalf("NewManifestLoader: %v", err)
+	}
 
 	for _, pv := range loader.Versions().Supported() {
 		imgs, err := loader.Versions().GetImages(pv)
