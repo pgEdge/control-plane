@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"iter"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/client"
@@ -355,85 +356,49 @@ func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Ta
 func (f *DatabaseFixture) WaitForReplication(ctx context.Context, t testing.TB, username, password string) {
 	tLog(t, "waiting for replication to catch up on all nodes")
 
-	// After a primary change (switchover/failover), Spock subscriptions need
-	// time to reconnect to the new primary.  Retry with fresh sync markers
-	// until all nodes are in sync or the 10-minute deadline is exceeded.
-	// The 10-minute budget accommodates Spock's reconnect delay when the
-	// provider node's primary changes (the logical replication slot must be
-	// re-created on the new primary, which takes additional time in CI).
-	// Each iteration calls wait_for_sync_event (30s timeout) plus a 15s
-	// sleep, so roughly 77s per retry; 10 minutes allows ~7 retries.
-	deadline := time.Now().Add(10 * time.Minute)
-	for {
-		if err := f.Refresh(ctx); err != nil {
-			t.Errorf("failed to refresh database state while waiting for replication: %v", err)
-			return
-		}
-		ok, reason := f.pollReplication(ctx, username, password)
-		if ok {
-			return
-		}
-		if time.Now().After(deadline) {
-			t.Errorf("replication did not catch up on all nodes within 10 minutes (last failure: %s)", reason)
-			return
-		}
-		tLogf(t, "replication not yet in sync, retrying in 15s... (%s)", reason)
-		select {
-		case <-ctx.Done():
-			t.Errorf("replication wait aborted: %v", ctx.Err())
-			return
-		case <-time.After(15 * time.Second):
-		}
-	}
-}
-
-// pollReplication inserts a sync marker on every primary, then checks that
-// each marker has been delivered to every other node's primary.  Returns
-// (true, "") only when all cross-node checks pass.  On failure it returns
-// (false, reason) where reason identifies the failing pair so callers can
-// log it.  Never calls t.Fatal/t.Error so it can be used safely in a retry loop.
-func (f *DatabaseFixture) pollReplication(ctx context.Context, username, password string) (bool, string) {
+	// Execute sync_event on all primary nodes
 	nodeSyncMap := make(map[string]string)
 	for _, node := range f.Spec.Nodes {
-		conn, err := f.ConnectToInstance(ctx, ConnectionOptions{
+		primaryOpts := ConnectionOptions{
 			Matcher:  And(WithNode(node.Name), WithRole("primary")),
 			Username: username,
 			Password: password,
+		}
+
+		f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
+			var syncLSN string
+
+			row := conn.QueryRow(ctx, "SELECT spock.sync_event();")
+			require.NoError(t, row.Scan(&syncLSN))
+
+			assert.NotEmpty(t, syncLSN)
+
+			nodeSyncMap[node.Name] = syncLSN
 		})
-		if err != nil {
-			return false, fmt.Sprintf("connect to %s primary: %v", node.Name, err)
-		}
-		var syncLSN string
-		err = conn.QueryRow(ctx, "SELECT spock.sync_event();").Scan(&syncLSN)
-		conn.Close(ctx)
-		if err != nil || syncLSN == "" {
-			return false, fmt.Sprintf("sync_event on %s: %v", node.Name, err)
-		}
-		nodeSyncMap[node.Name] = syncLSN
 	}
 
+	// Verify wait_for_sync_event on all other nodes
 	for _, node := range f.Spec.Nodes {
+		primaryOpts := ConnectionOptions{
+			Matcher:  And(WithNode(node.Name), WithRole("primary")),
+			Username: username,
+			Password: password,
+		}
+
 		for peerNode, lsn := range nodeSyncMap {
 			if peerNode == node.Name {
 				continue
 			}
-			conn, err := f.ConnectToInstance(ctx, ConnectionOptions{
-				Matcher:  And(WithNode(node.Name), WithRole("primary")),
-				Username: username,
-				Password: password,
+
+			f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
+				var synced bool
+
+				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", peerNode, lsn)
+				require.NoError(t, row.Scan(&synced))
+				assert.True(t, synced)
 			})
-			if err != nil {
-				return false, fmt.Sprintf("connect to %s primary for peer check: %v", node.Name, err)
-			}
-			var synced bool
-			err = conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", peerNode, lsn).Scan(&synced)
-			conn.Close(ctx)
-			if err != nil || !synced {
-				return false, fmt.Sprintf("%s waiting for %s events (LSN %s): synced=%v err=%v", node.Name, peerNode, lsn, synced, err)
-			}
 		}
 	}
-	return true, ""
 }
 
 func (d *DatabaseFixture) SwitchoverDatabaseNode(ctx context.Context, req *controlplane.SwitchoverDatabaseNodePayload) error {

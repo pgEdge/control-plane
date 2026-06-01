@@ -23,7 +23,7 @@ func TestFailoverScenarios(t *testing.T) {
 	host2 := hostIDs[1]
 	host3 := hostIDs[2]
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
