@@ -322,6 +322,11 @@ func generatePatroniConfig(
 		passwordAuthMethod = hba.AuthMethod(pe)
 	}
 
+	var syncMode *string
+	if spec.NodeSize > 1 {
+		syncMode = utils.PointerTo("on")
+	}
+
 	cfg := &patroni.Config{
 		Name:      utils.PointerTo(spec.InstanceID),
 		Namespace: utils.PointerTo(patroni.Namespace()),
@@ -339,9 +344,10 @@ func generatePatroniConfig(
 				IgnoreSlots: &[]patroni.IgnoreSlot{
 					{Plugin: utils.PointerTo("spock_output")},
 				},
-				TTL:          utils.PointerTo(30),
-				LoopWait:     utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
-				RetryTimeout: utils.PointerTo(10),
+				TTL:             utils.PointerTo(30),
+				LoopWait:        utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
+				RetryTimeout:    utils.PointerTo(10),
+				SynchronousMode: syncMode,
 			},
 			InitDB: utils.PointerTo([]string{"data-checksums"}),
 		},
