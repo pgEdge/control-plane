@@ -607,6 +607,26 @@ func TestManifestLoader_RealURL(t *testing.T) {
 	t.Logf("refresh OK; default still %s", loader.Versions().Default().PostgresVersion)
 }
 
+// TestEmbeddedManifestValid fully parses the version-manifest.json embedded in
+// the binary.  A failure here means NewManifestLoader would panic at startup —
+// catching it in CI is much better than catching it in production.
+func TestEmbeddedManifestValid(t *testing.T) {
+	m := &ManifestLoader{logger: testutils.Logger(t)}
+	v, sv, err := m.parseManifestData(embeddedManifest)
+	if err != nil {
+		t.Fatalf("embedded manifest cannot be parsed: %v", err)
+	}
+	if v.Default() == nil {
+		t.Fatal("embedded manifest has no default version")
+	}
+	if len(v.Supported()) == 0 {
+		t.Fatal("embedded manifest has no supported versions")
+	}
+	if _, err := sv.SupportedServiceVersions("mcp"); err != nil {
+		t.Errorf("embedded manifest missing mcp service versions: %v", err)
+	}
+}
+
 // TestValidateManifest covers schema_version and JSON validation.
 func TestValidateManifest(t *testing.T) {
 	m := &ManifestLoader{logger: testutils.Logger(t)}

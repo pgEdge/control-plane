@@ -140,7 +140,7 @@ func NewManifestLoader(ctx context.Context, cfg config.Config, loggerFactory *lo
 		o(m)
 	}
 
-	if err := m.load(); err != nil {
+	if err := m.load(ctx); err != nil {
 		return nil, err
 	}
 
@@ -166,8 +166,8 @@ func (m *ManifestLoader) ServiceVersions() ServiceVersions {
 }
 
 // load performs the initial synchronous load.
-func (m *ManifestLoader) load() error {
-	data, src, err := m.resolve()
+func (m *ManifestLoader) load(ctx context.Context) error {
+	data, src, err := m.resolve(ctx)
 	if err != nil {
 		return err
 	}
@@ -189,11 +189,11 @@ func (m *ManifestLoader) load() error {
 
 // resolve selects the appropriate resolution chain and returns raw manifest
 // bytes plus a human-readable source label.
-func (m *ManifestLoader) resolve() ([]byte, string, error) {
+func (m *ManifestLoader) resolve(ctx context.Context) ([]byte, string, error) {
 	if p := m.cfg.DockerSwarm.ManifestPath; p != "" {
 		return m.resolveLocalPath(p)
 	}
-	return m.resolveURL()
+	return m.resolveURL(ctx)
 }
 
 // resolveLocalPath reads and validates a manifest from a local file path.
@@ -213,10 +213,10 @@ func (m *ManifestLoader) resolveLocalPath(p string) ([]byte, string, error) {
 // to the disk cache.  For the default URL it also falls back to the embedded
 // manifest.  For a custom URL it returns an error if all sources fail so the
 // operator knows their configuration is broken.
-func (m *ManifestLoader) resolveURL() ([]byte, string, error) {
+func (m *ManifestLoader) resolveURL(ctx context.Context) ([]byte, string, error) {
 	u := m.cfg.DockerSwarm.ManifestURL
 
-	data, err := m.fetchURL(context.Background(), u)
+	data, err := m.fetchURL(ctx, u)
 	if err != nil {
 		m.logger.Warn().Err(err).Str("url", u).Msg("failed to fetch manifest from URL; trying disk cache")
 	} else if err = m.validateManifest(data); err != nil {
