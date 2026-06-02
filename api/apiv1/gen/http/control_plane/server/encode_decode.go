@@ -2929,8 +2929,8 @@ func DecodeRestartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		if utf8.RuneCountInString(instanceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
 		}
-		if utf8.RuneCountInString(instanceID) > 36 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 36, false))
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
 		if err != nil {
 			return nil, err
@@ -3044,8 +3044,8 @@ func DecodeStopInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		if utf8.RuneCountInString(instanceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
 		}
-		if utf8.RuneCountInString(instanceID) > 36 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 36, false))
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
 		{
 			forceRaw := r.URL.Query().Get("force")
@@ -3169,8 +3169,8 @@ func DecodeStartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) g
 		if utf8.RuneCountInString(instanceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
 		}
-		if utf8.RuneCountInString(instanceID) > 36 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 36, false))
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
 		{
 			forceRaw := r.URL.Query().Get("force")

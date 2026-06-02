@@ -463,6 +463,16 @@ func BuildSwitchoverDatabaseNodePayload(controlPlaneSwitchoverDatabaseNodeBody s
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"scheduled_at\": \"2025-09-20T22:00:00+05:30\"\n   }'")
 		}
+		if body.CandidateInstanceID != nil {
+			if utf8.RuneCountInString(*body.CandidateInstanceID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.candidate_instance_id", *body.CandidateInstanceID, utf8.RuneCountInString(*body.CandidateInstanceID), 1, true))
+			}
+		}
+		if body.CandidateInstanceID != nil {
+			if utf8.RuneCountInString(*body.CandidateInstanceID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.candidate_instance_id", *body.CandidateInstanceID, utf8.RuneCountInString(*body.CandidateInstanceID), 63, false))
+			}
+		}
 		if body.ScheduledAt != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
 		}
@@ -1022,8 +1032,8 @@ func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, control
 		if utf8.RuneCountInString(instanceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
 		}
-		if utf8.RuneCountInString(instanceID) > 36 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 36, false))
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
 		if err != nil {
 			return nil, err
@@ -1033,7 +1043,7 @@ func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, control
 		ScheduledAt: body.ScheduledAt,
 	}
 	v.DatabaseID = controlplane.Identifier(databaseID)
-	v.InstanceID = controlplane.Identifier(instanceID)
+	v.InstanceID = instanceID
 
 	return v, nil
 }
@@ -1061,8 +1071,8 @@ func BuildStopInstancePayload(controlPlaneStopInstanceDatabaseID string, control
 		if utf8.RuneCountInString(instanceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
 		}
-		if utf8.RuneCountInString(instanceID) > 36 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 36, false))
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
 		if err != nil {
 			return nil, err
@@ -1079,7 +1089,7 @@ func BuildStopInstancePayload(controlPlaneStopInstanceDatabaseID string, control
 	}
 	v := &controlplane.StopInstancePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
-	v.InstanceID = controlplane.Identifier(instanceID)
+	v.InstanceID = instanceID
 	v.Force = force
 
 	return v, nil
@@ -1108,8 +1118,8 @@ func BuildStartInstancePayload(controlPlaneStartInstanceDatabaseID string, contr
 		if utf8.RuneCountInString(instanceID) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
 		}
-		if utf8.RuneCountInString(instanceID) > 36 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 36, false))
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
 		if err != nil {
 			return nil, err
@@ -1126,7 +1136,7 @@ func BuildStartInstancePayload(controlPlaneStartInstanceDatabaseID string, contr
 	}
 	v := &controlplane.StartInstancePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
-	v.InstanceID = controlplane.Identifier(instanceID)
+	v.InstanceID = instanceID
 	v.Force = force
 
 	return v, nil

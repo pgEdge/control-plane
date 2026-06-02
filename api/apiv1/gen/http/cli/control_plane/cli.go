@@ -997,7 +997,7 @@ func controlPlaneRestartInstanceUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane restart-instance --body '{\n      \"scheduled_at\": \"2025-06-18T16:52:05Z\"\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --instance-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane restart-instance --body '{\n      \"scheduled_at\": \"2025-06-18T16:52:05Z\"\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --instance-id \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\"")
 }
 
 func controlPlaneStopInstanceUsage() {
@@ -1019,7 +1019,7 @@ func controlPlaneStopInstanceUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane stop-instance --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --instance-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --force true")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane stop-instance --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --instance-id \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\" --force true")
 }
 
 func controlPlaneStartInstanceUsage() {
@@ -1041,7 +1041,7 @@ func controlPlaneStartInstanceUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane start-instance --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --instance-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --force true")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane start-instance --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --instance-id \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\" --force true")
 }
 
 func controlPlaneCancelDatabaseTaskUsage() {

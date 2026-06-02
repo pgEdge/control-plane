@@ -3464,7 +3464,7 @@ func (c *Client) BuildRestartInstanceRequest(ctx context.Context, v any) (*http.
 			return nil, goahttp.ErrInvalidType("control-plane", "restart-instance", "*controlplane.RestartInstancePayload", v)
 		}
 		databaseID = string(p.DatabaseID)
-		instanceID = string(p.InstanceID)
+		instanceID = p.InstanceID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: RestartInstanceControlPlanePath(databaseID, instanceID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
@@ -3609,7 +3609,7 @@ func (c *Client) BuildStopInstanceRequest(ctx context.Context, v any) (*http.Req
 			return nil, goahttp.ErrInvalidType("control-plane", "stop-instance", "*controlplane.StopInstancePayload", v)
 		}
 		databaseID = string(p.DatabaseID)
-		instanceID = string(p.InstanceID)
+		instanceID = p.InstanceID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: StopInstanceControlPlanePath(databaseID, instanceID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
@@ -3753,7 +3753,7 @@ func (c *Client) BuildStartInstanceRequest(ctx context.Context, v any) (*http.Re
 			return nil, goahttp.ErrInvalidType("control-plane", "start-instance", "*controlplane.StartInstancePayload", v)
 		}
 		databaseID = string(p.DatabaseID)
-		instanceID = string(p.InstanceID)
+		instanceID = p.InstanceID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: StartInstanceControlPlanePath(databaseID, instanceID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
