@@ -33,7 +33,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 * Name: dario.cat/mergo
 * Version: v1.0.0
-* License: [BSD-3-Clause](https://github.com/imdario/mergo/blob/v1.0.0/LICENSE)
+* License: [BSD-3-Clause](https://github.com/darccio/mergo/blob/v1.0.0/LICENSE)
 
 ```
 Copyright (c) 2013 Dario Castañé. All rights reserved.
