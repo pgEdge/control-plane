@@ -848,7 +848,7 @@ type RestartInstancePayload struct {
 	// The ID of the database that owns the instance.
 	DatabaseID Identifier
 	// The ID of the instance to restart.
-	InstanceID Identifier
+	InstanceID string
 	// The time at which the restart is scheduled.
 	ScheduledAt *string
 }
@@ -1027,7 +1027,7 @@ type StartInstancePayload struct {
 	// The ID of the database that owns the instance.
 	DatabaseID Identifier
 	// The ID of the instance to start.
-	InstanceID Identifier
+	InstanceID string
 	// Force starting an instance even if database in an unmodifiable state
 	Force bool
 }
@@ -1044,7 +1044,7 @@ type StopInstancePayload struct {
 	// The ID of the database that owns the instance.
 	DatabaseID Identifier
 	// The ID of the instance to stop.
-	InstanceID Identifier
+	InstanceID string
 	// Force stopping an instance even if database in an unmodifiable state
 	Force bool
 }

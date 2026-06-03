@@ -4966,7 +4966,7 @@ func NewRestartInstancePayload(body struct {
 		ScheduledAt: body.ScheduledAt,
 	}
 	v.DatabaseID = controlplane.Identifier(databaseID)
-	v.InstanceID = controlplane.Identifier(instanceID)
+	v.InstanceID = instanceID
 
 	return v
 }
@@ -4976,7 +4976,7 @@ func NewRestartInstancePayload(body struct {
 func NewStopInstancePayload(databaseID string, instanceID string, force bool) *controlplane.StopInstancePayload {
 	v := &controlplane.StopInstancePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
-	v.InstanceID = controlplane.Identifier(instanceID)
+	v.InstanceID = instanceID
 	v.Force = force
 
 	return v
@@ -4987,7 +4987,7 @@ func NewStopInstancePayload(databaseID string, instanceID string, force bool) *c
 func NewStartInstancePayload(databaseID string, instanceID string, force bool) *controlplane.StartInstancePayload {
 	v := &controlplane.StartInstancePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
-	v.InstanceID = controlplane.Identifier(instanceID)
+	v.InstanceID = instanceID
 	v.Force = force
 
 	return v
@@ -5129,6 +5129,16 @@ func ValidateBackupDatabaseNodeRequestBody(body *BackupDatabaseNodeRequestBody) 
 // ValidateSwitchoverDatabaseNodeRequestBody runs the validations defined on
 // Switchover-Database-NodeRequestBody
 func ValidateSwitchoverDatabaseNodeRequestBody(body *SwitchoverDatabaseNodeRequestBody) (err error) {
+	if body.CandidateInstanceID != nil {
+		if utf8.RuneCountInString(*body.CandidateInstanceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.candidate_instance_id", *body.CandidateInstanceID, utf8.RuneCountInString(*body.CandidateInstanceID), 1, true))
+		}
+	}
+	if body.CandidateInstanceID != nil {
+		if utf8.RuneCountInString(*body.CandidateInstanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.candidate_instance_id", *body.CandidateInstanceID, utf8.RuneCountInString(*body.CandidateInstanceID), 63, false))
+		}
+	}
 	if body.ScheduledAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
 	}
