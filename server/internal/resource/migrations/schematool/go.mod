@@ -28,3 +28,5 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace dario.cat/mergo => github.com/darccio/mergo v1.0.2
