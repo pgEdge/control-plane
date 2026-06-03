@@ -181,4 +181,9 @@ type Orchestrator interface {
 	StartInstance(ctx context.Context, instanceID string) error
 	NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error)
 	InstancePaths(pgVersion *ds.Version, instanceID string) (InstancePaths, error)
+	// ReconcileInstanceSpec is called during spec reconciliation to allow the
+	// orchestrator to update computed fields (e.g. resolved image) on the new
+	// spec before it is persisted. old is nil when the instance is being created
+	// for the first time.
+	ReconcileInstanceSpec(old, new *InstanceSpec) error
 }

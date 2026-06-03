@@ -669,7 +669,13 @@ func (s *Service) ReconcileInstanceSpec(ctx context.Context, spec *InstanceSpec)
 	case err == nil:
 		previous = stored.Spec
 		spec.CopySettingsFrom(previous)
+		if err := s.orchestrator.ReconcileInstanceSpec(previous, spec); err != nil {
+			return nil, fmt.Errorf("failed to reconcile instance spec: %w", err)
+		}
 	case errors.Is(err, storage.ErrNotFound):
+		if err := s.orchestrator.ReconcileInstanceSpec(nil, spec); err != nil {
+			return nil, fmt.Errorf("failed to reconcile instance spec: %w", err)
+		}
 		stored = &StoredInstanceSpec{}
 	default:
 		return nil, fmt.Errorf("failed to get current spec for instance '%s': %w", spec.InstanceID, err)

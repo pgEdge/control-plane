@@ -212,6 +212,24 @@ func (o *Orchestrator) resolveInstanceImages(spec *database.InstanceSpec) (*Imag
 	}
 }
 
+// ReconcileInstanceSpec resolves the container image for the new spec and
+// clears a stale ResolvedImage if PgEdgeVersion changed since the last
+// reconciliation.
+func (o *Orchestrator) ReconcileInstanceSpec(old, new *database.InstanceSpec) error {
+	// If the Postgres version changed, the previously resolved image no longer
+	// matches — clear it so resolveInstanceImages fetches the correct one from
+	// the manifest.
+	if old != nil && old.PgEdgeVersion != nil && new.PgEdgeVersion != nil {
+		if !old.PgEdgeVersion.Equals(new.PgEdgeVersion) {
+			if new.OrchestratorOpts != nil && new.OrchestratorOpts.Swarm != nil {
+				new.OrchestratorOpts.Swarm.ResolvedImage = ""
+			}
+		}
+	}
+	_, err := o.resolveInstanceImages(new)
+	return err
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
 	images, err := o.resolveInstanceImages(spec)
 	if err != nil {
