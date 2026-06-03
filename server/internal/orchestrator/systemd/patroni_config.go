@@ -10,7 +10,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/samber/do"
@@ -62,16 +61,37 @@ func (c *PatroniConfig) Refresh(ctx context.Context, rc *resource.Context) error
 }
 
 func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error {
-	hostSvc, err := do.Invoke[*host.Service](rc.Injector)
+	addresses, err := c.getAddresses(ctx, rc)
 	if err != nil {
 		return err
 	}
+
+	return c.Base.Create(ctx, rc, addresses, nil)
+}
+
+func (c *PatroniConfig) Update(ctx context.Context, rc *resource.Context) error {
+	addresses, err := c.getAddresses(ctx, rc)
+	if err != nil {
+		return err
+	}
+	return c.Base.Update(ctx, rc, addresses, nil, c.signalReload)
+}
+
+func (c *PatroniConfig) Delete(ctx context.Context, rc *resource.Context) error {
+	return c.Base.Delete(ctx, rc)
+}
+
+func (c *PatroniConfig) getAddresses(ctx context.Context, rc *resource.Context) ([]string, error) {
+	hostSvc, err := do.Invoke[*host.Service](rc.Injector)
+	if err != nil {
+		return nil, err
+	}
 	hosts, err := hostSvc.GetHosts(ctx, c.AllHostIDs)
 	if err != nil {
-		return fmt.Errorf("failed to get hosts: %w", err)
+		return nil, fmt.Errorf("failed to get hosts: %w", err)
 	}
 	if len(hosts) != len(c.AllHostIDs) {
-		return fmt.Errorf("wrong number of hosts: expected %d, got %d", len(c.AllHostIDs), len(hosts))
+		return nil, fmt.Errorf("wrong number of hosts: expected %d, got %d", len(c.AllHostIDs), len(hosts))
 	}
 
 	addresses := ds.NewSet[string]()
@@ -79,22 +99,10 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 		addresses.Add(h.PeerAddresses...)
 	}
 
-	return c.Base.Create(ctx, rc, addresses.ToSortedSlice(strings.Compare), nil)
+	return addresses.ToSortedSlice(strings.Compare), nil
 }
 
-func (c *PatroniConfig) Update(ctx context.Context, rc *resource.Context) error {
-	if err := c.Create(ctx, rc); err != nil {
-		return err
-	}
-
-	return c.signalReload(ctx, rc)
-}
-
-func (c *PatroniConfig) Delete(ctx context.Context, rc *resource.Context) error {
-	return c.Base.Delete(ctx, rc)
-}
-
-func (c *PatroniConfig) signalReload(ctx context.Context, rc *resource.Context) error {
+func (c *PatroniConfig) signalReload(ctx context.Context, rc *resource.Context, wait time.Duration) error {
 	client, err := do.Invoke[*Client](rc.Injector)
 	if err != nil {
 		return err
@@ -110,8 +118,6 @@ func (c *PatroniConfig) signalReload(ctx context.Context, rc *resource.Context) 
 	if err := client.ReloadUnit(ctx, name); err != nil {
 		return fmt.Errorf("failed to reload patroni: %w", err)
 	}
-	// It can take up to loop_wait seconds for Patroni to reload the config.
-	// We'll want to update this code to read loop_wait from c.Base if we make
-	// loop_wait configurable.
-	return utils.SleepContext(ctx, patroni.DefaultLoopWaitSeconds*time.Second)
+
+	return utils.SleepContext(ctx, wait)
 }

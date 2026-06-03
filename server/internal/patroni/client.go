@@ -302,14 +302,14 @@ type DynamicStandbyClusterConfig struct {
 	// An ordered list of methods that can be used to bootstrap standby leader
 	// from the remote primary, can be different from the list defined in
 	// PostgreSQL
-	CreateReplicaMethods *string `json:"create_replica_methods,omitempty"`
+	CreateReplicaMethods *[]string `json:"create_replica_methods,omitempty"`
 	// Command to restore WAL records from the remote primary to nodes in a
 	// standby cluster, can be different from the list defined in PostgreSQL
 	RestoreCommand *string `json:"restore_command,omitempty"`
 	// Cleanup command for standby leader
 	ArchiveCleanupCommand *string `json:"archive_cleanup_command,omitempty"`
 	// How long to wait before actually apply WAL records on a standby leader
-	RecoveryMinApplyDelay *string `json:"recovery_min_apply_delay,omitempty"`
+	RecoveryMinApplyDelay *int `json:"recovery_min_apply_delay,omitempty"`
 }
 
 type DynamicConfig struct {
@@ -375,7 +375,7 @@ type DynamicConfig struct {
 	// matching properties will cause a slot to be ignored.
 	IgnoreSlots *[]IgnoreSlot `json:"ignore_slots,omitempty"`
 	// Stops Patroni from making changes to the cluster.
-	Pause bool `json:"pause"`
+	Pause *bool `json:"pause,omitempty"`
 }
 
 type Switchover struct {

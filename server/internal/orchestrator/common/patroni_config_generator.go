@@ -48,6 +48,8 @@ type PatroniConfigGenerator struct {
 	// this would be '1'. This is used to configure the Snowflake and LOLOR
 	// extensions.
 	NodeOrdinal int `json:"node_ordinal"`
+	// NodeSize is the number of instances in this Spock node.
+	NodeSize int `json:"node_size"`
 	// OrchestratorParameters are additional parameters to be provided by the
 	// orchestrator implementation.
 	OrchestratorParameters map[string]any `json:"orchestrator_parameters,omitempty"`
@@ -138,6 +140,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		MemoryBytes:            memoryBytes,
 		NodeName:               opts.Instance.NodeName,
 		NodeOrdinal:            opts.Instance.NodeOrdinal,
+		NodeSize:               opts.Instance.NodeSize,
 		OrchestratorParameters: opts.OrchestratorParameters,
 		PatroniPort:            opts.PatroniPort,
 		PostgresCertsDir:       opts.Paths.Instance.PostgresCertificates(),
@@ -230,6 +233,7 @@ func (p *PatroniConfigGenerator) bootstrap(dcsParameters map[string]any) *patron
 			TTL:          utils.PointerTo(30),
 			LoopWait:     utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
 			RetryTimeout: utils.PointerTo(10),
+			FailsafeMode: utils.PointerTo(p.NodeSize == 1),
 		},
 		InitDB: utils.PointerTo([]string{"data-checksums"}),
 	}
