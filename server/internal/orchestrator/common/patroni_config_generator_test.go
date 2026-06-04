@@ -361,6 +361,53 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "user pg_hba pg_ident and scram",
+			options: common.PatroniConfigGeneratorOptions{
+				Instance: &database.InstanceSpec{
+					InstanceID:    "pghba-n1-689qacsi",
+					DatabaseID:    "pghba",
+					HostID:        "host-1",
+					DatabaseName:  "testdb",
+					NodeName:      "n1",
+					NodeOrdinal:   1,
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("18.4", "5.0.8"),
+					ClusterSize:   3,
+					// password_encryption drives the catch-all auth method.
+					PostgreSQLConf: map[string]any{
+						"password_encryption": "scram-sha-256",
+					},
+					// Node-level entries are already prepended ahead of
+					// database-level entries by NodeInstances() before reaching
+					// the generator.
+					PgHbaConf: []string{
+						"host testdb myapp_user 10.0.0.0/8 scram-sha-256",
+						"hostssl all myapp_user 203.0.113.0/24 scram-sha-256",
+					},
+					PgIdentConf: []string{"ssl_users CN=alice,O=example alice"},
+				},
+				HostCPUs:        4,
+				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
+				FQDN:            "pghba-n1-689qacsi.pghba-database",
+				LogType:         patroni.LogTypeJson,
+				PatroniPort:     8888,
+				PostgresPort:    5432,
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/pghba-n1-689qacsi"},
+					PgBackRestPath: "/usr/bin/pgbackrest",
+					PatroniPath:    "/usr/local/bin/patroni",
+				},
+			},
+			etcdHosts: []string{"i-0123456789abcdef.ec2.internal:2379"},
+			etcdCreds: &common.EtcdCreds{
+				Username: "instance.pghba-n1-689qacsi",
+				Password: "password",
+			},
+			generateOptions: common.GenerateOptions{
+				SystemAddresses: []string{"172.17.0.1/32", "10.128.165.128/26"},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gen := common.NewPatroniConfigGenerator(tc.options)

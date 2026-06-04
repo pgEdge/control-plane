@@ -56,6 +56,12 @@ type PatroniConfigGenerator struct {
 	PatroniAllowlist []string `json:"patroni_allowlist"`
 	// PatroniPort is the port that Patroni will listen on.
 	PatroniPort int `json:"patroni_port"`
+	// PgHbaConf are user-supplied pg_hba.conf entries (one rule per element),
+	// inserted in the user zone after the CP rules and before the catch-all.
+	PgHbaConf []string `json:"pg_hba_conf,omitempty"`
+	// PgIdentConf are user-supplied pg_ident.conf entries (one mapping per
+	// element). The CP writes no pg_ident entries of its own.
+	PgIdentConf []string `json:"pg_ident_conf,omitempty"`
 	// PostgresCertsDir is the Postgres certificates directory.
 	PostgresCertsDir string `json:"postgres_certs_dir"`
 	// PostgresPort is the port that Postgres will listen on.
@@ -138,6 +144,8 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		PostgresPort:           opts.PostgresPort,
 		RestoreCommand:         restoreCommand,
 		SpecParameters:         opts.Instance.PostgreSQLConf,
+		PgHbaConf:              opts.Instance.PgHbaConf,
+		PgIdentConf:            opts.Instance.PgIdentConf,
 		TenantID:               opts.Instance.TenantID,
 		// TODO: Add allowlist field to instance and database types
 		// PatroniAllowlist:       opts.Instance.PatroniAllowlist,
@@ -306,6 +314,14 @@ func (p *PatroniConfigGenerator) postgreSQL(
 		}
 	}
 
+	// The catch-all authenticates non-system users by password, so its auth
+	// method follows password_encryption to match how passwords are stored. It
+	// defaults to md5 (our DefaultGUCs value) when unset.
+	passwordAuthMethod := hba.AuthMethodMD5
+	if pe, ok := parameters["password_encryption"].(string); ok && pe != "" {
+		passwordAuthMethod = hba.AuthMethod(pe)
+	}
+
 	return &patroni.PostgreSQL{
 		ConnectAddress:                         utils.PointerTo(net.JoinHostPort(p.FQDN, strconv.Itoa(p.PostgresPort))),
 		DataDir:                                &p.DataDir,
@@ -316,7 +332,8 @@ func (p *PatroniConfigGenerator) postgreSQL(
 		RemoveDataDirectoryOnRewindFailure:     utils.PointerTo(true),
 		RemoveDataDirectoryOnDivergedTimelines: utils.PointerTo(true),
 		Authentication:                         p.authentication(),
-		PgHba:                                  p.pgHba(systemAddresses, extraEntries),
+		PgHba:                                  p.pgHba(systemAddresses, extraEntries, passwordAuthMethod),
+		PgIdent:                                p.pgIdent(),
 	}
 }
 
@@ -339,7 +356,7 @@ func (p *PatroniConfigGenerator) authentication() *patroni.Authentication {
 	}
 }
 
-func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []hba.Entry) *[]string {
+func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []hba.Entry, passwordAuthMethod hba.AuthMethod) *[]string {
 	entries := []string{
 		// Trust local connections
 		hba.Entry{
@@ -427,24 +444,40 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 		entries = append(entries, entry.String())
 	}
 
-	// Use MD5 for non-system users from all other connections
-	// TODO: Can we safely upgrade this to scram-sha-256?
+	// User-supplied pg_hba entries form a zone after the CP's system-user rules
+	// and before the catch-all. By this point system users are already matched
+	// or rejected, so user rules cannot affect CP-internal connectivity.
+	// p.PgHbaConf already has node-level entries prepended ahead of the
+	// database-level entries.
+	entries = append(entries, p.PgHbaConf...)
+
+	// Catch-all for non-system users. The auth method follows
+	// password_encryption so it matches how passwords are stored.
 	entries = append(entries,
 		hba.Entry{
 			Type:       hba.EntryTypeHost,
 			Database:   "all",
 			User:       "all",
 			Address:    "0.0.0.0/0",
-			AuthMethod: hba.AuthMethodMD5,
+			AuthMethod: passwordAuthMethod,
 		}.String(),
 		hba.Entry{
 			Type:       hba.EntryTypeHost,
 			Database:   "all",
 			User:       "all",
 			Address:    "::/0",
-			AuthMethod: hba.AuthMethodMD5,
+			AuthMethod: passwordAuthMethod,
 		}.String(),
 	)
 
 	return &entries
+}
+
+// pgIdent returns the user-supplied pg_ident.conf entries, or nil when there
+// are none. The CP writes no pg_ident entries of its own.
+func (p *PatroniConfigGenerator) pgIdent() *[]string {
+	if len(p.PgIdentConf) == 0 {
+		return nil
+	}
+	return &p.PgIdentConf
 }
