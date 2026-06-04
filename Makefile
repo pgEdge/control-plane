@@ -155,7 +155,6 @@ licenses:
 	GOOS=linux $(go-licenses) report ./... \
 	--ignore github.com/pgEdge/control-plane \
 	--ignore github.com/eclipse/paho.golang \
-	--ignore dario.cat/mergo \
 	--template=NOTICE.txt.tmpl > NOTICE.txt
 
 .PHONY: licenses-ci
