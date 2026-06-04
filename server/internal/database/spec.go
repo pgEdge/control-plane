@@ -45,6 +45,8 @@ type Node struct {
 	CPUs             float64           `json:"cpus"`
 	MemoryBytes      uint64            `json:"memory"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	PgHbaConf        []string          `json:"pg_hba_conf,omitempty"`
+	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
@@ -64,6 +66,8 @@ func (n *Node) Clone() *Node {
 		CPUs:             n.CPUs,
 		MemoryBytes:      n.MemoryBytes,
 		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
+		PgHbaConf:        slices.Clone(n.PgHbaConf),
+		PgIdentConf:      slices.Clone(n.PgIdentConf),
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
@@ -331,6 +335,8 @@ type Spec struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	PgHbaConf        []string          `json:"pg_hba_conf,omitempty"`
+	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	Scripts          *ScriptStatements `json:"scripts,omitempty"`
 }
@@ -414,6 +420,8 @@ func (s *Spec) Clone() *Spec {
 		CPUs:             s.CPUs,
 		MemoryBytes:      s.MemoryBytes,
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
+		PgHbaConf:        slices.Clone(s.PgHbaConf),
+		PgIdentConf:      slices.Clone(s.PgIdentConf),
 		Nodes:            nodes,
 		DatabaseUsers:    users,
 		Services:         services,
@@ -564,6 +572,8 @@ type InstanceSpec struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	PgHbaConf        []string          `json:"pg_hba_conf,omitempty"`
+	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	ClusterSize      int               `json:"cluster_size"`
 	NodeSize         int               `json:"node_size"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
@@ -618,6 +628,8 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
+		PgHbaConf:        slices.Clone(s.PgHbaConf),
+		PgIdentConf:      slices.Clone(s.PgIdentConf),
 		ClusterSize:      s.ClusterSize,
 		NodeSize:         s.NodeSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
@@ -716,6 +728,8 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				BackupConfig:     overridableValue(s.BackupConfig, node.BackupConfig),
 				RestoreConfig:    effectiveRestore,
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				PgHbaConf:        prependEntries(s.PgHbaConf, node.PgHbaConf),
+				PgIdentConf:      prependEntries(s.PgIdentConf, node.PgIdentConf),
 				ClusterSize:      clusterSize,
 				NodeSize:         nodeSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
@@ -761,4 +775,19 @@ func overridableMapValue[T ~map[V]any, V comparable](base, override T) T {
 		return override
 	}
 	return base
+}
+
+// prependEntries merges node-level entries (override) ahead of database-level
+// entries (base). pg_hba/pg_ident are ordered lists evaluated first-match, so
+// node entries are given priority by placing them first; the database-level
+// entries act as the baseline. Returns nil when both are empty so the field is
+// omitted, identical to today's behavior.
+func prependEntries(base, override []string) []string {
+	if len(base) == 0 && len(override) == 0 {
+		return nil
+	}
+	merged := make([]string, 0, len(override)+len(base))
+	merged = append(merged, override...)
+	merged = append(merged, base...)
+	return merged
 }

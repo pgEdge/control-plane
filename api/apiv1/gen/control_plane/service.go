@@ -365,6 +365,15 @@ type DatabaseNodeSpec struct {
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
+	// Additional pg_hba.conf entries for this particular node, one rule per array
+	// element. Prepended to the database-level pg_hba_conf entries, so node
+	// entries take first-match priority. Entries are inserted between
+	// control-plane's system-user rules and its catch-all, and cannot affect
+	// control-plane-internal connectivity.
+	PgHbaConf []string `json:"pg_hba_conf,omitempty"`
+	// Additional pg_ident.conf entries for this particular node, one mapping per
+	// array element. Prepended to the database-level pg_ident_conf entries.
+	PgIdentConf []string `json:"pg_ident_conf,omitempty"`
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
 	BackupConfig *BackupConfigSpec `json:"backup_config,omitempty"`
@@ -431,6 +440,16 @@ type DatabaseSpec struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
+	// Additional pg_hba.conf entries, one rule per array element. Inserted between
+	// control-plane's system-user rules and its catch-all, so they cannot affect
+	// control-plane-internal connectivity (Patroni, replication, health checks).
+	// Node-level pg_hba_conf entries are prepended to these.
+	PgHbaConf []string `json:"pg_hba_conf,omitempty"`
+	// Additional pg_ident.conf entries, one mapping per array element. Purely
+	// additive; control-plane writes no pg_ident entries of its own. The primary
+	// use case is cert auth with map= translating certificate CNs to PostgreSQL
+	// usernames.
+	PgIdentConf []string `json:"pg_ident_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	// User-defined SQL scripts that run at different points during the database

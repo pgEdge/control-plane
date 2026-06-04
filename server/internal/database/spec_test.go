@@ -566,3 +566,59 @@ func TestSpec_NodeInstances_DBOwner(t *testing.T) {
 		assert.Equal(t, "app", nodes[1].DatabaseOwner)
 	})
 }
+
+func TestSpec_NodeInstances_PgHbaIdentMerge(t *testing.T) {
+	dbHba := []string{"host all myapp_user 203.0.113.0/24 scram-sha-256"}
+	dbIdent := []string{"ssl_users CN=alice alice"}
+
+	spec := func(n1, n2 *database.Node) *database.Spec {
+		return &database.Spec{
+			DatabaseID:      "test-db",
+			DatabaseName:    "testdb",
+			PostgresVersion: "17.6",
+			SpockVersion:    "5",
+			PgHbaConf:       dbHba,
+			PgIdentConf:     dbIdent,
+			Nodes:           []*database.Node{n1, n2},
+		}
+	}
+
+	t.Run("node with no entries inherits database-level list", func(t *testing.T) {
+		s := spec(
+			&database.Node{Name: "n1", HostIDs: []string{"host-1"}},
+			&database.Node{Name: "n2", HostIDs: []string{"host-2"}},
+		)
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		assert.Equal(t, dbHba, nodes[0].Instances[0].PgHbaConf)
+		assert.Equal(t, dbIdent, nodes[0].Instances[0].PgIdentConf)
+	})
+
+	t.Run("node entries are prepended ahead of database-level entries", func(t *testing.T) {
+		nodeHba := "host example myapp_user 10.0.0.0/8 scram-sha-256"
+		s := spec(
+			&database.Node{Name: "n1", HostIDs: []string{"host-1"}, PgHbaConf: []string{nodeHba}},
+			&database.Node{Name: "n2", HostIDs: []string{"host-2"}},
+		)
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		// n1: node entry first, then database-level entry (first-match priority).
+		assert.Equal(t, append([]string{nodeHba}, dbHba...), nodes[0].Instances[0].PgHbaConf)
+		// n2: unchanged, inherits database-level list only.
+		assert.Equal(t, dbHba, nodes[1].Instances[0].PgHbaConf)
+	})
+
+	t.Run("empty everywhere yields nil", func(t *testing.T) {
+		s := &database.Spec{
+			DatabaseID:      "test-db",
+			DatabaseName:    "testdb",
+			PostgresVersion: "17.6",
+			SpockVersion:    "5",
+			Nodes:           []*database.Node{{Name: "n1", HostIDs: []string{"host-1"}}},
+		}
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		assert.Nil(t, nodes[0].Instances[0].PgHbaConf)
+		assert.Nil(t, nodes[0].Instances[0].PgIdentConf)
+	})
+}
