@@ -17,6 +17,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres/hba"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -62,6 +63,55 @@ func mapKeyPath(key string) string {
 
 func appendPath(path []string, new ...string) []string {
 	return append(slices.Clone(path), new...)
+}
+
+// validateAuthFileGUCs rejects postgresql_conf settings that would make
+// user-supplied pg_hba_conf/pg_ident_conf entries ineffective. When hba_file
+// or ident_file is set, Patroni ignores the pg_hba/pg_ident arrays it manages,
+// so the control-plane-generated file (including user entries) would never be
+// written. GUC names are case-insensitive in PostgreSQL, so we compare lower.
+func validateAuthFileGUCs(conf map[string]any, path []string) []error {
+	var errs []error
+	for key := range conf {
+		switch strings.ToLower(strings.TrimSpace(key)) {
+		case "hba_file", "ident_file":
+			err := fmt.Errorf("%q is not allowed: it overrides the control-plane-managed pg_hba.conf/pg_ident.conf and would make pg_hba_conf/pg_ident_conf entries ineffective", key)
+			errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath(key))))
+		}
+	}
+	return errs
+}
+
+// validatePgHbaConf checks that every non-comment pg_hba_conf entry parses.
+// Blank and comment lines are allowed and skipped. Validation is intentionally
+// minimal — see server/internal/postgres/hba/parse.go.
+func validatePgHbaConf(lines []string, path []string) []error {
+	var errs []error
+	for i, line := range lines {
+		if hba.IsComment(line) {
+			continue
+		}
+		if _, err := hba.ParseEntry(line); err != nil {
+			wrapped := fmt.Errorf("invalid pg_hba entry %q: %w", line, err)
+			errs = append(errs, newValidationError(wrapped, appendPath(path, arrayIndexPath(i))))
+		}
+	}
+	return errs
+}
+
+// validatePgIdentConf checks that every non-comment pg_ident_conf entry parses.
+func validatePgIdentConf(lines []string, path []string) []error {
+	var errs []error
+	for i, line := range lines {
+		if hba.IsComment(line) {
+			continue
+		}
+		if _, err := hba.ParseIdent(line); err != nil {
+			wrapped := fmt.Errorf("invalid pg_ident entry %q: %w", line, err)
+			errs = append(errs, newValidationError(wrapped, appendPath(path, arrayIndexPath(i))))
+		}
+	}
+	return errs
 }
 
 func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, spec *api.DatabaseSpec) error {
@@ -122,6 +172,12 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 			))
 		}
 	}
+
+	// Reject postgresql_conf GUCs that would make user-supplied pg_hba/pg_ident
+	// entries ineffective, then validate the entries themselves.
+	errs = append(errs, validateAuthFileGUCs(spec.PostgresqlConf, []string{"postgresql_conf"})...)
+	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, []string{"pg_hba_conf"})...)
+	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, []string{"pg_ident_conf"})...)
 
 	if spec.BackupConfig != nil {
 		errs = append(errs, validateBackupConfig(spec.BackupConfig, []string{"backup_config"})...)
@@ -284,6 +340,10 @@ func validateNode(
 			errs = append(errs, newValidationError(errors.New("a node cannot use itself as a source node"), srcPath))
 		}
 	}
+
+	errs = append(errs, validateAuthFileGUCs(node.PostgresqlConf, appendPath(path, "postgresql_conf"))...)
+	errs = append(errs, validatePgHbaConf(node.PgHbaConf, appendPath(path, "pg_hba_conf"))...)
+	errs = append(errs, validatePgIdentConf(node.PgIdentConf, appendPath(path, "pg_ident_conf"))...)
 
 	if node.BackupConfig != nil {
 		backupConfigPath := appendPath(path, "backup_config")

@@ -45,6 +45,8 @@ type Node struct {
 	CPUs             float64           `json:"cpus"`
 	MemoryBytes      uint64            `json:"memory"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	PgHbaConf        []string          `json:"pg_hba_conf,omitempty"`
+	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
@@ -64,6 +66,8 @@ func (n *Node) Clone() *Node {
 		CPUs:             n.CPUs,
 		MemoryBytes:      n.MemoryBytes,
 		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
+		PgHbaConf:        slices.Clone(n.PgHbaConf),
+		PgIdentConf:      slices.Clone(n.PgIdentConf),
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
@@ -331,6 +335,8 @@ type Spec struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	PgHbaConf        []string          `json:"pg_hba_conf,omitempty"`
+	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	Scripts          *ScriptStatements `json:"scripts,omitempty"`
 }
@@ -414,6 +420,8 @@ func (s *Spec) Clone() *Spec {
 		CPUs:             s.CPUs,
 		MemoryBytes:      s.MemoryBytes,
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
+		PgHbaConf:        slices.Clone(s.PgHbaConf),
+		PgIdentConf:      slices.Clone(s.PgIdentConf),
 		Nodes:            nodes,
 		DatabaseUsers:    users,
 		Services:         services,
@@ -564,6 +572,8 @@ type InstanceSpec struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	PgHbaConf        []string          `json:"pg_hba_conf,omitempty"`
+	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	ClusterSize      int               `json:"cluster_size"`
 	NodeSize         int               `json:"node_size"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
@@ -618,6 +628,8 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
+		PgHbaConf:        slices.Clone(s.PgHbaConf),
+		PgIdentConf:      slices.Clone(s.PgIdentConf),
 		ClusterSize:      s.ClusterSize,
 		NodeSize:         s.NodeSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
@@ -700,22 +712,26 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
 			instances[hostIdx] = &InstanceSpec{
-				InstanceID:       InstanceIDFor(hostID, s.DatabaseID, node.Name),
-				TenantID:         s.TenantID,
-				DatabaseID:       s.DatabaseID,
-				HostID:           hostID,
-				DatabaseName:     s.DatabaseName,
-				NodeName:         node.Name,
-				NodeOrdinal:      nodeOrdinal,
-				PgEdgeVersion:    nodeVersion,
-				Port:             overridableValue(s.Port, node.Port),
-				PatroniPort:      overridableValue(s.PatroniPort, node.PatroniPort),
-				CPUs:             overridableValue(s.CPUs, node.CPUs),
-				MemoryBytes:      overridableValue(s.MemoryBytes, node.MemoryBytes),
-				DatabaseUsers:    s.DatabaseUsers,
-				BackupConfig:     overridableValue(s.BackupConfig, node.BackupConfig),
-				RestoreConfig:    effectiveRestore,
-				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				InstanceID:     InstanceIDFor(hostID, s.DatabaseID, node.Name),
+				TenantID:       s.TenantID,
+				DatabaseID:     s.DatabaseID,
+				HostID:         hostID,
+				DatabaseName:   s.DatabaseName,
+				NodeName:       node.Name,
+				NodeOrdinal:    nodeOrdinal,
+				PgEdgeVersion:  nodeVersion,
+				Port:           overridableValue(s.Port, node.Port),
+				PatroniPort:    overridableValue(s.PatroniPort, node.PatroniPort),
+				CPUs:           overridableValue(s.CPUs, node.CPUs),
+				MemoryBytes:    overridableValue(s.MemoryBytes, node.MemoryBytes),
+				DatabaseUsers:  s.DatabaseUsers,
+				BackupConfig:   overridableValue(s.BackupConfig, node.BackupConfig),
+				RestoreConfig:  effectiveRestore,
+				PostgreSQLConf: overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				// Node entries come first so they take first-match priority;
+				// database-level entries follow as the baseline.
+				PgHbaConf:        slices.Concat(node.PgHbaConf, s.PgHbaConf),
+				PgIdentConf:      slices.Concat(node.PgIdentConf, s.PgIdentConf),
 				ClusterSize:      clusterSize,
 				NodeSize:         nodeSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),

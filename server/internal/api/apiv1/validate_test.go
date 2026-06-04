@@ -1268,6 +1268,65 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				"scripts.post_database_create[3]: failed to parse SQL statement",
 			},
 		},
+		{
+			name: "valid pg_hba_conf and pg_ident_conf at database and node level",
+			spec: &api.DatabaseSpec{
+				PgHbaConf: []string{
+					"hostssl all myapp_user 203.0.113.0/24 scram-sha-256",
+					"hostssl all alice 0.0.0.0/0 cert clientcert=verify-full map=ssl_users",
+					"# a comment is allowed",
+					"",
+				},
+				PgIdentConf: []string{"ssl_users CN=alice,O=example alice"},
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:      "n1",
+						HostIds:   []api.Identifier{api.Identifier("host-1")},
+						PgHbaConf: []string{"host example myapp_user 10.0.0.0/8 scram-sha-256"},
+					},
+				},
+			},
+		},
+		{
+			name: "unparseable pg_hba_conf/pg_ident_conf lines are rejected with the offending line",
+			spec: &api.DatabaseSpec{
+				PgHbaConf:   []string{"tcp all all 0.0.0.0/0 md5"},
+				PgIdentConf: []string{"ssl_users alice"},
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:      "n1",
+						HostIds:   []api.Identifier{api.Identifier("host-1")},
+						PgHbaConf: []string{"nonsense line"},
+					},
+				},
+			},
+			expected: []string{
+				`pg_hba_conf[0]: invalid pg_hba entry "tcp all all 0.0.0.0/0 md5": unknown connection type "tcp"`,
+				`pg_ident_conf[0]: invalid pg_ident entry "ssl_users alice": pg_ident entry requires map-name`,
+				`nodes[0].pg_hba_conf[0]: invalid pg_hba entry "nonsense line": unknown connection type "nonsense"`,
+			},
+		},
+		{
+			name: "hba_file and ident_file GUCs are rejected",
+			spec: &api.DatabaseSpec{
+				PostgresqlConf: map[string]any{
+					"hba_file":   "/custom/pg_hba.conf",
+					"ident_file": "/custom/pg_ident.conf",
+				},
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:           "n1",
+						HostIds:        []api.Identifier{api.Identifier("host-1")},
+						PostgresqlConf: map[string]any{"HBA_FILE": "/x"},
+					},
+				},
+			},
+			expected: []string{
+				`postgresql_conf[hba_file]: "hba_file" is not allowed`,
+				`postgresql_conf[ident_file]: "ident_file" is not allowed`,
+				`nodes[0].postgresql_conf[HBA_FILE]: "HBA_FILE" is not allowed`,
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)
@@ -1895,13 +1954,13 @@ func TestValidateServiceSpec_NameBudget(t *testing.T) {
 	}
 
 	// 26-char DB ID + 27-char service ID = 53 (at the limit, valid)
-	dbID26 := "abcdefghijklmnopqrstuvwxyz"           // 26 chars
-	svcID27 := "svc-aaaaaaaaaaaaaaaaaaaaaaa"          // 27 chars
+	dbID26 := "abcdefghijklmnopqrstuvwxyz"   // 26 chars
+	svcID27 := "svc-aaaaaaaaaaaaaaaaaaaaaaa" // 27 chars
 	err := errors.Join(validateServiceSpec(baseSvc(svcID27), nil, false, dbID26, testDBUsers)...)
 	assert.NoError(t, err, "combined length of 53 should be valid")
 
 	// 27-char DB ID + 27-char service ID = 54 (one over the limit, invalid)
-	dbID27 := "abcdefghijklmnopqrstuvwxyz1"          // 27 chars
+	dbID27 := "abcdefghijklmnopqrstuvwxyz1" // 27 chars
 	err = errors.Join(validateServiceSpec(baseSvc(svcID27), nil, false, dbID27, testDBUsers)...)
 	assert.ErrorContains(t, err, "database ID and service ID combined must not exceed 53 characters (got 54)")
 

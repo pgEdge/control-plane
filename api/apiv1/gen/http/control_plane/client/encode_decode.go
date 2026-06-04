@@ -4373,6 +4373,18 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
+		}
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsRequestBody(v.OrchestratorOpts)
 	}
@@ -4410,6 +4422,18 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBody(v *control
 			tk := key
 			tv := val
 			res.PostgresqlConf[tk] = tv
+		}
+	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
 		}
 	}
 	if v.BackupConfig != nil {
@@ -4845,6 +4869,18 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
+		}
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
@@ -4882,6 +4918,18 @@ func marshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Databas
 			tk := key
 			tv := val
 			res.PostgresqlConf[tk] = tv
+		}
+	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
 		}
 	}
 	if v.BackupConfig != nil {
@@ -5447,6 +5495,18 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
+		}
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsResponseBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
@@ -5480,6 +5540,18 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneDatabaseNodeSpec(v *Data
 			tk := key
 			tv := val
 			res.PostgresqlConf[tk] = tv
+		}
+	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
 		}
 	}
 	if v.BackupConfig != nil {
@@ -5905,6 +5977,18 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
+		}
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsRequestBodyRequestBody(v.OrchestratorOpts)
 	}
@@ -5942,6 +6026,18 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBodyRequestBody
 			tk := key
 			tv := val
 			res.PostgresqlConf[tk] = tv
+		}
+	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
 		}
 	}
 	if v.BackupConfig != nil {
@@ -6379,6 +6475,18 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
+		}
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
@@ -6416,6 +6524,18 @@ func marshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec
 			tk := key
 			tv := val
 			res.PostgresqlConf[tk] = tv
+		}
+	}
+	if v.PgHbaConf != nil {
+		res.PgHbaConf = make([]string, len(v.PgHbaConf))
+		for i, val := range v.PgHbaConf {
+			res.PgHbaConf[i] = val
+		}
+	}
+	if v.PgIdentConf != nil {
+		res.PgIdentConf = make([]string, len(v.PgIdentConf))
+		for i, val := range v.PgIdentConf {
+			res.PgIdentConf[i] = val
 		}
 	}
 	if v.BackupConfig != nil {

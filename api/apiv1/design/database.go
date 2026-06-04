@@ -72,6 +72,16 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		})
 		g.Meta("struct:tag:json", "postgresql_conf,omitempty")
 	})
+	g.Attribute("pg_hba_conf", g.ArrayOf(g.String), func() {
+		g.Description("Additional pg_hba.conf entries for this particular node, one rule per array element. Prepended to the database-level pg_hba_conf entries, so node entries take first-match priority. Entries are inserted between control-plane's system-user rules and its catch-all, and cannot affect control-plane-internal connectivity.")
+		g.Example([]string{"host example myapp_user 10.0.0.0/8 scram-sha-256"})
+		g.Meta("struct:tag:json", "pg_hba_conf,omitempty")
+	})
+	g.Attribute("pg_ident_conf", g.ArrayOf(g.String), func() {
+		g.Description("Additional pg_ident.conf entries for this particular node, one mapping per array element. Prepended to the database-level pg_ident_conf entries.")
+		g.Example([]string{"ssl_users  CN=alice,O=example  alice"})
+		g.Meta("struct:tag:json", "pg_ident_conf,omitempty")
+	})
 	g.Attribute("backup_config", BackupConfigSpec, func() {
 		g.Description("The backup configuration for this node. Overrides the backup configuration set in the DatabaseSpec.")
 		g.Meta("struct:tag:json", "backup_config,omitempty")
@@ -666,6 +676,19 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 			"max_connections": 1000,
 		})
 		g.Meta("struct:tag:json", "postgresql_conf,omitempty")
+	})
+	g.Attribute("pg_hba_conf", g.ArrayOf(g.String), func() {
+		g.Description("Additional pg_hba.conf entries, one rule per array element. Inserted between control-plane's system-user rules and its catch-all, so they cannot affect control-plane-internal connectivity (Patroni, replication, health checks). Node-level pg_hba_conf entries are prepended to these.")
+		g.Example([]string{
+			"hostssl all myapp_user 203.0.113.0/24 scram-sha-256",
+			"hostssl all alice 0.0.0.0/0 cert clientcert=verify-full map=ssl_users",
+		})
+		g.Meta("struct:tag:json", "pg_hba_conf,omitempty")
+	})
+	g.Attribute("pg_ident_conf", g.ArrayOf(g.String), func() {
+		g.Description("Additional pg_ident.conf entries, one mapping per array element. Purely additive; control-plane writes no pg_ident entries of its own. The primary use case is cert auth with map= translating certificate CNs to PostgreSQL usernames.")
+		g.Example([]string{"ssl_users  CN=alice,O=example  alice"})
+		g.Meta("struct:tag:json", "pg_ident_conf,omitempty")
 	})
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
