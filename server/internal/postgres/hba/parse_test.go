@@ -1,6 +1,10 @@
 package hba
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestParseEntry(t *testing.T) {
 	tests := []struct {
@@ -64,12 +68,8 @@ func TestParseEntry(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := ParseEntry(tc.line)
-			if err != nil {
-				t.Fatalf("ParseEntry(%q) returned error: %v", tc.line, err)
-			}
-			if got != tc.want {
-				t.Errorf("ParseEntry(%q)\n  got:  %#v\n  want: %#v", tc.line, got, tc.want)
-			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
@@ -78,20 +78,20 @@ func TestParseEntryErrors(t *testing.T) {
 	tests := []struct {
 		name string
 		line string
+		err  string
 	}{
-		{"unknown connection type", "tcp all all 0.0.0.0/0 md5"},
-		{"missing auth method", "host all all 0.0.0.0/0"},
-		{"local missing method", "local all all"},
-		{"include without path", "include"},
-		{"include with too many args", "include a b"},
-		{"empty", ""},
-		{"unterminated quote", `host "all all 0.0.0.0/0 md5`},
+		{"unknown connection type", "tcp all all 0.0.0.0/0 md5", `unknown connection type "tcp"`},
+		{"missing auth method", "host all all 0.0.0.0/0", "requires database, user, address, and an auth method"},
+		{"local missing method", "local all all", "local entry requires database, user, and an auth method"},
+		{"include without path", "include", "requires exactly one path argument"},
+		{"include with too many args", "include a b", "requires exactly one path argument"},
+		{"empty", "", "empty entry"},
+		{"unterminated quote", `host "all all 0.0.0.0/0 md5`, "unterminated quoted string"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := ParseEntry(tc.line); err == nil {
-				t.Errorf("ParseEntry(%q) expected an error, got nil", tc.line)
-			}
+			_, err := ParseEntry(tc.line)
+			require.ErrorContains(t, err, tc.err)
 		})
 	}
 }
@@ -121,12 +121,8 @@ func TestParseIdent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := ParseIdent(tc.line)
-			if err != nil {
-				t.Fatalf("ParseIdent(%q) returned error: %v", tc.line, err)
-			}
-			if got != tc.want {
-				t.Errorf("ParseIdent(%q)\n  got:  %#v\n  want: %#v", tc.line, got, tc.want)
-			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
@@ -135,17 +131,17 @@ func TestParseIdentErrors(t *testing.T) {
 	tests := []struct {
 		name string
 		line string
+		err  string
 	}{
-		{"too few fields", "ssl_users alice"},
-		{"too many fields", "ssl_users CN=alice alice extra"},
-		{"empty", ""},
-		{"unterminated quote", `ssl_users "CN=alice alice`},
+		{"too few fields", "ssl_users alice", "pg_ident entry requires map-name, system-username, and postgres-username"},
+		{"too many fields", "ssl_users CN=alice alice extra", "pg_ident entry requires map-name, system-username, and postgres-username"},
+		{"empty", "", "empty entry"},
+		{"unterminated quote", `ssl_users "CN=alice alice`, "unterminated quoted string"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := ParseIdent(tc.line); err == nil {
-				t.Errorf("ParseIdent(%q) expected an error, got nil", tc.line)
-			}
+			_, err := ParseIdent(tc.line)
+			require.ErrorContains(t, err, tc.err)
 		})
 	}
 }

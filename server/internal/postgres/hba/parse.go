@@ -6,6 +6,8 @@ import (
 	"net"
 	"strings"
 	"unicode"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 // This file provides lightweight parsers for pg_hba.conf and pg_ident.conf
@@ -20,17 +22,17 @@ import (
 // fields, unterminated quotes). PostgreSQL surfaces deeper configuration errors
 // (bad auth methods, addresses, options) at reload time via the task logs.
 
-var entryTypes = map[EntryType]struct{}{
-	EntryTypeLocal:           {},
-	EntryTypeHost:            {},
-	EntryTypeHostSSL:         {},
-	EntryTypeHostNoSSL:       {},
-	EntryTypeHostGSSEnc:      {},
-	EntryTypeHostNoGSSEnc:    {},
-	EntryTypeInclude:         {},
-	EntryTypeIncludeIfExists: {},
-	EntryTypeIncludeDir:      {},
-}
+var entryTypes = ds.NewSet(
+	EntryTypeLocal,
+	EntryTypeHost,
+	EntryTypeHostSSL,
+	EntryTypeHostNoSSL,
+	EntryTypeHostGSSEnc,
+	EntryTypeHostNoGSSEnc,
+	EntryTypeInclude,
+	EntryTypeIncludeIfExists,
+	EntryTypeIncludeDir,
+)
 
 func isIncludeType(t EntryType) bool {
 	return t == EntryTypeInclude || t == EntryTypeIncludeIfExists || t == EntryTypeIncludeDir
@@ -40,7 +42,7 @@ func isIncludeType(t EntryType) bool {
 // used only to disambiguate the optional separate IP-mask form of a host entry
 // ("ADDRESS MASK METHOD"); it is not a validity check on the address.
 func isBareIP(s string) bool {
-	return !strings.Contains(s, "/") && net.ParseIP(s) != nil
+	return net.ParseIP(s) != nil
 }
 
 // IsComment reports whether a line is blank or a comment and therefore carries
@@ -55,23 +57,20 @@ func IsComment(line string) bool {
 // unquoted '#' comment. It returns an error for an unterminated quote.
 func tokenize(line string) ([]string, error) {
 	var (
-		tokens   []string
-		buf      strings.Builder
-		inQuote  bool
-		hasToken bool
+		tokens  []string
+		buf     strings.Builder
+		inQuote bool
 	)
 	flush := func() {
-		if hasToken {
+		if buf.Len() > 0 {
 			tokens = append(tokens, buf.String())
 			buf.Reset()
-			hasToken = false
 		}
 	}
 	for _, r := range line {
 		switch {
 		case r == '"':
 			inQuote = !inQuote
-			hasToken = true
 		case r == '#' && !inQuote:
 			flush()
 			return tokens, nil
@@ -79,7 +78,6 @@ func tokenize(line string) ([]string, error) {
 			flush()
 		default:
 			buf.WriteRune(r)
-			hasToken = true
 		}
 	}
 	if inQuote {
@@ -102,7 +100,7 @@ func ParseEntry(line string) (Entry, error) {
 	}
 
 	typ := EntryType(tokens[0])
-	if _, ok := entryTypes[typ]; !ok {
+	if !entryTypes.Has(typ) {
 		return Entry{}, fmt.Errorf("unknown connection type %q", tokens[0])
 	}
 

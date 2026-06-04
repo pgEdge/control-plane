@@ -712,24 +712,26 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
 			instances[hostIdx] = &InstanceSpec{
-				InstanceID:       InstanceIDFor(hostID, s.DatabaseID, node.Name),
-				TenantID:         s.TenantID,
-				DatabaseID:       s.DatabaseID,
-				HostID:           hostID,
-				DatabaseName:     s.DatabaseName,
-				NodeName:         node.Name,
-				NodeOrdinal:      nodeOrdinal,
-				PgEdgeVersion:    nodeVersion,
-				Port:             overridableValue(s.Port, node.Port),
-				PatroniPort:      overridableValue(s.PatroniPort, node.PatroniPort),
-				CPUs:             overridableValue(s.CPUs, node.CPUs),
-				MemoryBytes:      overridableValue(s.MemoryBytes, node.MemoryBytes),
-				DatabaseUsers:    s.DatabaseUsers,
-				BackupConfig:     overridableValue(s.BackupConfig, node.BackupConfig),
-				RestoreConfig:    effectiveRestore,
-				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
-				PgHbaConf:        prependEntries(s.PgHbaConf, node.PgHbaConf),
-				PgIdentConf:      prependEntries(s.PgIdentConf, node.PgIdentConf),
+				InstanceID:     InstanceIDFor(hostID, s.DatabaseID, node.Name),
+				TenantID:       s.TenantID,
+				DatabaseID:     s.DatabaseID,
+				HostID:         hostID,
+				DatabaseName:   s.DatabaseName,
+				NodeName:       node.Name,
+				NodeOrdinal:    nodeOrdinal,
+				PgEdgeVersion:  nodeVersion,
+				Port:           overridableValue(s.Port, node.Port),
+				PatroniPort:    overridableValue(s.PatroniPort, node.PatroniPort),
+				CPUs:           overridableValue(s.CPUs, node.CPUs),
+				MemoryBytes:    overridableValue(s.MemoryBytes, node.MemoryBytes),
+				DatabaseUsers:  s.DatabaseUsers,
+				BackupConfig:   overridableValue(s.BackupConfig, node.BackupConfig),
+				RestoreConfig:  effectiveRestore,
+				PostgreSQLConf: overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				// Node entries come first so they take first-match priority;
+				// database-level entries follow as the baseline.
+				PgHbaConf:        slices.Concat(node.PgHbaConf, s.PgHbaConf),
+				PgIdentConf:      slices.Concat(node.PgIdentConf, s.PgIdentConf),
 				ClusterSize:      clusterSize,
 				NodeSize:         nodeSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
@@ -775,19 +777,4 @@ func overridableMapValue[T ~map[V]any, V comparable](base, override T) T {
 		return override
 	}
 	return base
-}
-
-// prependEntries merges node-level entries (override) ahead of database-level
-// entries (base). pg_hba/pg_ident are ordered lists evaluated first-match, so
-// node entries are given priority by placing them first; the database-level
-// entries act as the baseline. Returns nil when both are empty so the field is
-// omitted, identical to today's behavior.
-func prependEntries(base, override []string) []string {
-	if len(base) == 0 && len(override) == 0 {
-		return nil
-	}
-	merged := make([]string, 0, len(override)+len(base))
-	merged = append(merged, override...)
-	merged = append(merged, base...)
-	return merged
 }
