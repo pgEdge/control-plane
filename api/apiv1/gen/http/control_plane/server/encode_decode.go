@@ -3988,7 +3988,9 @@ func unmarshalSwarmOptsRequestBodyToControlplaneSwarmOpts(v *SwarmOptsRequestBod
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.SwarmOpts{}
+	res := &controlplane.SwarmOpts{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
@@ -4614,7 +4616,9 @@ func marshalControlplaneSwarmOptsToSwarmOptsResponseBody(v *controlplane.SwarmOp
 	if v == nil {
 		return nil
 	}
-	res := &SwarmOptsResponseBody{}
+	res := &SwarmOptsResponseBody{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
@@ -5097,7 +5101,9 @@ func unmarshalSwarmOptsRequestBodyRequestBodyToControlplaneSwarmOpts(v *SwarmOpt
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.SwarmOpts{}
+	res := &controlplane.SwarmOpts{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {

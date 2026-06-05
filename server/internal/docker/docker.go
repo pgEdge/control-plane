@@ -584,6 +584,18 @@ func (d *Docker) Shutdown() error {
 	return nil
 }
 
+// CheckImageExists verifies that img is accessible in its registry by fetching
+// its distribution manifest. This is a lightweight registry API call — no image
+// layers are downloaded. Returns nil if the image exists, a non-nil error if it
+// does not exist or cannot be reached.
+func (d *Docker) CheckImageExists(ctx context.Context, img string) error {
+	_, err := d.client.DistributionInspect(ctx, img, "")
+	if err != nil {
+		return fmt.Errorf("image %q not found or inaccessible: %w", img, err)
+	}
+	return nil
+}
+
 func (d *Docker) ensureDockerImage(ctx context.Context, img string) error {
 	// Pull the image
 	reader, err := d.client.ImagePull(ctx, img, image.PullOptions{})

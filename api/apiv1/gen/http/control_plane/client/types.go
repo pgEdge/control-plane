@@ -194,6 +194,9 @@ type CreateDatabaseResponseBody struct {
 	Task *TaskResponseBody `json:"task"`
 	// The database being created.
 	Database *DatabaseResponseBody `json:"database"`
+	// Non-fatal warnings generated during spec validation, e.g. when a custom
+	// image override is not found in the version manifest.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // GetDatabaseResponseBody is the type of the "control-plane" service
@@ -224,6 +227,9 @@ type UpdateDatabaseResponseBody struct {
 	Task *TaskResponseBody `json:"task"`
 	// The database being updated.
 	Database *DatabaseResponseBody `json:"database"`
+	// Non-fatal warnings generated during spec validation, e.g. when a custom
+	// image override is not found in the version manifest.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // DeleteDatabaseResponseBody is the type of the "control-plane" service
@@ -2064,6 +2070,12 @@ type SwarmOptsRequestBody struct {
 	ExtraNetworks []*ExtraNetworkSpecRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. A warning is returned if the image is not
+	// found in the manifest. Clearing this field causes the CP to fall back to the
+	// manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBody is used to define fields on request body types.
@@ -2508,6 +2520,12 @@ type SwarmOptsResponseBody struct {
 	ExtraNetworks []*ExtraNetworkSpecResponseBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. A warning is returned if the image is not
+	// found in the manifest. Clearing this field causes the CP to fall back to the
+	// manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecResponseBody is used to define fields on response body types.
@@ -2876,6 +2894,12 @@ type SwarmOptsRequestBodyRequestBody struct {
 	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. A warning is returned if the image is not
+	// found in the manifest. Clearing this field causes the CP to fall back to the
+	// manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBodyRequestBody is used to define fields on request
@@ -3577,6 +3601,12 @@ func NewCreateDatabaseResponseOK(body *CreateDatabaseResponseBody) *controlplane
 	v := &controlplane.CreateDatabaseResponse{}
 	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 	v.Database = unmarshalDatabaseResponseBodyToControlplaneDatabase(body.Database)
+	if body.Warnings != nil {
+		v.Warnings = make([]string, len(body.Warnings))
+		for i, val := range body.Warnings {
+			v.Warnings[i] = val
+		}
+	}
 
 	return v
 }
@@ -3726,6 +3756,12 @@ func NewUpdateDatabaseResponseOK(body *UpdateDatabaseResponseBody) *controlplane
 	v := &controlplane.UpdateDatabaseResponse{}
 	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 	v.Database = unmarshalDatabaseResponseBodyToControlplaneDatabase(body.Database)
+	if body.Warnings != nil {
+		v.Warnings = make([]string, len(body.Warnings))
+		for i, val := range body.Warnings {
+			v.Warnings[i] = val
+		}
+	}
 
 	return v
 }

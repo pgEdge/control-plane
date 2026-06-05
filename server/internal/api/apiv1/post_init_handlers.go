@@ -335,6 +335,7 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 	return &api.CreateDatabaseResponse{
 		Database: databaseToAPI(db),
 		Task:     taskToAPI(t),
+		Warnings: output.Warnings,
 	}, nil
 }
 
@@ -408,6 +409,7 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	return &api.UpdateDatabaseResponse{
 		Database: databaseToAPI(db),
 		Task:     taskToAPI(t),
+		Warnings: output.Warnings,
 	}, nil
 }
 
