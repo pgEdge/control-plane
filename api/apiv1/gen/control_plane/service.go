@@ -298,6 +298,9 @@ type CreateDatabaseResponse struct {
 	Task *Task `json:"task"`
 	// The database being created.
 	Database *Database `json:"database"`
+	// Non-fatal warnings generated during spec validation, e.g. when a custom
+	// image override is not found in the version manifest.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Database is the result type of the control-plane service get-database method.
@@ -1065,6 +1068,12 @@ type SwarmOpts struct {
 	ExtraNetworks []*ExtraNetworkSpec `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. A warning is returned if the image is not
+	// found in the manifest. Clearing this field causes the CP to fall back to the
+	// manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // SwitchoverDatabaseNodePayload is the payload type of the control-plane
@@ -1174,6 +1183,9 @@ type UpdateDatabaseResponse struct {
 	Task *Task `json:"task"`
 	// The database being updated.
 	Database *Database `json:"database"`
+	// Non-fatal warnings generated during spec validation, e.g. when a custom
+	// image override is not found in the version manifest.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // VersionInfo is the result type of the control-plane service get-version

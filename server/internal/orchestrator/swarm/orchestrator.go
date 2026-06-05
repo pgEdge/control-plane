@@ -948,6 +948,29 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*dat
 	results := make([]*database.ValidationResult, 0, len(changes)*3)
 
 	for _, ch := range changes {
+		// Warn when a user-specified image override is not present in the manifest.
+		// This runs for every spec change, independent of the structural diff below.
+		if cur := ch.Current; cur != nil {
+			if cur.OrchestratorOpts != nil && cur.OrchestratorOpts.Swarm != nil && cur.OrchestratorOpts.Swarm.Image != "" {
+				userImage := cur.OrchestratorOpts.Swarm.Image
+				if manifested, err := o.versions.GetImages(cur.PgEdgeVersion); err != nil {
+					results = append(results, &database.ValidationResult{
+						Valid:    true,
+						NodeName: cur.NodeName,
+						HostID:   cur.HostID,
+						Warnings: []string{fmt.Sprintf("image %q is not present in the version manifest; ensure it is a valid pgEdge image", userImage)},
+					})
+				} else if manifested.PgEdgeImage != userImage {
+					results = append(results, &database.ValidationResult{
+						Valid:    true,
+						NodeName: cur.NodeName,
+						HostID:   cur.HostID,
+						Warnings: []string{fmt.Sprintf("image %q is not the manifest image for version %s (manifest image: %s); ensure it is a valid pgEdge image", userImage, cur.PgEdgeVersion, manifested.PgEdgeImage)},
+					})
+				}
+			}
+		}
+
 		updates := instanceDiff(ch.Previous, ch.Current)
 
 		if updates.NewPort == nil && len(updates.NewVolumes) == 0 && len(updates.NewNetworks) == 0 {
