@@ -187,4 +187,8 @@ type Orchestrator interface {
 	// spec before it is persisted. old is nil when the instance is being created
 	// for the first time.
 	ReconcileInstanceSpec(old, new *InstanceSpec) error
+	// ReconcileServiceInstanceSpec is called during service instance spec
+	// reconciliation to resolve and pin the container image. old is nil when
+	// the service instance is being created for the first time.
+	ReconcileServiceInstanceSpec(old, new *ServiceInstanceSpec) error
 }
