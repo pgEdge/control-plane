@@ -151,6 +151,10 @@ func (o *Orchestrator) ReconcileInstanceSpec(_, _ *database.InstanceSpec) error 
 	return nil
 }
 
+func (o *Orchestrator) ReconcileServiceInstanceSpec(_, _ *database.ServiceInstanceSpec) error {
+	return nil
+}
+
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
 	paths, err := o.InstancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {

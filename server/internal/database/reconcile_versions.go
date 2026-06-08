@@ -64,6 +64,12 @@ func (s *Service) ReconcileAllDatabaseVersions(ctx context.Context) error {
 				return fmt.Errorf("failed to get instance spec for instance '%s': %w", instance.InstanceID, err)
 			} else if err == nil {
 				instanceSpec.Spec.PgEdgeVersion = instance.PgEdgeVersion
+				// Clear the pinned image so the next reconcile re-derives the
+				// correct image from the manifest for the new version.
+				if instanceSpec.Spec.OrchestratorOpts != nil &&
+					instanceSpec.Spec.OrchestratorOpts.Swarm != nil {
+					instanceSpec.Spec.OrchestratorOpts.Swarm.ResolvedImage = ""
+				}
 				ops = append(ops, s.store.InstanceSpec.Update(instanceSpec))
 			}
 
