@@ -313,6 +313,15 @@ func generatePatroniConfig(
 		}
 	}
 
+	// The gateway and catch-all rules authenticate non-system users by
+	// password, so their auth method follows password_encryption to match how
+	// passwords are stored. It defaults to md5 (Postgres' historical default
+	// and our DefaultGUCs value) when unset.
+	passwordAuthMethod := hba.AuthMethodMD5
+	if pe, ok := parameters["password_encryption"].(string); ok && pe != "" {
+		passwordAuthMethod = hba.AuthMethod(pe)
+	}
+
 	cfg := &patroni.Config{
 		Name:      utils.PointerTo(spec.InstanceID),
 		Namespace: utils.PointerTo(patroni.Namespace()),
@@ -468,6 +477,16 @@ func generatePatroniConfig(
 					Address:    "0.0.0.0/0",
 					AuthMethod: hba.AuthMethodReject,
 				}.String(),
+				// The IPv6 counterpart of the reject above. Without it, a
+				// permissive user rule in the zone below could authenticate a
+				// system user over IPv6.
+				hba.Entry{
+					Type:       hba.EntryTypeHost,
+					Database:   "all",
+					User:       "pgedge,patroni_replicator",
+					Address:    "::/0",
+					AuthMethod: hba.AuthMethodReject,
+				}.String(),
 				// Use MD5 for non-system users from the gateway. External
 				// connections will originate from this address when we publish
 				// a host port.
@@ -479,7 +498,8 @@ func generatePatroniConfig(
 					AuthMethod: hba.AuthMethodMD5,
 				}.String(),
 				// Reject all other connections on the bridge network to prevent
-				// connections from other databases.
+				// connections from other databases. The user zone and catch-all
+				// are appended after this literal (see below).
 				hba.Entry{
 					Type:       hba.EntryTypeHost,
 					Database:   "all",
@@ -487,17 +507,29 @@ func generatePatroniConfig(
 					Address:    bridgeInfo.Subnet.String(),
 					AuthMethod: hba.AuthMethodReject,
 				}.String(),
-				// Use MD5 for non-system users from all other connections
-				// TODO: Can we upgrade this to scram-sha-256?
-				hba.Entry{
-					Type:       hba.EntryTypeHost,
-					Database:   "all",
-					User:       "all",
-					Address:    "0.0.0.0/0",
-					AuthMethod: hba.AuthMethodMD5,
-				}.String(),
 			},
 		},
+	}
+
+	// User-supplied pg_hba entries form a zone after the CP's system-user and
+	// bridge-isolation rules and before the catch-all. By this point system
+	// users are already matched or rejected and cross-container traffic is
+	// blocked, so user rules cannot affect CP-internal connectivity.
+	// spec.PgHbaConf already has node-level entries prepended ahead of the
+	// database-level entries.
+	*cfg.Postgresql.PgHba = append(*cfg.Postgresql.PgHba, spec.PgHbaConf...)
+	// Catch-all for non-system users; the auth method follows password_encryption.
+	*cfg.Postgresql.PgHba = append(*cfg.Postgresql.PgHba, hba.Entry{
+		Type:       hba.EntryTypeHost,
+		Database:   "all",
+		User:       "all",
+		Address:    "0.0.0.0/0",
+		AuthMethod: passwordAuthMethod,
+	}.String())
+
+	// pg_ident mappings are purely user-supplied; the CP writes none of its own.
+	if len(spec.PgIdentConf) > 0 {
+		cfg.Postgresql.PgIdent = &spec.PgIdentConf
 	}
 
 	if spec.RestoreConfig != nil {
