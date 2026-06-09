@@ -184,7 +184,7 @@ The following example lets `myapp_user` connect with SCRAM from one network, map
         }'
     ```
 
-Updating these fields applies with a Postgres reload, not a restart. The application catch-all rule uses your `password_encryption` setting from `postgresql_conf` (default `md5`).
+Updating these fields applies with a Postgres reload, not a restart. The application catch-all rule uses your `password_encryption` setting from `postgresql_conf`, which the Control Plane defaults to `md5`.
 
 !!! note
 
