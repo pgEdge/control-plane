@@ -72,7 +72,7 @@ func NewVersions(cfg config.Config) *Versions {
 		PgEdgeImage: imageTag(cfg, "18.3-spock5.0.6-standard-2"),
 	})
 	versions.addImage(ds.MustParsePgEdgeVersion("18.4", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "18.4-spock5.0.8-standard-1"),
+		PgEdgeImage: imageTag(cfg, "18.4-spock5.0.9-standard-1"),
 	})
 
 	versions.defaultVersion = ds.MustParsePgEdgeVersion("18.4", "5")
@@ -118,5 +118,5 @@ func (v *Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
 }
 
 func imageTag(cfg config.Config, tag string) string {
-	return fmt.Sprintf("%s/pgedge-postgres:%s", cfg.DockerSwarm.ImageRepositoryHost, tag)
+	return fmt.Sprintf("%s/pgedge-postgres-internal:%s", cfg.DockerSwarm.ImageRepositoryHost, tag)
 }
