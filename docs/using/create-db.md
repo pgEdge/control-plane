@@ -127,6 +127,73 @@ This example request alters the `max_connections` value for all nodes and overri
 Refer to the [API Reference](../api/reference.md) for details on all
 available settings.
 
+### Authentication Rules
+
+Use the `pg_hba_conf` and `pg_ident_conf` fields to add your own client authentication rules. Each is an array of strings, one `pg_hba.conf` or `pg_ident.conf` line per element. Your entries sit between the Control Plane's rules for its own users and its catch-all, so they cannot affect replication, Patroni, or health checks.
+
+Entries in the `spec` object apply to all nodes. Entries set on a node in `spec.nodes[]` are prepended to the database-level entries on that node, so node rules are matched first (`pg_hba.conf` is an ordered list where the first match wins).
+
+The following example lets `myapp_user` connect with SCRAM from one network, maps a client certificate with common name `alice` to the `app_user` role, and adds an internal-network rule just for `n1`:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "password": "password",
+                        "db_owner": true,
+                        "attributes": ["LOGIN", "SUPERUSER"]
+                    },
+                    {
+                        "username": "myapp_user",
+                        "password": "password",
+                        "attributes": ["LOGIN"]
+                    },
+                    {
+                        "username": "app_user",
+                        "password": "password",
+                        "attributes": ["LOGIN"]
+                    }
+                ],
+                "port": 5432,
+                "pg_hba_conf": [
+                    "hostssl all myapp_user 203.0.113.0/24 scram-sha-256",
+                    "hostssl all app_user 0.0.0.0/0 cert clientcert=verify-full map=ssl_users"
+                ],
+                "pg_ident_conf": [
+                    "ssl_users alice app_user"
+                ],
+                "nodes": [
+                    {
+                        "name": "n1",
+                        "host_ids": ["host-1"],
+                        "pg_hba_conf": [
+                            "host example myapp_user 10.0.0.0/8 scram-sha-256"
+                        ]
+                    },
+                    { "name": "n2", "host_ids": ["host-2"] }
+                ]
+            }
+        }'
+    ```
+
+Updating these fields applies with a Postgres reload, not a restart. The application catch-all rule uses your `password_encryption` setting from `postgresql_conf` (default `md5`).
+
+!!! note
+
+    A `pg_ident_conf` mapping has no effect on its own; it applies only when a `pg_hba_conf` rule references it with `map=`, as the `app_user` cert rule does above.
+
+!!! note
+
+    On the Swarm orchestrator, write IP rules against the client's real address. The bridge gateway address is only the source for connections that originate on the host running the instance.
+
 ## Extension Support
 
 The Control Plane supports all extensions included in the standard flavor of the [pgEdge Enterprise Postgres Image](https://github.com/pgedge/postgres-images?tab=readme-ov-file#standard-images). You can configure extension-related settings using the `postgresql_conf` object in your database specification.
