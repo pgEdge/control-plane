@@ -601,10 +601,10 @@ func (d *Docker) ensureDockerImage(ctx context.Context, img string) error {
 }
 
 type NetworkInfo struct {
-	Name    string
-	ID      string
-	Subnet  netip.Prefix
-	Gateway netip.Addr
+	Name    string       `json:"name"`
+	ID      string       `json:"id"`
+	Subnet  netip.Prefix `json:"subnet"`
+	Gateway netip.Addr   `json:"gateway"`
 }
 
 func ExtractNetworkInfo(info network.Inspect) (*NetworkInfo, error) {

@@ -32,6 +32,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
@@ -224,19 +225,18 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 	}
 
 	// patroni resources - used to clean up etcd on deletion
-	patroniCluster := &PatroniCluster{
-		DatabaseID:           spec.DatabaseID,
-		NodeName:             spec.NodeName,
-		PatroniClusterPrefix: patroni.ClusterPrefix(spec.DatabaseID, spec.NodeName),
+	patroniCluster := &common.PatroniCluster{
+		DatabaseID: spec.DatabaseID,
+		NodeName:   spec.NodeName,
 	}
-	patroniMember := &PatroniMember{
+	patroniMember := &common.PatroniMember{
 		DatabaseID: spec.DatabaseID,
 		NodeName:   spec.NodeName,
 		InstanceID: spec.InstanceID,
 	}
 
 	// file resources
-	etcdCreds := &EtcdCreds{
+	etcdCreds := &common.EtcdCreds{
 		InstanceID: spec.InstanceID,
 		HostID:     spec.HostID,
 		DatabaseID: spec.DatabaseID,
@@ -245,7 +245,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		OwnerUID:   databaseOwnerUID,
 		OwnerGID:   databaseOwnerGID,
 	}
-	postgresCerts := &PostgresCerts{
+	postgresCerts := &common.PostgresCerts{
 		InstanceID: spec.InstanceID,
 		HostID:     spec.HostID,
 		ParentID:   certificatesDir.ID,
@@ -259,16 +259,29 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 		OwnerUID: databaseOwnerUID,
 		OwnerGID: databaseOwnerGID,
 	}
+	paths := o.instancePaths(spec.InstanceID)
 	patroniConfig := &PatroniConfig{
-		Spec:                spec,
-		HostCPUs:            float64(o.cpus),
-		HostMemoryBytes:     o.memBytes,
+		DatabaseID:          spec.DatabaseID,
 		DatabaseNetworkName: databaseNetwork.Name,
 		BridgeNetworkInfo:   o.bridgeNetwork,
-		ParentID:            configsDir.ID,
-		OwnerUID:            databaseOwnerUID,
-		OwnerGID:            databaseOwnerGID,
-		InstanceHostname:    instanceHostname,
+		Base: &common.PatroniConfig{
+			InstanceID: spec.InstanceID,
+			HostID:     spec.HostID,
+			NodeName:   spec.NodeName,
+			ParentID:   configsDir.ID,
+			OwnerUID:   databaseOwnerUID,
+			OwnerGID:   databaseOwnerGID,
+			Generator: common.NewPatroniConfigGenerator(common.PatroniConfigGeneratorOptions{
+				Instance:        spec,
+				HostCPUs:        float64(o.cpus),
+				HostMemoryBytes: o.memBytes,
+				PatroniPort:     8888,
+				PostgresPort:    5432,
+				FQDN:            instanceHostname,
+				LogType:         patroni.LogTypeJson,
+				Paths:           paths,
+			}),
+		},
 	}
 
 	serviceSpec := &PostgresServiceSpecResource{
@@ -324,21 +337,24 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 
 	if spec.BackupConfig != nil {
 		instanceDependencies = append(instanceDependencies,
-			&PgBackRestConfig{
+			&common.PgBackRestConfig{
 				InstanceID:   spec.InstanceID,
 				HostID:       spec.HostID,
 				DatabaseID:   spec.DatabaseID,
 				NodeName:     spec.NodeName,
 				Repositories: spec.BackupConfig.Repositories,
 				ParentID:     configsDir.ID,
-				Type:         PgBackRestConfigTypeBackup,
+				Type:         pgbackrest.ConfigTypeBackup,
 				OwnerUID:     databaseOwnerUID,
 				OwnerGID:     databaseOwnerGID,
+				Paths:        paths,
+				Port:         5432,
 			},
 		)
 		nodeDependents = append(nodeDependents,
-			&PgBackRestStanza{
-				NodeName: spec.NodeName,
+			&common.PgBackRestStanza{
+				NodeName:   spec.NodeName,
+				DatabaseID: spec.DatabaseID,
 			},
 		)
 		for _, schedule := range spec.BackupConfig.Schedules {
@@ -351,22 +367,24 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 					"node_name":   spec.NodeName,
 					"type":        pgbackrest.BackupType(schedule.Type).String(),
 				},
-				[]resource.Identifier{PgBackRestStanzaIdentifier(spec.NodeName)},
+				[]resource.Identifier{common.PgBackRestStanzaIdentifier(spec.NodeName)},
 			))
 		}
 	}
 
 	if spec.RestoreConfig != nil {
-		instanceDependencies = append(instanceDependencies, &PgBackRestConfig{
+		instanceDependencies = append(instanceDependencies, &common.PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
 			HostID:       spec.HostID,
 			DatabaseID:   spec.RestoreConfig.SourceDatabaseID,
 			NodeName:     spec.RestoreConfig.SourceNodeName,
 			Repositories: []*pgbackrest.Repository{spec.RestoreConfig.Repository},
 			ParentID:     configsDir.ID,
-			Type:         PgBackRestConfigTypeRestore,
+			Type:         pgbackrest.ConfigTypeRestore,
 			OwnerUID:     databaseOwnerUID,
 			OwnerGID:     databaseOwnerGID,
+			Paths:        paths,
+			Port:         5432,
 		})
 	}
 
@@ -991,12 +1009,16 @@ func (o *Orchestrator) NodeDSN(ctx context.Context, rc *resource.Context, nodeNa
 }
 
 func (o *Orchestrator) InstancePaths(_ *ds.Version, instanceID string) (database.InstancePaths, error) {
+	return o.instancePaths(instanceID), nil
+}
+
+func (o *Orchestrator) instancePaths(instanceID string) database.InstancePaths {
 	return database.InstancePaths{
 		Instance:       database.Paths{BaseDir: "/opt/pgedge"},
 		Host:           database.Paths{BaseDir: filepath.Join(o.cfg.DataDir, "instances", instanceID)},
 		PgBackRestPath: "/usr/bin/pgbackrest",
 		PatroniPath:    "/usr/local/bin/patroni",
-	}, nil
+	}
 }
 
 func (o *Orchestrator) scaleInstance(

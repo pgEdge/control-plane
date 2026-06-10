@@ -195,6 +195,16 @@ func (p *PatroniConfigGenerator) Generate(
 	}
 }
 
+func (p *PatroniConfigGenerator) AuthMethod() hba.AuthMethod {
+	encryption, ok := utils.TypedFromMap[string](p.parameters(), "password_encryption")
+	if !ok {
+		// ScramSHA256 is the default password encryption for all of our
+		// supported Postgres versions.
+		return hba.AuthMethodScramSHA256
+	}
+	return hba.AuthMethod(encryption)
+}
+
 func (p *PatroniConfigGenerator) parameters() map[string]any {
 	parameters := postgres.DefaultGUCs()
 	maps.Copy(parameters, postgres.SpockDefaultGUCs())
@@ -319,12 +329,8 @@ func (p *PatroniConfigGenerator) postgreSQL(
 	}
 
 	// The catch-all authenticates non-system users by password, so its auth
-	// method follows password_encryption to match how passwords are stored. It
-	// defaults to md5 (our DefaultGUCs value) when unset.
-	passwordAuthMethod := hba.AuthMethodMD5
-	if pe, ok := parameters["password_encryption"].(string); ok && pe != "" {
-		passwordAuthMethod = hba.AuthMethod(pe)
-	}
+	// method follows password_encryption to match how passwords are stored.
+	passwordAuthMethod := p.AuthMethod()
 
 	return &patroni.PostgreSQL{
 		ConnectAddress:                         utils.PointerTo(net.JoinHostPort(p.FQDN, strconv.Itoa(p.PostgresPort))),
