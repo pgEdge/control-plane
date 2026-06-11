@@ -132,6 +132,7 @@ type ValidationResult struct {
 	NodeName   string   `json:"node_name"`
 	Valid      bool     `json:"valid"`
 	Errors     []string `json:"errors"`
+	Warnings   []string `json:"warnings,omitempty"`
 }
 
 type ConnectionInfo struct {

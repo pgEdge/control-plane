@@ -948,6 +948,40 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*dat
 	results := make([]*database.ValidationResult, 0, len(changes)*3)
 
 	for _, ch := range changes {
+		// Validate user-specified image overrides. Runs for every spec change,
+		// independent of the structural diff below.
+		if cur := ch.Current; cur != nil {
+			if cur.OrchestratorOpts != nil && cur.OrchestratorOpts.Swarm != nil && cur.OrchestratorOpts.Swarm.Image != "" {
+				userImage := cur.OrchestratorOpts.Swarm.Image
+
+				// Verify the image is reachable in its registry using a lightweight
+				// distribution manifest fetch — no layers are downloaded.
+				// Skipped when no Docker client is available (e.g. unit tests).
+				if o.docker != nil {
+					if err := o.docker.CheckImageExists(ctx, userImage); err != nil {
+						results = append(results, &database.ValidationResult{
+							Valid:    false,
+							NodeName: cur.NodeName,
+							HostID:   cur.HostID,
+							Errors:   []string{fmt.Sprintf("image %q could not be verified: %v", userImage, err)},
+						})
+						continue
+					}
+				}
+
+				// Image exists but differs from the manifest image — warn so the
+				// user knows they are deviating from the supported version.
+				if manifested, err := o.versions.GetImages(cur.PgEdgeVersion); err == nil && manifested.PgEdgeImage != userImage {
+					results = append(results, &database.ValidationResult{
+						Valid:    true,
+						NodeName: cur.NodeName,
+						HostID:   cur.HostID,
+						Warnings: []string{fmt.Sprintf("image %q is not the manifest image for version %s (manifest image: %s); ensure it is a valid pgEdge image", userImage, cur.PgEdgeVersion, manifested.PgEdgeImage)},
+					})
+				}
+			}
+		}
+
 		updates := instanceDiff(ch.Previous, ch.Current)
 
 		if updates.NewPort == nil && len(updates.NewVolumes) == 0 && len(updates.NewNetworks) == 0 {
