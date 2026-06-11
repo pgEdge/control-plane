@@ -86,7 +86,7 @@ func TestValidateInstanceSpecs_ImageWarnings(t *testing.T) {
 		assert.Contains(t, warningResult.Warnings[0], manifestImage.PgEdgeImage)
 	})
 
-	t.Run("warning when Image is set for an unknown version", func(t *testing.T) {
+	t.Run("no warning when Image is set for an unknown version (registry check skipped, no manifest entry to compare)", func(t *testing.T) {
 		changes := []*database.InstanceSpecChange{
 			{Current: &database.InstanceSpec{
 				NodeName:      "n1",
@@ -99,34 +99,31 @@ func TestValidateInstanceSpecs_ImageWarnings(t *testing.T) {
 		}
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
-
-		var warningResult *database.ValidationResult
+		// No docker client in unit tests → registry check skipped.
+		// Unknown version has no manifest entry → no manifest comparison warning.
 		for _, r := range results {
-			if len(r.Warnings) > 0 {
-				warningResult = r
-				break
-			}
+			assert.Empty(t, r.Warnings)
+			assert.Empty(t, r.Errors)
 		}
-		require.NotNil(t, warningResult, "expected a result with warnings")
-		assert.True(t, warningResult.Valid)
-		assert.Contains(t, warningResult.Warnings[0], "my-custom-image")
 	})
 
-	t.Run("warning result is valid (spec not rejected)", func(t *testing.T) {
+	t.Run("manifest-mismatch warning is non-fatal (spec accepted)", func(t *testing.T) {
 		changes := []*database.InstanceSpecChange{
 			{Current: &database.InstanceSpec{
 				NodeName:      "n1",
 				HostID:        "host-1",
 				PgEdgeVersion: knownVersion,
 				OrchestratorOpts: &database.OrchestratorOpts{
-					Swarm: &database.SwarmOpts{Image: "custom:latest"},
+					Swarm: &database.SwarmOpts{Image: "ghcr.io/pgedge/pgedge-postgres:custom-known-version"},
 				},
 			}},
 		}
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
+		// Registry check is skipped (no docker client). Image differs from
+		// manifest → warning emitted but spec remains valid.
 		for _, r := range results {
-			assert.True(t, r.Valid, "all results must be valid even with warnings")
+			assert.True(t, r.Valid, "manifest-mismatch warning must not reject the spec")
 		}
 	})
 }
