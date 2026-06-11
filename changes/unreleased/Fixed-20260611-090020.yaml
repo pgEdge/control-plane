@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed Postgres logging not being enabled by default on Debian-based systemd deployments — The default log configuration that was already applied to RPM-based deployments is now also applied to Debian-based ones.
+time: 2026-06-11T09:00:20.000000-04:00

@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed global Patroni parameters not being applied to running systemd-managed database clusters — Dynamic configuration changes are now patched directly via the Patroni API on the primary instance, ensuring parameters that cannot be changed via config file reload take effect immediately.
+time: 2026-06-11T09:00:00.000000-04:00
