@@ -13,6 +13,7 @@ bootstrap:
     loop_wait: 10
     ttl: 30
     retry_timeout: 10
+    failsafe_mode: false
     postgresql:
       parameters:
         max_connections: 901

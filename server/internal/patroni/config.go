@@ -70,6 +70,19 @@ type DCSPostgreSQL struct {
 	PgIdent      *[]string       `json:"pg_ident,omitempty"`
 }
 
+func (d *DCSPostgreSQL) ToDynamicConfig() *DynamicPostgreSQLConfig {
+	if d == nil {
+		return nil
+	}
+	return &DynamicPostgreSQLConfig{
+		UsePgRewind: d.UsePgRewind,
+		UseSlots:    d.UseSlots,
+		Parameters:  d.Parameters,
+		PgHba:       d.PgHba,
+		PgIdent:     d.PgIdent,
+	}
+}
+
 type DCSStandbyCluster struct {
 	Host                  *string   `json:"host,omitempty"`
 	Port                  *int      `json:"port,omitempty"`
@@ -78,6 +91,21 @@ type DCSStandbyCluster struct {
 	RestoreCommand        *string   `json:"restore_command,omitempty"`
 	ArchiveCleanupCommand *string   `json:"archive_cleanup_command,omitempty"`
 	RecoveryMinApplyDelay *int      `json:"recovery_min_apply_delay,omitempty"`
+}
+
+func (d *DCSStandbyCluster) ToDynamicConfig() *DynamicStandbyClusterConfig {
+	if d == nil {
+		return nil
+	}
+	return &DynamicStandbyClusterConfig{
+		Host:                  d.Host,
+		Port:                  d.Port,
+		PrimarySlotName:       d.PrimarySlotName,
+		CreateReplicaMethods:  d.CreateReplicaMethods,
+		RestoreCommand:        d.RestoreCommand,
+		ArchiveCleanupCommand: d.ArchiveCleanupCommand,
+		RecoveryMinApplyDelay: d.RecoveryMinApplyDelay,
+	}
 }
 
 type SlotType string
@@ -111,13 +139,38 @@ type DCS struct {
 	PrimaryStopTimeout    *int               `json:"primary_stop_timeout,omitempty"`
 	SynchronousMode       *string            `json:"synchronous_mode,omitempty"`
 	SynchronousModeStrict *bool              `json:"synchronous_mode_strict,omitempty"`
-	SynchronousModeCount  *int               `json:"synchronous_mode_count,omitempty"`
+	SynchronousNodeCount  *int               `json:"synchronous_node_count,omitempty"`
 	FailsafeMode          *bool              `json:"failsafe_mode,omitempty"`
 	Postgresql            *DCSPostgreSQL     `json:"postgresql,omitempty"`
 	StandbyCluster        *DCSStandbyCluster `json:"standby_cluster,omitempty"`
-	MemberSlotsTtl        *string            `json:"member_slots_ttl,omitempty"`
+	MemberSlotsTtl        *int               `json:"member_slots_ttl,omitempty"`
 	Slots                 *map[string]Slot   `json:"slots,omitempty"`
 	IgnoreSlots           *[]IgnoreSlot      `json:"ignore_slots,omitempty"`
+}
+
+func (d *DCS) ToDynamicConfig() *DynamicConfig {
+	if d == nil {
+		return nil
+	}
+	return &DynamicConfig{
+		LoopWait:              d.LoopWait,
+		TTL:                   d.TTL,
+		RetryTimeout:          d.RetryTimeout,
+		MaximumLagOnFailover:  d.MaximumLagOnFailover,
+		MaximumLagOnSyncNode:  d.MaximumLagOnSyncNode,
+		MaxTimelinesHistory:   d.MaxTimelinesHistory,
+		PrimaryStartTimeout:   d.PrimaryStartTimeout,
+		PrimaryStopTimeout:    d.PrimaryStopTimeout,
+		SynchronousMode:       (*SynchronousMode)(d.SynchronousMode),
+		SynchronousModeStrict: d.SynchronousModeStrict,
+		SynchronousNodeCount:  d.SynchronousNodeCount,
+		FailsafeMode:          d.FailsafeMode,
+		MemberSlotsTtl:        d.MemberSlotsTtl,
+		Slots:                 d.Slots,
+		IgnoreSlots:           d.IgnoreSlots,
+		PostgreSQL:            d.Postgresql.ToDynamicConfig(),
+		StandbyCluster:        d.StandbyCluster.ToDynamicConfig(),
+	}
 }
 
 type BootstrapMethod string
