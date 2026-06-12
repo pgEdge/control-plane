@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed valid instance IDs being incorrectly rejected by the API when the database ID was at its maximum allowed length — Instance IDs are an internal aggregate of the database ID, node name, and host hash, and are no longer subject to the same length limit as user-supplied identifiers.
+time: 2026-06-11T09:00:10.000000-04:00
