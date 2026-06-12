@@ -30,7 +30,12 @@ type ExtraNetworkSpec struct {
 type SwarmOpts struct {
 	ExtraVolumes  []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
 	ExtraNetworks []ExtraNetworkSpec `json:"extra_networks,omitempty"`
-	ExtraLabels   map[string]string  `json:"extra_labels,omitempty"` // optional, used for custom labels on the swarm service
+	ExtraLabels   map[string]string  `json:"extra_labels,omitempty"`
+	// Image is a user-specified override. Never written by the CP.
+	Image string `json:"image,omitempty"`
+	// ResolvedImage is the CP-managed image tag. Written at instance creation,
+	// upgrade application, and lazy backfill. Never set simultaneously with Image.
+	ResolvedImage string `json:"resolved_image,omitempty"`
 }
 type OrchestratorOpts struct {
 	Swarm *SwarmOpts `json:"docker,omitempty"`
@@ -301,6 +306,8 @@ func (d *SwarmOpts) Clone() *SwarmOpts {
 		ExtraVolumes:  clonedVolumes,
 		ExtraNetworks: clonedNetworks,
 		ExtraLabels:   maps.Clone(d.ExtraLabels),
+		Image:         d.Image,
+		ResolvedImage: d.ResolvedImage,
 	}
 }
 

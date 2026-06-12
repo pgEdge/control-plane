@@ -82,6 +82,12 @@ type DockerSwarm struct {
 	BridgeNetworksSubnetBits   int    `koanf:"bridge_networks_subnet_bits" json:"bridge_networks_subnet_bits,omitempty"`
 	DatabaseNetworksCIDR       string `koanf:"database_networks_cidr" json:"database_networks_cidr,omitempty"`
 	DatabaseNetworksSubnetBits int    `koanf:"database_networks_subnet_bits" json:"database_networks_subnet_bits,omitempty"`
+	// ManifestURL is the URL from which the version manifest is fetched.
+	// Defaults to the pgEdge CDN URL if not set.
+	ManifestURL string `koanf:"manifest_url" json:"manifest_url,omitempty"`
+	// ManifestPath points to a local manifest file that bypasses URL fetching
+	// entirely. Useful for air-gapped environments or testing.
+	ManifestPath string `koanf:"manifest_path" json:"manifest_path,omitempty"`
 }
 
 func (d DockerSwarm) validate() []error {
@@ -102,6 +108,10 @@ func (d DockerSwarm) validate() []error {
 	return errs
 }
 
+// DefaultManifestURL is the pgEdge CDN URL used when no manifest_url is configured.
+// TODO(PLAT-598): Replace with the real URL once the hosting location is confirmed.
+const DefaultManifestURL = "https://download.pgedge.com/manifests/version-manifest.json"
+
 var defaultDockerSwarm = DockerSwarm{
 	ImageRepositoryHost: "ghcr.io/pgedge",
 	// This combination gives us 256 subnets with 16 addresses each.
@@ -110,6 +120,7 @@ var defaultDockerSwarm = DockerSwarm{
 	// This combination gives us 256 subnets with 64 addresses each.
 	DatabaseNetworksCIDR:       "10.128.128.0/18",
 	DatabaseNetworksSubnetBits: 26,
+	ManifestURL:                DefaultManifestURL,
 }
 
 type SystemD struct {

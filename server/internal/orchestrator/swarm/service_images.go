@@ -94,7 +94,7 @@ func (sv *ServiceVersions) addServiceImage(serviceType string, version string, i
 }
 
 // GetServiceImage returns the full ServiceImage for the given service type and version.
-func (sv *ServiceVersions) GetServiceImage(serviceType string, version string) (*ServiceImage, error) {
+func (sv ServiceVersions) GetServiceImage(serviceType string, version string) (*ServiceImage, error) {
 	versionMap, ok := sv.images[serviceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported service type %q", serviceType)
@@ -108,7 +108,7 @@ func (sv *ServiceVersions) GetServiceImage(serviceType string, version string) (
 	return image, nil
 }
 
-func (sv *ServiceVersions) SupportedServiceVersions(serviceType string) ([]string, error) {
+func (sv ServiceVersions) SupportedServiceVersions(serviceType string) ([]string, error) {
 	versionMap, ok := sv.images[serviceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported service type %q", serviceType)
