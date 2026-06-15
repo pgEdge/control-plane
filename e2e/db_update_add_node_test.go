@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
 
 func TestUpdateAddNode23(t *testing.T) {
@@ -28,7 +29,7 @@ func testUpdateAddNode(t *testing.T, nodeCount int, deployReplicas bool) {
 	username := "admin"
 	password := "password"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
 	logDeploymentConfig(t, nodeCount, deployReplicas)
@@ -86,7 +87,7 @@ func buildNodeSpecs(nodeCount int) []*controlplane.DatabaseNodeSpec {
 
 func createDatabaseFixture(ctx context.Context, t *testing.T, username, password string, nodes []*controlplane.DatabaseNodeSpec) *DatabaseFixture {
 	t.Helper()
-	return fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
 			DatabaseName: "test_db_create",
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{{
@@ -100,6 +101,11 @@ func createDatabaseFixture(ctx context.Context, t *testing.T, username, password
 			Nodes:       nodes,
 		},
 	})
+	// The peer sync and replication slot advance steps can take an _extremely_
+	// long time in an idle database. This heartbeat provides consistent
+	// activity and makes the test run faster.
+	db.HeartBeat(t, username, password, nodes[0].Name)
+	return db
 }
 
 func verifyPrimaryNode(ctx context.Context, t *testing.T, db *DatabaseFixture, node *controlplane.DatabaseNodeSpec, username, password string, deployReplicas bool) {
