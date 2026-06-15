@@ -46,7 +46,7 @@ func TestVersion_1_1_0(t *testing.T) {
 		}
 
 		migration := &migrations.Version_1_1_0{}
-		err := migration.Run(state)
+		err := migration.Run("database-1", state)
 		require.NoError(t, err)
 
 		// service_user_role resources should be gone
@@ -112,7 +112,7 @@ func TestVersion_1_1_0(t *testing.T) {
 		}
 
 		migration := &migrations.Version_1_1_0{}
-		err := migration.Run(state)
+		err := migration.Run("database-1", state)
 		require.NoError(t, err)
 
 		// All service_user_role resources should be gone
@@ -146,7 +146,7 @@ func TestVersion_1_1_0(t *testing.T) {
 		}
 
 		migration := &migrations.Version_1_1_0{}
-		err := migration.Run(state)
+		err := migration.Run("database-1", state)
 		require.NoError(t, err)
 
 		// mcp_config should be untouched
@@ -162,7 +162,7 @@ func TestVersion_1_1_0(t *testing.T) {
 		}
 
 		migration := &migrations.Version_1_1_0{}
-		err := migration.Run(state)
+		err := migration.Run("database-1", state)
 		require.NoError(t, err)
 	})
 }

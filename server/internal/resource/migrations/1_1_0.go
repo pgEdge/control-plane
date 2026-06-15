@@ -16,7 +16,7 @@ func (v *Version_1_1_0) Version() *ds.Version {
 	return resource.StateVersion_1_1_0
 }
 
-func (v *Version_1_1_0) Run(state *resource.State) error {
+func (v *Version_1_1_0) Run(_ string, state *resource.State) error {
 	const serviceUserRoleType resource.Type = "swarm.service_user_role"
 
 	// 1. Delete all service_user_role resources from state

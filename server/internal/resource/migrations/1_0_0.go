@@ -22,7 +22,7 @@ func (v *Version_1_0_0) Version() *ds.Version {
 	return resource.StateVersion_1_0_0
 }
 
-func (v *Version_1_0_0) Run(state *resource.State) error {
+func (v *Version_1_0_0) Run(_ string, state *resource.State) error {
 	instances, ok := state.Resources[v0_0_0.ResourceTypeInstance]
 	if !ok || len(instances) == 0 {
 		// All of the changes in this version are to resources that depend on

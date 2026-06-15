@@ -165,7 +165,7 @@ func TestVersion_1_0_0(t *testing.T) {
 			state.Add(tc.in...)
 
 			migration := &migrations.Version_1_0_0{}
-			migration.Run(state)
+			migration.Run("database-1", state)
 
 			golden.Run(t, state, update)
 
