@@ -16,7 +16,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var _ resource.Resource = (*InstanceResource)(nil)
@@ -211,15 +210,6 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		}
 		// no other initialization needed on non-primary instances
 		return nil
-	}
-
-	// Enable failsafe mode if this instance is the only one in the node.
-	// Otherwise, disable it.
-	_, err := r.patroniClient().PatchDynamicConfig(ctx, &patroni.DynamicConfig{
-		FailsafeMode: utils.PointerTo(r.Spec.NodeSize == 1),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to configure failsafe mode: %w", err)
 	}
 
 	conn, err := r.Connection(ctx, rc, "postgres")
