@@ -6,8 +6,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -136,7 +138,8 @@ func TypedFromMap[T any](m map[string]any, key string) (T, bool) {
 
 func BuildOptionArgs(options map[string]string) []string {
 	var res []string
-	for k, v := range options {
+	for _, k := range slices.Sorted(maps.Keys(options)) {
+		v := options[k]
 		prefix := ""
 		if !strings.HasPrefix(k, "--") {
 			prefix = "--"
