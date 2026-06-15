@@ -16,6 +16,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/postgres/hba"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -36,6 +37,12 @@ func (c *PatroniConfig) Dependencies() []resource.Identifier {
 		EtcdCredsIdentifier(c.InstanceID),
 		PatroniMemberResourceIdentifier(c.InstanceID),
 		PatroniClusterResourceIdentifier(c.NodeName),
+	}
+	if c.Generator.ArchiveCommand != "" {
+		deps = append(deps, PgBackRestConfigIdentifier(c.InstanceID, pgbackrest.ConfigTypeBackup))
+	}
+	if c.Generator.RestoreCommand != "" {
+		deps = append(deps, PgBackRestConfigIdentifier(c.InstanceID, pgbackrest.ConfigTypeRestore))
 	}
 	return deps
 }
