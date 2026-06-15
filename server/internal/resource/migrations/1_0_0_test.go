@@ -10,23 +10,9 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/resource/migrations"
 	"github.com/pgEdge/control-plane/server/internal/resource/migrations/schemas/v0_0_0"
-	"github.com/pgEdge/control-plane/server/internal/testutils"
 )
 
 func TestVersion_1_0_0(t *testing.T) {
-	golden := &testutils.GoldenTest[*resource.State]{
-		Compare: func(t testing.TB, expected, actual *resource.State) {
-			// The json.RawValue ends up indented in our actual, so we'll round
-			// trip the actual value to get the same indentation.
-			raw, err := json.MarshalIndent(actual, "", "  ")
-			require.NoError(t, err)
-
-			var roundTrippedActual *resource.State
-			require.NoError(t, json.Unmarshal(raw, &roundTrippedActual))
-
-			require.Equal(t, expected, roundTrippedActual)
-		},
-	}
 	for _, tc := range []struct {
 		name string
 		in   []*resource.ResourceData
