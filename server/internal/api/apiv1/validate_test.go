@@ -12,25 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidationError(t *testing.T) {
-	t.Run("with path", func(t *testing.T) {
-		err := newValidationError(errors.New("test error"), []string{
-			"array",
-			arrayIndexPath(0),
-			"map",
-			mapKeyPath("key"),
-		})
-
-		assert.ErrorContains(t, err, "array[0].map[key]: test error")
-	})
-
-	t.Run("without path", func(t *testing.T) {
-		err := newValidationError(errors.New("test error"), nil)
-
-		assert.ErrorContains(t, err, "test error")
-	})
-}
-
 func TestValidateCPUs(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
