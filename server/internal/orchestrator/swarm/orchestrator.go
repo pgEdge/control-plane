@@ -47,6 +47,13 @@ const (
 	DefaultDatabaseOwnerGID int = DefaultDatabaseOwnerUID
 )
 
+// Each of these constants represents the port exposed by the container. These
+// are separate from the published ports, which are user-specified and optional.
+const (
+	PostgresContainerPort int = 5432
+	PatroniContainerPort  int = 8888
+)
+
 type Orchestrator struct {
 	cfg                config.Config
 	versions           *Versions
@@ -275,8 +282,8 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 				Instance:        spec,
 				HostCPUs:        float64(o.cpus),
 				HostMemoryBytes: o.memBytes,
-				PatroniPort:     8888,
-				PostgresPort:    5432,
+				PatroniPort:     PatroniContainerPort,
+				PostgresPort:    PostgresContainerPort,
 				FQDN:            instanceHostname,
 				LogType:         patroni.LogTypeJson,
 				Paths:           paths,
@@ -348,7 +355,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 				OwnerUID:     databaseOwnerUID,
 				OwnerGID:     databaseOwnerGID,
 				Paths:        paths,
-				Port:         5432,
+				Port:         PostgresContainerPort,
 			},
 		)
 		nodeDependents = append(nodeDependents,
@@ -384,7 +391,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 			OwnerUID:     databaseOwnerUID,
 			OwnerGID:     databaseOwnerGID,
 			Paths:        paths,
-			Port:         5432,
+			Port:         PostgresContainerPort,
 		})
 	}
 
@@ -793,7 +800,7 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
 	if !ok {
 		return nil, fmt.Errorf("no bridge network found for postgres container %q", container.ID)
 	}
-	dbPort, err := nat.NewPort("tcp", "5432")
+	dbPort, err := nat.NewPort("tcp", strconv.Itoa(PostgresContainerPort))
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct postgres nat port: %w", err)
 	}
@@ -812,13 +819,13 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
 
 	return &database.ConnectionInfo{
 		AdminHost:        bridge.IPAddress,
-		AdminPort:        5432,
+		AdminPort:        PostgresContainerPort,
 		PeerHost:         fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
-		PeerPort:         5432,
+		PeerPort:         PostgresContainerPort,
 		PeerSSLCert:      "/opt/pgedge/certificates/postgres/superuser.crt",
 		PeerSSLKey:       "/opt/pgedge/certificates/postgres/superuser.key",
 		PeerSSLRootCert:  "/opt/pgedge/certificates/postgres/ca.crt",
-		PatroniPort:      8888,
+		PatroniPort:      PatroniContainerPort,
 		ClientAddresses:  o.cfg.ClientAddresses,
 		ClientPort:       clientPort,
 		InstanceHostname: inspect.Config.Hostname,
