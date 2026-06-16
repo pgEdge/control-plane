@@ -1,3 +1,0 @@
-kind: Added
-body: Added a feature to enable manual Postgres minor version updates in systemd clusters. The Control Plane will now update its copy of the database spec when it detects changes to an instance's Postgres or Spock version.
-time: 2026-05-04T15:02:35.045407-04:00

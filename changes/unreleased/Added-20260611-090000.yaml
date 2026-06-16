@@ -1,3 +1,0 @@
-kind: Added
-body: Added `pg_hba_conf` and `pg_ident_conf` fields to the database spec — Operators can now supply custom `pg_hba.conf` and `pg_ident.conf` entries at the database or per-node level, giving full control over client authentication rules and ident mappings. Per-node entries take first-match priority over database-level entries.
-time: 2026-06-11T09:00:00.000000-04:00
