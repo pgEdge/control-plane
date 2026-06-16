@@ -4,11 +4,14 @@ import (
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 type Images struct {
 	PgEdgeImage string
+	// Stability is "stable" or "dev". Empty string is treated as "stable".
+	Stability string
 }
 
 type Versions struct {
@@ -119,4 +122,49 @@ func (v Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
 
 func imageTag(cfg config.Config, tag string) string {
 	return fmt.Sprintf("%s/pgedge-postgres:%s", cfg.DockerSwarm.ImageRepositoryHost, tag)
+}
+
+// AvailableUpgrades returns all newer stable manifest entries in the same
+// (postgres_major, spock_major) bucket as current. Returns nil when current is
+// nil or no newer entries exist.
+func (v *Versions) AvailableUpgrades(current *ds.PgEdgeVersion) []*database.AvailableUpgrade {
+	if current == nil {
+		return nil
+	}
+	currentPGMajor, ok := current.PostgresVersion.Major()
+	if !ok {
+		return nil
+	}
+	currentSpockMajor, ok := current.SpockVersion.Major()
+	if !ok {
+		return nil
+	}
+
+	var upgrades []*database.AvailableUpgrade
+	for _, ver := range v.supportedVersions {
+		pgMajor, ok := ver.PostgresVersion.Major()
+		if !ok || pgMajor != currentPGMajor {
+			continue
+		}
+		spockMajor, ok := ver.SpockVersion.Major()
+		if !ok || spockMajor != currentSpockMajor {
+			continue
+		}
+		if ver.PostgresVersion.Compare(current.PostgresVersion) <= 0 {
+			continue
+		}
+		img, err := v.GetImages(ver)
+		if err != nil {
+			continue
+		}
+		if img.Stability != "" && img.Stability != "stable" {
+			continue
+		}
+		upgrades = append(upgrades, &database.AvailableUpgrade{
+			PostgresVersion: ver.PostgresVersion.String(),
+			SpockVersion:    ver.SpockVersion.String(),
+			Image:           img.PgEdgeImage,
+		})
+	}
+	return upgrades
 }

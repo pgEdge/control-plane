@@ -209,11 +209,18 @@ var _ = g.Service("control-plane", func() {
 	g.Method("list-databases", func() {
 		g.Description("Lists all databases in the cluster.")
 		g.Meta("openapi:summary", "List databases")
+		g.Payload(func() {
+			g.Attribute("include", g.ArrayOf(g.String), func() {
+				g.Description("Optional fields to include in each database response. Supported values: available_upgrades.")
+				g.Example([]string{"available_upgrades"})
+			})
+		})
 		g.Result(ListDatabasesResponse)
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
 			g.GET("/v1/databases")
+			g.Param("include")
 
 			g.Meta("openapi:tag:Database")
 		})
@@ -245,6 +252,10 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the database to get.")
 				g.Example("my-app")
 			})
+			g.Attribute("include", g.ArrayOf(g.String), func() {
+				g.Description("Optional fields to include in the response. Supported values: available_upgrades.")
+				g.Example([]string{"available_upgrades"})
+			})
 
 			g.Required("database_id")
 		})
@@ -255,6 +266,7 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/v1/databases/{database_id}")
+			g.Param("include")
 
 			g.Meta("openapi:tag:Database")
 		})

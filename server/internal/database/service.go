@@ -747,6 +747,12 @@ func (s *Service) DeleteInstanceSpec(ctx context.Context, databaseID, instanceID
 	return nil
 }
 
+// AvailableUpgrades returns newer stable manifest entries in the same
+// (postgres_major, spock_major) bucket as the given version.
+func (s *Service) AvailableUpgrades(current *ds.PgEdgeVersion) []*AvailableUpgrade {
+	return s.orchestrator.AvailableUpgrades(current)
+}
+
 func (s *Service) ReconcileServiceInstanceSpec(ctx context.Context, spec *ServiceInstanceSpec) (*ServiceInstanceSpec, error) {
 	if s.cfg.HostID != spec.HostID {
 		return nil, fmt.Errorf("this service instance belongs to another host - this host='%s', service instance host='%s'", s.cfg.HostID, spec.HostID)

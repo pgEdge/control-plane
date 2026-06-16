@@ -306,6 +306,10 @@ func (o *Orchestrator) ReconcileServiceInstanceSpec(old, new *database.ServiceIn
 	return err
 }
 
+func (o *Orchestrator) AvailableUpgrades(current *ds.PgEdgeVersion) []*database.AvailableUpgrade {
+	return o.versions.AvailableUpgrades(current)
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
 	images, err := o.resolveInstanceImages(spec)
 	if err != nil {

@@ -936,6 +936,23 @@ func (c *Client) BuildListDatabasesRequest(ctx context.Context, v any) (*http.Re
 	return req, nil
 }
 
+// EncodeListDatabasesRequest returns an encoder for requests sent to the
+// control-plane list-databases server.
+func EncodeListDatabasesRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ListDatabasesPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "list-databases", "*controlplane.ListDatabasesPayload", v)
+		}
+		values := req.URL.Query()
+		for _, value := range p.Include {
+			values.Add("include", value)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 // DecodeListDatabasesResponse returns a decoder for responses returned by the
 // control-plane list-databases endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
@@ -1186,6 +1203,23 @@ func (c *Client) BuildGetDatabaseRequest(ctx context.Context, v any) (*http.Requ
 	}
 
 	return req, nil
+}
+
+// EncodeGetDatabaseRequest returns an encoder for requests sent to the
+// control-plane get-database server.
+func EncodeGetDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.GetDatabasePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "get-database", "*controlplane.GetDatabasePayload", v)
+		}
+		values := req.URL.Query()
+		for _, value := range p.Include {
+			values.Add("include", value)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
 }
 
 // DecodeGetDatabaseResponse returns a decoder for responses returned by the
@@ -4202,6 +4236,16 @@ func unmarshalDatabaseSummaryResponseBodyToControlplaneDatabaseSummary(v *Databa
 			res.Instances[i] = unmarshalInstanceResponseBodyToControlplaneInstance(val)
 		}
 	}
+	if v.AvailableUpgrades != nil {
+		res.AvailableUpgrades = make([]*controlplane.AvailableUpgrade, len(v.AvailableUpgrades))
+		for i, val := range v.AvailableUpgrades {
+			if val == nil {
+				res.AvailableUpgrades[i] = nil
+				continue
+			}
+			res.AvailableUpgrades[i] = unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade(val)
+		}
+	}
 
 	return res
 }
@@ -4309,6 +4353,22 @@ func unmarshalInstanceSubscriptionResponseBodyToControlplaneInstanceSubscription
 		ProviderNode: *v.ProviderNode,
 		Name:         *v.Name,
 		Status:       *v.Status,
+	}
+
+	return res
+}
+
+// unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade builds a
+// value of type *controlplane.AvailableUpgrade from a value of type
+// *AvailableUpgradeResponseBody.
+func unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade(v *AvailableUpgradeResponseBody) *controlplane.AvailableUpgrade {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.AvailableUpgrade{
+		PostgresVersion: *v.PostgresVersion,
+		SpockVersion:    *v.SpockVersion,
+		Image:           *v.Image,
 	}
 
 	return res
@@ -5345,6 +5405,16 @@ func unmarshalDatabaseResponseBodyToControlplaneDatabase(v *DatabaseResponseBody
 	}
 	if v.Spec != nil {
 		res.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v.Spec)
+	}
+	if v.AvailableUpgrades != nil {
+		res.AvailableUpgrades = make([]*controlplane.AvailableUpgrade, len(v.AvailableUpgrades))
+		for i, val := range v.AvailableUpgrades {
+			if val == nil {
+				res.AvailableUpgrades[i] = nil
+				continue
+			}
+			res.AvailableUpgrades[i] = unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade(val)
+		}
 	}
 
 	return res

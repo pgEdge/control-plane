@@ -155,6 +155,10 @@ func (o *Orchestrator) ReconcileServiceInstanceSpec(_, _ *database.ServiceInstan
 	return nil
 }
 
+func (o *Orchestrator) AvailableUpgrades(_ *ds.PgEdgeVersion) []*database.AvailableUpgrade {
+	return nil
+}
+
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
 	paths, err := o.InstancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {
