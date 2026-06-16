@@ -1,0 +1,3 @@
+kind: Fixed
+body: Database specs with duplicate allocated ports on a single host are now rejected by the API.
+time: 2026-06-16T15:01:52.449574-04:00
