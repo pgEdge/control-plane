@@ -262,6 +262,18 @@ func (d *DatabaseFixture) WithConnection(ctx context.Context, opts ConnectionOpt
 	}
 }
 
+func (d *DatabaseFixture) HeartBeat(t testing.TB, username, password string, nodeNames ...string) {
+	if len(nodeNames) == 0 {
+		for _, node := range d.Spec.Nodes {
+			RunHeartBeat(t, d, username, password, node.Name)
+		}
+	} else {
+		for _, nodeName := range nodeNames {
+			RunHeartBeat(t, d, username, password, nodeName)
+		}
+	}
+}
+
 type InstanceMatcher func(inst *controlplane.Instance) bool
 
 func WithID(instanceID string) InstanceMatcher {

@@ -6,8 +6,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -117,9 +119,27 @@ func Clean(s string) string {
 	}, s)
 }
 
+// TypedFromMap reads a typed value from the given map. If the value does not
+// exist or does not match the given type, it will return the zero value for the
+// type and 'false'.
+func TypedFromMap[T any](m map[string]any, key string) (T, bool) {
+	var zero T
+	v, ok := m[key]
+	if !ok {
+		return zero, false
+	}
+	switch val := v.(type) {
+	case T:
+		return val, true
+	default:
+		return zero, false
+	}
+}
+
 func BuildOptionArgs(options map[string]string) []string {
 	var res []string
-	for k, v := range options {
+	for _, k := range slices.Sorted(maps.Keys(options)) {
+		v := options[k]
 		prefix := ""
 		if !strings.HasPrefix(k, "--") {
 			prefix = "--"

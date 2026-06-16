@@ -52,7 +52,7 @@ func (s *Service) Start(ctx context.Context) error {
 			logger.Warn().Err(err).Msg("unable to use this resource state")
 			continue
 		}
-		if err := s.migrations.Run(stored.State); err != nil {
+		if err := s.migrations.Run(stored.DatabaseID, stored.State); err != nil {
 			logger.Warn().Err(err).Msg("failed to upgrade resource state")
 			continue
 		}
@@ -84,7 +84,7 @@ func (s *Service) GetState(ctx context.Context, databaseID string) (*State, erro
 
 	err = stored.State.ValidateVersion()
 	if errors.Is(err, ErrStateNeedsUpgrade) {
-		if err := s.migrations.Run(stored.State); err != nil {
+		if err := s.migrations.Run(stored.DatabaseID, stored.State); err != nil {
 			return nil, fmt.Errorf("failed to upgrade resource state: %w", err)
 		}
 		s.logger.Info().
@@ -135,7 +135,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 
 type StateMigration interface {
 	Version() *ds.Version
-	Run(state *State) error
+	Run(databaseID string, state *State) error
 }
 
 type StateMigrations struct {
@@ -152,7 +152,7 @@ func NewStateMigrations(migrations []StateMigration) *StateMigrations {
 	}
 }
 
-func (m *StateMigrations) Run(state *State) error {
+func (m *StateMigrations) Run(databaseID string, state *State) error {
 	for _, migration := range m.migrations {
 		version := migration.Version()
 
@@ -160,7 +160,7 @@ func (m *StateMigrations) Run(state *State) error {
 			// Skip migrations for older or current versions
 			continue
 		}
-		if err := migration.Run(state); err != nil {
+		if err := migration.Run(databaseID, state); err != nil {
 			return fmt.Errorf("failed to upgrade database state to version '%s': %w", version, err)
 		}
 		state.Version = version

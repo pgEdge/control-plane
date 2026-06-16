@@ -1,0 +1,365 @@
+{
+  "version": "1.2.0",
+  "resources": {
+    "common.etcd_creds": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "common.etcd_creds"
+        },
+        "attributes": {
+          "instance_id": "instance-1",
+          "database_id": "database-1",
+          "host_id": "host-1",
+          "node_name": "n1",
+          "parent_id": "host-1-configs",
+          "owner_uid": 123,
+          "owner_gid": 124,
+          "username": "username",
+          "password": "password",
+          "ca_cert": "Y2FfY2VydA==",
+          "client_cert": "Y2xpZW50X2NlcnQ=",
+          "client_key": "Y2xpZW50X2tleQ=="
+        },
+        "dependencies": [
+          {
+            "id": "host-1-configs",
+            "type": "filesystem.dir"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/username",
+          "/password",
+          "/ca_cert",
+          "/client_cert",
+          "/client_key"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "common.patroni_cluster": {
+      "n1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "n1",
+          "type": "common.patroni_cluster"
+        },
+        "attributes": {
+          "database_id": "database-1",
+          "node_name": "n1"
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "common.patroni_member": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "common.patroni_member"
+        },
+        "attributes": {
+          "database_id": "database-1",
+          "node_name": "n1",
+          "instance_id": "instance-1"
+        },
+        "dependencies": [
+          {
+            "id": "n1",
+            "type": "common.patroni_cluster"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "common.postgres_certs": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "common.postgres_certs"
+        },
+        "attributes": {
+          "instance_id": "instance-1",
+          "host_id": "host-1",
+          "instance_addresses": [
+            "127.0.0.1",
+            "localhost"
+          ],
+          "parent_id": "host-1-configs",
+          "owner_uid": 123,
+          "owner_gid": 124,
+          "ca_cert": "Y2FfY2VydA==",
+          "server_cert": "c2VydmVyX2NlcnQ=",
+          "server_key": "c2VydmVyX2tleQ==",
+          "superuser_cert": "c3VwZXJ1c2VyX2NlcnQ=",
+          "superuser_key": "c3VwZXJ1c2VyX2tleQ==",
+          "replication_cert": "cmVwbGljYXRpb25fY2VydA==",
+          "replication_key": "cmVwbGljYXRpb25fa2V5"
+        },
+        "dependencies": [
+          {
+            "id": "host-1-configs",
+            "type": "filesystem.dir"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/ca_cert",
+          "/server_cert",
+          "/server_key",
+          "/superuser_cert",
+          "/superuser_key",
+          "/replication_cert",
+          "/replication_key"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.instance": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "database.instance"
+        },
+        "attributes": {
+          "spec": {
+            "database_id": "database-1",
+            "database_name": "test",
+            "database_users": [
+              {
+                "db_owner": true,
+                "username": "admin"
+              }
+            ],
+            "host_id": "host-1",
+            "instance_id": "instance-1",
+            "node_name": "n1"
+          }
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/primary_instance_id",
+          "/connection_info"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.node": {
+      "n1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "n1",
+          "type": "database.node"
+        },
+        "attributes": {
+          "name": "n1",
+          "instance_ids": [
+            "instance-1"
+          ],
+          "primary_instance_id": "instance-1"
+        },
+        "dependencies": [
+          {
+            "id": "instance-1",
+            "type": "database.instance"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "filesystem.dir": {
+      "host-1-configs": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "host-1-configs",
+          "type": "filesystem.dir"
+        },
+        "attributes": {
+          "id": "host-1-configs",
+          "parent_id": "",
+          "host_id": "",
+          "path": "/configs",
+          "owner_uid": 0,
+          "owner_gid": 0,
+          "perm": 0,
+          "full_path": ""
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "swarm.network": {
+      "database-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "manager",
+          "id": ""
+        },
+        "identifier": {
+          "id": "database-1",
+          "type": "swarm.network"
+        },
+        "attributes": {
+          "scope": "swarm",
+          "driver": "overlay",
+          "allocator": {
+            "prefix": "",
+            "bits": 0
+          },
+          "name": "database-1",
+          "network_id": "",
+          "subnet": "",
+          "gateway": ""
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "swarm.patroni_config": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "swarm.patroni_config"
+        },
+        "attributes": {
+          "database_id": "database-1",
+          "base": {
+            "instance_id": "instance-1",
+            "host_id": "host-1",
+            "node_name": "n1",
+            "generator": {
+              "cluster_size": 3,
+              "cpus": 4,
+              "database_id": "database-1",
+              "data_dir": "/opt/pgedge/data/pgdata",
+              "etcd_certs_dir": "/opt/pgedge/certificates/etcd",
+              "fqdn": "database-1-n1",
+              "instance_id": "instance-1",
+              "log_type": "json",
+              "memory_bytes": 1073741824,
+              "node_name": "n1",
+              "node_ordinal": 1,
+              "node_size": 1,
+              "patroni_allowlist": null,
+              "patroni_port": 8888,
+              "pg_hba_conf": [
+                "hostssl all myapp_user 203.0.113.0/24 scram-sha-256"
+              ],
+              "pg_ident_conf": [
+                "ssl_users  CN=alice,O=example  alice"
+              ],
+              "postgres_certs_dir": "/opt/pgedge/certificates/postgres",
+              "postgres_port": 5432,
+              "restore_command": "",
+              "spec_parameters": {
+                "max_connections": 1000
+              }
+            },
+            "parent_id": "host-1-configs",
+            "owner_uid": 123,
+            "owner_gid": 124
+          },
+          "host_network_info": {
+            "name": "bridge",
+            "id": "bridge_id",
+            "subnet": "172.16.0.0/12",
+            "gateway": "172.16.0.1"
+          },
+          "database_network_name": "database-1"
+        },
+        "dependencies": [
+          {
+            "id": "host-1-configs",
+            "type": "filesystem.dir"
+          },
+          {
+            "id": "instance-1",
+            "type": "common.etcd_creds"
+          },
+          {
+            "id": "instance-1",
+            "type": "common.patroni_member"
+          },
+          {
+            "id": "n1",
+            "type": "common.patroni_cluster"
+          },
+          {
+            "id": "database-1",
+            "type": "swarm.network"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    }
+  }
+}

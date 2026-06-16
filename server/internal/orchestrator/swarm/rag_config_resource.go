@@ -10,6 +10,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -88,7 +89,7 @@ func (r *RAGConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	_, err = readResourceFile(fs, filepath.Join(dirPath, ragConfigFilename))
+	_, err = common.ReadResourceFile(fs, filepath.Join(dirPath, ragConfigFilename))
 	if err != nil {
 		return fmt.Errorf("failed to read RAG config: %w", err)
 	}

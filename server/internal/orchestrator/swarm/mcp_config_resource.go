@@ -13,6 +13,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -48,7 +49,7 @@ type MCPConfigResource struct {
 	ConnectAsPassword  string                      `json:"connect_as_password"`
 	// KBHostPath is the full path to the KB SQLite file on the host. When non-empty,
 	// Create and Update verify the file exists before allowing deployment to proceed.
-	KBHostPath         string                      `json:"kb_host_path,omitempty"`
+	KBHostPath string `json:"kb_host_path,omitempty"`
 }
 
 func (r *MCPConfigResource) ResourceVersion() string {
@@ -89,7 +90,7 @@ func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 	}
 
 	// Check if config.yaml exists; ErrNotFound here triggers Create.
-	_, err = readResourceFile(fs, filepath.Join(dirPath, "config.yaml"))
+	_, err = common.ReadResourceFile(fs, filepath.Join(dirPath, "config.yaml"))
 	if err != nil {
 		return fmt.Errorf("failed to read MCP config: %w", err)
 	}

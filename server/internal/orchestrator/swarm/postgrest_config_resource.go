@@ -10,6 +10,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -77,7 +78,7 @@ func (r *PostgRESTConfigResource) Refresh(ctx context.Context, rc *resource.Cont
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	_, err = readResourceFile(fs, filepath.Join(dirPath, "postgrest.conf"))
+	_, err = common.ReadResourceFile(fs, filepath.Join(dirPath, "postgrest.conf"))
 	if err != nil {
 		return fmt.Errorf("failed to read PostgREST config: %w", err)
 	}

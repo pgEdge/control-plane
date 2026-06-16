@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -96,7 +97,7 @@ func DatabaseServiceSpec(
 					"PATRONICTL_CONFIG_FILE=/opt/pgedge/configs/patroni.yaml",
 				},
 				Healthcheck: &container.HealthConfig{
-					Test:        []string{"CMD-SHELL", "curl -Ssf http://localhost:8888/liveness"},
+					Test:        []string{"CMD-SHELL", fmt.Sprintf("curl -Ssf http://localhost:%d/liveness", PatroniContainerPort)},
 					StartPeriod: time.Second * 5,
 					Interval:    time.Second * 5,
 					Timeout:     time.Second * 3,
@@ -136,7 +137,7 @@ func buildPostgresPortConfig(port *int) []swarm.PortConfig {
 
 	config := swarm.PortConfig{
 		PublishMode: swarm.PortConfigPublishModeHost,
-		TargetPort:  5432,
+		TargetPort:  uint32(PostgresContainerPort),
 		Name:        "postgres",
 		Protocol:    swarm.PortConfigProtocolTCP,
 	}

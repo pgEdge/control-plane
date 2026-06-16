@@ -1,0 +1,158 @@
+// produced by schematool c2ccdd8969fbc7b26675a9ce183092ec9444d877 server/internal/database NodeResource InstanceResource
+package v1_1_0
+
+import (
+	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/resource"
+	"time"
+)
+
+const ResourceTypeNode resource.Type = "database.node"
+
+func NodeResourceIdentifier(nodeName string) resource.Identifier {
+	return resource.Identifier{
+		ID:   nodeName,
+		Type: ResourceTypeNode,
+	}
+}
+
+type NodeResource struct {
+	Name              string   `json:"name"`
+	InstanceIDs       []string `json:"instance_ids"`
+	PrimaryInstanceID string   `json:"primary_instance_id"`
+}
+
+const ResourceTypeInstance resource.Type = "database.instance"
+
+func InstanceResourceIdentifier(instanceID string) resource.Identifier {
+	return resource.Identifier{
+		ID:   instanceID,
+		Type: ResourceTypeInstance,
+	}
+}
+
+type InstanceResource struct {
+	Spec *struct {
+		InstanceID    string            `json:"instance_id"`
+		TenantID      *string           `json:"tenant_id,omitempty"`
+		DatabaseID    string            `json:"database_id"`
+		HostID        string            `json:"host_id"`
+		DatabaseName  string            `json:"database_name"`
+		NodeName      string            `json:"node_name"`
+		NodeOrdinal   int               `json:"node_ordinal"`
+		PgEdgeVersion *ds.PgEdgeVersion `json:"pg_edge_version"`
+		Port          *int              `json:"port"`
+		PatroniPort   *int              `json:"patroni_port"`
+		CPUs          float64           `json:"cpus"`
+		MemoryBytes   uint64            `json:"memory"`
+		DatabaseUsers []*struct {
+			Username   string   `json:"username"`
+			Password   string   `json:"password"`
+			DBOwner    bool     `json:"db_owner,omitempty"`
+			Attributes []string `json:"attributes,omitempty"`
+			Roles      []string `json:"roles,omitempty"`
+		} `json:"database_users"`
+		BackupConfig *struct {
+			Repositories []*struct {
+				ID                string            `json:"id"`
+				Type              string            `json:"type"`
+				S3Bucket          string            `json:"s3_bucket,omitempty"`
+				S3Region          string            `json:"s3_region,omitempty"`
+				S3Endpoint        string            `json:"s3_endpoint,omitempty"`
+				S3Key             string            `json:"s3_key,omitempty"`
+				S3KeySecret       string            `json:"s3_key_secret,omitempty"`
+				GCSBucket         string            `json:"gcs_bucket,omitempty"`
+				GCSEndpoint       string            `json:"gcs_endpoint,omitempty"`
+				GCSKey            string            `json:"gcs_key,omitempty"`
+				AzureAccount      string            `json:"azure_account,omitempty"`
+				AzureContainer    string            `json:"azure_container,omitempty"`
+				AzureEndpoint     string            `json:"azure_endpoint,omitempty"`
+				AzureKey          string            `json:"azure_key,omitempty"`
+				RetentionFull     int               `json:"retention_full"`
+				RetentionFullType string            `json:"retention_full_type"`
+				BasePath          string            `json:"base_path,omitempty"`
+				CustomOptions     map[string]string `json:"custom_options,omitempty"`
+			} `json:"repositories"`
+			Schedules []*struct {
+				ID             string `json:"id"`
+				Type           string `json:"type"`
+				CronExpression string `json:"cron_expression"`
+			} `json:"schedules"`
+		} `json:"backup_config"`
+		RestoreConfig *struct {
+			SourceDatabaseID   string `json:"source_database_id"`
+			SourceNodeName     string `json:"source_node_name"`
+			SourceDatabaseName string `json:"source_database_name"`
+			Repository         *struct {
+				ID                string            `json:"id"`
+				Type              string            `json:"type"`
+				S3Bucket          string            `json:"s3_bucket,omitempty"`
+				S3Region          string            `json:"s3_region,omitempty"`
+				S3Endpoint        string            `json:"s3_endpoint,omitempty"`
+				S3Key             string            `json:"s3_key,omitempty"`
+				S3KeySecret       string            `json:"s3_key_secret,omitempty"`
+				GCSBucket         string            `json:"gcs_bucket,omitempty"`
+				GCSEndpoint       string            `json:"gcs_endpoint,omitempty"`
+				GCSKey            string            `json:"gcs_key,omitempty"`
+				AzureAccount      string            `json:"azure_account,omitempty"`
+				AzureContainer    string            `json:"azure_container,omitempty"`
+				AzureEndpoint     string            `json:"azure_endpoint,omitempty"`
+				AzureKey          string            `json:"azure_key,omitempty"`
+				RetentionFull     int               `json:"retention_full"`
+				RetentionFullType string            `json:"retention_full_type"`
+				BasePath          string            `json:"base_path,omitempty"`
+				CustomOptions     map[string]string `json:"custom_options,omitempty"`
+			} `json:"repository"`
+			RestoreOptions map[string]string `json:"restore_options"`
+		} `json:"restore_config"`
+		PostgreSQLConf   map[string]any `json:"postgresql_conf"`
+		PgHbaConf        []string       `json:"pg_hba_conf,omitempty"`
+		PgIdentConf      []string       `json:"pg_ident_conf,omitempty"`
+		ClusterSize      int            `json:"cluster_size"`
+		NodeSize         int            `json:"node_size"`
+		OrchestratorOpts *struct {
+			Swarm *struct {
+				ExtraVolumes []struct {
+					HostPath        string `json:"host_path"`
+					DestinationPath string `json:"destination_path"`
+				} `json:"extra_volumes,omitempty"`
+				ExtraNetworks []struct {
+					ID         string            `json:"id"`
+					Aliases    []string          `json:"aliases,omitempty"`
+					DriverOpts map[string]string `json:"driver_opts,omitempty"`
+				} `json:"extra_networks,omitempty"`
+				ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+			} `json:"docker,omitempty"`
+		} `json:"orchestrator_opts,omitempty"`
+		InPlaceRestore bool     `json:"in_place_restore,omitempty"`
+		AllHostIDs     []string `json:"all_host_ids"`
+	} `json:"spec"`
+	InstanceHostname           string    `json:"instance_hostname"`
+	PrimaryInstanceID          string    `json:"primary_instance_id"`
+	PrimaryInstanceIDUpdatedAt time.Time `json:"primary_instance_id_updated_at"`
+	OrchestratorDependencies   []struct {
+		ID   string `json:"id"`
+		Type string `json:"type"`
+	} `json:"dependencies"`
+	ConnectionInfo *struct {
+		AdminHost        string
+		AdminPort        int
+		PeerHost         string
+		PeerPort         int
+		PeerSSLCert      string
+		PeerSSLKey       string
+		PeerSSLRootCert  string
+		PatroniPort      int
+		ClientAddresses  []string
+		ClientPort       int
+		InstanceHostname string
+	} `json:"connection_info"`
+	PostInit *struct {
+		DatabaseID string   `json:"database_id"`
+		NodeName   string   `json:"node_name"`
+		Name       string   `json:"name"`
+		Statements []string `json:"statements"`
+		Succeeded  bool     `json:"succeeded"`
+		NeedsToRun bool     `json:"needs_to_run"`
+	} `json:"post_init"`
+}
