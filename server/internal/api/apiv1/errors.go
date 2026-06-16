@@ -10,6 +10,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/validation"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
@@ -51,7 +52,7 @@ func ErrHostAlreadyExistsWithID(hostID string) *api.APIError {
 func apiErr(err error) error {
 	var goaErr *goa.ServiceError
 	var apiErr *api.APIError
-	var vErr *validationError
+	var vErr *validation.Error
 	switch {
 	case err == nil:
 		return nil
