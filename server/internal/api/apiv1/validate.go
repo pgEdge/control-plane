@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -77,7 +78,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 
 	errs = append(errs, validateCPUs(spec.Cpus, validation.NewPath("cpus"))...)
 	errs = append(errs, validateMemory(spec.Memory, validation.NewPath("memory"))...)
-	errs = append(errs, validatePorts(spec.Port, spec.PatroniPort, validation.NewPath("port")))
+	errs = append(errs, validateUniquePorts(spec)...)
 	errs = append(errs, validateUsers(spec.DatabaseUsers, validation.NewPath("database_users"))...)
 	errs = append(errs, validateScripts(spec.Scripts, validation.NewPath("scripts"))...)
 
@@ -148,10 +149,6 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 	// Validate orchestrator_opts (spec-level)
 	errs = append(errs, validateOrchestratorOpts(spec.OrchestratorOpts, validation.NewPath("orchestrator_opts"))...)
 
-	// Validate services — seed portOwner with Postgres ports so services can't collide with the database.
-	portOwner := make(servicePortOwnerMap)
-	seedPostgresPorts(spec, portOwner)
-
 	servicesPath := validation.NewPath("services")
 
 	switch orchestrator {
@@ -171,7 +168,6 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 			}
 			seenServiceIDs.Add(string(svc.ServiceID))
 
-			errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
 			errs = append(errs, validateServiceSpec(svc, svcPath, false, databaseID, spec.DatabaseUsers, seenNodeNames)...)
 		}
 	}
@@ -228,10 +224,6 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		existingServiceIDs.Add(svc.ServiceID)
 	}
 
-	// Seed portOwner with Postgres ports so services can't collide with the database.
-	portOwner := make(servicePortOwnerMap)
-	seedPostgresPorts(new, portOwner)
-
 	// Validate each service. Pass isUpdate=false for services being added for the
 	// first time so that bootstrap-only fields are accepted. For service types that
 	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
@@ -239,7 +231,6 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		svcPath := validation.NewPath("services", validation.ArrayIndexElement(i))
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
 
-		errs = append(errs, validateServicePortConflicts(svc, svcPath, portOwner)...)
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
 	}
 
@@ -259,17 +250,6 @@ func validateNode(
 
 	memPath := path.Append("memory")
 	errs = append(errs, validateMemory(node.Memory, memPath)...)
-
-	port := db.Port
-	if node.Port != nil {
-		port = node.Port
-	}
-	patroniPort := db.PatroniPort
-	if node.PatroniPort != nil {
-		patroniPort = node.PatroniPort
-	}
-	portPath := path.Append("port")
-	errs = append(errs, validatePorts(port, patroniPort, portPath))
 
 	seenHostIDs := make(ds.Set[string], len(node.HostIds))
 	for i, h := range node.HostIds {
@@ -532,15 +512,58 @@ func validateMemory(value *string, path validation.Path) []error {
 	return errs
 }
 
-func validatePorts(postgresPort, patroniPort *int, path validation.Path) error {
-	postgres := utils.FromPointer(postgresPort)
-	patroni := utils.FromPointer(patroniPort)
+func validateUniquePorts(spec *api.DatabaseSpec) []error {
+	hostPorts := map[string]*validation.Unique[int]{}
+	specPostgresPort := utils.FromPointer(spec.Port)
+	specPatroniPort := utils.FromPointer(spec.PatroniPort)
 
-	if postgres > 0 && postgres == patroni {
-		return validation.NewError(errors.New("postgres and patroni ports must not conflict"), path)
+	nodesPath := validation.NewPath("nodes")
+	for i, node := range spec.Nodes {
+		postgresPort := utils.FromPointer(node.Port)
+		if postgresPort == 0 {
+			postgresPort = specPostgresPort
+		}
+		patroniPort := utils.FromPointer(node.PatroniPort)
+		if patroniPort == 0 {
+			patroniPort = specPatroniPort
+		}
+
+		nodePath := nodesPath.AppendArrayIndex(i)
+		for _, h := range node.HostIds {
+			hostID := string(h)
+			if _, ok := hostPorts[hostID]; !ok {
+				hostPorts[hostID] = validation.NewUnique[int]()
+			}
+			if postgresPort != 0 {
+				hostPorts[hostID].RecordSeen(nodePath.Append("port"), postgresPort)
+			}
+			if patroniPort != 0 {
+				hostPorts[hostID].RecordSeen(nodePath.Append("patroni_port"), patroniPort)
+			}
+		}
 	}
 
-	return nil
+	servicesPath := validation.NewPath("services")
+	for i, service := range spec.Services {
+		servicePath := servicesPath.AppendArrayIndex(i)
+
+		for _, h := range service.HostIds {
+			hostID := string(h)
+			if _, ok := hostPorts[hostID]; !ok {
+				hostPorts[hostID] = validation.NewUnique[int]()
+			}
+			if port := utils.FromPointer(service.Port); port != 0 {
+				hostPorts[hostID].RecordSeen(servicePath.Append("port"), port)
+			}
+		}
+	}
+
+	var errs []error
+	for _, hostID := range slices.Sorted(maps.Keys(hostPorts)) {
+		errs = append(errs, hostPorts[hostID].Validate(fmt.Errorf("duplicate ports allocated on host '%s'", hostID))...)
+	}
+
+	return errs
 }
 
 func validateUsers(users []*api.DatabaseUserSpec, path validation.Path) []error {
@@ -567,56 +590,6 @@ func validateUsers(users []*api.DatabaseUserSpec, path validation.Path) []error 
 		}
 	}
 
-	return errs
-}
-
-// seedPostgresPorts registers each node's effective Postgres port in the
-// portOwner map so that service port validation can detect collisions with
-// the database. A node-level port override (node.Port) takes precedence
-// over the spec-level default (spec.Port).
-func seedPostgresPorts(spec *api.DatabaseSpec, owner servicePortOwnerMap) {
-	for _, node := range spec.Nodes {
-		pgPort := utils.FromPointer(spec.Port)
-		if node.Port != nil {
-			pgPort = *node.Port
-		}
-		if pgPort > 0 {
-			for _, hostID := range node.HostIds {
-				owner[hostPort{hostID: string(hostID), port: pgPort}] = "postgres"
-			}
-		}
-	}
-}
-
-// hostPort identifies a unique (host, port) binding for cross-service
-// port conflict detection.
-type hostPort struct {
-	hostID string
-	port   int
-}
-
-// servicePortOwnerMap tracks which service owns a given (host, port) pair.
-// Callers create one map and pass it to validateServicePortConflicts for
-// each service in the spec.
-type servicePortOwnerMap map[hostPort]string
-
-// validateServicePortConflicts checks that the service's explicit port (if any)
-// does not collide with a port already claimed by another service on the same host.
-func validateServicePortConflicts(svc *api.ServiceSpec, path validation.Path, owner servicePortOwnerMap) []error {
-	if svc.Port == nil || *svc.Port <= 0 {
-		return nil
-	}
-
-	var errs []error
-	for _, hostID := range svc.HostIds {
-		key := hostPort{hostID: string(hostID), port: *svc.Port}
-		if prev, exists := owner[key]; exists {
-			err := fmt.Errorf("port %d conflicts with service %q on the same host", *svc.Port, prev)
-			errs = append(errs, validation.NewError(err, path.Append("port")))
-		} else {
-			owner[key] = string(svc.ServiceID)
-		}
-	}
 	return errs
 }
 

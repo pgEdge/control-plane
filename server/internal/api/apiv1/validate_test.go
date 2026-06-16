@@ -79,61 +79,124 @@ func TestValidateMemory(t *testing.T) {
 	}
 }
 
-func TestValidatePorts(t *testing.T) {
+func TestValidateUniquePorts(t *testing.T) {
 	for _, tc := range []struct {
-		name         string
-		postgresPort *int
-		patroniPort  *int
-		expected     string
+		name     string
+		spec     *api.DatabaseSpec
+		expected []string
 	}{
 		{
-			name:         "both nil",
-			postgresPort: nil,
-			patroniPort:  nil,
+			name: "no ports",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
 		},
 		{
-			name:         "postgres port nil",
-			postgresPort: nil,
-			patroniPort:  utils.PointerTo(8888),
+			name: "patroni and postgres port conflict",
+			spec: &api.DatabaseSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(5432),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
+			expected: []string{
+				`duplicate ports allocated on host 'host-1': '5432' duplicated in: nodes[0].patroni_port, nodes[0].port`,
+			},
 		},
 		{
-			name:         "patroni port nil",
-			postgresPort: utils.PointerTo(8888),
-			patroniPort:  nil,
+			name: "patroni and postgres port conflict with override",
+			spec: &api.DatabaseSpec{
+				Port:        utils.PointerTo(8888),
+				PatroniPort: utils.PointerTo(8888),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:        "n1",
+						Port:        utils.PointerTo(5432),
+						PatroniPort: utils.PointerTo(5432),
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
+			expected: []string{
+				`duplicate ports allocated on host 'host-1': '5432' duplicated in: nodes[0].patroni_port, nodes[0].port`,
+			},
 		},
 		{
-			name:         "both zero",
-			postgresPort: utils.PointerTo(0),
-			patroniPort:  utils.PointerTo(0),
+			name: "service port conflict",
+			spec: &api.DatabaseSpec{
+				Port: utils.PointerTo(5432),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "mcp",
+						ServiceType: "mcp",
+						Port:        utils.PointerTo(5432),
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
+			expected: []string{
+				`duplicate ports allocated on host 'host-1': '5432' duplicated in: nodes[0].port, services[0].port`,
+			},
 		},
 		{
-			name:         "postgres port zero",
-			postgresPort: nil,
-			patroniPort:  utils.PointerTo(0),
-		},
-		{
-			name:         "patroni port zero",
-			postgresPort: utils.PointerTo(0),
-			patroniPort:  nil,
-		},
-		{
-			name:         "both defined non-equal",
-			postgresPort: utils.PointerTo(5432),
-			patroniPort:  utils.PointerTo(8888),
-		},
-		{
-			name:         "conflicting",
-			postgresPort: utils.PointerTo(5432),
-			patroniPort:  utils.PointerTo(5432),
-			expected:     "postgres and patroni ports must not conflict",
+			name: "two nodes on same host",
+			spec: &api.DatabaseSpec{
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(8888),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+					{
+						Name: "n2",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
+			expected: []string{
+				`duplicate ports allocated on host 'host-1': '5432' duplicated in: nodes[0].port, nodes[1].port`,
+				`duplicate ports allocated on host 'host-1': '8888' duplicated in: nodes[0].patroni_port, nodes[1].patroni_port`,
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validatePorts(tc.postgresPort, tc.patroniPort, nil)
-			if tc.expected == "" {
+			err := errors.Join(validateUniquePorts(tc.spec)...)
+			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
-				assert.ErrorContains(t, err, tc.expected)
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
 			}
 		})
 	}
@@ -475,71 +538,6 @@ func TestValidateNode(t *testing.T) {
 			},
 		},
 		{
-			name:         "invalid inherited ports",
-			orchestrator: config.OrchestratorSystemD,
-			db: &api.DatabaseSpec{
-				Port:        utils.PointerTo(5432),
-				PatroniPort: utils.PointerTo(5432),
-			},
-			node: &api.DatabaseNodeSpec{
-				HostIds: []api.Identifier{
-					api.Identifier("host-1"),
-				},
-			},
-			expected: []string{
-				"port: postgres and patroni ports must not conflict",
-			},
-		},
-		{
-			name:         "invalid inherited db port",
-			orchestrator: config.OrchestratorSystemD,
-			db: &api.DatabaseSpec{
-				Port:        utils.PointerTo(5432),
-				PatroniPort: utils.PointerTo(8888),
-			},
-			node: &api.DatabaseNodeSpec{
-				PatroniPort: utils.PointerTo(5432),
-				HostIds: []api.Identifier{
-					api.Identifier("host-1"),
-				},
-			},
-			expected: []string{
-				"port: postgres and patroni ports must not conflict",
-			},
-		},
-		{
-			name:         "invalid inherited patroni port",
-			orchestrator: config.OrchestratorSystemD,
-			db: &api.DatabaseSpec{
-				Port:        utils.PointerTo(5432),
-				PatroniPort: utils.PointerTo(8888),
-			},
-			node: &api.DatabaseNodeSpec{
-				Port: utils.PointerTo(8888),
-				HostIds: []api.Identifier{
-					api.Identifier("host-1"),
-				},
-			},
-			expected: []string{
-				"port: postgres and patroni ports must not conflict",
-			},
-		},
-		{
-			name:         "invalid node ports",
-			orchestrator: config.OrchestratorSystemD,
-			db:           &api.DatabaseSpec{},
-			node: &api.DatabaseNodeSpec{
-				Port:        utils.PointerTo(5432),
-				PatroniPort: utils.PointerTo(5432),
-				HostIds: []api.Identifier{
-					api.Identifier("host-1"),
-				},
-			},
-			expected: []string{
-				"port: postgres and patroni ports must not conflict",
-			},
-		},
-		{
 			name:         "invalid",
 			orchestrator: config.OrchestratorSwarm,
 			db:           &api.DatabaseSpec{},
@@ -783,7 +781,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				`services[1].port: port 8080 conflicts with service "mcp-server" on the same host`,
+				`duplicate ports allocated on host 'host-1': '8080' duplicated in: services[0].port, services[1].port`,
 			},
 		},
 		{
@@ -972,7 +970,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				`port 5432 conflicts with service "postgres" on the same host`,
+				`duplicate ports allocated on host 'host-1': '5432' duplicated in: nodes[0].port, services[0].port`,
 			},
 		},
 		{
@@ -1008,7 +1006,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				`port 5433 conflicts with service "postgres" on the same host`,
+				`duplicate ports allocated on host 'host-1': '5433' duplicated in: nodes[0].port, services[0].port`,
 			},
 		},
 		{
@@ -1158,8 +1156,9 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				"nodes[2]: node names must be unique within a database",
 				"backup_config.repositories[0].base_path: base_path must be absolute for posix repositories",
 				"restore_config.repository.base_path: base_path must be absolute for posix repositories",
-				"port: postgres and patroni ports must not conflict",
-				"nodes[1].port: postgres and patroni ports must not conflict",
+				`duplicate ports allocated on host 'host-1': '5432' duplicated in: nodes[0].patroni_port, nodes[0].port`,
+				`duplicate ports allocated on host 'host-2': '8888' duplicated in: nodes[1].patroni_port, nodes[1].port`,
+				`duplicate ports allocated on host 'host-3': '5432' duplicated in: nodes[2].patroni_port, nodes[2].port`,
 			},
 		},
 		{
@@ -2321,38 +2320,6 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 				Services: []*api.ServiceSpec{
 					newMCPService("appmcp", validMCPConfig),
 				},
-			},
-		},
-		{
-			name: "port conflict on update-database",
-			old:  &database.Spec{},
-			new: &api.DatabaseSpec{
-				DatabaseUsers: []*api.DatabaseUserSpec{
-					{Username: "app", DbOwner: utils.PointerTo(true)},
-				},
-				Services: []*api.ServiceSpec{
-					{
-						ServiceID:   "mcp-server",
-						ServiceType: "mcp",
-						Version:     "latest",
-						HostIds:     []api.Identifier{"host-1"},
-						ConnectAs:   "app",
-						Port:        utils.PointerTo(8080),
-						Config:      validMCPConfig,
-					},
-					{
-						ServiceID:   "postgrest-server",
-						ServiceType: "postgrest",
-						Version:     "latest",
-						HostIds:     []api.Identifier{"host-1"},
-						ConnectAs:   "app",
-						Port:        utils.PointerTo(8080),
-						Config:      map[string]any{},
-					},
-				},
-			},
-			expected: []string{
-				`port 8080 conflicts with service "mcp-server" on the same host`,
 			},
 		},
 	} {

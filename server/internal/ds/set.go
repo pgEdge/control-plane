@@ -1,7 +1,9 @@
 package ds
 
 import (
+	"cmp"
 	"slices"
+	"strings"
 )
 
 // Set is a generic set type.
@@ -130,4 +132,18 @@ func SetDifference[T comparable](a, b []T) Set[T] {
 // either a or b, but not both.
 func SetSymmetricDifference[T comparable](a, b []T) Set[T] {
 	return NewSet(a...).SymmetricDifference(NewSet(b...))
+}
+
+// SetToString is a shortcut for producing a sorted, comma-separated string
+// representation of a Set of string-ish values.
+func SetToString[T ~string](s Set[T]) string {
+	lastIdx := s.Size() - 1
+	var builder strings.Builder
+	for i, element := range s.ToSortedSlice(cmp.Compare) {
+		builder.WriteString(string(element))
+		if i < lastIdx {
+			builder.WriteString(", ")
+		}
+	}
+	return builder.String()
 }
