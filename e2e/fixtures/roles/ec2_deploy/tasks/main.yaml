@@ -190,6 +190,11 @@
     metadata_options:
       http_endpoint: enabled
       http_put_response_hop_limit: 2
+    volumes:
+      - device_name: /dev/sda1
+        ebs:
+          volume_size: 50
+          volume_type: gp3
     tags:
       Environment: e2e-test
       Project: control-plane
