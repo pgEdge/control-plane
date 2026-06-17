@@ -41,6 +41,23 @@ func validateAuthFileGUCs(conf map[string]any, path validation.Path) []error {
 	return errs
 }
 
+func validateConfLibraries(conf map[string]any, path validation.Path) []error {
+	val, ok := utils.TypedFromMap[string](conf, "shared_preload_libraries")
+
+	if !ok {
+		return nil //defaults will be applied, including spock
+	}
+	for _, lib := range strings.Split(val, ",") {
+		if strings.TrimSpace(lib) == "spock" {
+			return nil
+		}
+	}
+
+	err := errors.New(`"spock" must be included in shared_preload_libraries`)
+	return []error{validation.NewError(err, path.AppendMapKey("shared_preload_libraries"))}
+
+}
+
 // validatePgHbaConf checks that every non-comment pg_hba_conf entry parses.
 // Blank and comment lines are allowed and skipped. Validation is intentionally
 // minimal — see server/internal/postgres/hba/parse.go.
@@ -134,8 +151,9 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 	}
 
 	// Reject postgresql_conf GUCs that would make user-supplied pg_hba/pg_ident
-	// entries ineffective, then validate the entries themselves.
+	// entries ineffective, check spock is present, then validate the entries themselves.
 	errs = append(errs, validateAuthFileGUCs(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	errs = append(errs, validateConfLibraries(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, validation.NewPath("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, validation.NewPath("pg_ident_conf"))...)
 
@@ -281,6 +299,7 @@ func validateNode(
 	}
 
 	errs = append(errs, validateAuthFileGUCs(node.PostgresqlConf, path.Append("postgresql_conf"))...)
+	errs = append(errs, validateConfLibraries(node.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(node.PgHbaConf, path.Append("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(node.PgIdentConf, path.Append("pg_ident_conf"))...)
 
