@@ -87,7 +87,7 @@ Run the following commands on each Debian-based host:
 ```sh
 # Install prerequisites for the pgEdge Enterprise Postgres packages
 sudo apt update
-sudo apt install curl gnupg2 lsb-release
+sudo apt install -y curl gnupg2 lsb-release
 
 # Install the pgEdge Enterprise Postgres repository
 curl -O --output-dir /tmp https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
