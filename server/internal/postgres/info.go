@@ -2,7 +2,14 @@ package postgres
 
 func GetPostgresVersion() Query[string] {
 	return Query[string]{
-		SQL: "SHOW server_version;",
+		// We're computing our own string from the numeric server version here
+		// because the text version from 'SHOW server_version' contains build
+		// information on Debian.
+		SQL: `WITH version_num AS (
+				SELECT current_setting('server_version_num')::integer AS num
+			)
+			SELECT (num / 10000)::text || '.' || (num % 10000)::text
+			FROM version_num;`,
 	}
 }
 
