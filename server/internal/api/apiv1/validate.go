@@ -42,17 +42,24 @@ func validateAuthFileGUCs(conf map[string]any, path validation.Path) []error {
 }
 
 func validateConfLibraries(conf map[string]any, path validation.Path) []error {
-	val, ok := utils.TypedFromMap[string](conf, "shared_preload_libraries")
-	if !ok {
-		return nil // defaults will be applied, including spock
-	}
-	for _, lib := range strings.Split(val, ",") {
-		if strings.TrimSpace(lib) == "spock" {
-			return nil
+	for key, val := range conf {
+		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
+			continue
 		}
+		strVal, ok := val.(string)
+		if !ok {
+			err := fmt.Errorf("%q must be a string", key)
+			return []error{validation.NewError(err, path.AppendMapKey(key))}
+		}
+		for _, lib := range strings.Split(strVal, ",") {
+			if strings.TrimSpace(lib) == "spock" {
+				return nil
+			}
+		}
+		err := errors.New(`"spock" must be included in shared_preload_libraries`)
+		return []error{validation.NewError(err, path.AppendMapKey(key))}
 	}
-	err := errors.New(`"spock" must be included in shared_preload_libraries`)
-	return []error{validation.NewError(err, path.AppendMapKey("shared_preload_libraries"))}
+	return nil // key absent; defaults will be applied, including spock
 }
 
 // validatePgHbaConf checks that every non-comment pg_hba_conf entry parses.
