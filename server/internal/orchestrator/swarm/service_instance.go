@@ -144,6 +144,24 @@ func (s *ServiceInstanceResource) Update(ctx context.Context, rc *resource.Conte
 		}
 	}
 
+	// Refresh UpdatedAt before redeploying so the monitor's running-state grace
+	// period covers the restart window. An update that changes the container
+	// (e.g. a config change) restarts it, during which the container has no
+	// status; without bumping UpdatedAt the monitor would briefly mark the
+	// instance failed mid-restart even though it recovers seconds later.
+	// Best-effort: a failure here only risks that transient false "failed"
+	// state, so we log and continue rather than block the redeploy.
+	logger, logErr := do.Invoke[zerolog.Logger](rc.Injector)
+	dbSvc, refreshErr := do.Invoke[*database.Service](rc.Injector)
+	if refreshErr == nil {
+		refreshErr = dbSvc.SetServiceInstanceState(ctx, s.DatabaseID, s.ServiceInstanceID, database.ServiceInstanceStateRunning)
+	}
+	if refreshErr != nil && logErr == nil {
+		logger.Warn().Err(refreshErr).
+			Str("service_instance_id", s.ServiceInstanceID).
+			Msg("failed to refresh service instance UpdatedAt before redeploy; monitor may briefly mark it failed during the restart")
+	}
+
 	return s.deploy(ctx, rc)
 }
 
