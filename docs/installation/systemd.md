@@ -151,10 +151,10 @@ ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 VERSION="v0.9.0"
 
 # Download the deb package
-curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
+curl -LO --output-dir /tmp "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
 
 # Install the deb package
-sudo apt install ./pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
+sudo apt install /tmp/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
 ```
 
 ## Configuration
