@@ -106,9 +106,11 @@ func TestServiceContainerSpec(t *testing.T) {
 				if m.Target != "/app/data" {
 					t.Errorf("mount target = %v, want /app/data", m.Target)
 				}
-				// No env vars for config (config is via file)
-				if len(spec.Env) > 0 {
-					t.Errorf("expected no env vars, got %d: %v", len(spec.Env), spec.Env)
+				// Config is delivered via a bind-mounted file, but a config-version
+				// env var is set so Swarm restarts the container when the config
+				// changes (the file edit alone is invisible to Swarm).
+				if len(spec.Env) != 1 || !strings.HasPrefix(spec.Env[0], "PGEDGE_CONFIG_VERSION=") {
+					t.Errorf("expected only PGEDGE_CONFIG_VERSION env, got %d: %v", len(spec.Env), spec.Env)
 				}
 				// Healthcheck should be set
 				if spec.Healthcheck == nil {
@@ -361,8 +363,8 @@ func TestRagConfigHash(t *testing.T) {
 		},
 	}
 
-	h1 := ragConfigHash(cfg)
-	h2 := ragConfigHash(cfg)
+	h1 := serviceConfigHash(cfg)
+	h2 := serviceConfigHash(cfg)
 	assert.Equal(t, h1, h2, "same config must produce the same hash")
 	assert.Len(t, h1, 16, "hash should be 16 hex chars (8 bytes)")
 
@@ -371,7 +373,7 @@ func TestRagConfigHash(t *testing.T) {
 			map[string]any{"name": "default", "api_key": "sk-xyz"},
 		},
 	}
-	assert.NotEqual(t, h1, ragConfigHash(changed), "different config must produce a different hash")
+	assert.NotEqual(t, h1, serviceConfigHash(changed), "different config must produce a different hash")
 }
 
 func TestServiceContainerSpec_RAGHasConfigVersionEnv(t *testing.T) {
@@ -412,7 +414,7 @@ func TestServiceContainerSpec_RAGHasConfigVersionEnv(t *testing.T) {
 		}
 	}
 	require.NotEmpty(t, configVersion, "RAG container spec must have PGEDGE_CONFIG_VERSION env var")
-	assert.Equal(t, ragConfigHash(config), configVersion)
+	assert.Equal(t, serviceConfigHash(config), configVersion)
 
 	// Changing the config must produce a different env var value.
 	opts.ServiceSpec.Config = map[string]any{
@@ -632,4 +634,39 @@ func TestServiceContainerSpec_MCP_KBMount(t *testing.T) {
 	if !mounts[1].ReadOnly {
 		t.Error("KB mount must be read-only")
 	}
+}
+
+func TestServiceContainerSpec_MCPHasConfigVersionEnv(t *testing.T) {
+	// The MCP config lives in a bind-mounted config.yaml. Editing it is invisible
+	// to Swarm, and SIGHUP does not re-initialize the knowledgebase, so a KB config
+	// change must alter the TaskTemplate to force a restart. We embed a config hash
+	// in PGEDGE_CONFIG_VERSION exactly as RAG does.
+	opts := makeMCPSpecOpts()
+	opts.ServiceSpec.Config = map[string]any{
+		"kb_enabled":            true,
+		"kb_embedding_provider": "openai",
+		"kb_embedding_model":    "text-embedding-3-small",
+		"kb_database_host_path": "/var/lib/pgedge/kb/nla-kb.db",
+	}
+
+	configVersion := func(o *ServiceContainerSpecOptions) string {
+		spec, err := ServiceContainerSpec(o)
+		require.NoError(t, err)
+		for _, e := range spec.TaskTemplate.ContainerSpec.Env {
+			if strings.HasPrefix(e, "PGEDGE_CONFIG_VERSION=") {
+				return strings.TrimPrefix(e, "PGEDGE_CONFIG_VERSION=")
+			}
+		}
+		return ""
+	}
+
+	v1 := configVersion(opts)
+	require.NotEmpty(t, v1, "MCP container spec must have PGEDGE_CONFIG_VERSION env var")
+	assert.Equal(t, serviceConfigHash(opts.ServiceSpec.Config), v1)
+
+	// Renaming the KB file (changing kb_database_host_path) must change the env
+	// var so Swarm restarts the container and the new KB path takes effect.
+	opts.ServiceSpec.Config["kb_database_host_path"] = "/var/lib/pgedge/kb/nla-kb-openai.db"
+	v2 := configVersion(opts)
+	assert.NotEqual(t, v1, v2, "changing the KB path must change PGEDGE_CONFIG_VERSION so the container restarts")
 }
