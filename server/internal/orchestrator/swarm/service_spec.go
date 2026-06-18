@@ -42,11 +42,14 @@ func buildPostgRESTEnvVars() []string {
 	}
 }
 
-// ragConfigHash returns a short hex digest of the RAG service configuration.
+// serviceConfigHash returns a short hex digest of a service's configuration.
 // It is embedded in the container spec as PGEDGE_CONFIG_VERSION so that Docker
 // Swarm detects a TaskTemplate change and restarts the container whenever the
-// pipeline configuration or API keys change.
-func ragConfigHash(config map[string]any) string {
+// configuration or API keys change. This is required for services whose config
+// lives in a bind-mounted file (config.yaml / pipelines): editing the file is
+// invisible to Swarm, so without a TaskTemplate change the container is never
+// restarted and the new config is never re-read.
+func serviceConfigHash(config map[string]any) string {
 	b, _ := json.Marshal(config)
 	sum := sha256.Sum256(b)
 	return fmt.Sprintf("%x", sum[:8])
@@ -182,6 +185,17 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		// Override the default container entrypoint to specify config path on bind mount.
 		command = []string{"/app/pgedge-postgres-mcp"}
 		args = []string{"-config", "/app/data/config.yaml"}
+		// Embed a hash of the service config so that Docker Swarm detects a
+		// TaskTemplate change and restarts the container when the config changes.
+		// The MCP config (config.yaml) lives on a bind mount, so edits to it are
+		// invisible to Swarm. SIGHUP reloads the database client connections but
+		// does NOT re-initialize the knowledgebase, so KB config changes (path,
+		// provider, model, key) only take effect on a restart. Without this, a
+		// changed kb_database_host_path silently keeps using the old KB file.
+		// Connection details (hosts, target_session_attrs) are intentionally not
+		// part of the config map, so failover-driven reconnects still use SIGHUP
+		// without forcing a restart.
+		env = []string{"PGEDGE_CONFIG_VERSION=" + serviceConfigHash(opts.ServiceSpec.Config)}
 		healthcheck = &container.HealthConfig{
 			Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
 			StartPeriod: serviceHealthCheckStartPeriod,
@@ -202,7 +216,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		// Embed a hash of the service config so that Docker Swarm detects a
 		// TaskTemplate change and restarts the container when pipelines or API
 		// keys change. Without this, bind-mount updates are invisible to Swarm.
-		env = []string{"PGEDGE_CONFIG_VERSION=" + ragConfigHash(opts.ServiceSpec.Config)}
+		env = []string{"PGEDGE_CONFIG_VERSION=" + serviceConfigHash(opts.ServiceSpec.Config)}
 		// No curl in the RHEL minimal image — use a TCP probe instead.
 		healthcheck = &container.HealthConfig{
 			Test:        []string{"CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"},
