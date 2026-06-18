@@ -144,6 +144,15 @@ func (s *ServiceInstanceResource) Update(ctx context.Context, rc *resource.Conte
 		}
 	}
 
+	// Refresh UpdatedAt before redeploying so the monitor's running-state grace
+	// period covers the restart window. An update that changes the container
+	// (e.g. a config change) restarts it, during which the container has no
+	// status; without bumping UpdatedAt the monitor would briefly mark the
+	// instance failed mid-restart even though it recovers seconds later.
+	if dbSvc, err := do.Invoke[*database.Service](rc.Injector); err == nil {
+		_ = dbSvc.SetServiceInstanceState(ctx, s.DatabaseID, s.ServiceInstanceID, database.ServiceInstanceStateRunning)
+	}
+
 	return s.deploy(ctx, rc)
 }
 

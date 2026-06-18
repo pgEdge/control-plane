@@ -1,0 +1,3 @@
+kind: Fixed
+body: Service instances (MCP, RAG, PostgREST) are no longer briefly marked as failed while their container restarts during an update. The instance's timestamp is now refreshed before redeployment so the health monitor's grace period covers the restart window.
+time: 2026-06-18T17:00:00.000000-04:00
