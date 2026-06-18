@@ -1,3 +1,0 @@
-kind: Fixed
-body: Updating the knowledgebase configuration of an MCP service (for example, the KB file path, embedding provider, model, or API key) now restarts the MCP container so the change takes effect. Previously these changes only sent a SIGHUP, which does not re-initialize the knowledgebase, so the service kept using the old configuration.
-time: 2026-06-18T16:00:00.000000-04:00
