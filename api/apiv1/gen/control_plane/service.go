@@ -39,6 +39,11 @@ type Service interface {
 	GetDatabase(context.Context, *GetDatabasePayload) (res *Database, err error)
 	// Updates a database with the given specification.
 	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *UpdateDatabaseResponse, err error)
+	// Applies a minor-version upgrade to a database. The target image must be a
+	// stable manifest entry in the same Postgres major / Spock major bucket as the
+	// current version and strictly newer. Container pull and restart happen
+	// asynchronously; this endpoint returns once redeployment is triggered.
+	ApplyUpgrade(context.Context, *ApplyUpgradePayload) (res *ApplyUpgradeResponse, err error)
 	// Deletes a database from the cluster.
 	DeleteDatabase(context.Context, *DeleteDatabasePayload) (res *DeleteDatabaseResponse, err error)
 	// Initiates a backup for a database node.
@@ -91,7 +96,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [29]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
+var MethodNames = [30]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "apply-upgrade", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -99,6 +104,30 @@ type APIError struct {
 	Name string `json:"name"`
 	// The error message.
 	Message string `json:"message"`
+}
+
+// ApplyUpgradePayload is the payload type of the control-plane service
+// apply-upgrade method.
+type ApplyUpgradePayload struct {
+	// ID of the database to upgrade.
+	DatabaseID Identifier
+	Request    *ApplyUpgradeRequest
+}
+
+type ApplyUpgradeRequest struct {
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a stable manifest entry in the same Postgres major / Spock major
+	// bucket as the current version and be strictly newer.
+	Image string `json:"image"`
+}
+
+// ApplyUpgradeResponse is the result type of the control-plane service
+// apply-upgrade method.
+type ApplyUpgradeResponse struct {
+	// The task tracking the upgrade operation.
+	Task *Task `json:"task"`
+	// The database being upgraded.
+	Database *Database `json:"database"`
 }
 
 // A newer stable image available for the database in the same Postgres major /

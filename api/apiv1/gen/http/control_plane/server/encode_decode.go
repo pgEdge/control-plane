@@ -1181,6 +1181,157 @@ func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter
 	}
 }
 
+// EncodeApplyUpgradeResponse returns an encoder for responses returned by the
+// control-plane apply-upgrade endpoint.
+func EncodeApplyUpgradeResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ApplyUpgradeResponse)
+		enc := encoder(ctx, w)
+		body := NewApplyUpgradeResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeApplyUpgradeRequest returns a decoder for requests sent to the
+// control-plane apply-upgrade endpoint.
+func DecodeApplyUpgradeRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.ApplyUpgradePayload, error) {
+	return func(r *http.Request) (*controlplane.ApplyUpgradePayload, error) {
+		var (
+			body ApplyUpgradeRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateApplyUpgradeRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			databaseID string
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewApplyUpgradePayload(&body, databaseID)
+
+		return payload, nil
+	}
+}
+
+// EncodeApplyUpgradeError returns an encoder for errors returned by the
+// apply-upgrade control-plane endpoint.
+func EncodeApplyUpgradeError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyUpgradeClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyUpgradeDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyUpgradeOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyUpgradeInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyUpgradeNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyUpgradeServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeDeleteDatabaseResponse returns an encoder for responses returned by
 // the control-plane delete-database endpoint.
 func EncodeDeleteDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {

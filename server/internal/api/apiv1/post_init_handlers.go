@@ -436,6 +436,31 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	}, nil
 }
 
+func (s *PostInitHandlers) ApplyUpgrade(ctx context.Context, req *api.ApplyUpgradePayload) (*api.ApplyUpgradeResponse, error) {
+	databaseID, err := dbIdentToString(req.DatabaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.dbSvc.ApplyUpgrade(ctx, databaseID, req.Request.Image)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	t, err := s.workflowSvc.UpgradeDatabase(ctx, result.Database)
+	if err != nil {
+		if rollbackErr := s.dbSvc.RollbackApplyUpgrade(ctx, result); rollbackErr != nil {
+			s.logger.Err(rollbackErr).Msg("failed to roll back upgrade after workflow trigger failure")
+		}
+		return nil, apiErr(err)
+	}
+
+	return &api.ApplyUpgradeResponse{
+		Database: databaseToAPI(result.Database),
+		Task:     taskToAPI(t),
+	}, nil
+}
+
 func (s *PostInitHandlers) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (*api.DeleteDatabaseResponse, error) {
 	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {

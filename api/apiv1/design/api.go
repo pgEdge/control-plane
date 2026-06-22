@@ -309,6 +309,33 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
+	g.Method("apply-upgrade", func() {
+		g.Description("Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.")
+		g.Meta("openapi:summary", "Apply database upgrade")
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("ID of the database to upgrade.")
+				g.Example("my-app")
+			})
+			g.Attribute("request", ApplyUpgradeRequest)
+
+			g.Required("database_id", "request")
+		})
+		g.Result(ApplyUpgradeResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/upgrade")
+			g.Body("request")
+
+			g.Meta("openapi:tag:Database")
+		})
+	})
+
 	g.Method("delete-database", func() {
 		g.Description("Deletes a database from the cluster.")
 		g.Meta("openapi:summary", "Delete database")

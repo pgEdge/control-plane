@@ -71,6 +71,11 @@ func UpdateDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/v1/databases/%v", databaseID)
 }
 
+// ApplyUpgradeControlPlanePath returns the URL path to the control-plane service apply-upgrade HTTP endpoint.
+func ApplyUpgradeControlPlanePath(databaseID string) string {
+	return fmt.Sprintf("/v1/databases/%v/upgrade", databaseID)
+}
+
 // DeleteDatabaseControlPlanePath returns the URL path to the control-plane service delete-database HTTP endpoint.
 func DeleteDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/v1/databases/%v", databaseID)

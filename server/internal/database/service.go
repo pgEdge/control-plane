@@ -115,30 +115,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, ErrDatabaseNotModifiable
 	}
 
-	instances, err := s.GetInstances(ctx, spec.DatabaseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get database instances: %w", err)
-	}
-
-	serviceInstances, err := s.GetServiceInstances(ctx, spec.DatabaseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get service instances: %w", err)
-	}
-
-	currentSpec.Spec = spec
-	currentDB.UpdatedAt = time.Now()
-	currentDB.State = state
-
-	if err := s.store.Txn(
-		s.store.Spec.Update(currentSpec),
-		s.store.Database.Update(currentDB),
-	).Commit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to persist database: %w", err)
-	}
-
-	db := storedToDatabase(currentDB, currentSpec, instances, serviceInstances)
-
-	return db, nil
+	return s.applySpecUpdate(ctx, currentSpec, currentDB, spec, state)
 }
 
 func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
@@ -751,6 +728,146 @@ func (s *Service) DeleteInstanceSpec(ctx context.Context, databaseID, instanceID
 // (postgres_major, spock_major) bucket as the given version.
 func (s *Service) AvailableUpgrades(current *ds.PgEdgeVersion) []*AvailableUpgrade {
 	return s.orchestrator.AvailableUpgrades(current)
+}
+
+// ApplyUpgradeResult is returned by ApplyUpgrade. It carries the information
+// needed to roll back the upgrade if the workflow fails to start.
+type ApplyUpgradeResult struct {
+	Database  *Database
+	PrevState DatabaseState
+	prevSpec  *Spec
+}
+
+// ApplyUpgrade validates targetImage against the manifest, updates the
+// database spec's PostgresVersion to the new version, and sets the database
+// state to modifying. The workflow is responsible for updating instance specs
+// and pinning ResolvedImage in etcd via ReconcileInstanceSpec.
+func (s *Service) ApplyUpgrade(ctx context.Context, databaseID, targetImage string) (*ApplyUpgradeResult, error) {
+	currentSpec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database spec: %w", err)
+	}
+
+	currentDB, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+	if !DatabaseStateModifiable(currentDB.State) {
+		return nil, ErrDatabaseNotModifiable
+	}
+
+	currentVersion, err := ds.ParsePgEdgeVersion(currentSpec.PostgresVersion, currentSpec.SpockVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse current version: %w", err)
+	}
+
+	upgrade, err := s.orchestrator.FindUpgrade(currentVersion, targetImage)
+	if err != nil {
+		return nil, err
+	}
+
+	// Capture previous state and spec before mutation for rollback.
+	prevState := currentDB.State
+	prevSpec := currentSpec.Spec
+
+	// Clone and update the spec with the new postgres version.
+	newSpec := currentSpec.Clone()
+	currentPG := currentSpec.PostgresVersion
+	newSpec.PostgresVersion = upgrade.PostgresVersion
+	// Clear per-node version overrides that match the old top-level version so
+	// all nodes pick up the new version uniformly.
+	for _, node := range newSpec.Nodes {
+		nodeVersion := node.PostgresVersion
+		if nodeVersion == "" {
+			nodeVersion = currentPG
+		}
+		if nodeVersion == currentPG {
+			node.PostgresVersion = ""
+		}
+	}
+	newSpec.NormalizePostgresVersions()
+
+	db, err := s.applySpecUpdate(ctx, currentSpec, currentDB, newSpec, DatabaseStateModifying)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApplyUpgradeResult{
+		Database:  db,
+		PrevState: prevState,
+		prevSpec:  prevSpec,
+	}, nil
+}
+
+// applySpecUpdate persists newSpec and newState atomically and returns the
+// resulting Database. currentSpec and currentDB must already be fetched and
+// validated by the caller.
+func (s *Service) applySpecUpdate(
+	ctx context.Context,
+	currentSpec *StoredSpec,
+	currentDB *StoredDatabase,
+	newSpec *Spec,
+	newState DatabaseState,
+) (*Database, error) {
+	instances, err := s.GetInstances(ctx, newSpec.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instances: %w", err)
+	}
+	serviceInstances, err := s.GetServiceInstances(ctx, newSpec.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service instances: %w", err)
+	}
+
+	currentSpec.Spec = newSpec
+	currentDB.UpdatedAt = time.Now()
+	currentDB.State = newState
+
+	if err := s.store.Txn(
+		s.store.Spec.Update(currentSpec),
+		s.store.Database.Update(currentDB),
+	).Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to persist database: %w", err)
+	}
+
+	return storedToDatabase(currentDB, currentSpec, instances, serviceInstances), nil
+}
+
+// RollbackApplyUpgrade atomically restores the database spec and state to
+// their values before ApplyUpgrade was called. It is intended to be called
+// when the workflow fails to start after ApplyUpgrade has already committed.
+func (s *Service) RollbackApplyUpgrade(ctx context.Context, result *ApplyUpgradeResult) error {
+	databaseID := result.Database.DatabaseID
+
+	currentStoredSpec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrDatabaseNotFound
+	} else if err != nil {
+		return fmt.Errorf("failed to get database spec for rollback: %w", err)
+	}
+
+	currentDB, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrDatabaseNotFound
+	} else if err != nil {
+		return fmt.Errorf("failed to get database for rollback: %w", err)
+	}
+
+	currentStoredSpec.Spec = result.prevSpec
+	currentDB.State = result.PrevState
+	currentDB.UpdatedAt = time.Now()
+
+	if err := s.store.Txn(
+		s.store.Spec.Update(currentStoredSpec),
+		s.store.Database.Update(currentDB),
+	).Commit(ctx); err != nil {
+		return fmt.Errorf("failed to roll back upgrade: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) ReconcileServiceInstanceSpec(ctx context.Context, spec *ServiceInstanceSpec) (*ServiceInstanceSpec, error) {

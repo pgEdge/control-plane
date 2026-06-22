@@ -56,6 +56,15 @@ type UpdateDatabaseRequestBody struct {
 	Spec *DatabaseSpecRequestBodyRequestBody `json:"spec"`
 }
 
+// ApplyUpgradeRequestBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP request body.
+type ApplyUpgradeRequestBody struct {
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a stable manifest entry in the same Postgres major / Spock major
+	// bucket as the current version and be strictly newer.
+	Image string `json:"image"`
+}
+
 // BackupDatabaseNodeRequestBody is the type of the "control-plane" service
 // "backup-database-node" endpoint HTTP request body.
 type BackupDatabaseNodeRequestBody struct {
@@ -226,6 +235,15 @@ type UpdateDatabaseResponseBody struct {
 	// The task that will update this database.
 	Task *TaskResponseBody `json:"task"`
 	// The database being updated.
+	Database *DatabaseResponseBody `json:"database"`
+}
+
+// ApplyUpgradeResponseBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP response body.
+type ApplyUpgradeResponseBody struct {
+	// The task tracking the upgrade operation.
+	Task *TaskResponseBody `json:"task"`
+	// The database being upgraded.
 	Database *DatabaseResponseBody `json:"database"`
 }
 
@@ -860,6 +878,65 @@ type UpdateDatabaseNotFoundResponseBody struct {
 // service "update-database" endpoint HTTP response body for the "server_error"
 // error.
 type UpdateDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `json:"name"`
+	// The error message.
+	Message *string `json:"message"`
+}
+
+// ApplyUpgradeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ApplyUpgradeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `json:"name"`
+	// The error message.
+	Message *string `json:"message"`
+}
+
+// ApplyUpgradeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "database_not_modifiable" error.
+type ApplyUpgradeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name *string `json:"name"`
+	// The error message.
+	Message *string `json:"message"`
+}
+
+// ApplyUpgradeOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "operation_already_in_progress" error.
+type ApplyUpgradeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name *string `json:"name"`
+	// The error message.
+	Message *string `json:"message"`
+}
+
+// ApplyUpgradeInvalidInputResponseBody is the type of the "control-plane"
+// service "apply-upgrade" endpoint HTTP response body for the "invalid_input"
+// error.
+type ApplyUpgradeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `json:"name"`
+	// The error message.
+	Message *string `json:"message"`
+}
+
+// ApplyUpgradeNotFoundResponseBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP response body for the "not_found" error.
+type ApplyUpgradeNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `json:"name"`
+	// The error message.
+	Message *string `json:"message"`
+}
+
+// ApplyUpgradeServerErrorResponseBody is the type of the "control-plane"
+// service "apply-upgrade" endpoint HTTP response body for the "server_error"
+// error.
+type ApplyUpgradeServerErrorResponseBody struct {
 	// The name of the error.
 	Name *string `json:"name"`
 	// The error message.
@@ -3095,6 +3172,15 @@ func NewUpdateDatabaseRequestBody(p *controlplane.UpdateDatabasePayload) *Update
 	return body
 }
 
+// NewApplyUpgradeRequestBody builds the HTTP request body from the payload of
+// the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeRequestBody(p *controlplane.ApplyUpgradePayload) *ApplyUpgradeRequestBody {
+	body := &ApplyUpgradeRequestBody{
+		Image: p.Request.Image,
+	}
+	return body
+}
+
 // NewBackupDatabaseNodeRequestBody builds the HTTP request body from the
 // payload of the "backup-database-node" endpoint of the "control-plane"
 // service.
@@ -3835,6 +3921,82 @@ func NewUpdateDatabaseNotFound(body *UpdateDatabaseNotFoundResponseBody) *contro
 // NewUpdateDatabaseServerError builds a control-plane service update-database
 // endpoint server_error error.
 func NewUpdateDatabaseServerError(body *UpdateDatabaseServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyUpgradeResponseOK builds a "control-plane" service "apply-upgrade"
+// endpoint result from a HTTP "OK" response.
+func NewApplyUpgradeResponseOK(body *ApplyUpgradeResponseBody) *controlplane.ApplyUpgradeResponse {
+	v := &controlplane.ApplyUpgradeResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
+	v.Database = unmarshalDatabaseResponseBodyToControlplaneDatabase(body.Database)
+
+	return v
+}
+
+// NewApplyUpgradeClusterNotInitialized builds a control-plane service
+// apply-upgrade endpoint cluster_not_initialized error.
+func NewApplyUpgradeClusterNotInitialized(body *ApplyUpgradeClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyUpgradeDatabaseNotModifiable builds a control-plane service
+// apply-upgrade endpoint database_not_modifiable error.
+func NewApplyUpgradeDatabaseNotModifiable(body *ApplyUpgradeDatabaseNotModifiableResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyUpgradeOperationAlreadyInProgress builds a control-plane service
+// apply-upgrade endpoint operation_already_in_progress error.
+func NewApplyUpgradeOperationAlreadyInProgress(body *ApplyUpgradeOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyUpgradeInvalidInput builds a control-plane service apply-upgrade
+// endpoint invalid_input error.
+func NewApplyUpgradeInvalidInput(body *ApplyUpgradeInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyUpgradeNotFound builds a control-plane service apply-upgrade
+// endpoint not_found error.
+func NewApplyUpgradeNotFound(body *ApplyUpgradeNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewApplyUpgradeServerError builds a control-plane service apply-upgrade
+// endpoint server_error error.
+func NewApplyUpgradeServerError(body *ApplyUpgradeServerErrorResponseBody) *controlplane.APIError {
 	v := &controlplane.APIError{
 		Name:    *body.Name,
 		Message: *body.Message,
@@ -4966,6 +5128,12 @@ func ValidateUpdateDatabaseResponseBody(body *UpdateDatabaseResponseBody) (err e
 	return
 }
 
+// ValidateApplyUpgradeResponseBody runs a no-op validation on
+// Apply-UpgradeResponseBody
+func ValidateApplyUpgradeResponseBody(body *ApplyUpgradeResponseBody) (err error) {
+	return
+}
+
 // ValidateDeleteDatabaseResponseBody runs a no-op validation on
 // Delete-DatabaseResponseBody
 func ValidateDeleteDatabaseResponseBody(body *DeleteDatabaseResponseBody) (err error) {
@@ -5317,6 +5485,42 @@ func ValidateUpdateDatabaseNotFoundResponseBody(body *UpdateDatabaseNotFoundResp
 // ValidateUpdateDatabaseServerErrorResponseBody runs a no-op validation on
 // update-database_server_error_response_body
 func ValidateUpdateDatabaseServerErrorResponseBody(body *UpdateDatabaseServerErrorResponseBody) (err error) {
+	return
+}
+
+// ValidateApplyUpgradeClusterNotInitializedResponseBody runs a no-op
+// validation on apply-upgrade_cluster_not_initialized_response_body
+func ValidateApplyUpgradeClusterNotInitializedResponseBody(body *ApplyUpgradeClusterNotInitializedResponseBody) (err error) {
+	return
+}
+
+// ValidateApplyUpgradeDatabaseNotModifiableResponseBody runs a no-op
+// validation on apply-upgrade_database_not_modifiable_response_body
+func ValidateApplyUpgradeDatabaseNotModifiableResponseBody(body *ApplyUpgradeDatabaseNotModifiableResponseBody) (err error) {
+	return
+}
+
+// ValidateApplyUpgradeOperationAlreadyInProgressResponseBody runs a no-op
+// validation on apply-upgrade_operation_already_in_progress_response_body
+func ValidateApplyUpgradeOperationAlreadyInProgressResponseBody(body *ApplyUpgradeOperationAlreadyInProgressResponseBody) (err error) {
+	return
+}
+
+// ValidateApplyUpgradeInvalidInputResponseBody runs a no-op validation on
+// apply-upgrade_invalid_input_response_body
+func ValidateApplyUpgradeInvalidInputResponseBody(body *ApplyUpgradeInvalidInputResponseBody) (err error) {
+	return
+}
+
+// ValidateApplyUpgradeNotFoundResponseBody runs a no-op validation on
+// apply-upgrade_not_found_response_body
+func ValidateApplyUpgradeNotFoundResponseBody(body *ApplyUpgradeNotFoundResponseBody) (err error) {
+	return
+}
+
+// ValidateApplyUpgradeServerErrorResponseBody runs a no-op validation on
+// apply-upgrade_server_error_response_body
+func ValidateApplyUpgradeServerErrorResponseBody(body *ApplyUpgradeServerErrorResponseBody) (err error) {
 	return
 }
 

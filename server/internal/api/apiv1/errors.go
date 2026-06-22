@@ -78,6 +78,8 @@ func apiErr(err error) error {
 		return ErrDatabaseAlreadyExists
 	case errors.Is(err, database.ErrInvalidDatabaseUpdate):
 		return makeInvalidInputErr(err)
+	case errors.Is(err, database.ErrUpgradeNotAvailable):
+		return makeInvalidInputErr(err)
 	case errors.Is(err, etcd.ErrCannotRemoveSelf):
 		return makeInvalidInputErr(err)
 	case errors.Is(err, etcd.ErrMinimumClusterSize):
