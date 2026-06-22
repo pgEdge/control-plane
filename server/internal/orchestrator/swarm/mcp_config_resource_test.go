@@ -141,6 +141,30 @@ func TestMCPConfigResource_Create_KBFileMissing(t *testing.T) {
 	assert.False(t, errors.Is(err, resource.ErrNotFound), "missing KB file must not return ErrNotFound")
 }
 
+func TestMCPConfigResource_Create_KBPathIsDirectory(t *testing.T) {
+	// KBHostPath points to a directory → blocked at deploy time, since a
+	// directory cannot be opened as a SQLite database. Without this check the
+	// error would only surface as a confusing failure at query time.
+	dirID := "inst-data"
+	dirPath := "/var/lib/pgedge/services/inst-kb-dir"
+	kbPath := "/var/lib/pgedge/kb" // a directory, not a file
+	rc, fs := mcpRCAndFs(t, dirID, dirPath)
+
+	require.NoError(t, fs.MkdirAll(kbPath, 0o700))
+
+	r := &MCPConfigResource{
+		ServiceInstanceID: "inst-kb-dir",
+		HostID:            "host-1",
+		DirResourceID:     dirID,
+		Config:            &database.MCPServiceConfig{},
+		KBHostPath:        kbPath,
+	}
+	err := r.Create(context.Background(), rc)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is a directory")
+	assert.False(t, errors.Is(err, resource.ErrNotFound), "a directory KB path must not return ErrNotFound")
+}
+
 func TestMCPConfigResource_Update_KBFileMissing(t *testing.T) {
 	// KBHostPath set but file does not exist on the update path → blocked.
 	dirID := "inst-data"
