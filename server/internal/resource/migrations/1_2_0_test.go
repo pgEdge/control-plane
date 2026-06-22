@@ -99,6 +99,23 @@ func TestVersion_1_2_0(t *testing.T) {
 				v1_1_0_network(t, databaseID),
 			},
 		},
+		{
+			name: "with scheduled backups",
+			in: []*resource.ResourceData{
+				v1_1_0_node(t, "n1", "instance-1"),
+				v1_1_0_instance(t, databaseID, "instance-1", "host-1", "n1"),
+				v1_1_0_etcdCreds(t, databaseID, "instance-1", "host-1", "n1"),
+				v1_1_0_patroniCluster(t, databaseID, "n1"),
+				v1_1_0_patroniMember(t, databaseID, "instance-1", "n1"),
+				v1_1_0_postgresCerts(t, "instance-1", "host-1"),
+				v1_1_0_patroniConfig(t, databaseID, "instance-1", "host-1", "n1", true, false, false),
+				v1_1_0_pgBackRestConfig(t, databaseID, "instance-1", "host-1", "n1", pgbackrest.ConfigTypeBackup),
+				v1_1_0_pgBackRestStanza(t, "n1"),
+				v1_1_0_configsDir(t, "host-1"),
+				v1_1_0_network(t, databaseID),
+				v1_1_0_scheduledJob(t, databaseID, "n1"),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state := &resource.State{
@@ -692,6 +709,35 @@ func v1_1_0_configsDir(t testing.TB, hostID string) *resource.ResourceData {
 			ID:   id,
 			Path: "/configs",
 		}),
+	}
+}
+
+func v1_1_0_scheduledJob(t testing.TB, databaseID, nodeName string) *resource.ResourceData {
+	stanzaID := v1_1_0.PgBackRestStanzaIdentifier(nodeName)
+	return &resource.ResourceData{
+		Executor:        resource.AnyExecutor(),
+		Identifier:      v1_1_0.ScheduledJobResourceIdentifier("backups"),
+		ResourceVersion: "1",
+		Attributes: mustJSON(t, v1_1_0.ScheduledJobResource{
+			ID:       "backups",
+			CronExpr: "0 * * * *",
+			Workflow: "CreatePgBackRestBackup",
+			Args: map[string]any{
+				"database_id": databaseID,
+				"node_name":   nodeName,
+				"type":        pgbackrest.BackupTypeFull.String(),
+			},
+			DependsOn: []struct {
+				ID   string `json:"id"`
+				Type string `json:"type"`
+			}{
+				{
+					ID:   stanzaID.ID,
+					Type: stanzaID.Type.String(),
+				},
+			},
+		}),
+		Dependencies: []resource.Identifier{stanzaID},
 	}
 }
 
