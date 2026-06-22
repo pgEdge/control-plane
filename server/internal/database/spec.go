@@ -727,7 +727,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				DatabaseUsers:  s.DatabaseUsers,
 				BackupConfig:   overridableValue(s.BackupConfig, node.BackupConfig),
 				RestoreConfig:  effectiveRestore,
-				PostgreSQLConf: overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				PostgreSQLConf: mergableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				// Node entries come first so they take first-match priority;
 				// database-level entries follow as the baseline.
 				PgHbaConf:        slices.Concat(node.PgHbaConf, s.PgHbaConf),
@@ -772,9 +772,11 @@ func overridableValue[T comparable](base, override T) T {
 	return base
 }
 
-func overridableMapValue[T ~map[V]any, V comparable](base, override T) T {
-	if override != nil {
-		return override
+func mergableMapValue[T ~map[V]any, V comparable](base, override T) T {
+	if base == nil {
+		return maps.Clone(override)
 	}
-	return base
+	result := maps.Clone(base)
+	maps.Copy(result, override)
+	return result
 }
