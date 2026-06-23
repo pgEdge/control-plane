@@ -50,20 +50,41 @@ nfpms:
       compression: gzip
     scripts:
       preremove: packaging/preremove.sh
+    # goreleaser REPLACES (not merges) `contents` in a per-format override, so
+    # the full file list is repeated under rpm/deb. This is deliberate: it lets
+    # each format embed the SBOM signature made with ITS OWN key at the same
+    # path — RPM key for rpms, APT/DEB key for debs. The CircleCI release job
+    # generates .sbom/sbom.json and signs it twice (.sbom/sbom.rpm.asc,
+    # .sbom/sbom.deb.asc) before goreleaser runs.
     overrides:
       rpm:
         scripts:
           postinstall: packaging/rpm/postinstall.sh
+        contents:
+          - src: packaging/pgedge-control-plane.service
+            dst: /usr/lib/systemd/system/pgedge-control-plane.service
+            type: config
+          - src: packaging/config.json
+            dst: /etc/pgedge-control-plane/config.json
+            type: config|noreplace
+          - src: .sbom/sbom.json
+            dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
+          - src: .sbom/sbom.rpm.asc
+            dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
       deb:
         scripts:
           postinstall: packaging/deb/postinstall.sh
-    contents:
-      - src: packaging/pgedge-control-plane.service
-        dst: /usr/lib/systemd/system/pgedge-control-plane.service
-        type: config
-      - src: packaging/config.json
-        dst: /etc/pgedge-control-plane/config.json
-        type: config|noreplace
+        contents:
+          - src: packaging/pgedge-control-plane.service
+            dst: /usr/lib/systemd/system/pgedge-control-plane.service
+            type: config
+          - src: packaging/config.json
+            dst: /etc/pgedge-control-plane/config.json
+            type: config|noreplace
+          - src: .sbom/sbom.json
+            dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
+          - src: .sbom/sbom.deb.asc
+            dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
     formats: [rpm]
     release: "1.el9"
   - <<: *nfpm_defaults

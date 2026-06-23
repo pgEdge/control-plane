@@ -128,6 +128,35 @@ jobs:
             # initialize the ci buildx builder
             make buildx-init
 
+            # --- Generate + per-format-sign the SBOM embedded in every package.
+            # Signed once with the RPM key and once with the APT/DEB key;
+            # goreleaser embeds the matching .asc per format (see nfpms overrides
+            # in .goreleaser.yaml).
+            if [[ -z "${GPG_FIPS_RPM_PRIVATE_KEY:-}" || -z "${GPG_FIPS_DEB_PRIVATE_KEY:-}" ]]; then
+              echo "GPG_FIPS_RPM_PRIVATE_KEY and GPG_FIPS_DEB_PRIVATE_KEY must be set (control-plane-release context)"
+              exit 1
+            fi
+            SYFT_VERSION=v1.45.1
+            curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
+              | sudo sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
+            # The two secrets hold the base64 of the armored private keys
+            # (single line — CircleCI mangles multi-line values), so decode them.
+            keyid() {  # fingerprint of a base64 key blob, read in an isolated keyring
+              local d; d=$(mktemp -d)
+              echo "$1" | base64 -d | GNUPGHOME="$d" gpg --batch --import >/dev/null 2>&1
+              GNUPGHOME="$d" gpg --batch --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec/{print $5; exit}'
+              rm -rf "$d"
+            }
+            RPM_KEY_ID=$(keyid "${GPG_FIPS_RPM_PRIVATE_KEY}")
+            DEB_KEY_ID=$(keyid "${GPG_FIPS_DEB_PRIVATE_KEY}")
+            echo "${GPG_FIPS_RPM_PRIVATE_KEY}" | base64 -d | gpg --batch --import
+            echo "${GPG_FIPS_DEB_PRIVATE_KEY}" | base64 -d | gpg --batch --import
+            mkdir -p .sbom
+            syft dir:. -o cyclonedx-json > /tmp/cp-sbom.json
+            mv /tmp/cp-sbom.json .sbom/sbom.json
+            gpg --batch --yes --armor --detach-sign --local-user "${RPM_KEY_ID}" -o .sbom/sbom.rpm.asc .sbom/sbom.json
+            gpg --batch --yes --armor --detach-sign --local-user "${DEB_KEY_ID}" -o .sbom/sbom.deb.asc .sbom/sbom.json
+
             # pgEdge packages use the rcN/betaN convention (no dot), matching
             # pgedge-parse-release-tag. goreleaser renders the tag's pre-release
             # verbatim (v1.0.0-rc.1 -> 1.0.0~rc.1), so normalise it for the
