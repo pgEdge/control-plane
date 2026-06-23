@@ -136,6 +136,8 @@ jobs:
               echo "GPG_FIPS_RPM_PRIVATE_KEY and GPG_FIPS_DEB_PRIVATE_KEY must be set (control-plane-release context)"
               exit 1
             fi
+            # rpm provides rpmsign (used to sign the rpms below)
+            sudo apt-get update -qq && sudo apt-get install -y -qq rpm
             SYFT_VERSION=v1.45.1
             curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
               | sudo sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
@@ -164,21 +166,31 @@ jobs:
             # image on the canonical (dotted) tag.
             PKG_TAG=$(echo "${CIRCLE_TAG}" | sed -E 's/-(rc|beta|alpha|test|dev)\.([0-9]+)/-\1\2/')
 
-            if [[ "${PKG_TAG}" == "${CIRCLE_TAG}" ]]; then
-              # GA or already-canonical tag — one run publishes everything,
-              # packages included.
-              GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
-                --release-notes=${release_notes}
-            else
-              # Publish the release on the canonical tag WITHOUT the packages...
-              GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
-                --release-notes=${release_notes} --skip=nfpm
-              # ...then rebuild only the rpm/deb with the normalised version and
-              # attach them to that same release (gh auth via $GITHUB_TOKEN).
-              GORELEASER_CURRENT_TAG=${PKG_TAG} goreleaser release \
-                --clean --skip=publish,announce,validate,sbom
-              gh release upload "${CIRCLE_TAG}" dist/*.rpm dist/*.deb --clobber
+            # Publish the release on the canonical tag WITHOUT packages (binaries,
+            # archives, SBOM); then build the rpm/deb with the normalised version
+            # (PKG_TAG == CIRCLE_TAG for GA). Packages are built --skip=publish so
+            # the rpms can be signed before they are attached to the release.
+            GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
+              --release-notes=${release_notes} --skip=nfpm
+            GORELEASER_CURRENT_TAG=${PKG_TAG} goreleaser release \
+              --clean --skip=publish,announce,validate,sbom
+
+            # Sign the rpms with the RPM key (debs are signed later at the apt
+            # repo by reprepro, not per-file). rpm's default %__gpg is gpg2,
+            # which is absent on Ubuntu — point it at the real gpg.
+            for r in dist/*.rpm; do
+              rpmsign --define "__gpg $(command -v gpg)" \
+                      --define "_gpg_name ${RPM_KEY_ID}" --addsign "$r"
+            done
+            # Verify the rpm signatures when the public key is provided.
+            if [[ -n "${GPG_FIPS_RPM_PUBLIC_KEY:-}" ]]; then
+              echo "${GPG_FIPS_RPM_PUBLIC_KEY}" | base64 -d > /tmp/rpm-pub.asc
+              sudo rpm --import /tmp/rpm-pub.asc
+              for r in dist/*.rpm; do rpm --checksig "$r"; done
             fi
+
+            # Attach the signed rpms + debs to the canonical-tag release.
+            gh release upload "${CIRCLE_TAG}" dist/*.rpm dist/*.deb --clobber
 
             # log into control plane ECR repo
             echo "${IMAGE_PUBLISH_TOKEN}" \
