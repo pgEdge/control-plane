@@ -56,18 +56,25 @@ nfpms:
     # path — RPM key for rpms, APT/DEB key for debs. The CircleCI release job
     # generates .sbom/sbom.json and signs it twice (.sbom/sbom.rpm.asc,
     # .sbom/sbom.deb.asc) before goreleaser runs.
+    # The common files are defined once via YAML anchors (goreleaser REPLACES
+    # contents per format override, so it can't be shared at the top level —
+    # but anchors resolve at parse time, so each format still gets the full
+    # list). Only the SBOM signature differs: RPM key for rpms, APT key for debs.
     overrides:
       rpm:
         scripts:
           postinstall: packaging/rpm/postinstall.sh
         contents:
-          - src: packaging/pgedge-control-plane.service
+          - &svc_content
+            src: packaging/pgedge-control-plane.service
             dst: /usr/lib/systemd/system/pgedge-control-plane.service
             type: config
-          - src: packaging/config.json
+          - &cfg_content
+            src: packaging/config.json
             dst: /etc/pgedge-control-plane/config.json
             type: config|noreplace
-          - src: .sbom/sbom.json
+          - &sbom_content
+            src: .sbom/sbom.json
             dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
           - src: .sbom/sbom.rpm.asc
             dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
@@ -75,14 +82,9 @@ nfpms:
         scripts:
           postinstall: packaging/deb/postinstall.sh
         contents:
-          - src: packaging/pgedge-control-plane.service
-            dst: /usr/lib/systemd/system/pgedge-control-plane.service
-            type: config
-          - src: packaging/config.json
-            dst: /etc/pgedge-control-plane/config.json
-            type: config|noreplace
-          - src: .sbom/sbom.json
-            dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
+          - *svc_content
+          - *cfg_content
+          - *sbom_content
           - src: .sbom/sbom.deb.asc
             dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
     formats: [rpm]
