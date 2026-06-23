@@ -42,6 +42,7 @@ func validateAuthFileGUCs(conf map[string]any, path validation.Path) []error {
 }
 
 func validateConfLibraries(conf map[string]any, path validation.Path) []error {
+	// param names are case-insensitive, so comparison is done after casting to lowercase
 	for key, val := range conf {
 		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
 			continue
@@ -254,6 +255,14 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
 
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
+	}
+
+	// Validate that shared_preload_libraries, if explicitly set, still includes
+	// "spock" — both at the spec level and on individual nodes.
+	errs = append(errs, validateConfLibraries(new.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	for i, n := range new.Nodes {
+		nodePath := validation.NewPath("nodes", validation.ArrayIndexElement(i))
+		errs = append(errs, validateConfLibraries(n.PostgresqlConf, nodePath.Append("postgresql_conf"))...)
 	}
 
 	return errors.Join(errs...)
