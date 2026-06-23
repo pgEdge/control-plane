@@ -128,9 +128,28 @@ jobs:
             # initialize the ci buildx builder
             make buildx-init
 
-            # create the github release
-            GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
-              --release-notes=${release_notes}
+            # pgEdge packages use the rcN/betaN convention (no dot), matching
+            # pgedge-parse-release-tag. goreleaser renders the tag's pre-release
+            # verbatim (v1.0.0-rc.1 -> 1.0.0~rc.1), so normalise it for the
+            # PACKAGES while keeping the GitHub release, binaries and docker
+            # image on the canonical (dotted) tag.
+            PKG_TAG=$(echo "${CIRCLE_TAG}" | sed -E 's/-(rc|beta|alpha|test|dev)\.([0-9]+)/-\1\2/')
+
+            if [[ "${PKG_TAG}" == "${CIRCLE_TAG}" ]]; then
+              # GA or already-canonical tag — one run publishes everything,
+              # packages included.
+              GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
+                --release-notes=${release_notes}
+            else
+              # Publish the release on the canonical tag WITHOUT the packages...
+              GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
+                --release-notes=${release_notes} --skip=nfpm
+              # ...then rebuild only the rpm/deb with the normalised version and
+              # attach them to that same release (gh auth via $GITHUB_TOKEN).
+              GORELEASER_CURRENT_TAG=${PKG_TAG} goreleaser release \
+                --clean --skip=publish,announce,validate,sbom
+              gh release upload "${CIRCLE_TAG}" dist/*.rpm dist/*.deb --clobber
+            fi
 
             # log into control plane ECR repo
             echo "${IMAGE_PUBLISH_TOKEN}" \

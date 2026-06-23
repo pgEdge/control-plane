@@ -26,17 +26,28 @@ sboms:
     documents:
       - '${artifact}.spdx.json'
 
+# rpm/deb packages — one nfpm entry per target distro. The binary is static
+# (CGO_ENABLED=0), so the SAME cross-compiled amd64/arm64 binaries are packaged
+# for every distro; we only stamp a per-distro tag (rpm Release .el9/.el10; deb
+# codename in the revision, e.g. 1.noble). Common fields live on the el9 anchor
+# and merge into the rest; each entry overrides only id / formats / release.
+# The VERSION comes from the (normalised) tag the CircleCI release job passes to
+# goreleaser, e.g. 1.0.0~rc1 — both formats carry '~' for pre-releases.
 nfpms:
-  - package_name: pgedge-control-plane
+  - &nfpm_defaults
+    id: el9
+    package_name: pgedge-control-plane
     vendor: pgEdge
     homepage: https://www.pgedge.com
     maintainer: pgEdge Support <support@pgedge.com>
     description: pgEdge Control Plane
     license: PostgreSQL License
-    formats:
-      - rpm
-      - deb
+    file_name_template: "{{ .ConventionalFileName }}"
     bindir: /usr/sbin
+    # Force gzip for the .deb members — reprepro can't read zstd; mirrors the
+    # enterprise debhelper convention `dh_builddeb -- -Zgzip`.
+    deb:
+      compression: gzip
     scripts:
       preremove: packaging/preremove.sh
     overrides:
@@ -53,6 +64,37 @@ nfpms:
       - src: packaging/config.json
         dst: /etc/pgedge-control-plane/config.json
         type: config|noreplace
+    formats: [rpm]
+    release: "1.el9"
+  - <<: *nfpm_defaults
+    id: el10
+    release: "1.el10"
+  # --- DEB (codename in the revision) ---
+  - <<: *nfpm_defaults
+    id: jammy
+    formats: [deb]
+    release: "1.jammy"
+  - <<: *nfpm_defaults
+    id: noble
+    formats: [deb]
+    release: "1.noble"
+  - <<: *nfpm_defaults
+    id: bullseye
+    formats: [deb]
+    release: "1.bullseye"
+  - <<: *nfpm_defaults
+    id: bookworm
+    formats: [deb]
+    release: "1.bookworm"
+  - <<: *nfpm_defaults
+    id: trixie
+    formats: [deb]
+    release: "1.trixie"
+  # Ubuntu 26.04 LTS — enable when targeted:
+  # - <<: *nfpm_defaults
+  #   id: resolute
+  #   formats: [deb]
+  #   release: "1.resolute"
 
 release:
   github:
