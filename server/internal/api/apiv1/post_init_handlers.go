@@ -470,6 +470,9 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 	if err != nil {
 		return nil, apiErr(err)
 	}
+	if node.BackupConfig == nil && db.Spec.BackupConfig == nil {
+		return nil, makeInvalidInputErr(errors.New("backups are not configured for this database node"))
+	}
 
 	if err := validateBackupOptions(req.Options); err != nil {
 		return nil, apiErr(err)

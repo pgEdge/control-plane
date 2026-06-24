@@ -38,6 +38,7 @@ func (v *Version_1_2_0) Run(databaseID string, state *resource.State) error {
 		v.migratePgBackRestStanza(databaseID, state),
 		v.migratePostgresCerts(state),
 		v.migratePatroniConfig(state),
+		v.migrateScheduledJob(state),
 	)
 	v.updateDependencies(state)
 	return err
@@ -49,26 +50,9 @@ func (v *Version_1_2_0) updateDependencies(state *resource.State) {
 	for _, byID := range state.Resources {
 		for _, data := range byID {
 			for i, dep := range data.Dependencies {
-				var newType resource.Type
-				switch dep.Type {
-				case v1_1_0.ResourceTypeEtcdCreds:
-					newType = v1_2_0.ResourceTypeEtcdCreds
-				case v1_1_0.ResourceTypePatroniCluster:
-					newType = v1_2_0.ResourceTypePatroniCluster
-				case v1_1_0.ResourceTypePatroniMember:
-					newType = v1_2_0.ResourceTypePatroniMember
-				case v1_1_0.ResourceTypePgBackRestConfig:
-					newType = v1_2_0.ResourceTypePgBackRestConfig
-				case v1_1_0.ResourceTypePgBackRestStanza:
-					newType = v1_2_0.ResourceTypePgBackRestStanza
-				case v1_1_0.ResourceTypePostgresCerts:
-					newType = v1_2_0.ResourceTypePostgresCerts
-				default:
-					continue
-				}
 				data.Dependencies[i] = resource.Identifier{
 					ID:   dep.ID,
-					Type: newType,
+					Type: v.transformType(dep.Type),
 				}
 			}
 		}
@@ -285,6 +269,63 @@ func (v *Version_1_2_0) migratePgBackRestConfig(state *resource.State) error {
 		})
 		state.RemoveByIdentifier(resource.Identifier{
 			Type: v1_1_0.ResourceTypePgBackRestConfig,
+			ID:   oldID,
+		})
+	}
+	state.Add(adds...)
+
+	return nil
+}
+
+func (v *Version_1_2_0) migrateScheduledJob(state *resource.State) error {
+	resources, ok := state.Resources[v1_1_0.ResourceTypeScheduledJob]
+	if !ok {
+		return nil
+	}
+	adds := make([]*resource.ResourceData, 0, len(resources))
+	for oldID, data := range resources {
+		var old v1_1_0.ScheduledJobResource
+		if err := json.Unmarshal(data.Attributes, &old); err != nil {
+			return fmt.Errorf("failed to unmarshal %s resource: %w", v1_1_0.ResourceTypeScheduledJob, err)
+		}
+		deps := make([]struct {
+			ID   string `json:"id"`
+			Type string `json:"type"`
+		}, len(old.DependsOn))
+		for i, dep := range old.DependsOn {
+			deps[i] = struct {
+				ID   string `json:"id"`
+				Type string `json:"type"`
+			}{
+				ID:   dep.ID,
+				Type: v.transformTypeString(dep.Type),
+			}
+		}
+		new := v1_2_0.ScheduledJobResource{
+			ID:        old.ID,
+			CronExpr:  old.CronExpr,
+			Workflow:  old.Workflow,
+			Args:      old.Args,
+			DependsOn: deps,
+		}
+		attrs, err := json.Marshal(new)
+		if err != nil {
+			return fmt.Errorf("failed to marshal %s resource: %w", v1_2_0.ResourceTypeScheduledJob, err)
+		}
+		adds = append(adds, &resource.ResourceData{
+			Identifier:       v1_2_0.ScheduledJobResourceIdentifier(old.ID),
+			Attributes:       attrs,
+			Dependencies:     data.Dependencies, // these will get updated by updateDependencies
+			Executor:         data.Executor,
+			ResourceVersion:  "1",
+			NeedsRecreate:    data.NeedsRecreate,
+			DiffIgnore:       data.DiffIgnore,
+			PendingDeletion:  data.PendingDeletion,
+			Error:            data.Error,
+			TypeDependencies: data.TypeDependencies,
+		})
+		state.RemoveByIdentifier(resource.Identifier{
+			Type: v1_1_0.ResourceTypeScheduledJob,
 			ID:   oldID,
 		})
 	}
@@ -595,4 +636,29 @@ func (v *Version_1_2_0) swarmInstancePaths() database.InstancePaths {
 		PgBackRestPath: "/usr/bin/pgbackrest",
 		PatroniPath:    "/usr/local/bin/patroni",
 	}
+}
+
+func (v *Version_1_2_0) transformType(old resource.Type) resource.Type {
+	var new resource.Type
+	switch old {
+	case v1_1_0.ResourceTypeEtcdCreds:
+		new = v1_2_0.ResourceTypeEtcdCreds
+	case v1_1_0.ResourceTypePatroniCluster:
+		new = v1_2_0.ResourceTypePatroniCluster
+	case v1_1_0.ResourceTypePatroniMember:
+		new = v1_2_0.ResourceTypePatroniMember
+	case v1_1_0.ResourceTypePgBackRestConfig:
+		new = v1_2_0.ResourceTypePgBackRestConfig
+	case v1_1_0.ResourceTypePgBackRestStanza:
+		new = v1_2_0.ResourceTypePgBackRestStanza
+	case v1_1_0.ResourceTypePostgresCerts:
+		new = v1_2_0.ResourceTypePostgresCerts
+	default:
+		new = old
+	}
+	return new
+}
+
+func (v *Version_1_2_0) transformTypeString(old string) string {
+	return string(v.transformType(resource.Type(old)))
 }

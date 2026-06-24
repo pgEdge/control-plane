@@ -37,15 +37,15 @@ nfpms:
       - rpm
       - deb
     bindir: /usr/sbin
-    scripts:
-      preremove: packaging/preremove.sh
     overrides:
       rpm:
         scripts:
           postinstall: packaging/rpm/postinstall.sh
+          preremove: packaging/rpm/preremove.sh
       deb:
         scripts:
           postinstall: packaging/deb/postinstall.sh
+          preremove: packaging/deb/preremove.sh
     contents:
       - src: packaging/pgedge-control-plane.service
         dst: /usr/lib/systemd/system/pgedge-control-plane.service
