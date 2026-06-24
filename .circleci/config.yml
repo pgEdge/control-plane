@@ -189,8 +189,12 @@ jobs:
               for r in dist/*.rpm; do rpm --checksig "$r"; done
             fi
 
-            # Attach the signed rpms + debs to the canonical-tag release.
+            # Attach the signed rpms + debs to the (draft) release, then publish
+            # it. Flipping draft -> published fires the 'release: published'
+            # event, which triggers .github/workflows/publish.yml with all the
+            # signed packages already present (no race).
             gh release upload "${CIRCLE_TAG}" dist/*.rpm dist/*.deb --clobber
+            gh release edit "${CIRCLE_TAG}" --draft=false
 
             # log into control plane ECR repo
             echo "${IMAGE_PUBLISH_TOKEN}" \

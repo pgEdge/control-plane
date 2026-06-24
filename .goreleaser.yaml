@@ -116,6 +116,11 @@ release:
     owner: pgEdge
     name: control-plane
   prerelease: auto
+  # Create the release as a DRAFT so the 'release: published' event (which
+  # triggers .github/workflows/publish.yml) does NOT fire until the signed
+  # rpm/deb packages are attached. CircleCI flips it to published at the end
+  # (gh release edit --draft=false), after the packages are uploaded.
+  draft: true
   footer: |
     
     Get the Docker image for this release from:
