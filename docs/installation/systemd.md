@@ -343,21 +343,58 @@ new versions to be reflected in the database spec in the Control Plane API.
 
 Updating the Control Plane just involves installing the new package. This will
 automatically restart the Control Plane service after the update is complete.
-Download the new RPM or deb from the
-[GitHub releases page](https://github.com/pgedge/control-plane/releases) and run
-one of the following commands:
-
-```sh
-# If you're using the RPM package, run:
-sudo rpm -U pgedge-control-plane_<new version>_linux_<arch>.rpm
-
-# If you're using the deb package, run:
-sudo apt install pgedge-control-plane_<new version>_linux_<arch>.deb
-```
 
 > [!NOTE]
 > The package upgrade will preserve any modifications to the configuration file
 > at `/etc/pgedge-control-plane/config.json`.
+
+### RPM Package
+
+Use the following commands to download and install the updated RPM:
+
+```sh
+# (Optional) print the current version via the API
+curl http://localhost:3000/v1/version
+
+# Detect architecture
+ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
+# Set the new version to install
+VERSION="v0.9.0"
+
+# Download the RPM
+curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm"
+
+# Install the RPM with the 'upgrade' flag
+sudo rpm -U pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
+
+# (Optional) print the updated version via the API
+curl http://localhost:3000/v1/version
+```
+
+### Deb Package
+
+Use the following commands to download and install the deb package:
+
+```sh
+# (Optional) print the current version via the API
+curl http://localhost:3000/v1/version
+
+# Detect architecture
+ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
+# Set the new version to install
+VERSION="v0.9.0"
+
+# Download the deb package
+curl -LO --output-dir /tmp "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
+
+# Install the deb package
+sudo apt install /tmp/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
+
+# (Optional) print the updated version via the API
+curl http://localhost:3000/v1/version
+```
 
 ## Uninstalling the Control Plane
 
