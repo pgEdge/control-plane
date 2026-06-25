@@ -451,6 +451,92 @@ func TestValidateBackupConfig(t *testing.T) {
 	}
 }
 
+func TestValidateDatabaseUpdate_LibraryConf(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		old      *database.Spec
+		new      *api.DatabaseSpec
+		expected []string
+	}{
+		{
+			name: "absent valid",
+			old:  &database.Spec{},
+			new:  &api.DatabaseSpec{},
+		},
+		{
+			name: "invalid spec-level conf missing spock",
+			old:  &database.Spec{},
+			new: &api.DatabaseSpec{
+				PostgresqlConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"},
+			},
+			expected: []string{`"spock" must be included in shared_preload_libraries`},
+		},
+		{
+			name: "invalid node-level conf missing spock",
+			old:  &database.Spec{},
+			new: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{PostgresqlConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"}},
+				},
+			},
+			expected: []string{`"spock" must be included in shared_preload_libraries`},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDatabaseUpdate(tc.old, tc.new)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateConfLibraries(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		conf     map[string]any
+		expected []string
+	}{
+		{
+			name: "absent valid",
+		},
+		{
+			name: "valid spock conf",
+			conf: map[string]any{"shared_preload_libraries": "snowflake, spock"},
+		},
+		{
+			name: "valid uppercase param name",
+			conf: map[string]any{"SHARED_PRELOAD_LIBRARIES": "snowflake, spock"},
+		},
+		{
+			name: "valid conf spock and custom",
+			conf: map[string]any{"shared_preload_libraries": "snowflake, spock, custom_lib"},
+		},
+		{
+			name: "invalid conf missing spock",
+			conf: map[string]any{"shared_preload_libraries": "snowflake"},
+			expected: []string{
+				`"spock" must be included in shared_preload_libraries`,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := errors.Join(validateConfLibraries(tc.conf, nil)...)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateNode(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
@@ -572,6 +658,20 @@ func TestValidateNode(t *testing.T) {
 				"host_ids[3]: host IDs must be unique within a node",
 				"backup_config.repositories[0].base_path: base_path must be absolute for posix repositories",
 				"restore_config.repository.base_path: base_path must be absolute for posix repositories",
+			},
+		},
+		{
+			name:         "invalid lib conf",
+			orchestrator: config.OrchestratorSwarm,
+			db:           &api.DatabaseSpec{},
+			node: &api.DatabaseNodeSpec{
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+				PostgresqlConf: map[string]any{"shared_preload_libraries": "snowflake"},
+			},
+			expected: []string{
+				`"spock" must be included in shared_preload_libraries`,
 			},
 		},
 	} {
@@ -1305,6 +1405,23 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				`postgresql_conf[hba_file]: "hba_file" is not allowed`,
 				`postgresql_conf[ident_file]: "ident_file" is not allowed`,
 				`nodes[0].postgresql_conf[HBA_FILE]: "HBA_FILE" is not allowed`,
+			},
+		},
+		{
+			name: "invalid lib conf",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+						PostgresqlConf: map[string]any{"shared_preload_libraries": "snowflake"},
+					},
+				},
+			},
+			expected: []string{
+				`"spock" must be included in shared_preload_libraries`,
 			},
 		},
 	} {

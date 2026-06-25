@@ -41,6 +41,28 @@ func validateAuthFileGUCs(conf map[string]any, path validation.Path) []error {
 	return errs
 }
 
+func validateConfLibraries(conf map[string]any, path validation.Path) []error {
+	// param names are case-insensitive, so comparison is done after casting to lowercase
+	for key, val := range conf {
+		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
+			continue
+		}
+		strVal, ok := val.(string)
+		if !ok {
+			err := fmt.Errorf("%q must be a string", key)
+			return []error{validation.NewError(err, path.AppendMapKey(key))}
+		}
+		for _, lib := range strings.Split(strVal, ",") {
+			if strings.TrimSpace(lib) == "spock" {
+				return nil
+			}
+		}
+		err := errors.New(`"spock" must be included in shared_preload_libraries`)
+		return []error{validation.NewError(err, path.AppendMapKey(key))}
+	}
+	return nil // key absent; defaults will be applied, including spock
+}
+
 // validatePgHbaConf checks that every non-comment pg_hba_conf entry parses.
 // Blank and comment lines are allowed and skipped. Validation is intentionally
 // minimal — see server/internal/postgres/hba/parse.go.
@@ -134,8 +156,9 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 	}
 
 	// Reject postgresql_conf GUCs that would make user-supplied pg_hba/pg_ident
-	// entries ineffective, then validate the entries themselves.
+	// entries ineffective or remove spock, then validate the entries themselves.
 	errs = append(errs, validateAuthFileGUCs(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	errs = append(errs, validateConfLibraries(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, validation.NewPath("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, validation.NewPath("pg_ident_conf"))...)
 
@@ -234,6 +257,14 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
 	}
 
+	// Validate that shared_preload_libraries, if explicitly set, still includes
+	// "spock" — both at the spec level and on individual nodes.
+	errs = append(errs, validateConfLibraries(new.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	for i, n := range new.Nodes {
+		nodePath := validation.NewPath("nodes", validation.ArrayIndexElement(i))
+		errs = append(errs, validateConfLibraries(n.PostgresqlConf, nodePath.Append("postgresql_conf"))...)
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -281,6 +312,7 @@ func validateNode(
 	}
 
 	errs = append(errs, validateAuthFileGUCs(node.PostgresqlConf, path.Append("postgresql_conf"))...)
+	errs = append(errs, validateConfLibraries(node.PostgresqlConf, path.Append("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(node.PgHbaConf, path.Append("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(node.PgIdentConf, path.Append("pg_ident_conf"))...)
 
