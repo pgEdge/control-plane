@@ -2,6 +2,8 @@ package docker
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	dockercfg "github.com/cpuguy83/dockercfg"
+	"github.com/distribution/reference"
 	"github.com/rs/zerolog"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -23,6 +27,7 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
@@ -589,11 +594,36 @@ func (d *Docker) Shutdown() error {
 // layers are downloaded. Returns nil if the image exists, a non-nil error if it
 // does not exist or cannot be reached.
 func (d *Docker) CheckImageExists(ctx context.Context, img string) error {
-	_, err := d.client.DistributionInspect(ctx, img, "")
+	encodedAuth := resolveRegistryAuth(img)
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	_, err := d.client.DistributionInspect(ctx, img, encodedAuth)
 	if err != nil {
 		return fmt.Errorf("image %q not found or inaccessible: %w", img, err)
 	}
 	return nil
+}
+
+// resolveRegistryAuth returns a base64-encoded JSON registry.AuthConfig for the
+// registry that hosts img, loading credentials from the Docker config file.
+// Returns an empty string (anonymous auth) if credentials cannot be resolved.
+func resolveRegistryAuth(img string) string {
+	named, err := reference.ParseNormalizedNamed(img)
+	if err != nil {
+		return ""
+	}
+	hostname := reference.Domain(named)
+	username, password, err := dockercfg.GetRegistryCredentials(hostname)
+	if err != nil || (username == "" && password == "") {
+		return ""
+	}
+	authJSON, err := json.Marshal(registry.AuthConfig{Username: username, Password: password})
+	if err != nil {
+		return ""
+	}
+	return base64.URLEncoding.EncodeToString(authJSON)
 }
 
 func (d *Docker) ensureDockerImage(ctx context.Context, img string) error {
