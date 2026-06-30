@@ -80,11 +80,11 @@ func NewVersions(cfg config.Config) *Versions {
 	return versions
 }
 
-func (v *Versions) Supported() []*ds.PgEdgeVersion {
+func (v Versions) Supported() []*ds.PgEdgeVersion {
 	return v.supportedVersions
 }
 
-func (v *Versions) Default() *ds.PgEdgeVersion {
+func (v Versions) Default() *ds.PgEdgeVersion {
 	return v.defaultVersion
 }
 
@@ -100,7 +100,7 @@ func (v *Versions) addImage(version *ds.PgEdgeVersion, images *Images) {
 	v.supportedVersions = append(v.supportedVersions, version)
 }
 
-func (v *Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
+func (v Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
 	pgv := version.PostgresVersion.String()
 	sv := version.SpockVersion.String()
 

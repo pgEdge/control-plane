@@ -510,6 +510,38 @@ func TestSpec(t *testing.T) {
 	})
 }
 
+func TestSwarmOptsClone(t *testing.T) {
+	t.Run("copies Image and ResolvedImage", func(t *testing.T) {
+		orig := &database.SwarmOpts{
+			Image:         "custom-registry/pgedge:dev",
+			ResolvedImage: "registry/pgedge:17.9-spock5.0.6-standard-1",
+			ExtraLabels:   map[string]string{"k": "v"},
+		}
+		cloned := orig.Clone()
+
+		assert.Equal(t, orig.Image, cloned.Image)
+		assert.Equal(t, orig.ResolvedImage, cloned.ResolvedImage)
+	})
+
+	t.Run("clone is independent of original", func(t *testing.T) {
+		orig := &database.SwarmOpts{
+			Image:         "original-image",
+			ResolvedImage: "original-resolved",
+		}
+		cloned := orig.Clone()
+		cloned.Image = "mutated-image"
+		cloned.ResolvedImage = "mutated-resolved"
+
+		assert.Equal(t, "original-image", orig.Image)
+		assert.Equal(t, "original-resolved", orig.ResolvedImage)
+	})
+
+	t.Run("nil clone returns nil", func(t *testing.T) {
+		var s *database.SwarmOpts
+		assert.Nil(t, s.Clone())
+	})
+}
+
 func TestSpec_NodeInstances_DBOwner(t *testing.T) {
 	minimalSpec := func(users []*database.User) *database.Spec {
 		return &database.Spec{

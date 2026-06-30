@@ -181,10 +181,59 @@ func ServiceInstanceName(databaseID, serviceID, hostID string) string {
 	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, base36[:8])
 }
 
+// resolveInstanceImages returns an Images for the instance using the precedence:
+// 1. SwarmOpts.Image (user override) — manifest lookup skipped entirely
+// 2. SwarmOpts.ResolvedImage (CP-managed, already stored)
+// 3. Manifest lookup — result written to SwarmOpts.ResolvedImage (lazy backfill)
+func (o *Orchestrator) resolveInstanceImages(spec *database.InstanceSpec) (*Images, error) {
+	var swarmOpts *database.SwarmOpts
+	if spec.OrchestratorOpts != nil {
+		swarmOpts = spec.OrchestratorOpts.Swarm
+	}
+
+	switch {
+	case swarmOpts != nil && swarmOpts.Image != "":
+		return &Images{PgEdgeImage: swarmOpts.Image}, nil
+	case swarmOpts != nil && swarmOpts.ResolvedImage != "":
+		return &Images{PgEdgeImage: swarmOpts.ResolvedImage}, nil
+	default:
+		manifested, err := o.versions.GetImages(spec.PgEdgeVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get images: %w", err)
+		}
+		if spec.OrchestratorOpts == nil {
+			spec.OrchestratorOpts = &database.OrchestratorOpts{}
+		}
+		if spec.OrchestratorOpts.Swarm == nil {
+			spec.OrchestratorOpts.Swarm = &database.SwarmOpts{}
+		}
+		spec.OrchestratorOpts.Swarm.ResolvedImage = manifested.PgEdgeImage
+		return &Images{PgEdgeImage: manifested.PgEdgeImage}, nil
+	}
+}
+
+// ReconcileInstanceSpec resolves the container image for the new spec and
+// clears a stale ResolvedImage if PgEdgeVersion changed since the last
+// reconciliation.
+func (o *Orchestrator) ReconcileInstanceSpec(old, new *database.InstanceSpec) error {
+	// If the Postgres version changed, the previously resolved image no longer
+	// matches — clear it so resolveInstanceImages fetches the correct one from
+	// the manifest.
+	if old != nil && old.PgEdgeVersion != nil && new.PgEdgeVersion != nil {
+		if !old.PgEdgeVersion.Equals(new.PgEdgeVersion) {
+			if new.OrchestratorOpts != nil && new.OrchestratorOpts.Swarm != nil {
+				new.OrchestratorOpts.Swarm.ResolvedImage = ""
+			}
+		}
+	}
+	_, err := o.resolveInstanceImages(new)
+	return err
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
-	images, err := o.versions.GetImages(spec.PgEdgeVersion)
+	images, err := o.resolveInstanceImages(spec)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get images: %w", err)
+		return nil, nil, nil, err
 	}
 
 	instanceHostname := fmt.Sprintf("postgres-%s", spec.InstanceID)

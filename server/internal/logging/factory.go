@@ -19,6 +19,7 @@ const (
 	ComponentDatabaseService   Component = "database_service"
 	ComponentElectionCandidate Component = "election_candidate"
 	ComponentEmbeddedEtcd      Component = "embedded_etcd"
+	ComponentManifestLoader    Component = "manifest_loader"
 	ComponentMigration         Component = "migration"
 	ComponentMigrationRunner   Component = "migration_runner"
 	ComponentPortsService      Component = "ports_service"
