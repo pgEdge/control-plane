@@ -108,3 +108,8 @@ func (s *TaskStore) DeleteByEntity(scope Scope, entityID string) storage.DeleteO
 	prefix := s.EntityPrefix(scope, entityID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }
+
+func (s *TaskStore) Watch(scope Scope, entityID string, taskID uuid.UUID) storage.WatchOp[*StoredTask] {
+	key := s.Key(scope, entityID, taskID)
+	return storage.NewWatchOp[*StoredTask](s.client, key)
+}
