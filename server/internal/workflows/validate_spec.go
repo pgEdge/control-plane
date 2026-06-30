@@ -17,17 +17,12 @@ type ValidateSpecInput struct {
 }
 
 type ValidateSpecOutput struct {
-	Valid    bool     `json:"valid"`
-	Errors   []string `json:"errors,omitempty"`
-	Warnings []string `json:"warnings,omitempty"`
+	Valid  bool     `json:"valid"`
+	Errors []string `json:"errors,omitempty"`
 }
 
 func (o *ValidateSpecOutput) merge(results []*database.ValidationResult) {
 	for _, r := range results {
-		for _, w := range r.Warnings {
-			msg := fmt.Sprintf("warning for node %s, host %s: %s", r.NodeName, r.HostID, w)
-			o.Warnings = append(o.Warnings, msg)
-		}
 		if r.Valid {
 			continue
 		}

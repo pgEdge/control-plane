@@ -35,7 +35,6 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
 		for _, r := range results {
-			assert.Empty(t, r.Warnings)
 			assert.Empty(t, r.Errors)
 		}
 	})
@@ -53,14 +52,13 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		}
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
-		// Registry check skipped (no docker client). No warnings or errors.
+		// Registry check skipped (no docker client).
 		for _, r := range results {
-			assert.Empty(t, r.Warnings)
 			assert.Empty(t, r.Errors)
 		}
 	})
 
-	t.Run("no warning when Image differs from manifest (registry check skipped in unit tests)", func(t *testing.T) {
+	t.Run("no result when Image differs from manifest (registry check skipped in unit tests)", func(t *testing.T) {
 		changes := []*database.InstanceSpecChange{
 			{Current: &database.InstanceSpec{
 				NodeName:      "n1",
@@ -73,10 +71,8 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		}
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
-		// Registry check skipped (no docker client). No manifest-mismatch
-		// warning is emitted — any existing image override is accepted as-is.
+		// Registry check skipped (no docker client). Any image override is accepted as-is.
 		for _, r := range results {
-			assert.Empty(t, r.Warnings)
 			assert.Empty(t, r.Errors)
 		}
 	})
@@ -95,7 +91,6 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
 		for _, r := range results {
-			assert.Empty(t, r.Warnings)
 			assert.Empty(t, r.Errors)
 		}
 	})

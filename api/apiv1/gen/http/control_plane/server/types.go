@@ -194,9 +194,6 @@ type CreateDatabaseResponseBody struct {
 	Task *TaskResponseBody `json:"task"`
 	// The database being created.
 	Database *DatabaseResponseBody `json:"database"`
-	// Non-fatal warnings generated during spec validation, e.g. when a custom
-	// image override is not found in the version manifest.
-	Warnings []string `json:"warnings,omitempty"`
 }
 
 // GetDatabaseResponseBody is the type of the "control-plane" service
@@ -227,9 +224,6 @@ type UpdateDatabaseResponseBody struct {
 	Task *TaskResponseBody `json:"task"`
 	// The database being updated.
 	Database *DatabaseResponseBody `json:"database"`
-	// Non-fatal warnings generated during spec validation, e.g. when a custom
-	// image override is not found in the version manifest.
-	Warnings []string `json:"warnings,omitempty"`
 }
 
 // DeleteDatabaseResponseBody is the type of the "control-plane" service
@@ -2156,9 +2150,9 @@ type SwarmOptsResponseBody struct {
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 	// User-specified container image override. Bypasses manifest version
 	// constraints entirely — the CP will deploy this image without validating it
-	// against the version manifest. A warning is returned if the image is not
-	// found in the manifest. Clearing this field causes the CP to fall back to the
-	// manifest-resolved image on the next reconcile.
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
 	Image *string `json:"image,omitempty"`
 }
 
@@ -2533,9 +2527,9 @@ type SwarmOptsRequestBody struct {
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 	// User-specified container image override. Bypasses manifest version
 	// constraints entirely — the CP will deploy this image without validating it
-	// against the version manifest. A warning is returned if the image is not
-	// found in the manifest. Clearing this field causes the CP to fall back to the
-	// manifest-resolved image on the next reconcile.
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
 	Image *string `json:"image,omitempty"`
 }
 
@@ -2906,9 +2900,9 @@ type SwarmOptsRequestBodyRequestBody struct {
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 	// User-specified container image override. Bypasses manifest version
 	// constraints entirely — the CP will deploy this image without validating it
-	// against the version manifest. A warning is returned if the image is not
-	// found in the manifest. Clearing this field causes the CP to fall back to the
-	// manifest-resolved image on the next reconcile.
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
 	Image *string `json:"image,omitempty"`
 }
 
@@ -3204,12 +3198,6 @@ func NewCreateDatabaseResponseBody(res *controlplane.CreateDatabaseResponse) *Cr
 	if res.Database != nil {
 		body.Database = marshalControlplaneDatabaseToDatabaseResponseBody(res.Database)
 	}
-	if res.Warnings != nil {
-		body.Warnings = make([]string, len(res.Warnings))
-		for i, val := range res.Warnings {
-			body.Warnings[i] = val
-		}
-	}
 	return body
 }
 
@@ -3261,12 +3249,6 @@ func NewUpdateDatabaseResponseBody(res *controlplane.UpdateDatabaseResponse) *Up
 	}
 	if res.Database != nil {
 		body.Database = marshalControlplaneDatabaseToDatabaseResponseBody(res.Database)
-	}
-	if res.Warnings != nil {
-		body.Warnings = make([]string, len(res.Warnings))
-		for i, val := range res.Warnings {
-			body.Warnings[i] = val
-		}
 	}
 	return body
 }

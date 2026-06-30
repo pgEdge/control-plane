@@ -1116,10 +1116,6 @@ var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
 		g.Description("The database being created.")
 		g.Meta("struct:tag:json", "database")
 	})
-	g.Attribute("warnings", g.ArrayOf(g.String), func() {
-		g.Description("Non-fatal warnings generated during spec validation, e.g. when a custom image override is not found in the version manifest.")
-		g.Meta("struct:tag:json", "warnings,omitempty")
-	})
 
 	g.Required("task", "database")
 
@@ -1268,10 +1264,6 @@ var UpdateDatabaseResponse = g.Type("UpdateDatabaseResponse", func() {
 	g.Attribute("database", Database, func() {
 		g.Description("The database being updated.")
 		g.Meta("struct:tag:json", "database")
-	})
-	g.Attribute("warnings", g.ArrayOf(g.String), func() {
-		g.Description("Non-fatal warnings generated during spec validation, e.g. when a custom image override is not found in the version manifest.")
-		g.Meta("struct:tag:json", "warnings,omitempty")
 	})
 
 	g.Required("task", "database")
@@ -1983,8 +1975,8 @@ var SwarmOpts = g.Type("SwarmOpts", func() {
 	g.Attribute("image", g.String, func() {
 		g.Description("User-specified container image override. Bypasses manifest version " +
 			"constraints entirely — the CP will deploy this image without validating it against " +
-			"the version manifest. A warning is returned if the image is not found in the manifest. " +
-			"Clearing this field causes the CP to fall back to the manifest-resolved image on the " +
+			"the version manifest. The CP verifies the image exists in its registry before accepting " +
+			"the spec. Clearing this field causes the CP to fall back to the manifest-resolved image on the " +
 			"next reconcile.")
 		g.Meta("struct:tag:json", "image,omitempty")
 	})
