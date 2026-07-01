@@ -766,6 +766,10 @@ func (s *Service) ReconcileServiceInstanceSpec(ctx context.Context, spec *Servic
 		return nil, fmt.Errorf("failed to get current spec for service instance '%s': %w", spec.ServiceInstanceID, err)
 	}
 
+	if err := s.orchestrator.ReconcileServiceInstanceSpec(previous, spec); err != nil {
+		return nil, fmt.Errorf("failed to reconcile service instance spec: %w", err)
+	}
+
 	var allocated []int
 	rollback := func(cause error) error {
 		rollbackCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
