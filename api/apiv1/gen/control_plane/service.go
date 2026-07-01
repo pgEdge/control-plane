@@ -1084,6 +1084,12 @@ type SwarmOpts struct {
 	ExtraNetworks []*ExtraNetworkSpec `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // SwitchoverDatabaseNodePayload is the payload type of the control-plane

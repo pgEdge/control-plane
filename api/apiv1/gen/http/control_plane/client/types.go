@@ -2064,6 +2064,12 @@ type SwarmOptsRequestBody struct {
 	ExtraNetworks []*ExtraNetworkSpecRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBody is used to define fields on request body types.
@@ -2508,6 +2514,12 @@ type SwarmOptsResponseBody struct {
 	ExtraNetworks []*ExtraNetworkSpecResponseBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecResponseBody is used to define fields on response body types.
@@ -2876,6 +2888,12 @@ type SwarmOptsRequestBodyRequestBody struct {
 	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBodyRequestBody is used to define fields on request

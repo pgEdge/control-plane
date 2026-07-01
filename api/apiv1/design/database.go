@@ -1972,6 +1972,14 @@ var SwarmOpts = g.Type("SwarmOpts", func() {
 		})
 		g.Meta("struct:tag:json", "extra_labels,omitempty")
 	})
+	g.Attribute("image", g.String, func() {
+		g.Description("User-specified container image override. Bypasses manifest version " +
+			"constraints entirely — the CP will deploy this image without validating it against " +
+			"the version manifest. The CP verifies the image exists in its registry before accepting " +
+			"the spec. Clearing this field causes the CP to fall back to the manifest-resolved image on the " +
+			"next reconcile.")
+		g.Meta("struct:tag:json", "image,omitempty")
+	})
 })
 
 var OrchestratorOpts = g.Type("OrchestratorOpts", func() {

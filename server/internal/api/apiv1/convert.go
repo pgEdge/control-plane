@@ -1074,6 +1074,7 @@ func orchestratorOptsToDatabase(opts *api.OrchestratorOpts) *database.Orchestrat
 			ExtraVolumes:  extraVolumesToDatabase(opts.Swarm.ExtraVolumes),
 			ExtraNetworks: extraNetworksToDatabase(opts.Swarm.ExtraNetworks),
 			ExtraLabels:   maps.Clone(opts.Swarm.ExtraLabels),
+			Image:         utils.FromPointer(opts.Swarm.Image),
 		},
 	}
 }
@@ -1087,9 +1088,9 @@ func orchestratorOptsToAPI(opts *database.OrchestratorOpts) *api.OrchestratorOpt
 			ExtraVolumes:  extraVolumesToAPI(opts.Swarm.ExtraVolumes),
 			ExtraNetworks: extraNetworksToAPI(opts.Swarm.ExtraNetworks),
 			ExtraLabels:   maps.Clone(opts.Swarm.ExtraLabels),
+			Image:         utils.PointerTo(opts.Swarm.Image),
 		},
 	}
-
 }
 
 func extraNetworksToDatabase(networks []*api.ExtraNetworkSpec) []database.ExtraNetworkSpec {
