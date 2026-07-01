@@ -32,7 +32,7 @@ type Service interface {
 	// Removes a host from the cluster.
 	RemoveHost(context.Context, *RemoveHostPayload) (res *RemoveHostResponse, err error)
 	// Lists all databases in the cluster.
-	ListDatabases(context.Context) (res *ListDatabasesResponse, err error)
+	ListDatabases(context.Context, *ListDatabasesPayload) (res *ListDatabasesResponse, err error)
 	// Creates a new database in the cluster.
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *CreateDatabaseResponse, err error)
 	// Returns information about a particular database in the cluster.
@@ -99,6 +99,17 @@ type APIError struct {
 	Name string `json:"name"`
 	// The error message.
 	Message string `json:"message"`
+}
+
+// A newer stable image available for the database in the same Postgres major /
+// Spock major bucket.
+type AvailableUpgrade struct {
+	// Postgres version of the upgrade candidate.
+	PostgresVersion string `json:"postgres_version"`
+	// Spock major version of the upgrade candidate.
+	SpockVersion string `json:"spock_version"`
+	// Full container image reference for the upgrade candidate.
+	Image string `json:"image"`
 }
 
 type BackupConfigSpec struct {
@@ -318,6 +329,9 @@ type Database struct {
 	ServiceInstances []*ServiceInstance `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpec `json:"spec,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgrade `json:"available_upgrades,omitempty"`
 }
 
 // Controls how the service connects to the database. When omitted, all nodes
@@ -471,6 +485,9 @@ type DatabaseSummary struct {
 	State string `json:"state"`
 	// All of the instances in the database.
 	Instances []*Instance `json:"instances,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgrade `json:"available_upgrades,omitempty"`
 }
 
 type DatabaseUserSpec struct {
@@ -558,6 +575,9 @@ type FailoverDatabaseNodeResponse struct {
 type GetDatabasePayload struct {
 	// ID of the database to get.
 	DatabaseID Identifier
+	// Optional fields to include in the response. Supported values:
+	// available_upgrades.
+	Include []string
 }
 
 // GetDatabaseTaskLogPayload is the payload type of the control-plane service
@@ -761,6 +781,14 @@ type ListDatabaseTasksPayload struct {
 type ListDatabaseTasksResponse struct {
 	// The tasks for the given database.
 	Tasks []*Task `json:"tasks"`
+}
+
+// ListDatabasesPayload is the payload type of the control-plane service
+// list-databases method.
+type ListDatabasesPayload struct {
+	// Optional fields to include in each database response. Supported values:
+	// available_upgrades.
+	Include []string
 }
 
 // ListDatabasesResponse is the result type of the control-plane service

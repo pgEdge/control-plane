@@ -215,6 +215,9 @@ type GetDatabaseResponseBody struct {
 	ServiceInstances []*ServiceInstanceResponseBody `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `json:"spec,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgradeResponseBody `json:"available_upgrades,omitempty"`
 }
 
 // UpdateDatabaseResponseBody is the type of the "control-plane" service
@@ -1731,6 +1734,9 @@ type DatabaseSummaryResponseBody struct {
 	State string `json:"state"`
 	// All of the instances in the database.
 	Instances []*InstanceResponseBody `json:"instances,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgradeResponseBody `json:"available_upgrades,omitempty"`
 }
 
 // InstanceResponseBody is used to define fields on response body types.
@@ -1802,6 +1808,16 @@ type InstanceSubscriptionResponseBody struct {
 	Status string `json:"status"`
 }
 
+// AvailableUpgradeResponseBody is used to define fields on response body types.
+type AvailableUpgradeResponseBody struct {
+	// Postgres version of the upgrade candidate.
+	PostgresVersion string `json:"postgres_version"`
+	// Spock major version of the upgrade candidate.
+	SpockVersion string `json:"spock_version"`
+	// Full container image reference for the upgrade candidate.
+	Image string `json:"image"`
+}
+
 // DatabaseResponseBody is used to define fields on response body types.
 type DatabaseResponseBody struct {
 	// Unique identifier for the database.
@@ -1820,6 +1836,9 @@ type DatabaseResponseBody struct {
 	ServiceInstances []*ServiceInstanceResponseBody `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `json:"spec,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgradeResponseBody `json:"available_upgrades,omitempty"`
 }
 
 // ServiceInstanceResponseBody is used to define fields on response body types.
@@ -3236,6 +3255,16 @@ func NewGetDatabaseResponseBody(res *controlplane.Database) *GetDatabaseResponse
 	}
 	if res.Spec != nil {
 		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(res.Spec)
+	}
+	if res.AvailableUpgrades != nil {
+		body.AvailableUpgrades = make([]*AvailableUpgradeResponseBody, len(res.AvailableUpgrades))
+		for i, val := range res.AvailableUpgrades {
+			if val == nil {
+				body.AvailableUpgrades[i] = nil
+				continue
+			}
+			body.AvailableUpgrades[i] = marshalControlplaneAvailableUpgradeToAvailableUpgradeResponseBody(val)
+		}
 	}
 	return body
 }
@@ -4809,6 +4838,15 @@ func NewRemoveHostPayload(hostID string, force bool) *controlplane.RemoveHostPay
 	return v
 }
 
+// NewListDatabasesPayload builds a control-plane service list-databases
+// endpoint payload.
+func NewListDatabasesPayload(include []string) *controlplane.ListDatabasesPayload {
+	v := &controlplane.ListDatabasesPayload{}
+	v.Include = include
+
+	return v
+}
+
 // NewCreateDatabaseRequest builds a control-plane service create-database
 // endpoint payload.
 func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.CreateDatabaseRequest {
@@ -4828,9 +4866,10 @@ func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.Cre
 
 // NewGetDatabasePayload builds a control-plane service get-database endpoint
 // payload.
-func NewGetDatabasePayload(databaseID string) *controlplane.GetDatabasePayload {
+func NewGetDatabasePayload(databaseID string, include []string) *controlplane.GetDatabasePayload {
 	v := &controlplane.GetDatabasePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.Include = include
 
 	return v
 }

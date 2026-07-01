@@ -206,9 +206,9 @@ func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (res *Rem
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) ListDatabases(ctx context.Context) (res *ListDatabasesResponse, err error) {
+func (c *Client) ListDatabases(ctx context.Context, p *ListDatabasesPayload) (res *ListDatabasesResponse, err error) {
 	var ires any
-	ires, err = c.ListDatabasesEndpoint(ctx, nil)
+	ires, err = c.ListDatabasesEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

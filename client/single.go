@@ -115,7 +115,7 @@ func (c *SingleServerClient) RemoveHost(ctx context.Context, req *api.RemoveHost
 }
 
 func (c *SingleServerClient) ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error) {
-	resp, err := c.api.ListDatabases(ctx)
+	resp, err := c.api.ListDatabases(ctx, &api.ListDatabasesPayload{})
 	return resp, translateErr(err)
 }
 

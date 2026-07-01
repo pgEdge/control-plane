@@ -730,6 +730,20 @@ func EncodeListDatabasesResponse(encoder func(context.Context, http.ResponseWrit
 	}
 }
 
+// DecodeListDatabasesRequest returns a decoder for requests sent to the
+// control-plane list-databases endpoint.
+func DecodeListDatabasesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.ListDatabasesPayload, error) {
+	return func(r *http.Request) (*controlplane.ListDatabasesPayload, error) {
+		var (
+			include []string
+		)
+		include = r.URL.Query()["include"]
+		payload := NewListDatabasesPayload(include)
+
+		return payload, nil
+	}
+}
+
 // EncodeListDatabasesError returns an encoder for errors returned by the
 // list-databases control-plane endpoint.
 func EncodeListDatabasesError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
@@ -912,6 +926,7 @@ func DecodeGetDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	return func(r *http.Request) (*controlplane.GetDatabasePayload, error) {
 		var (
 			databaseID string
+			include    []string
 			err        error
 
 			params = mux.Vars(r)
@@ -923,10 +938,11 @@ func DecodeGetDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		if utf8.RuneCountInString(databaseID) > 36 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
 		}
+		include = r.URL.Query()["include"]
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetDatabasePayload(databaseID)
+		payload := NewGetDatabasePayload(databaseID, include)
 
 		return payload, nil
 	}
@@ -3583,6 +3599,16 @@ func marshalControlplaneDatabaseSummaryToDatabaseSummaryResponseBody(v *controlp
 			res.Instances[i] = marshalControlplaneInstanceToInstanceResponseBody(val)
 		}
 	}
+	if v.AvailableUpgrades != nil {
+		res.AvailableUpgrades = make([]*AvailableUpgradeResponseBody, len(v.AvailableUpgrades))
+		for i, val := range v.AvailableUpgrades {
+			if val == nil {
+				res.AvailableUpgrades[i] = nil
+				continue
+			}
+			res.AvailableUpgrades[i] = marshalControlplaneAvailableUpgradeToAvailableUpgradeResponseBody(val)
+		}
+	}
 
 	return res
 }
@@ -3690,6 +3716,22 @@ func marshalControlplaneInstanceSubscriptionToInstanceSubscriptionResponseBody(v
 		ProviderNode: v.ProviderNode,
 		Name:         v.Name,
 		Status:       v.Status,
+	}
+
+	return res
+}
+
+// marshalControlplaneAvailableUpgradeToAvailableUpgradeResponseBody builds a
+// value of type *AvailableUpgradeResponseBody from a value of type
+// *controlplane.AvailableUpgrade.
+func marshalControlplaneAvailableUpgradeToAvailableUpgradeResponseBody(v *controlplane.AvailableUpgrade) *AvailableUpgradeResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &AvailableUpgradeResponseBody{
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Image:           v.Image,
 	}
 
 	return res
@@ -4210,6 +4252,16 @@ func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database)
 	}
 	if v.Spec != nil {
 		res.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v.Spec)
+	}
+	if v.AvailableUpgrades != nil {
+		res.AvailableUpgrades = make([]*AvailableUpgradeResponseBody, len(v.AvailableUpgrades))
+		for i, val := range v.AvailableUpgrades {
+			if val == nil {
+				res.AvailableUpgrades[i] = nil
+				continue
+			}
+			res.AvailableUpgrades[i] = marshalControlplaneAvailableUpgradeToAvailableUpgradeResponseBody(val)
+		}
 	}
 
 	return res

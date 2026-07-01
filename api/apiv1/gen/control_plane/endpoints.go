@@ -188,7 +188,8 @@ func NewRemoveHostEndpoint(s Service) goa.Endpoint {
 // "list-databases" of service "control-plane".
 func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		return s.ListDatabases(ctx)
+		p := req.(*ListDatabasesPayload)
+		return s.ListDatabases(ctx, p)
 	}
 }
 

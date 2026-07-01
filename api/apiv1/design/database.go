@@ -702,6 +702,26 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Required("database_name", "nodes")
 })
 
+var AvailableUpgrade = g.Type("AvailableUpgrade", func() {
+	g.Description("A newer stable image available for the database in the same Postgres major / Spock major bucket.")
+	g.Attribute("postgres_version", g.String, func() {
+		g.Description("Postgres version of the upgrade candidate.")
+		g.Example("17.10")
+		g.Meta("struct:tag:json", "postgres_version")
+	})
+	g.Attribute("spock_version", g.String, func() {
+		g.Description("Spock major version of the upgrade candidate.")
+		g.Example("5")
+		g.Meta("struct:tag:json", "spock_version")
+	})
+	g.Attribute("image", g.String, func() {
+		g.Description("Full container image reference for the upgrade candidate.")
+		g.Example("ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-1")
+		g.Meta("struct:tag:json", "image")
+	})
+	g.Required("postgres_version", "spock_version", "image")
+})
+
 var Database = g.Type("Database", func() {
 	g.Attribute("id", Identifier, func() {
 		g.Description("Unique identifier for the database.")
@@ -754,6 +774,10 @@ var Database = g.Type("Database", func() {
 		g.Description("The user-provided specification for the database.")
 		g.Meta("struct:tag:json", "spec,omitempty")
 	})
+	g.Attribute("available_upgrades", g.ArrayOf(AvailableUpgrade), func() {
+		g.Description("Newer stable image versions available in the same Postgres major / Spock major bucket. Present only when ?include=available_upgrades is set.")
+		g.Meta("struct:tag:json", "available_upgrades,omitempty")
+	})
 
 	g.Example(exampleDatabase)
 
@@ -804,6 +828,10 @@ var DatabaseSummary = g.Type("DatabaseSummary", func() {
 	g.Attribute("instances", g.ArrayOf(Instance), func() {
 		g.Description("All of the instances in the database.")
 		g.Meta("struct:tag:json", "instances,omitempty")
+	})
+	g.Attribute("available_upgrades", g.ArrayOf(AvailableUpgrade), func() {
+		g.Description("Newer stable image versions available in the same Postgres major / Spock major bucket. Present only when ?include=available_upgrades is set.")
+		g.Meta("struct:tag:json", "available_upgrades,omitempty")
 	})
 
 	g.Required("id", "created_at", "updated_at", "state")

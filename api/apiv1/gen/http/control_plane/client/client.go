@@ -367,10 +367,15 @@ func (c *Client) RemoveHost() goa.Endpoint {
 // control-plane service list-databases server.
 func (c *Client) ListDatabases() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeListDatabasesRequest(c.encoder)
 		decodeResponse = DecodeListDatabasesResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildListDatabasesRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}
@@ -410,10 +415,15 @@ func (c *Client) CreateDatabase() goa.Endpoint {
 // control-plane service get-database server.
 func (c *Client) GetDatabase() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeGetDatabaseRequest(c.encoder)
 		decodeResponse = DecodeGetDatabaseResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildGetDatabaseRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}

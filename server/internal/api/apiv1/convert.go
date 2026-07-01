@@ -1196,3 +1196,26 @@ func parseScope(scopeStr string) (task.Scope, error) {
 		return "", fmt.Errorf("invalid scope %q", scopeStr)
 	}
 }
+
+// includesAvailableUpgrades reports whether the include list contains the
+// "available_upgrades" token.
+func includesAvailableUpgrades(include []string) bool {
+	return slices.Contains(include, "available_upgrades")
+}
+
+// availableUpgradesToAPI converts database-layer upgrade entries to their API
+// representation.
+func availableUpgradesToAPI(upgrades []*database.AvailableUpgrade) []*api.AvailableUpgrade {
+	if len(upgrades) == 0 {
+		return nil
+	}
+	out := make([]*api.AvailableUpgrade, len(upgrades))
+	for i, u := range upgrades {
+		out[i] = &api.AvailableUpgrade{
+			PostgresVersion: u.PostgresVersion,
+			SpockVersion:    u.SpockVersion,
+			Image:           u.Image,
+		}
+	}
+	return out
+}

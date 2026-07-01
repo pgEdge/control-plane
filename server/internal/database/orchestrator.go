@@ -190,4 +190,16 @@ type Orchestrator interface {
 	// reconciliation to resolve and pin the container image. old is nil when
 	// the service instance is being created for the first time.
 	ReconcileServiceInstanceSpec(old, new *ServiceInstanceSpec) error
+	// AvailableUpgrades returns newer stable manifest entries in the same
+	// (postgres_major, spock_major) bucket as current. Returns nil when
+	// upgrade discovery is not applicable (e.g. systemd orchestrator).
+	AvailableUpgrades(current *ds.PgEdgeVersion) []*AvailableUpgrade
+}
+
+// AvailableUpgrade describes a single candidate image upgrade available for a
+// database running in the same (postgres_major, spock_major) bucket.
+type AvailableUpgrade struct {
+	PostgresVersion string `json:"postgres_version"`
+	SpockVersion    string `json:"spock_version"`
+	Image           string `json:"image"`
 }
