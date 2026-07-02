@@ -174,15 +174,6 @@ func TestProvisionPostgRESTWithJWT(t *testing.T) {
 
 // TestPostgRESTPreflight_MissingSchema verifies the preflight check rejects
 // a deployment when the configured schema does not exist.
-//
-// This is intentionally NOT merged with TestPostgRESTPreflight_MissingAnonRole
-// into a single test sharing a database: verified by running both against a
-// shared database that a failed service resource ("postgrest-api") leaves
-// stale desired-state behind server-side, so the second subtest's update was
-// diffed against the first attempt's failed config instead of a clean
-// baseline, causing its error message to reference the first attempt's
-// "nonexistent_schema" instead of "nonexistent_role". Each test needs its
-// own database.
 func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 	t.Parallel()
 
@@ -216,9 +207,6 @@ func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 
 // TestPostgRESTPreflight_MissingAnonRole verifies the preflight check rejects
 // a deployment when the configured anon role does not exist.
-//
-// See TestPostgRESTPreflight_MissingSchema for why this is not merged with
-// that test into a single database-sharing test.
 func TestPostgRESTPreflight_MissingAnonRole(t *testing.T) {
 	t.Parallel()
 
