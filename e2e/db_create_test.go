@@ -57,10 +57,14 @@ func testCreateDB(t *testing.T, nodeCount int, deployReplicas bool) {
 		if deployReplicas {
 			hosts = append(hosts, controlplane.Identifier(host3))
 		}
-		nodes = append(nodes, &controlplane.DatabaseNodeSpec{
+		node := &controlplane.DatabaseNodeSpec{
 			Name:    fmt.Sprintf("n%d", i),
 			HostIds: hosts,
-		})
+		}
+		if deployReplicas {
+			node.PostgresqlConf = fastCheckpointConf
+		}
+		nodes = append(nodes, node)
 	}
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
@@ -141,12 +145,12 @@ func testCreateDB(t *testing.T, nodeCount int, deployReplicas bool) {
 				row := conn.QueryRow(ctx, "SELECT pg_current_wal_lsn() AS commit_lsn")
 				require.NoError(t, row.Scan(&commitLSN))
 
-				// Wait for up to 10 seconds and verify commit_lsn has replayed
+				// Wait for up to 20 seconds and verify commit_lsn has replayed
 				// This should prevent flaky tests
 				var replayLSN string
 				var hasReplayed bool
 
-				for i := 0; i < 10; i++ {
+				for i := 0; i < 20; i++ {
 					rows, err := conn.Query(ctx, "SELECT replay_lsn, (replay_lsn >= $1::pg_lsn) AS has_replayed FROM pg_stat_replication", commitLSN)
 					require.NoError(t, err)
 					defer rows.Close()

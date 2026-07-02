@@ -175,7 +175,7 @@ func verifyWALReplay(ctx context.Context, t *testing.T, conn *pgx.Conn) {
 	var commitLSN string
 	require.NoError(t, conn.QueryRow(ctx, "SELECT pg_current_wal_lsn()").Scan(&commitLSN))
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		rows, err := conn.Query(ctx, "SELECT (replay_lsn >= $1::pg_lsn) AS has_replayed FROM pg_stat_replication", commitLSN)
 		require.NoError(t, err)
 		defer rows.Close()

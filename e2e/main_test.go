@@ -71,3 +71,11 @@ func TestMain(m *testing.M) {
 func pointerTo[T any](v T) *T {
 	return &v
 }
+
+// fastCheckpointConf shortens checkpoint_timeout/checkpoint_completion_target
+// so that replica bootstrap (pg_basebackup) on the primary isn't delayed by
+// the production checkpoint defaults in short-lived test databases.
+var fastCheckpointConf = map[string]any{
+	"checkpoint_timeout":           "30s",
+	"checkpoint_completion_target": "0",
+}

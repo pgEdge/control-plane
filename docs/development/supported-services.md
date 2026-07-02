@@ -807,8 +807,8 @@ for state transitions. Key patterns to replicate for a new service type:
 |---------|-------------|-------------------|
 | Single-host provision | `TestProvisionMCPService` | Service reaches `"running"` state |
 | Multi-host provision | `TestProvisionMultiHostMCPService` | One instance per host, all reach `"running"` |
-| Add to existing DB | `TestUpdateDatabaseAddService` | Service added without affecting database |
-| Remove from DB | `TestUpdateDatabaseRemoveService` | Empty `Services` array removes the service |
+| Add to existing DB | `TestUpdateDatabaseService/Add` | Service added without affecting database |
+| Remove from DB | `TestUpdateDatabaseService/Remove` | Empty `Services` array removes the service |
 | Stability | `TestUpdateDatabaseServiceStable` | Unrelated DB update doesn't recreate service (checks `created_at` and `container_id` unchanged) |
 | Bad version | `TestProvisionMCPServiceUnsupportedVersion` | Unregistered version fails task, DB goes to `"failed"` |
 | Recovery | `TestProvisionMCPServiceRecovery` | Failed DB recovered by updating with valid version |
