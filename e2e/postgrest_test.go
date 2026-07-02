@@ -203,6 +203,18 @@ func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 	})
 	require.Error(t, err, "expected update task to fail due to missing schema")
 	assert.Contains(t, err.Error(), "nonexistent_schema", "error should mention the missing schema")
+
+	// It should succeed when we remove the nonexistent schema.
+	err = db.Update(ctx, UpdateOptions{
+		Spec: postgrestBaseSpec(
+			"test_postgrest_preflight_schema",
+			[]string{host1},
+			[]*controlplane.ServiceSpec{
+				postgrestSpec(host1, 0, nil),
+			},
+		),
+	})
+	require.NoError(t, err)
 }
 
 // TestPostgRESTPreflight_MissingAnonRole verifies the preflight check rejects
@@ -236,6 +248,20 @@ func TestPostgRESTPreflight_MissingAnonRole(t *testing.T) {
 	})
 	require.Error(t, err, "expected update task to fail due to missing anon role")
 	assert.Contains(t, err.Error(), "nonexistent_role", "error should mention the missing role")
+
+	// It should succeed when we switch to an existing role.
+	err = db.Update(ctx, UpdateOptions{
+		Spec: postgrestBaseSpec(
+			"test_postgrest_preflight_role",
+			[]string{host1},
+			[]*controlplane.ServiceSpec{
+				postgrestSpec(host1, 0, map[string]any{
+					"db_anon_role": "anon",
+				}),
+			},
+		),
+	})
+	require.NoError(t, err)
 }
 
 // TestPostgRESTHealthCheck verifies the service responds to HTTP requests once running.
