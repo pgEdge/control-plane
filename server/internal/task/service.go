@@ -12,15 +12,25 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
+// NewWatcher creates a Watcher that monitors the given task and closes its
+// Done channel when the task reaches a terminal state or is deleted. Multiple
+// callers watching the same task share a single etcd watch stream. The caller
+// must call Close on the returned Watcher when done with it.
+func (s *Service) NewWatcher(_ context.Context, scope Scope, entityID string, taskID uuid.UUID) (*Watcher, error) {
+	return s.registry.acquire(s.Store.Task, scope, entityID, taskID)
+}
+
 var ErrTaskNotFound = errors.New("task not found")
 
 type Service struct {
-	Store *Store
+	Store    *Store
+	registry *watcherRegistry
 }
 
 func NewService(store *Store) *Service {
 	return &Service{
-		Store: store,
+		Store:    store,
+		registry: newWatcherRegistry(),
 	}
 }
 
