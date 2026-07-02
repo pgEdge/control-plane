@@ -27,6 +27,7 @@ type Client struct {
 	CreateDatabaseEndpoint         goa.Endpoint
 	GetDatabaseEndpoint            goa.Endpoint
 	UpdateDatabaseEndpoint         goa.Endpoint
+	ApplyUpgradeEndpoint           goa.Endpoint
 	DeleteDatabaseEndpoint         goa.Endpoint
 	BackupDatabaseNodeEndpoint     goa.Endpoint
 	SwitchoverDatabaseNodeEndpoint goa.Endpoint
@@ -47,7 +48,7 @@ type Client struct {
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, failoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, listHostTasks, getHostTask, getHostTaskLog, listTasks, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, applyUpgrade, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, failoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, listHostTasks, getHostTask, getHostTaskLog, listTasks, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:            initCluster,
 		JoinClusterEndpoint:            joinCluster,
@@ -61,6 +62,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 		CreateDatabaseEndpoint:         createDatabase,
 		GetDatabaseEndpoint:            getDatabase,
 		UpdateDatabaseEndpoint:         updateDatabase,
+		ApplyUpgradeEndpoint:           applyUpgrade,
 		DeleteDatabaseEndpoint:         deleteDatabase,
 		BackupDatabaseNodeEndpoint:     backupDatabaseNode,
 		SwitchoverDatabaseNodeEndpoint: switchoverDatabaseNode,
@@ -266,6 +268,25 @@ func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (
 		return
 	}
 	return ires.(*UpdateDatabaseResponse), nil
+}
+
+// ApplyUpgrade calls the "apply-upgrade" endpoint of the "control-plane"
+// service.
+// ApplyUpgrade may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) ApplyUpgrade(ctx context.Context, p *ApplyUpgradePayload) (res *ApplyUpgradeResponse, err error) {
+	var ires any
+	ires, err = c.ApplyUpgradeEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*ApplyUpgradeResponse), nil
 }
 
 // DeleteDatabase calls the "delete-database" endpoint of the "control-plane"

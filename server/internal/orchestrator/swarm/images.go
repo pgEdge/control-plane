@@ -124,6 +124,22 @@ func imageTag(cfg config.Config, tag string) string {
 	return fmt.Sprintf("%s/pgedge-postgres:%s", cfg.DockerSwarm.ImageRepositoryHost, tag)
 }
 
+// FindByImage returns the PgEdgeVersion and Images for the manifest entry
+// whose PgEdgeImage matches image exactly. Returns (nil, nil, false) when no
+// entry matches.
+func (v *Versions) FindByImage(image string) (*ds.PgEdgeVersion, *Images, bool) {
+	for _, ver := range v.supportedVersions {
+		img, err := v.GetImages(ver)
+		if err != nil {
+			continue
+		}
+		if img.PgEdgeImage == image {
+			return ver, img, true
+		}
+	}
+	return nil, nil, false
+}
+
 // AvailableUpgrades returns all newer stable manifest entries in the same
 // (postgres_major, spock_major) bucket as current. Returns nil when current is
 // nil or no newer entries exist.

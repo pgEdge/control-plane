@@ -253,6 +253,10 @@ func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInsta
 	return nil, ErrUninitialized
 }
 
+func (s *PreInitHandlers) ApplyUpgrade(ctx context.Context, req *api.ApplyUpgradePayload) (*api.ApplyUpgradeResponse, error) {
+	return nil, ErrUninitialized
+}
+
 func (s *PreInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
 	return nil, ErrUninitialized
 }

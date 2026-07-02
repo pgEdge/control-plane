@@ -56,6 +56,15 @@ type UpdateDatabaseRequestBody struct {
 	Spec *DatabaseSpecRequestBodyRequestBody `json:"spec"`
 }
 
+// ApplyUpgradeRequestBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP request body.
+type ApplyUpgradeRequestBody struct {
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a stable manifest entry in the same Postgres major / Spock major
+	// bucket as the current version and be strictly newer.
+	Image *string `json:"image"`
+}
+
 // BackupDatabaseNodeRequestBody is the type of the "control-plane" service
 // "backup-database-node" endpoint HTTP request body.
 type BackupDatabaseNodeRequestBody struct {
@@ -226,6 +235,15 @@ type UpdateDatabaseResponseBody struct {
 	// The task that will update this database.
 	Task *TaskResponseBody `json:"task"`
 	// The database being updated.
+	Database *DatabaseResponseBody `json:"database"`
+}
+
+// ApplyUpgradeResponseBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP response body.
+type ApplyUpgradeResponseBody struct {
+	// The task tracking the upgrade operation.
+	Task *TaskResponseBody `json:"task"`
+	// The database being upgraded.
 	Database *DatabaseResponseBody `json:"database"`
 }
 
@@ -860,6 +878,65 @@ type UpdateDatabaseNotFoundResponseBody struct {
 // service "update-database" endpoint HTTP response body for the "server_error"
 // error.
 type UpdateDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ApplyUpgradeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "database_not_modifiable" error.
+type ApplyUpgradeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "operation_already_in_progress" error.
+type ApplyUpgradeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeInvalidInputResponseBody is the type of the "control-plane"
+// service "apply-upgrade" endpoint HTTP response body for the "invalid_input"
+// error.
+type ApplyUpgradeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeNotFoundResponseBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP response body for the "not_found" error.
+type ApplyUpgradeNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeServerErrorResponseBody is the type of the "control-plane"
+// service "apply-upgrade" endpoint HTTP response body for the "server_error"
+// error.
+type ApplyUpgradeServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `json:"name"`
 	// The error message.
@@ -3282,6 +3359,19 @@ func NewUpdateDatabaseResponseBody(res *controlplane.UpdateDatabaseResponse) *Up
 	return body
 }
 
+// NewApplyUpgradeResponseBody builds the HTTP response body from the result of
+// the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeResponseBody(res *controlplane.ApplyUpgradeResponse) *ApplyUpgradeResponseBody {
+	body := &ApplyUpgradeResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
+	}
+	if res.Database != nil {
+		body.Database = marshalControlplaneDatabaseToDatabaseResponseBody(res.Database)
+	}
+	return body
+}
+
 // NewDeleteDatabaseResponseBody builds the HTTP response body from the result
 // of the "delete-database" endpoint of the "control-plane" service.
 func NewDeleteDatabaseResponseBody(res *controlplane.DeleteDatabaseResponse) *DeleteDatabaseResponseBody {
@@ -3993,6 +4083,69 @@ func NewUpdateDatabaseNotFoundResponseBody(res *controlplane.APIError) *UpdateDa
 // the result of the "update-database" endpoint of the "control-plane" service.
 func NewUpdateDatabaseServerErrorResponseBody(res *controlplane.APIError) *UpdateDatabaseServerErrorResponseBody {
 	body := &UpdateDatabaseServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "apply-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyUpgradeClusterNotInitializedResponseBody(res *controlplane.APIError) *ApplyUpgradeClusterNotInitializedResponseBody {
+	body := &ApplyUpgradeClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeDatabaseNotModifiableResponseBody builds the HTTP response
+// body from the result of the "apply-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyUpgradeDatabaseNotModifiableResponseBody(res *controlplane.APIError) *ApplyUpgradeDatabaseNotModifiableResponseBody {
+	body := &ApplyUpgradeDatabaseNotModifiableResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeOperationAlreadyInProgressResponseBody builds the HTTP
+// response body from the result of the "apply-upgrade" endpoint of the
+// "control-plane" service.
+func NewApplyUpgradeOperationAlreadyInProgressResponseBody(res *controlplane.APIError) *ApplyUpgradeOperationAlreadyInProgressResponseBody {
+	body := &ApplyUpgradeOperationAlreadyInProgressResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeInvalidInputResponseBody builds the HTTP response body from
+// the result of the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeInvalidInputResponseBody(res *controlplane.APIError) *ApplyUpgradeInvalidInputResponseBody {
+	body := &ApplyUpgradeInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeNotFoundResponseBody builds the HTTP response body from the
+// result of the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeNotFoundResponseBody(res *controlplane.APIError) *ApplyUpgradeNotFoundResponseBody {
+	body := &ApplyUpgradeNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeServerErrorResponseBody builds the HTTP response body from
+// the result of the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeServerErrorResponseBody(res *controlplane.APIError) *ApplyUpgradeServerErrorResponseBody {
+	body := &ApplyUpgradeServerErrorResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
@@ -4893,6 +5046,20 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 	return res
 }
 
+// NewApplyUpgradePayload builds a control-plane service apply-upgrade endpoint
+// payload.
+func NewApplyUpgradePayload(body *ApplyUpgradeRequestBody, databaseID string) *controlplane.ApplyUpgradePayload {
+	v := &controlplane.ApplyUpgradeRequest{
+		Image: *body.Image,
+	}
+	res := &controlplane.ApplyUpgradePayload{
+		Request: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
+
+	return res
+}
+
 // NewDeleteDatabasePayload builds a control-plane service delete-database
 // endpoint payload.
 func NewDeleteDatabasePayload(databaseID string, force bool) *controlplane.DeleteDatabasePayload {
@@ -5221,6 +5388,20 @@ func ValidateUpdateDatabaseRequestBody(body *UpdateDatabaseRequestBody) (err err
 	if body.Spec != nil {
 		if err2 := ValidateDatabaseSpecRequestBodyRequestBody(body.Spec); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateApplyUpgradeRequestBody runs the validations defined on
+// Apply-UpgradeRequestBody
+func ValidateApplyUpgradeRequestBody(body *ApplyUpgradeRequestBody) (err error) {
+	if body.Image == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("image", "body"))
+	}
+	if body.Image != nil {
+		if utf8.RuneCountInString(*body.Image) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.image", *body.Image, utf8.RuneCountInString(*body.Image), 1, true))
 		}
 	}
 	return

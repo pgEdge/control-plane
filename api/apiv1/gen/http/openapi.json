@@ -1760,6 +1760,94 @@
         ]
       }
     },
+    "/v1/databases/{database_id}/upgrade": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "summary": "Apply database upgrade",
+        "description": "Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.",
+        "operationId": "control-plane#apply-upgrade",
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Apply-UpgradeRequestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ApplyUpgradeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK response.",
+            "schema": {
+              "$ref": "#/definitions/ApplyUpgradeResponse",
+              "required": [
+                "task",
+                "database"
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "409": {
+            "description": "Conflict response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "500": {
+            "description": "Internal Server Error response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
+          }
+        },
+        "schemes": [
+          "http"
+        ]
+      }
+    },
     "/v1/hosts": {
       "get": {
         "tags": [
@@ -2464,6 +2552,55 @@
       "required": [
         "name",
         "message"
+      ]
+    },
+    "ApplyUpgradeRequest": {
+      "title": "ApplyUpgradeRequest",
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Full container image reference of the upgrade target. Must match the image field of a stable manifest entry in the same Postgres major / Spock major bucket as the current version and be strictly newer.",
+          "example": "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1",
+          "minLength": 1
+        }
+      },
+      "example": {
+        "image": "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1"
+      },
+      "required": [
+        "image"
+      ]
+    },
+    "ApplyUpgradeResponse": {
+      "title": "ApplyUpgradeResponse",
+      "type": "object",
+      "properties": {
+        "database": {
+          "$ref": "#/definitions/Database"
+        },
+        "task": {
+          "$ref": "#/definitions/Task"
+        }
+      },
+      "example": {
+        "database": {
+          "created_at": "2025-06-18T16:52:05Z",
+          "id": "storefront",
+          "state": "modifying",
+          "updated_at": "2025-06-18T17:58:59Z"
+        },
+        "task": {
+          "created_at": "2025-06-18T17:58:59Z",
+          "database_id": "storefront",
+          "status": "pending",
+          "task_id": "01978431-b628-758a-aec6-03b331fa1a17",
+          "type": "upgrade"
+        }
+      },
+      "required": [
+        "task",
+        "database"
       ]
     },
     "AvailableUpgrade": {

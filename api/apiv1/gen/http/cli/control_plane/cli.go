@@ -23,7 +23,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|switchover-database-node|failover-database-node|list-database-tasks|get-database-task|get-database-task-log|list-host-tasks|get-host-task|get-host-task-log|list-tasks|restore-database|get-version|restart-instance|stop-instance|start-instance|cancel-database-task)",
+		"control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|apply-upgrade|delete-database|backup-database-node|switchover-database-node|failover-database-node|list-database-tasks|get-database-task|get-database-task-log|list-host-tasks|get-host-task|get-host-task-log|list-tasks|restore-database|get-version|restart-instance|stop-instance|start-instance|cancel-database-task)",
 	}
 }
 
@@ -82,6 +82,10 @@ func ParseEndpoint(
 		controlPlaneUpdateDatabaseDatabaseIDFlag  = controlPlaneUpdateDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to update.")
 		controlPlaneUpdateDatabaseForceUpdateFlag = controlPlaneUpdateDatabaseFlags.String("force-update", "", "")
 		controlPlaneUpdateDatabaseRemoveHostFlag  = controlPlaneUpdateDatabaseFlags.String("remove-host", "", "")
+
+		controlPlaneApplyUpgradeFlags          = flag.NewFlagSet("apply-upgrade", flag.ExitOnError)
+		controlPlaneApplyUpgradeBodyFlag       = controlPlaneApplyUpgradeFlags.String("body", "REQUIRED", "")
+		controlPlaneApplyUpgradeDatabaseIDFlag = controlPlaneApplyUpgradeFlags.String("database-id", "REQUIRED", "ID of the database to upgrade.")
 
 		controlPlaneDeleteDatabaseFlags          = flag.NewFlagSet("delete-database", flag.ExitOnError)
 		controlPlaneDeleteDatabaseDatabaseIDFlag = controlPlaneDeleteDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to delete.")
@@ -181,6 +185,7 @@ func ParseEndpoint(
 	controlPlaneCreateDatabaseFlags.Usage = controlPlaneCreateDatabaseUsage
 	controlPlaneGetDatabaseFlags.Usage = controlPlaneGetDatabaseUsage
 	controlPlaneUpdateDatabaseFlags.Usage = controlPlaneUpdateDatabaseUsage
+	controlPlaneApplyUpgradeFlags.Usage = controlPlaneApplyUpgradeUsage
 	controlPlaneDeleteDatabaseFlags.Usage = controlPlaneDeleteDatabaseUsage
 	controlPlaneBackupDatabaseNodeFlags.Usage = controlPlaneBackupDatabaseNodeUsage
 	controlPlaneSwitchoverDatabaseNodeFlags.Usage = controlPlaneSwitchoverDatabaseNodeUsage
@@ -268,6 +273,9 @@ func ParseEndpoint(
 
 			case "update-database":
 				epf = controlPlaneUpdateDatabaseFlags
+
+			case "apply-upgrade":
+				epf = controlPlaneApplyUpgradeFlags
 
 			case "delete-database":
 				epf = controlPlaneDeleteDatabaseFlags
@@ -378,6 +386,9 @@ func ParseEndpoint(
 			case "update-database":
 				endpoint = c.UpdateDatabase()
 				data, err = controlplanec.BuildUpdateDatabasePayload(*controlPlaneUpdateDatabaseBodyFlag, *controlPlaneUpdateDatabaseDatabaseIDFlag, *controlPlaneUpdateDatabaseForceUpdateFlag, *controlPlaneUpdateDatabaseRemoveHostFlag)
+			case "apply-upgrade":
+				endpoint = c.ApplyUpgrade()
+				data, err = controlplanec.BuildApplyUpgradePayload(*controlPlaneApplyUpgradeBodyFlag, *controlPlaneApplyUpgradeDatabaseIDFlag)
 			case "delete-database":
 				endpoint = c.DeleteDatabase()
 				data, err = controlplanec.BuildDeleteDatabasePayload(*controlPlaneDeleteDatabaseDatabaseIDFlag, *controlPlaneDeleteDatabaseForceFlag)
@@ -456,6 +467,7 @@ func controlPlaneUsage() {
 	fmt.Fprintln(os.Stderr, `    create-database: Creates a new database in the cluster.`)
 	fmt.Fprintln(os.Stderr, `    get-database: Returns information about a particular database in the cluster.`)
 	fmt.Fprintln(os.Stderr, `    update-database: Updates a database with the given specification.`)
+	fmt.Fprintln(os.Stderr, `    apply-upgrade: Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.`)
 	fmt.Fprintln(os.Stderr, `    delete-database: Deletes a database from the cluster.`)
 	fmt.Fprintln(os.Stderr, `    backup-database-node: Initiates a backup for a database node.`)
 	fmt.Fprintln(os.Stderr, `    switchover-database-node: Performs a planned switchover for a node's primary to a replica candidate.`)
@@ -695,6 +707,26 @@ func controlPlaneUpdateDatabaseUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane update-database --body '{\n      \"spec\": {\n         \"database_name\": \"storefront\",\n         \"database_users\": [\n            {\n               \"attributes\": [\n                  \"LOGIN\",\n                  \"SUPERUSER\"\n               ],\n               \"db_owner\": true,\n               \"username\": \"admin\"\n            }\n         ],\n         \"nodes\": [\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-us-east-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"us-east-1\"\n               ],\n               \"name\": \"n1\"\n            },\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-ap-south-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"ap-south-1\"\n               ],\n               \"name\": \"n2\"\n            },\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-eu-central-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"eu-central-1\"\n               ],\n               \"name\": \"n3\",\n               \"restore_config\": {\n                  \"repository\": {\n                     \"s3_bucket\": \"storefront-db-backups-us-east-1\",\n                     \"type\": \"s3\"\n                  },\n                  \"source_database_id\": \"storefront\",\n                  \"source_database_name\": \"storefront\",\n                  \"source_node_name\": \"n1\"\n               }\n            }\n         ],\n         \"port\": 5432\n      }\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --force-update true --remove-host '[\n      \"In doloremque.\",\n      \"Officia rerum eum nemo autem iste illo.\",\n      \"Non libero quibusdam et sapiente.\"\n   ]'")
+}
+
+func controlPlaneApplyUpgradeUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] control-plane apply-upgrade", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -database-id STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -database-id STRING: ID of the database to upgrade.`)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane apply-upgrade --body '{\n      \"image\": \"ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1\"\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\"")
 }
 
 func controlPlaneDeleteDatabaseUsage() {

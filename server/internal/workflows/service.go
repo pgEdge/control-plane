@@ -97,6 +97,27 @@ func (s *Service) UpdateDatabase(ctx context.Context, db *database.Database, for
 	return t, nil
 }
 
+func (s *Service) UpgradeDatabase(ctx context.Context, db *database.Database) (*task.Task, error) {
+	databaseID := db.DatabaseID
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
+		DatabaseID: databaseID,
+		Type:       task.TypeUpgrade,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create upgrade task: %w", err)
+	}
+	input := &UpdateDatabaseInput{
+		TaskID:    t.TaskID,
+		Spec:      db.Spec,
+		Variables: db.Variables(),
+	}
+	if err := s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 func (s *Service) DeleteDatabase(ctx context.Context, db *database.Database) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		Scope:      task.ScopeDatabase,

@@ -1327,6 +1327,45 @@ var DeleteDatabaseResponse = g.Type("DeleteDatabaseResponse", func() {
 	})
 })
 
+var ApplyUpgradeRequest = g.Type("ApplyUpgradeRequest", func() {
+	g.Attribute("image", g.String, func() {
+		g.Description("Full container image reference of the upgrade target. Must match the image field of a stable manifest entry in the same Postgres major / Spock major bucket as the current version and be strictly newer.")
+		g.Example("ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1")
+		g.MinLength(1)
+		g.Meta("struct:tag:json", "image")
+	})
+	g.Required("image")
+})
+
+var ApplyUpgradeResponse = g.Type("ApplyUpgradeResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task tracking the upgrade operation.")
+		g.Meta("struct:tag:json", "task")
+	})
+	g.Attribute("database", Database, func() {
+		g.Description("The database being upgraded.")
+		g.Meta("struct:tag:json", "database")
+	})
+
+	g.Required("task", "database")
+
+	g.Example(map[string]any{
+		"database": map[string]any{
+			"created_at": "2025-06-18T16:52:05Z",
+			"id":         "storefront",
+			"state":      "modifying",
+			"updated_at": "2025-06-18T17:58:59Z",
+		},
+		"task": map[string]any{
+			"created_at":  "2025-06-18T17:58:59Z",
+			"database_id": "storefront",
+			"status":      "pending",
+			"task_id":     "01978431-b628-758a-aec6-03b331fa1a17",
+			"type":        "upgrade",
+		},
+	})
+})
+
 var BackupDatabaseNodeResponse = g.Type("BackupDatabaseNodeResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will backup this database node.")

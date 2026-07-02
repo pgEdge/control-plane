@@ -310,6 +310,44 @@ func (o *Orchestrator) AvailableUpgrades(current *ds.PgEdgeVersion) []*database.
 	return o.versions.AvailableUpgrades(current)
 }
 
+func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*database.AvailableUpgrade, error) {
+	ver, img, ok := o.versions.FindByImage(targetImage)
+	if !ok {
+		return nil, fmt.Errorf("%w: image not found in manifest: %s", database.ErrUpgradeNotAvailable, targetImage)
+	}
+	if img.Stability != "" && img.Stability != "stable" {
+		return nil, fmt.Errorf("%w: target image stability is %q, must be stable", database.ErrUpgradeNotAvailable, img.Stability)
+	}
+
+	currentPGMajor, ok := current.PostgresVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine current postgres major version", database.ErrUpgradeNotAvailable)
+	}
+	targetPGMajor, ok2 := ver.PostgresVersion.Major()
+	if !ok2 || targetPGMajor != currentPGMajor {
+		return nil, fmt.Errorf("%w: target postgres major %d differs from current %d", database.ErrUpgradeNotAvailable, targetPGMajor, currentPGMajor)
+	}
+
+	currentSpockMajor, ok := current.SpockVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine current spock major version", database.ErrUpgradeNotAvailable)
+	}
+	targetSpockMajor, ok2 := ver.SpockVersion.Major()
+	if !ok2 || targetSpockMajor != currentSpockMajor {
+		return nil, fmt.Errorf("%w: target spock major %d differs from current %d", database.ErrUpgradeNotAvailable, targetSpockMajor, currentSpockMajor)
+	}
+
+	if ver.PostgresVersion.Compare(current.PostgresVersion) <= 0 {
+		return nil, fmt.Errorf("%w: target version %s is not newer than current %s", database.ErrUpgradeNotAvailable, ver.PostgresVersion, current.PostgresVersion)
+	}
+
+	return &database.AvailableUpgrade{
+		PostgresVersion: ver.PostgresVersion.String(),
+		SpockVersion:    ver.SpockVersion.String(),
+		Image:           img.PgEdgeImage,
+	}, nil
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
 	images, err := o.resolveInstanceImages(spec)
 	if err != nil {
