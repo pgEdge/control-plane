@@ -444,12 +444,13 @@ func defaultAddresses() ([]string, error) {
 	return []string{ip.String()}, nil
 }
 
-// getFirstIP gets the first non-loopback IPv4 address
+// getFirstIP gets the first non-loopback IP address, preferring IPv4.
 func getFirstIP() (net.IP, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return net.IPv4zero, fmt.Errorf("failed to list interfaces: %w", err)
 	}
+	var ipv6 net.IP
 	for _, iface := range interfaces {
 		// Skip loopback and down interfaces
 		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
@@ -459,7 +460,6 @@ func getFirstIP() (net.IP, error) {
 		if err != nil {
 			continue
 		}
-
 		for _, addr := range addrs {
 			var ip net.IP
 			switch v := addr.(type) {
@@ -469,20 +469,23 @@ func getFirstIP() (net.IP, error) {
 				ip = v.IP
 			}
 
-			// Check if it is a valid IPv4 address and not a loopback address
+			// Check if it is a valid address and not a loopback address
 			if ip == nil || ip.IsLoopback() {
 				continue
 			}
 
 			// To4() returns nil if the IP is not an IPv4 address
-			ip = ip.To4()
-			if ip == nil {
-				continue
+			if v4 := ip.To4(); v4 != nil {
+				return v4, nil
 			}
-
-			// Return the first valid IPv4 address found
-			return ip, nil
+			// Store first IPv6 address found, keep searching for IPv4
+			if ipv6 == nil {
+				ipv6 = ip.To16()
+			}
 		}
+	}
+	if ipv6 != nil {
+		return ipv6, nil
 	}
 
 	return net.IPv4zero, fmt.Errorf("could not find a valid network interface")
