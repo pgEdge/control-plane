@@ -38,7 +38,11 @@ func TestAddReplica(t *testing.T) {
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
 			Nodes: []*api.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
+				{
+					Name:           "n1",
+					HostIds:        []api.Identifier{api.Identifier(host1)},
+					PostgresqlConf: fastCheckpointConf,
+				},
 				{Name: "n2", HostIds: []api.Identifier{api.Identifier(host2)}},
 			},
 		},
@@ -78,6 +82,7 @@ func TestAddReplica(t *testing.T) {
 						api.Identifier(host1),
 						api.Identifier(host3),
 					},
+					PostgresqlConf: fastCheckpointConf,
 				},
 				{Name: "n2", HostIds: []api.Identifier{api.Identifier(host2)}},
 			},

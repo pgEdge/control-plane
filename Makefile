@@ -38,7 +38,7 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
 e2e_args=-tags=e2e_test -count=1 -timeout=45m \
 	$(if $(E2E_PARALLEL),-parallel $(E2E_PARALLEL)) \
-	$(if $(E2E_RUN),-run $(E2E_RUN)) \
+	$(if $(E2E_RUN),-run "$(E2E_RUN)") \
 	-args \
 	$(if $(E2E_FIXTURE),-fixture $(E2E_FIXTURE)) \
 	$(if $(filter 1,$(E2E_SKIP_CLEANUP)),-skip-cleanup) \
@@ -124,6 +124,7 @@ test-e2e:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--format standard-verbose \
+		--junitfile test-e2e-results.xml \
 		--rerun-fails=$(TEST_RERUN_FAILS) \
 		--rerun-fails-max-failures=4 \
 		--packages='./e2e/...' \

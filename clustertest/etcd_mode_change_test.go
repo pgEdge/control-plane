@@ -11,6 +11,7 @@ import (
 )
 
 func TestPromoteClientToServer(t *testing.T) {
+	t.Parallel()
 
 	tLog(t, "initializing cluster with 3 etcd servers and 1 etcd client")
 
@@ -55,6 +56,7 @@ func TestPromoteClientToServer(t *testing.T) {
 }
 
 func TestDemoteServerToClient(t *testing.T) {
+	t.Parallel()
 
 	tLog(t, "initializing cluster with 4 etcd servers")
 

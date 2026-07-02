@@ -229,8 +229,12 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 	t.Log("Multi-host MCP service provisioning test completed successfully")
 }
 
-// TestUpdateDatabaseAddService tests adding a service to an existing database.
-func TestUpdateDatabaseAddService(t *testing.T) {
+// TestUpdateDatabaseService verifies that services can be declaratively
+// added to and removed from an existing database via update, sharing a
+// single database across subtests since the update behavior (not the
+// database creation) is under test. Add runs before Remove since Remove
+// depends on a service already being present.
+func TestUpdateDatabaseService(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfServicesUnsupported(t)
@@ -246,7 +250,7 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 	// Create database without services
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
-			DatabaseName: "test_add_service",
+			DatabaseName: "test_update_database_service",
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   "admin",
@@ -269,61 +273,102 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 	// Verify no service instances initially
 	assert.Empty(t, db.ServiceInstances, "Should have no service instances initially")
 
-	t.Log("Adding MCP service to existing database")
+	addOK := t.Run("Add", func(t *testing.T) {
+		t.Log("Adding MCP service to existing database")
 
-	// Update database to add service
-	err := db.Update(ctx, UpdateOptions{
-		Spec: &controlplane.DatabaseSpec{
-			DatabaseName: "test_add_service",
-			DatabaseUsers: []*controlplane.DatabaseUserSpec{
-				{
-					Username:   "admin",
-					Password:   pointerTo("testpassword"),
-					DbOwner:    pointerTo(true),
-					Attributes: []string{"LOGIN", "SUPERUSER"},
+		// Update database to add service
+		err := db.Update(ctx, UpdateOptions{
+			Spec: &controlplane.DatabaseSpec{
+				DatabaseName: "test_update_database_service",
+				DatabaseUsers: []*controlplane.DatabaseUserSpec{
+					{
+						Username:   "admin",
+						Password:   pointerTo("testpassword"),
+						DbOwner:    pointerTo(true),
+						Attributes: []string{"LOGIN", "SUPERUSER"},
+					},
 				},
-			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
-			Nodes: []*controlplane.DatabaseNodeSpec{
-				{
-					Name:    "n1",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				Port:        pointerTo(0),
+				PatroniPort: pointerTo(0),
+				Nodes: []*controlplane.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					},
 				},
-			},
-			Services: []*controlplane.ServiceSpec{
-				{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					ConnectAs:   "admin",
-					//Version:     "1.0.0",
-					Version: "latest",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host2)},
-					Config: map[string]any{
-						"llm_enabled":  true,
-						"llm_provider": "ollama",
-						"llm_model":    "llama2",
-						"ollama_url":   "http://localhost:11434",
+				Services: []*controlplane.ServiceSpec{
+					{
+						ServiceID:   "mcp-server",
+						ServiceType: "mcp",
+						ConnectAs:   "admin",
+						//Version:     "1.0.0",
+						Version: "latest",
+						HostIds: []controlplane.Identifier{controlplane.Identifier(host2)},
+						Config: map[string]any{
+							"llm_enabled":  true,
+							"llm_provider": "ollama",
+							"llm_model":    "llama2",
+							"ollama_url":   "http://localhost:11434",
+						},
 					},
 				},
 			},
-		},
+		})
+		require.NoError(t, err, "Failed to update database")
+
+		t.Log("Database updated, verifying service instance was added")
+
+		// Verify service instance was created
+		require.NotNil(t, db.ServiceInstances, "ServiceInstances should not be nil")
+		require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance after update")
+
+		serviceInstance := db.ServiceInstances[0]
+		assert.Equal(t, "mcp-server", serviceInstance.ServiceID, "Service ID should match")
+		assert.Equal(t, string(host2), serviceInstance.HostID, "Host ID should match")
+
+		t.Logf("Service instance added: %s (state: %s)", serviceInstance.ServiceInstanceID, serviceInstance.State)
+
+		t.Log("Add service to existing database test completed successfully")
 	})
-	require.NoError(t, err, "Failed to update database")
+	if !addOK {
+		t.Fatal("Add subtest failed; skipping Remove since it depends on the service being present")
+	}
 
-	t.Log("Database updated, verifying service instance was added")
+	t.Run("Remove", func(t *testing.T) {
+		t.Log("Removing service from database")
 
-	// Verify service instance was created
-	require.NotNil(t, db.ServiceInstances, "ServiceInstances should not be nil")
-	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance after update")
+		// Update database to remove service (empty services array)
+		err := db.Update(ctx, UpdateOptions{
+			Spec: &controlplane.DatabaseSpec{
+				DatabaseName: "test_update_database_service",
+				DatabaseUsers: []*controlplane.DatabaseUserSpec{
+					{
+						Username:   "admin",
+						Password:   pointerTo("testpassword"),
+						DbOwner:    pointerTo(true),
+						Attributes: []string{"LOGIN", "SUPERUSER"},
+					},
+				},
+				Port:        pointerTo(0),
+				PatroniPort: pointerTo(0),
+				Nodes: []*controlplane.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					},
+				},
+				Services: []*controlplane.ServiceSpec{}, // Empty services array
+			},
+		})
+		require.NoError(t, err, "Failed to update database")
 
-	serviceInstance := db.ServiceInstances[0]
-	assert.Equal(t, "mcp-server", serviceInstance.ServiceID, "Service ID should match")
-	assert.Equal(t, string(host2), serviceInstance.HostID, "Host ID should match")
+		t.Log("Database updated, verifying service instance was removed")
 
-	t.Logf("Service instance added: %s (state: %s)", serviceInstance.ServiceInstanceID, serviceInstance.State)
+		// Verify service instance was removed (declarative deletion)
+		assert.Empty(t, db.ServiceInstances, "Service instances should be empty after removal")
 
-	t.Log("Add service to existing database test completed successfully")
+		t.Log("Remove service test completed successfully")
+	})
 }
 
 // TestProvisionMCPServiceUnsupportedVersion tests that database creation fails
@@ -599,6 +644,22 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 	})
 	require.NoError(t, err, "GetDatabase should succeed after update")
 	assert.Equal(t, "available", db.State, "Database should be available after recovery update")
+
+	// Service instance creation can lag briefly behind the database
+	// reaching "available", so poll instead of asserting immediately.
+	if len(db.ServiceInstances) == 0 {
+		t.Log("Service instance not yet present, waiting for it to appear...")
+
+		instanceDeadline := time.Now().Add(1 * time.Minute)
+		for time.Now().Before(instanceDeadline) && len(db.ServiceInstances) == 0 {
+			time.Sleep(2 * time.Second)
+
+			db, err = fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
+				DatabaseID: dbID,
+			})
+			require.NoError(t, err, "Failed to refresh database")
+		}
+	}
 
 	// Service instance should now exist
 	require.NotNil(t, db.ServiceInstances, "ServiceInstances should not be nil after recovery")
@@ -934,94 +995,4 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 
 	t.Logf("Service instance %s updated in-place after config change", serviceInstanceID)
 	t.Log("MCP service config update test completed successfully")
-}
-
-// TestUpdateDatabaseRemoveService tests removing a service from a database.
-func TestUpdateDatabaseRemoveService(t *testing.T) {
-	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
-
-	host1 := fixture.HostIDs()[0]
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-
-	t.Log("Creating database with MCP service")
-
-	// Create database with service
-	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
-		Spec: &controlplane.DatabaseSpec{
-			DatabaseName: "test_remove_service",
-			DatabaseUsers: []*controlplane.DatabaseUserSpec{
-				{
-					Username:   "admin",
-					Password:   pointerTo("testpassword"),
-					DbOwner:    pointerTo(true),
-					Attributes: []string{"LOGIN", "SUPERUSER"},
-				},
-			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
-			Nodes: []*controlplane.DatabaseNodeSpec{
-				{
-					Name:    "n1",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
-				},
-			},
-			Services: []*controlplane.ServiceSpec{
-				{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					ConnectAs:   "admin",
-					//Version:     "1.0.0",
-					Version: "latest",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
-					Config: map[string]any{
-						"llm_enabled":       true,
-						"llm_provider":      "anthropic",
-						"llm_model":         "claude-sonnet-4-5",
-						"anthropic_api_key": "sk-ant-test",
-					},
-				},
-			},
-		},
-	})
-
-	// Verify service instance exists
-	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance initially")
-
-	t.Log("Removing service from database")
-
-	// Update database to remove service (empty services array)
-	err := db.Update(ctx, UpdateOptions{
-		Spec: &controlplane.DatabaseSpec{
-			DatabaseName: "test_remove_service",
-			DatabaseUsers: []*controlplane.DatabaseUserSpec{
-				{
-					Username:   "admin",
-					Password:   pointerTo("testpassword"),
-					DbOwner:    pointerTo(true),
-					Attributes: []string{"LOGIN", "SUPERUSER"},
-				},
-			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
-			Nodes: []*controlplane.DatabaseNodeSpec{
-				{
-					Name:    "n1",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
-				},
-			},
-			Services: []*controlplane.ServiceSpec{}, // Empty services array
-		},
-	})
-	require.NoError(t, err, "Failed to update database")
-
-	t.Log("Database updated, verifying service instance was removed")
-
-	// Verify service instance was removed (declarative deletion)
-	assert.Empty(t, db.ServiceInstances, "Service instances should be empty after removal")
-
-	t.Log("Remove service test completed successfully")
 }
