@@ -38,6 +38,13 @@ func TestGetServiceImage(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "valid lakekeeper 0.9.0",
+			serviceType: "lakekeeper",
+			version:     "0.9.0",
+			wantTag:     "quay.io/lakekeeper/catalog:v0.9.0",
+			wantErr:     false,
+		},
+		{
 			name:        "unsupported service type",
 			serviceType: "unknown",
 			version:     "latest",

@@ -1424,6 +1424,80 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				`"spock" must be included in shared_preload_libraries`,
 			},
 		},
+		{
+			name: "valid single-node ColdFront (lakekeeper)",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "lakekeeper",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_url":    "postgres://lk:secret@catalog:5432/lakekeeper?sslmode=disable",
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid multi-node ColdFront (lakekeeper) is rejected",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+					{
+						Name:    "n2",
+						HostIds: []api.Identifier{api.Identifier("host-2")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "lakekeeper",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_url":    "postgres://lk:secret@catalog:5432/lakekeeper?sslmode=disable",
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"multi-node ColdFront is not yet supported",
+				"mesh snowflake.node alignment pending",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)

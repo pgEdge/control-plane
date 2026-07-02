@@ -631,6 +631,8 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		return o.generateMCPInstanceResources(spec)
 	case "rag":
 		return o.generateRAGInstanceResources(spec)
+	case "lakekeeper":
+		return o.generateLakekeeperInstanceResources(spec)
 	default:
 		return nil, fmt.Errorf("service type %q instance generation is not yet supported", spec.ServiceSpec.ServiceType)
 	}
@@ -812,6 +814,220 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 					ConnectAsUsername: spec.ConnectAsUsername,
 				},
 			)
+		}
+	}
+
+	return o.buildServiceInstanceResources(spec, orchestratorResources)
+}
+
+// generateLakekeeperInstanceResources returns the resources needed for one
+// Lakekeeper service instance (Apache Iceberg REST catalog).
+func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	// Reject ColdFront on a multi-node database. ColdFront's tiering bakery
+	// requires snowflake.node = hashtext(spock_node_name)&1023, but
+	// control-plane currently assigns node ordinals rather than reconciling
+	// that mesh GUC, so a multi-node deployment would silently fail its tiering
+	// cron jobs (a clean failure — tiering errors only, no corruption). The API
+	// validation layer (validateColdFrontSingleNode) rejects this earlier; this
+	// is a defence-in-depth guard for callers that bypass it. The message is
+	// duplicated verbatim from apiv1.coldFrontMultiNodeError to avoid an import
+	// cycle. Remove once mesh snowflake.node reconciliation lands.
+	if len(spec.DatabaseNodes) > 1 {
+		return nil, fmt.Errorf("coldfront: multi-node ColdFront is not yet supported " +
+			"(mesh snowflake.node alignment pending); enable ColdFront only on a single-node database")
+	}
+
+	// Get service image.
+	serviceImage, err := o.resolveServiceImage(spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service image: %w", err)
+	}
+
+	// Validate compatibility with database version.
+	if spec.PgEdgeVersion != nil {
+		if err := serviceImage.ValidateCompatibility(
+			spec.PgEdgeVersion.PostgresVersion,
+			spec.PgEdgeVersion.SpockVersion,
+		); err != nil {
+			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
+				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
+		}
+	}
+
+	// Fail loudly if the external catalog Postgres connection details are
+	// absent. An empty catalog_db_url or pg_encryption_key would cause
+	// Lakekeeper to start with blank env vars and crash-loop silently;
+	// returning a clear error at plan time is far more helpful.
+	catalogDBURL, _ := spec.ServiceSpec.Config["catalog_db_url"].(string)
+	if catalogDBURL == "" {
+		return nil, fmt.Errorf(
+			"lakekeeper service %q: catalog_db_url is required in config; "+
+				"provide the connection URL for the external catalog Postgres — "+
+				"control-plane does not provision catalog databases",
+			spec.ServiceSpec.ServiceID,
+		)
+	}
+	pgEncryptionKey, _ := spec.ServiceSpec.Config["pg_encryption_key"].(string)
+	if pgEncryptionKey == "" {
+		return nil, fmt.Errorf(
+			"lakekeeper service %q: pg_encryption_key is required in config",
+			spec.ServiceSpec.ServiceID,
+		)
+	}
+
+	// Database network (shared with Postgres instances).
+	databaseNetwork := &Network{
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
+	}
+
+	// Service data directory (host-side bind mount). Lakekeeper runs as root
+	// (UID 0) in the official image, so no ownership override is needed here.
+	dataDirID := spec.ServiceInstanceID + "-data"
+	dataDir := &filesystem.DirResource{
+		ID:     dataDirID,
+		HostID: spec.HostID,
+		Path:   filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+	}
+
+	// Lakekeeper config resource — writes the sentinel file and acts as a
+	// placeholder for future config artefacts.
+	lakekeeperConfigRes := &LakekeeperConfigResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		ServiceID:         spec.ServiceSpec.ServiceID,
+		HostID:            spec.HostID,
+		DirResourceID:     dataDirID,
+	}
+
+	// Migrate resource — runs the Lakekeeper image with the "migrate"
+	// subcommand as a one-shot Docker container to apply the Iceberg catalog
+	// schema to the external catalog Postgres. Must complete before the
+	// "serve" container starts (enforced via ServiceInstanceSpecResource
+	// dependencies for lakekeeper).
+	lakekeeperMigrateRes := &LakekeeperMigrateResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		HostID:            spec.HostID,
+		Image:             serviceImage.Tag,
+		CatalogDBURL:      catalogDBURL,
+		PGEncryptionKey:   pgEncryptionKey,
+	}
+
+	// Service instance spec resource — holds the computed Docker Swarm service spec.
+	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceInstanceSpec := &ServiceInstanceSpecResource{
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceSpec:        spec.ServiceSpec,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		HostID:             spec.HostID,
+		ServiceName:        serviceName,
+		Hostname:           serviceName,
+		CohortMemberID:     o.swarmNodeID,
+		ServiceImage:       serviceImage,
+		DatabaseNetworkID:  databaseNetwork.Name,
+		DatabaseHosts:      spec.DatabaseHosts,
+		TargetSessionAttrs: spec.TargetSessionAttrs,
+		Port:               spec.Port,
+		DataDirID:          dataDirID,
+	}
+
+	// Service instance resource (actual Docker Swarm service).
+	serviceInstance := &ServiceInstanceResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		DatabaseID:        spec.DatabaseID,
+		ServiceName:       serviceName,
+		ServiceID:         spec.ServiceSpec.ServiceID,
+		ServiceSpecID:     spec.ServiceSpec.ServiceID,
+		ServiceType:       spec.ServiceSpec.ServiceType,
+		HostID:            spec.HostID,
+	}
+
+	// Bootstrap resource — after the serve container is healthy, creates the
+	// warehouse (with its storage profile and credential) and the default
+	// namespace via Lakekeeper's REST API. Depends on serviceInstance so it
+	// only runs once the Docker service is confirmed healthy. A failure blocks:
+	// an unbootstrapped warehouse is a broken database.
+	lakekeeperBootstrapRes := &LakekeeperBootstrapResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		HostID:            spec.HostID,
+		ServiceName:       serviceName,
+		Port:              utils.FromPointer(spec.Port),
+		Config:            spec.ServiceSpec.Config,
+	}
+
+	// Storage secret resource — stores the object-store credential inside the
+	// database via ColdFront's set_storage_secret. Runs on the node's primary
+	// after the database (and thus the coldfront extension) is available.
+	lakekeeperStorageSecretRes := &LakekeeperStorageSecretResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		DatabaseID:        spec.DatabaseID,
+		DatabaseName:      spec.DatabaseName,
+		NodeName:          spec.NodeName,
+		Config:            spec.ServiceSpec.Config,
+	}
+
+	orchestratorResources := []resource.Resource{
+		databaseNetwork,
+		dataDir,
+		lakekeeperConfigRes,
+		lakekeeperMigrateRes,
+		serviceInstanceSpec,
+		serviceInstance,
+		lakekeeperBootstrapRes,
+		lakekeeperStorageSecretRes,
+	}
+
+	// Append tiering schedule resources when storage config is present. If the
+	// provider key is absent (not yet configured), no schedules are registered.
+	// Cron defaults: archiver hourly, partitioner every 6h, compactor daily.
+	// Override via service_config keys archiver_cron / partitioner_cron / compactor_cron.
+	if _, hasProvider := spec.ServiceSpec.Config["provider"]; hasProvider {
+		port := utils.FromPointer(spec.Port)
+		if port == 0 {
+			port = 8181
+		}
+		lakekeeperEndpoint := fmt.Sprintf("http://%s:%d", serviceName, port)
+
+		// Build the args that the scheduled-job executor will decode.
+		serviceConfigCopy := maps.Clone(spec.ServiceSpec.Config)
+		serviceConfigCopy["lakekeeper_endpoint"] = lakekeeperEndpoint
+
+		tieringArgs := map[string]interface{}{
+			"database_id":    spec.DatabaseID,
+			"node_name":      spec.NodeName,
+			"service_id":     spec.ServiceSpec.ServiceID,
+			"service_config": serviceConfigCopy,
+			"database_name":  spec.DatabaseName,
+		}
+
+		getCron := func(key, defaultExpr string) string {
+			if v, ok := spec.ServiceSpec.Config[key].(string); ok && v != "" {
+				return v
+			}
+			return defaultExpr
+		}
+
+		tierings := []struct {
+			suffix   string
+			workflow string
+			cron     string
+			cronKey  string
+		}{
+			{"archiver", scheduler.WorkflowColdFrontArchive, "0 * * * *", "archiver_cron"},
+			{"partitioner", scheduler.WorkflowColdFrontPartition, "0 */6 * * *", "partitioner_cron"},
+			{"compactor", scheduler.WorkflowColdFrontCompact, "0 2 * * *", "compactor_cron"},
+		}
+		for _, t := range tierings {
+			jobID := fmt.Sprintf("coldfront-%s-%s-%s", t.suffix, spec.DatabaseID, spec.NodeName)
+			orchestratorResources = append(orchestratorResources, scheduler.NewScheduledJobResource(
+				jobID,
+				getCron(t.cronKey, t.cron),
+				t.workflow,
+				tieringArgs,
+				nil,
+			))
 		}
 	}
 
