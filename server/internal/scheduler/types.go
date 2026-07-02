@@ -14,6 +14,10 @@ const (
 	JobStatusFailed    = "failed"
 
 	WorkflowCreatePgBackRestBackup = "CreatePgBackRestBackup"
+
+	WorkflowColdFrontArchive   = "ColdFrontArchive"
+	WorkflowColdFrontPartition = "ColdFrontPartition"
+	WorkflowColdFrontCompact   = "ColdFrontCompact"
 )
 
 type StoredScheduledJob struct {

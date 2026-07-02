@@ -25,3 +25,6 @@ control-plane
 pgedge-control-plane
 !docker/control-plane
 e2e/debug
+
+# Git worktrees (local; never committed)
+.worktrees/

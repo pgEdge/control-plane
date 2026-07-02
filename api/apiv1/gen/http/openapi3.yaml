@@ -8464,7 +8464,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: analytics-service
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -8514,7 +8514,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: analytics-service
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -9101,7 +9101,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: analytics-service
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -9151,7 +9151,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: analytics-service
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -9201,7 +9201,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: analytics-service
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -9251,7 +9251,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: analytics-service
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -9861,7 +9861,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -9911,7 +9911,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -9961,7 +9961,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -10011,7 +10011,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -10394,7 +10394,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -10444,7 +10444,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -10494,7 +10494,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -10544,7 +10544,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -10861,7 +10861,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -10911,7 +10911,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -10961,7 +10961,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -11488,7 +11488,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -11538,7 +11538,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -11855,7 +11855,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -11905,7 +11905,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -11955,7 +11955,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -12005,7 +12005,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -12677,7 +12677,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -12727,7 +12727,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -12777,7 +12777,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -12827,7 +12827,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -13143,7 +13143,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -13192,7 +13192,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -13241,7 +13241,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -13290,7 +13290,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -13671,7 +13671,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -13720,7 +13720,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -14037,7 +14037,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -14087,7 +14087,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -14137,7 +14137,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -14187,7 +14187,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -14714,7 +14714,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -14764,7 +14764,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -14814,7 +14814,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -15421,7 +15421,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
             - config:
                 llm_model: gpt-4
@@ -15471,7 +15471,7 @@ components:
                       host_path: /Users/user/backups/host
               port: 0
               service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              service_type: rag
+              service_type: lakekeeper
               version: latest
         spock_version:
           type: string
@@ -16143,7 +16143,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
           - config:
               llm_model: gpt-4
@@ -16193,7 +16193,7 @@ components:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: rag
+            service_type: lakekeeper
             version: latest
         spock_version: "5"
       required:
@@ -19004,11 +19004,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19062,7 +19063,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: analytics-service
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id
@@ -19127,11 +19128,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19187,7 +19189,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id
@@ -19252,11 +19254,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19311,7 +19314,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id
@@ -19375,11 +19378,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19435,7 +19439,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id
@@ -19499,11 +19503,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19557,7 +19562,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id
@@ -19622,11 +19627,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19682,7 +19688,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id
@@ -19746,11 +19752,12 @@ components:
         service_type:
           type: string
           description: The type of service to run.
-          example: rag
+          example: lakekeeper
           enum:
             - mcp
             - postgrest
             - rag
+            - lakekeeper
         version:
           type: string
           description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -19805,7 +19812,7 @@ components:
                 host_path: /Users/user/backups/host
         port: 0
         service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        service_type: rag
+        service_type: lakekeeper
         version: latest
       required:
         - service_id

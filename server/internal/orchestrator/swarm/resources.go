@@ -20,4 +20,8 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*RAGPreflightResource](registry, ResourceTypeRAGPreflightResource)
 	resource.RegisterResourceType[*RAGServiceKeysResource](registry, ResourceTypeRAGServiceKeys)
 	resource.RegisterResourceType[*RAGConfigResource](registry, ResourceTypeRAGConfig)
+	resource.RegisterResourceType[*LakekeeperConfigResource](registry, ResourceTypeLakekeeperConfig)
+	resource.RegisterResourceType[*LakekeeperMigrateResource](registry, ResourceTypeLakekeeperMigrate)
+	resource.RegisterResourceType[*LakekeeperBootstrapResource](registry, ResourceTypeLakekeeperBootstrap)
+	resource.RegisterResourceType[*LakekeeperStorageSecretResource](registry, ResourceTypeLakekeeperStorageSecret)
 }

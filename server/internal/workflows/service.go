@@ -330,6 +330,26 @@ func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) 
 	return t, nil
 }
 
+// RunColdFrontTiering starts a ColdFrontTiering workflow that runs the named
+// binary (archiver, partitioner, or compactor) against the given database node.
+func (s *Service) RunColdFrontTiering(ctx context.Context, binary string, input *ColdFrontTieringInput) (*task.Task, error) {
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
+		DatabaseID: input.DatabaseID,
+		Type:       task.TypeTiering,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tiering task: %w", err)
+	}
+	input.TaskID = t.TaskID
+	input.Binary = binary
+	err = s.createWorkflow(ctx, t, s.workflows.ColdFrontTiering, input)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 func (s *Service) CancelDatabaseTask(ctx context.Context, databaseID string, taskID uuid.UUID) (*task.Task, error) {
 	t, err := s.taskSvc.GetTask(ctx, task.ScopeDatabase, databaseID, taskID)
 	if err != nil {

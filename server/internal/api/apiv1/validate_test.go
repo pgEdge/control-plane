@@ -1307,6 +1307,80 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				`nodes[0].postgresql_conf[HBA_FILE]: "HBA_FILE" is not allowed`,
 			},
 		},
+		{
+			name: "valid single-node ColdFront (lakekeeper)",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "lakekeeper",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_url":    "postgres://lk:secret@catalog:5432/lakekeeper?sslmode=disable",
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid multi-node ColdFront (lakekeeper) is rejected",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+					{
+						Name:    "n2",
+						HostIds: []api.Identifier{api.Identifier("host-2")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "lakekeeper",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_url":    "postgres://lk:secret@catalog:5432/lakekeeper?sslmode=disable",
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"multi-node ColdFront is not yet supported",
+				"mesh snowflake.node alignment pending",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)
@@ -1475,6 +1549,101 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 			expected: []string{
 				"pipelines is required",
+			},
+		},
+		{
+			name: "lakekeeper with nil config fails — catalog_db_url required",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-lakekeeper",
+				ServiceType: "lakekeeper",
+				Version:     "0.9.0",
+				HostIds:     []api.Identifier{"host-1"},
+			},
+			expected: []string{
+				"catalog_db_url is required",
+				"pg_encryption_key is required",
+			},
+		},
+		{
+			name: "lakekeeper with empty config fails — catalog_db_url required",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-lakekeeper",
+				ServiceType: "lakekeeper",
+				Version:     "0.9.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+			},
+			expected: []string{
+				"catalog_db_url is required",
+				"pg_encryption_key is required",
+			},
+		},
+		{
+			name: "lakekeeper missing pg_encryption_key fails",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-lakekeeper",
+				ServiceType: "lakekeeper",
+				Version:     "0.9.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"catalog_db_url": "postgres://lakekeeper:secret@pg-host:5432/lakekeeper?sslmode=disable",
+				},
+			},
+			expected: []string{
+				"pg_encryption_key is required",
+			},
+		},
+		{
+			name: "lakekeeper missing warehouse bootstrap keys fails",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-lakekeeper",
+				ServiceType: "lakekeeper",
+				Version:     "0.9.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"catalog_db_url":    "postgres://lakekeeper:secret@pg-host:5432/lakekeeper?sslmode=disable",
+					"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+				},
+			},
+			expected: []string{
+				"provider is required",
+				"warehouse is required",
+				"credential is required",
+			},
+		},
+		{
+			name: "lakekeeper aws missing bucket fails",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-lakekeeper",
+				ServiceType: "lakekeeper",
+				Version:     "0.9.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"catalog_db_url":    "postgres://lakekeeper:secret@pg-host:5432/lakekeeper?sslmode=disable",
+					"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+					"provider":          "aws",
+					"warehouse":         "wh1",
+					"credential":        `{"access_key_id":"a","secret_access_key":"s"}`,
+				},
+			},
+			expected: []string{"bucket is required for aws"},
+		},
+		{
+			name: "valid lakekeeper with all required config keys",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-lakekeeper",
+				ServiceType: "lakekeeper",
+				Version:     "0.9.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"catalog_db_url":    "postgres://lakekeeper:secret@pg-host:5432/lakekeeper?sslmode=disable",
+					"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+					"provider":          "aws",
+					"bucket":            "my-bucket",
+					"region":            "us-east-1",
+					"warehouse":         "wh1",
+					"credential":        `{"access_key_id":"a","secret_access_key":"s"}`,
+				},
 			},
 		},
 		{

@@ -35,10 +35,10 @@ type ServiceInstanceSpecResource struct {
 	CohortMemberID     string                      `json:"cohort_member_id"`
 	ServiceImage       *ServiceImage               `json:"service_image"`
 	DatabaseNetworkID  string                      `json:"database_network_id"`
-	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`       // Ordered Postgres host:port entries
-	TargetSessionAttrs string                      `json:"target_session_attrs"` // libpq target_session_attrs
-	Port               *int                        `json:"port"`                 // Service published port (optional, 0 = random)
-	DataDirID          string                      `json:"data_dir_id"`          // DirResource ID for the service data directory
+	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`        // Ordered Postgres host:port entries
+	TargetSessionAttrs string                      `json:"target_session_attrs"`  // libpq target_session_attrs
+	Port               *int                        `json:"port"`                  // Service published port (optional, 0 = random)
+	DataDirID          string                      `json:"data_dir_id"`           // DirResource ID for the service data directory
 	KBDirPath          string                      `json:"kb_dir_path,omitempty"` // Host-side KB directory for bind mount (MCP only, KB enabled)
 	Spec               swarm.ServiceSpec           `json:"spec"`
 }
@@ -80,6 +80,14 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 		deps = append(deps,
 			RAGConfigResourceIdentifier(s.ServiceInstanceID),
 			RAGServiceKeysResourceIdentifier(s.ServiceInstanceID),
+		)
+	case "lakekeeper":
+		deps = append(deps,
+			LakekeeperConfigResourceIdentifier(s.ServiceInstanceID),
+			// The migrate resource must complete before the serve container
+			// starts, so that the catalog schema exists before Lakekeeper
+			// attempts to use it.
+			LakekeeperMigrateResourceIdentifier(s.ServiceInstanceID),
 		)
 	default:
 		log.Warn().Str("service_type", s.ServiceSpec.ServiceType).Msg("unknown service type in dependencies")

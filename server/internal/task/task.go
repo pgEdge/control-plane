@@ -40,6 +40,7 @@ const (
 	TypeSwitchover      Type = "switchover"
 	TypeFailover        Type = "failover"
 	TypeRemoveHost      Type = "remove_host"
+	TypeTiering         Type = "tiering"
 )
 
 type Status string

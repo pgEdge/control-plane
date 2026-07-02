@@ -67,6 +67,20 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 		// No constraints — RAG works with all PG/Spock versions.
 	})
 
+	// Lakekeeper service versions — Apache Iceberg REST catalog.
+	// The image is published to quay.io/lakekeeper/catalog and already
+	// carries a full registry prefix, so serviceImageTag passes it through
+	// as-is without prepending the configured ImageRepositoryHost.
+	// The registration KEY is bare semver ("0.9.0") to satisfy the Goa
+	// version pattern ^(\d+\.\d+(\.\d+)?|latest)$, which rejects a leading
+	// "v"; the Docker TAG retains the upstream "v" prefix.
+	// NOTE: confirm the pinned tag with the ColdFront team before shipping.
+	versions.addServiceImage("lakekeeper", "0.9.0", &ServiceImage{
+		Tag: "quay.io/lakekeeper/catalog:v0.9.0",
+		// No constraints — Lakekeeper does not run inside Postgres containers;
+		// it has its own Postgres backing database (see Task 12).
+	})
+
 	// Example of a service image with version constraints (nil = no restriction):
 	//
 	//   acme-service:1.0.0 requires PG 14-17 and Spock >= 4.0.0

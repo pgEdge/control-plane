@@ -4667,7 +4667,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "rag",
+              "service_type": "lakekeeper",
               "version": "latest"
             },
             {
@@ -4746,7 +4746,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "rag",
+              "service_type": "lakekeeper",
               "version": "latest"
             },
             {
@@ -4825,7 +4825,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "rag",
+              "service_type": "lakekeeper",
               "version": "latest"
             },
             {
@@ -4904,7 +4904,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "rag",
+              "service_type": "lakekeeper",
               "version": "latest"
             }
           ]
@@ -5631,7 +5631,7 @@
             },
             "port": 0,
             "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "service_type": "rag",
+            "service_type": "lakekeeper",
             "version": "latest"
           },
           {
@@ -5710,7 +5710,7 @@
             },
             "port": 0,
             "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "service_type": "rag",
+            "service_type": "lakekeeper",
             "version": "latest"
           }
         ],
@@ -9016,11 +9016,12 @@
         "service_type": {
           "type": "string",
           "description": "The type of service to run.",
-          "example": "rag",
+          "example": "lakekeeper",
           "enum": [
             "mcp",
             "postgrest",
-            "rag"
+            "rag",
+            "lakekeeper"
           ]
         },
         "version": {
@@ -9105,7 +9106,7 @@
         },
         "port": 0,
         "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-        "service_type": "rag",
+        "service_type": "lakekeeper",
         "version": "latest"
       },
       "required": [
