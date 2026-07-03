@@ -109,8 +109,7 @@ func (d DockerSwarm) validate() []error {
 }
 
 // DefaultManifestURL is the pgEdge CDN URL used when no manifest_url is configured.
-// TODO(PLAT-598): Replace with the real URL once the hosting location is confirmed.
-const DefaultManifestURL = "https://download.pgedge.com/manifests/version-manifest.json"
+const DefaultManifestURL = "https://downloads.pgedge.com/manifests/release/control-plane/version-manifest.json"
 
 var defaultDockerSwarm = DockerSwarm{
 	ImageRepositoryHost: "ghcr.io/pgedge",
