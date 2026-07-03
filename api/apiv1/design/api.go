@@ -209,11 +209,18 @@ var _ = g.Service("control-plane", func() {
 	g.Method("list-databases", func() {
 		g.Description("Lists all databases in the cluster.")
 		g.Meta("openapi:summary", "List databases")
+		g.Payload(func() {
+			g.Attribute("include", g.ArrayOf(g.String), func() {
+				g.Description("Optional fields to include in each database response. Supported values: available_upgrades.")
+				g.Example([]string{"available_upgrades"})
+			})
+		})
 		g.Result(ListDatabasesResponse)
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
 			g.GET("/v1/databases")
+			g.Param("include")
 
 			g.Meta("openapi:tag:Database")
 		})
@@ -245,6 +252,10 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the database to get.")
 				g.Example("my-app")
 			})
+			g.Attribute("include", g.ArrayOf(g.String), func() {
+				g.Description("Optional fields to include in the response. Supported values: available_upgrades.")
+				g.Example([]string{"available_upgrades"})
+			})
 
 			g.Required("database_id")
 		})
@@ -255,6 +266,7 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/v1/databases/{database_id}")
+			g.Param("include")
 
 			g.Meta("openapi:tag:Database")
 		})
@@ -291,6 +303,33 @@ var _ = g.Service("control-plane", func() {
 			g.POST("/v1/databases/{database_id}")
 			g.Param("force_update")
 			g.Param("remove_host")
+			g.Body("request")
+
+			g.Meta("openapi:tag:Database")
+		})
+	})
+
+	g.Method("apply-upgrade", func() {
+		g.Description("Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.")
+		g.Meta("openapi:summary", "Apply database upgrade")
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("ID of the database to upgrade.")
+				g.Example("my-app")
+			})
+			g.Attribute("request", ApplyUpgradeRequest)
+
+			g.Required("database_id", "request")
+		})
+		g.Result(ApplyUpgradeResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/upgrade")
 			g.Body("request")
 
 			g.Meta("openapi:tag:Database")

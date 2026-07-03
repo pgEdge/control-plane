@@ -1074,6 +1074,7 @@ func orchestratorOptsToDatabase(opts *api.OrchestratorOpts) *database.Orchestrat
 			ExtraVolumes:  extraVolumesToDatabase(opts.Swarm.ExtraVolumes),
 			ExtraNetworks: extraNetworksToDatabase(opts.Swarm.ExtraNetworks),
 			ExtraLabels:   maps.Clone(opts.Swarm.ExtraLabels),
+			Image:         utils.FromPointer(opts.Swarm.Image),
 		},
 	}
 }
@@ -1087,9 +1088,9 @@ func orchestratorOptsToAPI(opts *database.OrchestratorOpts) *api.OrchestratorOpt
 			ExtraVolumes:  extraVolumesToAPI(opts.Swarm.ExtraVolumes),
 			ExtraNetworks: extraNetworksToAPI(opts.Swarm.ExtraNetworks),
 			ExtraLabels:   maps.Clone(opts.Swarm.ExtraLabels),
+			Image:         utils.PointerTo(opts.Swarm.Image),
 		},
 	}
-
 }
 
 func extraNetworksToDatabase(networks []*api.ExtraNetworkSpec) []database.ExtraNetworkSpec {
@@ -1194,4 +1195,27 @@ func parseScope(scopeStr string) (task.Scope, error) {
 	default:
 		return "", fmt.Errorf("invalid scope %q", scopeStr)
 	}
+}
+
+// includesAvailableUpgrades reports whether the include list contains the
+// "available_upgrades" token.
+func includesAvailableUpgrades(include []string) bool {
+	return slices.Contains(include, "available_upgrades")
+}
+
+// availableUpgradesToAPI converts database-layer upgrade entries to their API
+// representation.
+func availableUpgradesToAPI(upgrades []*database.AvailableUpgrade) []*api.AvailableUpgrade {
+	if len(upgrades) == 0 {
+		return nil
+	}
+	out := make([]*api.AvailableUpgrade, len(upgrades))
+	for i, u := range upgrades {
+		out[i] = &api.AvailableUpgrade{
+			PostgresVersion: u.PostgresVersion,
+			SpockVersion:    u.SpockVersion,
+			Image:           u.Image,
+		}
+	}
+	return out
 }

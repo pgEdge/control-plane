@@ -702,6 +702,26 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Required("database_name", "nodes")
 })
 
+var AvailableUpgrade = g.Type("AvailableUpgrade", func() {
+	g.Description("A newer stable image available for the database in the same Postgres major / Spock major bucket.")
+	g.Attribute("postgres_version", g.String, func() {
+		g.Description("Postgres version of the upgrade candidate.")
+		g.Example("17.10")
+		g.Meta("struct:tag:json", "postgres_version")
+	})
+	g.Attribute("spock_version", g.String, func() {
+		g.Description("Spock major version of the upgrade candidate.")
+		g.Example("5")
+		g.Meta("struct:tag:json", "spock_version")
+	})
+	g.Attribute("image", g.String, func() {
+		g.Description("Full container image reference for the upgrade candidate.")
+		g.Example("ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-1")
+		g.Meta("struct:tag:json", "image")
+	})
+	g.Required("postgres_version", "spock_version", "image")
+})
+
 var Database = g.Type("Database", func() {
 	g.Attribute("id", Identifier, func() {
 		g.Description("Unique identifier for the database.")
@@ -754,6 +774,10 @@ var Database = g.Type("Database", func() {
 		g.Description("The user-provided specification for the database.")
 		g.Meta("struct:tag:json", "spec,omitempty")
 	})
+	g.Attribute("available_upgrades", g.ArrayOf(AvailableUpgrade), func() {
+		g.Description("Newer stable image versions available in the same Postgres major / Spock major bucket. Present only when ?include=available_upgrades is set.")
+		g.Meta("struct:tag:json", "available_upgrades,omitempty")
+	})
 
 	g.Example(exampleDatabase)
 
@@ -804,6 +828,10 @@ var DatabaseSummary = g.Type("DatabaseSummary", func() {
 	g.Attribute("instances", g.ArrayOf(Instance), func() {
 		g.Description("All of the instances in the database.")
 		g.Meta("struct:tag:json", "instances,omitempty")
+	})
+	g.Attribute("available_upgrades", g.ArrayOf(AvailableUpgrade), func() {
+		g.Description("Newer stable image versions available in the same Postgres major / Spock major bucket. Present only when ?include=available_upgrades is set.")
+		g.Meta("struct:tag:json", "available_upgrades,omitempty")
 	})
 
 	g.Required("id", "created_at", "updated_at", "state")
@@ -1295,6 +1323,45 @@ var DeleteDatabaseResponse = g.Type("DeleteDatabaseResponse", func() {
 			"status":      "pending",
 			"task_id":     "019783f1-9f17-77e7-9a08-fa6ab39e3b29",
 			"type":        "delete",
+		},
+	})
+})
+
+var ApplyUpgradeRequest = g.Type("ApplyUpgradeRequest", func() {
+	g.Attribute("image", g.String, func() {
+		g.Description("Full container image reference of the upgrade target. Must match the image field of a stable manifest entry in the same Postgres major / Spock major bucket as the current version and be strictly newer.")
+		g.Example("ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1")
+		g.MinLength(1)
+		g.Meta("struct:tag:json", "image")
+	})
+	g.Required("image")
+})
+
+var ApplyUpgradeResponse = g.Type("ApplyUpgradeResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task tracking the upgrade operation.")
+		g.Meta("struct:tag:json", "task")
+	})
+	g.Attribute("database", Database, func() {
+		g.Description("The database being upgraded.")
+		g.Meta("struct:tag:json", "database")
+	})
+
+	g.Required("task", "database")
+
+	g.Example(map[string]any{
+		"database": map[string]any{
+			"created_at": "2025-06-18T16:52:05Z",
+			"id":         "storefront",
+			"state":      "modifying",
+			"updated_at": "2025-06-18T17:58:59Z",
+		},
+		"task": map[string]any{
+			"created_at":  "2025-06-18T17:58:59Z",
+			"database_id": "storefront",
+			"status":      "pending",
+			"task_id":     "01978431-b628-758a-aec6-03b331fa1a17",
+			"type":        "upgrade",
 		},
 	})
 })
@@ -1971,6 +2038,14 @@ var SwarmOpts = g.Type("SwarmOpts", func() {
 			"traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)",
 		})
 		g.Meta("struct:tag:json", "extra_labels,omitempty")
+	})
+	g.Attribute("image", g.String, func() {
+		g.Description("User-specified container image override. Bypasses manifest version " +
+			"constraints entirely — the CP will deploy this image without validating it against " +
+			"the version manifest. The CP verifies the image exists in its registry before accepting " +
+			"the spec. Clearing this field causes the CP to fall back to the manifest-resolved image on the " +
+			"next reconcile.")
+		g.Meta("struct:tag:json", "image,omitempty")
 	})
 })
 

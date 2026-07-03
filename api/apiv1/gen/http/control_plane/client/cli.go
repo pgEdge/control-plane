@@ -182,6 +182,25 @@ func BuildRemoveHostPayload(controlPlaneRemoveHostHostID string, controlPlaneRem
 	return v, nil
 }
 
+// BuildListDatabasesPayload builds the payload for the control-plane
+// list-databases endpoint from CLI flags.
+func BuildListDatabasesPayload(controlPlaneListDatabasesInclude string) (*controlplane.ListDatabasesPayload, error) {
+	var err error
+	var include []string
+	{
+		if controlPlaneListDatabasesInclude != "" {
+			err = json.Unmarshal([]byte(controlPlaneListDatabasesInclude), &include)
+			if err != nil {
+				return nil, fmt.Errorf("invalid JSON for include, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"available_upgrades\"\n   ]'")
+			}
+		}
+	}
+	v := &controlplane.ListDatabasesPayload{}
+	v.Include = include
+
+	return v, nil
+}
+
 // BuildCreateDatabasePayload builds the payload for the control-plane
 // create-database endpoint from CLI flags.
 func BuildCreateDatabasePayload(controlPlaneCreateDatabaseBody string) (*controlplane.CreateDatabaseRequest, error) {
@@ -242,7 +261,7 @@ func BuildCreateDatabasePayload(controlPlaneCreateDatabaseBody string) (*control
 
 // BuildGetDatabasePayload builds the payload for the control-plane
 // get-database endpoint from CLI flags.
-func BuildGetDatabasePayload(controlPlaneGetDatabaseDatabaseID string) (*controlplane.GetDatabasePayload, error) {
+func BuildGetDatabasePayload(controlPlaneGetDatabaseDatabaseID string, controlPlaneGetDatabaseInclude string) (*controlplane.GetDatabasePayload, error) {
 	var err error
 	var databaseID string
 	{
@@ -257,8 +276,18 @@ func BuildGetDatabasePayload(controlPlaneGetDatabaseDatabaseID string) (*control
 			return nil, err
 		}
 	}
+	var include []string
+	{
+		if controlPlaneGetDatabaseInclude != "" {
+			err = json.Unmarshal([]byte(controlPlaneGetDatabaseInclude), &include)
+			if err != nil {
+				return nil, fmt.Errorf("invalid JSON for include, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"available_upgrades\"\n   ]'")
+			}
+		}
+	}
 	v := &controlplane.GetDatabasePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.Include = include
 
 	return v, nil
 }
@@ -322,7 +351,7 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 		if controlPlaneUpdateDatabaseRemoveHost != "" {
 			err = json.Unmarshal([]byte(controlPlaneUpdateDatabaseRemoveHost), &removeHost)
 			if err != nil {
-				return nil, fmt.Errorf("invalid JSON for removeHost, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"Eveniet possimus dicta laudantium.\",\n      \"Repellendus in doloremque.\",\n      \"Officia rerum eum nemo autem iste illo.\",\n      \"Non libero quibusdam et sapiente.\"\n   ]'")
+				return nil, fmt.Errorf("invalid JSON for removeHost, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"In doloremque.\",\n      \"Officia rerum eum nemo autem iste illo.\",\n      \"Non libero quibusdam et sapiente.\"\n   ]'")
 			}
 		}
 	}
@@ -340,6 +369,47 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.ForceUpdate = forceUpdate
 	res.RemoveHost = removeHost
+
+	return res, nil
+}
+
+// BuildApplyUpgradePayload builds the payload for the control-plane
+// apply-upgrade endpoint from CLI flags.
+func BuildApplyUpgradePayload(controlPlaneApplyUpgradeBody string, controlPlaneApplyUpgradeDatabaseID string) (*controlplane.ApplyUpgradePayload, error) {
+	var err error
+	var body ApplyUpgradeRequestBody
+	{
+		err = json.Unmarshal([]byte(controlPlaneApplyUpgradeBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"image\": \"ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1\"\n   }'")
+		}
+		if utf8.RuneCountInString(body.Image) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.image", body.Image, utf8.RuneCountInString(body.Image), 1, true))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var databaseID string
+	{
+		databaseID = controlPlaneApplyUpgradeDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &controlplane.ApplyUpgradeRequest{
+		Image: body.Image,
+	}
+	res := &controlplane.ApplyUpgradePayload{
+		Request: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
 
 	return res, nil
 }

@@ -65,6 +65,10 @@ type Client struct {
 	// update-database endpoint.
 	UpdateDatabaseDoer goahttp.Doer
 
+	// ApplyUpgrade Doer is the HTTP client used to make requests to the
+	// apply-upgrade endpoint.
+	ApplyUpgradeDoer goahttp.Doer
+
 	// DeleteDatabase Doer is the HTTP client used to make requests to the
 	// delete-database endpoint.
 	DeleteDatabaseDoer goahttp.Doer
@@ -166,6 +170,7 @@ func NewClient(
 		CreateDatabaseDoer:         doer,
 		GetDatabaseDoer:            doer,
 		UpdateDatabaseDoer:         doer,
+		ApplyUpgradeDoer:           doer,
 		DeleteDatabaseDoer:         doer,
 		BackupDatabaseNodeDoer:     doer,
 		SwitchoverDatabaseNodeDoer: doer,
@@ -367,10 +372,15 @@ func (c *Client) RemoveHost() goa.Endpoint {
 // control-plane service list-databases server.
 func (c *Client) ListDatabases() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeListDatabasesRequest(c.encoder)
 		decodeResponse = DecodeListDatabasesResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildListDatabasesRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}
@@ -410,10 +420,15 @@ func (c *Client) CreateDatabase() goa.Endpoint {
 // control-plane service get-database server.
 func (c *Client) GetDatabase() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeGetDatabaseRequest(c.encoder)
 		decodeResponse = DecodeGetDatabaseResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildGetDatabaseRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}
@@ -444,6 +459,30 @@ func (c *Client) UpdateDatabase() goa.Endpoint {
 		resp, err := c.UpdateDatabaseDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "update-database", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ApplyUpgrade returns an endpoint that makes HTTP requests to the
+// control-plane service apply-upgrade server.
+func (c *Client) ApplyUpgrade() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeApplyUpgradeRequest(c.encoder)
+		decodeResponse = DecodeApplyUpgradeResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildApplyUpgradeRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ApplyUpgradeDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "apply-upgrade", err)
 		}
 		return decodeResponse(resp)
 	}

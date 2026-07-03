@@ -99,9 +99,9 @@ func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 }
 
 // checkKBFileExists blocks deployment when kb_enabled is set but the host
-// KB file is missing. Called from Create and Update — not Refresh, because
-// Refresh is only invoked for resources already in state, so a check there
-// would not fire on first deploy.
+// KB file is missing or is not a regular file. Called from Create and Update —
+// not Refresh, because Refresh is only invoked for resources already in state,
+// so a check there would not fire on first deploy.
 func (r *MCPConfigResource) checkKBFileExists(fs afero.Fs) error {
 	if r.KBHostPath == "" {
 		return nil
@@ -112,6 +112,16 @@ func (r *MCPConfigResource) checkKBFileExists(fs afero.Fs) error {
 	}
 	if !exists {
 		return fmt.Errorf("KB database file not found at %s — stage the file on the host before deploying with kb_enabled: true", r.KBHostPath)
+	}
+	// A directory passes the existence check above but cannot be opened as a
+	// SQLite database, which would only surface as a confusing error at query
+	// time. Reject it here so the failure is clear at deploy time.
+	isDir, err := afero.IsDir(fs, r.KBHostPath)
+	if err != nil {
+		return fmt.Errorf("failed to check KB database file at %s: %w", r.KBHostPath, err)
+	}
+	if isDir {
+		return fmt.Errorf("KB database path %s is a directory, not a file — kb_database_host_path must point to the KB SQLite file", r.KBHostPath)
 	}
 	return nil
 }

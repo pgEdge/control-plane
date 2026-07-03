@@ -48,26 +48,22 @@ nfpms:
     # enterprise debhelper convention `dh_builddeb -- -Zgzip`.
     deb:
       compression: gzip
-    scripts:
-      preremove: packaging/preremove.sh
-    # goreleaser REPLACES (not merges) `contents` in a per-format override, so
-    # the full file list is repeated under rpm/deb. This is deliberate: it lets
-    # each format embed the SBOM signature made with ITS OWN key at the same
-    # path — RPM key for rpms, APT/DEB key for debs. The CircleCI release job
-    # generates .sbom/sbom.json and signs it twice (.sbom/sbom.rpm.asc,
-    # .sbom/sbom.deb.asc) before goreleaser runs.
     # Contents are shared at the top level. The SBOM signature is selected per
     # format via {{ .Format }} (rpm -> sbom.rpm.asc, deb -> sbom.deb.asc) —
     # goreleaser templates contents.src, so no per-format contents override is
-    # needed. Only the postinstall script genuinely differs per format
-    # (rpm/ vs deb/), and that path can't be templated, so it stays in overrides.
+    # needed. Only the postinstall and preremove scripts genuinely differ per
+    # format (rpm/ vs deb/), and those paths can't be templated, so they stay in
+    # overrides. (preremove is per-format so the service is only stopped on
+    # removal, not on upgrade — the guard condition differs between rpm/deb.)
     overrides:
       rpm:
         scripts:
           postinstall: packaging/rpm/postinstall.sh
+          preremove: packaging/rpm/preremove.sh
       deb:
         scripts:
           postinstall: packaging/deb/postinstall.sh
+          preremove: packaging/deb/preremove.sh
     contents:
       - src: packaging/pgedge-control-plane.service
         dst: /usr/lib/systemd/system/pgedge-control-plane.service

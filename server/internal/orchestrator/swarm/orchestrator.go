@@ -181,10 +181,177 @@ func ServiceInstanceName(databaseID, serviceID, hostID string) string {
 	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, base36[:8])
 }
 
+// resolveInstanceImages returns an Images for the instance using the precedence:
+// 1. SwarmOpts.Image (user override) — manifest lookup skipped entirely
+// 2. SwarmOpts.ResolvedImage (CP-managed, already stored)
+// 3. Manifest lookup — result written to SwarmOpts.ResolvedImage (lazy backfill)
+func (o *Orchestrator) resolveInstanceImages(spec *database.InstanceSpec) (*Images, error) {
+	var swarmOpts *database.SwarmOpts
+	if spec.OrchestratorOpts != nil {
+		swarmOpts = spec.OrchestratorOpts.Swarm
+	}
+
+	switch {
+	case swarmOpts != nil && swarmOpts.Image != "":
+		return &Images{PgEdgeImage: swarmOpts.Image}, nil
+	case swarmOpts != nil && swarmOpts.ResolvedImage != "":
+		return &Images{PgEdgeImage: swarmOpts.ResolvedImage}, nil
+	default:
+		manifested, err := o.versions.GetImages(spec.PgEdgeVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get images: %w", err)
+		}
+		if spec.OrchestratorOpts == nil {
+			spec.OrchestratorOpts = &database.OrchestratorOpts{}
+		}
+		if spec.OrchestratorOpts.Swarm == nil {
+			spec.OrchestratorOpts.Swarm = &database.SwarmOpts{}
+		}
+		spec.OrchestratorOpts.Swarm.ResolvedImage = manifested.PgEdgeImage
+		return &Images{PgEdgeImage: manifested.PgEdgeImage}, nil
+	}
+}
+
+// ReconcileInstanceSpec resolves the container image for the new spec.
+// When the version is unchanged it carries the stored ResolvedImage forward so
+// resolveInstanceImages takes the fast path (case 2) and never consults the
+// manifest. When the version changed it clears the stale pin so
+// resolveInstanceImages re-derives the correct image.
+func (o *Orchestrator) ReconcileInstanceSpec(old, new *database.InstanceSpec) error {
+	if old != nil && old.PgEdgeVersion != nil && new.PgEdgeVersion != nil {
+		if old.PgEdgeVersion.Equals(new.PgEdgeVersion) {
+			// Version unchanged — carry forward the pinned image so we don't
+			// re-derive it from the manifest on every reconcile.
+			if old.OrchestratorOpts != nil && old.OrchestratorOpts.Swarm != nil &&
+				old.OrchestratorOpts.Swarm.ResolvedImage != "" {
+				if new.OrchestratorOpts == nil {
+					new.OrchestratorOpts = &database.OrchestratorOpts{}
+				}
+				if new.OrchestratorOpts.Swarm == nil {
+					new.OrchestratorOpts.Swarm = &database.SwarmOpts{}
+				}
+				new.OrchestratorOpts.Swarm.ResolvedImage = old.OrchestratorOpts.Swarm.ResolvedImage
+			}
+		} else {
+			// Version changed — clear the stale pin so resolveInstanceImages
+			// fetches the correct image for the new version from the manifest.
+			if new.OrchestratorOpts != nil && new.OrchestratorOpts.Swarm != nil {
+				new.OrchestratorOpts.Swarm.ResolvedImage = ""
+			}
+		}
+	}
+	_, err := o.resolveInstanceImages(new)
+	return err
+}
+
+// resolveServiceImage returns a ServiceImage for the service instance using
+// the same precedence as resolveInstanceImages:
+//  1. ServiceSpec.OrchestratorOpts.Swarm.Image (user override) — manifest skipped
+//  2. ServiceSpec.OrchestratorOpts.Swarm.ResolvedImage (CP-managed, already stored)
+//  3. Manifest lookup — result written to ResolvedImage (lazy backfill / first creation)
+func (o *Orchestrator) resolveServiceImage(spec *database.ServiceInstanceSpec) (*ServiceImage, error) {
+	var swarmOpts *database.SwarmOpts
+	if spec.ServiceSpec != nil && spec.ServiceSpec.OrchestratorOpts != nil {
+		swarmOpts = spec.ServiceSpec.OrchestratorOpts.Swarm
+	}
+
+	switch {
+	case swarmOpts != nil && swarmOpts.Image != "":
+		return &ServiceImage{Tag: swarmOpts.Image}, nil
+	case swarmOpts != nil && swarmOpts.ResolvedImage != "":
+		return &ServiceImage{Tag: swarmOpts.ResolvedImage}, nil
+	default:
+		manifested, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get service image: %w", err)
+		}
+		if spec.ServiceSpec.OrchestratorOpts == nil {
+			spec.ServiceSpec.OrchestratorOpts = &database.OrchestratorOpts{}
+		}
+		if spec.ServiceSpec.OrchestratorOpts.Swarm == nil {
+			spec.ServiceSpec.OrchestratorOpts.Swarm = &database.SwarmOpts{}
+		}
+		spec.ServiceSpec.OrchestratorOpts.Swarm.ResolvedImage = manifested.Tag
+		return manifested, nil
+	}
+}
+
+// ReconcileServiceInstanceSpec resolves and pins the container image for the
+// service instance. When the service version is unchanged it carries the stored
+// ResolvedImage forward so resolveServiceImage takes the fast path and never
+// consults the manifest. When the version changed it clears the stale pin.
+// old is nil when the service instance is being created for the first time.
+func (o *Orchestrator) ReconcileServiceInstanceSpec(old, new *database.ServiceInstanceSpec) error {
+	if old != nil && old.ServiceSpec != nil && new.ServiceSpec != nil &&
+		old.ServiceSpec.Version == new.ServiceSpec.Version {
+		// Version unchanged — carry forward the pinned image.
+		if old.ServiceSpec.OrchestratorOpts != nil &&
+			old.ServiceSpec.OrchestratorOpts.Swarm != nil &&
+			old.ServiceSpec.OrchestratorOpts.Swarm.ResolvedImage != "" {
+			if new.ServiceSpec.OrchestratorOpts == nil {
+				new.ServiceSpec.OrchestratorOpts = &database.OrchestratorOpts{}
+			}
+			if new.ServiceSpec.OrchestratorOpts.Swarm == nil {
+				new.ServiceSpec.OrchestratorOpts.Swarm = &database.SwarmOpts{}
+			}
+			new.ServiceSpec.OrchestratorOpts.Swarm.ResolvedImage = old.ServiceSpec.OrchestratorOpts.Swarm.ResolvedImage
+		}
+	} else if new.ServiceSpec != nil && new.ServiceSpec.OrchestratorOpts != nil &&
+		new.ServiceSpec.OrchestratorOpts.Swarm != nil {
+		// Version changed — clear the stale pin so resolveServiceImage
+		// fetches the correct image for the new version from the manifest.
+		new.ServiceSpec.OrchestratorOpts.Swarm.ResolvedImage = ""
+	}
+	_, err := o.resolveServiceImage(new)
+	return err
+}
+
+func (o *Orchestrator) AvailableUpgrades(current *ds.PgEdgeVersion) []*database.AvailableUpgrade {
+	return o.versions.AvailableUpgrades(current)
+}
+
+func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*database.AvailableUpgrade, error) {
+	ver, img, ok := o.versions.FindByImage(targetImage)
+	if !ok {
+		return nil, fmt.Errorf("%w: image not found in manifest: %s", database.ErrUpgradeNotAvailable, targetImage)
+	}
+	if img.Stability != "" && img.Stability != "stable" {
+		return nil, fmt.Errorf("%w: target image stability is %q, must be stable", database.ErrUpgradeNotAvailable, img.Stability)
+	}
+
+	currentPGMajor, ok := current.PostgresVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine current postgres major version", database.ErrUpgradeNotAvailable)
+	}
+	targetPGMajor, ok2 := ver.PostgresVersion.Major()
+	if !ok2 || targetPGMajor != currentPGMajor {
+		return nil, fmt.Errorf("%w: target postgres major %d differs from current %d", database.ErrUpgradeNotAvailable, targetPGMajor, currentPGMajor)
+	}
+
+	currentSpockMajor, ok := current.SpockVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine current spock major version", database.ErrUpgradeNotAvailable)
+	}
+	targetSpockMajor, ok2 := ver.SpockVersion.Major()
+	if !ok2 || targetSpockMajor != currentSpockMajor {
+		return nil, fmt.Errorf("%w: target spock major %d differs from current %d", database.ErrUpgradeNotAvailable, targetSpockMajor, currentSpockMajor)
+	}
+
+	if ver.PostgresVersion.Compare(current.PostgresVersion) <= 0 {
+		return nil, fmt.Errorf("%w: target version %s is not newer than current %s", database.ErrUpgradeNotAvailable, ver.PostgresVersion, current.PostgresVersion)
+	}
+
+	return &database.AvailableUpgrade{
+		PostgresVersion: ver.PostgresVersion.String(),
+		SpockVersion:    ver.SpockVersion.String(),
+		Image:           img.PgEdgeImage,
+	}, nil
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
-	images, err := o.versions.GetImages(spec.PgEdgeVersion)
+	images, err := o.resolveInstanceImages(spec)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get images: %w", err)
+		return nil, nil, nil, err
 	}
 
 	instanceHostname := fmt.Sprintf("postgres-%s", spec.InstanceID)
@@ -452,8 +619,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 }
 
 func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	// Get service image based on service type and version
-	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+	serviceImage, err := o.resolveServiceImage(spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service image: %w", err)
 	}
@@ -661,8 +827,7 @@ func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInsta
 // generateRAGInstanceResources returns the resources needed for one RAG service
 // instance.
 func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	// Get service image.
-	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+	serviceImage, err := o.resolveServiceImage(spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service image: %w", err)
 	}
@@ -924,6 +1089,29 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*dat
 	results := make([]*database.ValidationResult, 0, len(changes)*3)
 
 	for _, ch := range changes {
+		// Validate user-specified image overrides. Runs for every spec change,
+		// independent of the structural diff below.
+		if cur := ch.Current; cur != nil {
+			if cur.OrchestratorOpts != nil && cur.OrchestratorOpts.Swarm != nil && cur.OrchestratorOpts.Swarm.Image != "" {
+				userImage := cur.OrchestratorOpts.Swarm.Image
+
+				// Verify the image is reachable in its registry using a lightweight
+				// distribution manifest fetch — no layers are downloaded.
+				// Skipped when no Docker client is available (e.g. unit tests).
+				if o.docker != nil {
+					if err := o.docker.CheckImageExists(ctx, userImage); err != nil {
+						results = append(results, &database.ValidationResult{
+							Valid:    false,
+							NodeName: cur.NodeName,
+							HostID:   cur.HostID,
+							Errors:   []string{fmt.Sprintf("image %q could not be verified: %v", userImage, err)},
+						})
+						continue
+					}
+				}
+			}
+		}
+
 		updates := instanceDiff(ch.Previous, ch.Current)
 
 		if updates.NewPort == nil && len(updates.NewVolumes) == 0 && len(updates.NewNetworks) == 0 {

@@ -32,13 +32,18 @@ type Service interface {
 	// Removes a host from the cluster.
 	RemoveHost(context.Context, *RemoveHostPayload) (res *RemoveHostResponse, err error)
 	// Lists all databases in the cluster.
-	ListDatabases(context.Context) (res *ListDatabasesResponse, err error)
+	ListDatabases(context.Context, *ListDatabasesPayload) (res *ListDatabasesResponse, err error)
 	// Creates a new database in the cluster.
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *CreateDatabaseResponse, err error)
 	// Returns information about a particular database in the cluster.
 	GetDatabase(context.Context, *GetDatabasePayload) (res *Database, err error)
 	// Updates a database with the given specification.
 	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *UpdateDatabaseResponse, err error)
+	// Applies a minor-version upgrade to a database. The target image must be a
+	// stable manifest entry in the same Postgres major / Spock major bucket as the
+	// current version and strictly newer. Container pull and restart happen
+	// asynchronously; this endpoint returns once redeployment is triggered.
+	ApplyUpgrade(context.Context, *ApplyUpgradePayload) (res *ApplyUpgradeResponse, err error)
 	// Deletes a database from the cluster.
 	DeleteDatabase(context.Context, *DeleteDatabasePayload) (res *DeleteDatabaseResponse, err error)
 	// Initiates a backup for a database node.
@@ -81,7 +86,7 @@ type Service interface {
 const APIName = "control-plane"
 
 // APIVersion is the version of the API as defined in the design.
-const APIVersion = "v0.8.1"
+const APIVersion = "v0.9.0"
 
 // ServiceName is the name of the service as defined in the design. This is the
 // same value that is set in the endpoint request contexts under the ServiceKey
@@ -91,7 +96,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [29]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
+var MethodNames = [30]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "apply-upgrade", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -99,6 +104,41 @@ type APIError struct {
 	Name string `json:"name"`
 	// The error message.
 	Message string `json:"message"`
+}
+
+// ApplyUpgradePayload is the payload type of the control-plane service
+// apply-upgrade method.
+type ApplyUpgradePayload struct {
+	// ID of the database to upgrade.
+	DatabaseID Identifier
+	Request    *ApplyUpgradeRequest
+}
+
+type ApplyUpgradeRequest struct {
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a stable manifest entry in the same Postgres major / Spock major
+	// bucket as the current version and be strictly newer.
+	Image string `json:"image"`
+}
+
+// ApplyUpgradeResponse is the result type of the control-plane service
+// apply-upgrade method.
+type ApplyUpgradeResponse struct {
+	// The task tracking the upgrade operation.
+	Task *Task `json:"task"`
+	// The database being upgraded.
+	Database *Database `json:"database"`
+}
+
+// A newer stable image available for the database in the same Postgres major /
+// Spock major bucket.
+type AvailableUpgrade struct {
+	// Postgres version of the upgrade candidate.
+	PostgresVersion string `json:"postgres_version"`
+	// Spock major version of the upgrade candidate.
+	SpockVersion string `json:"spock_version"`
+	// Full container image reference for the upgrade candidate.
+	Image string `json:"image"`
 }
 
 type BackupConfigSpec struct {
@@ -318,6 +358,9 @@ type Database struct {
 	ServiceInstances []*ServiceInstance `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpec `json:"spec,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgrade `json:"available_upgrades,omitempty"`
 }
 
 // Controls how the service connects to the database. When omitted, all nodes
@@ -471,6 +514,9 @@ type DatabaseSummary struct {
 	State string `json:"state"`
 	// All of the instances in the database.
 	Instances []*Instance `json:"instances,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgrade `json:"available_upgrades,omitempty"`
 }
 
 type DatabaseUserSpec struct {
@@ -558,6 +604,9 @@ type FailoverDatabaseNodeResponse struct {
 type GetDatabasePayload struct {
 	// ID of the database to get.
 	DatabaseID Identifier
+	// Optional fields to include in the response. Supported values:
+	// available_upgrades.
+	Include []string
 }
 
 // GetDatabaseTaskLogPayload is the payload type of the control-plane service
@@ -761,6 +810,14 @@ type ListDatabaseTasksPayload struct {
 type ListDatabaseTasksResponse struct {
 	// The tasks for the given database.
 	Tasks []*Task `json:"tasks"`
+}
+
+// ListDatabasesPayload is the payload type of the control-plane service
+// list-databases method.
+type ListDatabasesPayload struct {
+	// Optional fields to include in each database response. Supported values:
+	// available_upgrades.
+	Include []string
 }
 
 // ListDatabasesResponse is the result type of the control-plane service
@@ -1084,6 +1141,12 @@ type SwarmOpts struct {
 	ExtraNetworks []*ExtraNetworkSpec `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // SwitchoverDatabaseNodePayload is the payload type of the control-plane

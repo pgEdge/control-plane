@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -14,6 +15,8 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
+
+var ErrUpgradeNotAvailable = errors.New("upgrade not available")
 
 const pgEdgeUser = "pgedge"
 
@@ -181,4 +184,30 @@ type Orchestrator interface {
 	StartInstance(ctx context.Context, instanceID string) error
 	NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error)
 	InstancePaths(pgVersion *ds.Version, instanceID string) (InstancePaths, error)
+	// ReconcileInstanceSpec is called during spec reconciliation to allow the
+	// orchestrator to update computed fields (e.g. resolved image) on the new
+	// spec before it is persisted. old is nil when the instance is being created
+	// for the first time.
+	ReconcileInstanceSpec(old, new *InstanceSpec) error
+	// ReconcileServiceInstanceSpec is called during service instance spec
+	// reconciliation to resolve and pin the container image. old is nil when
+	// the service instance is being created for the first time.
+	ReconcileServiceInstanceSpec(old, new *ServiceInstanceSpec) error
+	// AvailableUpgrades returns newer stable manifest entries in the same
+	// (postgres_major, spock_major) bucket as current. Returns nil when
+	// upgrade discovery is not applicable (e.g. systemd orchestrator).
+	AvailableUpgrades(current *ds.PgEdgeVersion) []*AvailableUpgrade
+	// FindUpgrade validates that targetImage is a stable upgrade from current
+	// in the same (postgres_major, spock_major) bucket and strictly newer.
+	// Returns the validated upgrade descriptor on success, or
+	// ErrUpgradeNotAvailable (possibly wrapped) on any validation failure.
+	FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*AvailableUpgrade, error)
+}
+
+// AvailableUpgrade describes a single candidate image upgrade available for a
+// database running in the same (postgres_major, spock_major) bucket.
+type AvailableUpgrade struct {
+	PostgresVersion string `json:"postgres_version"`
+	SpockVersion    string `json:"spock_version"`
+	Image           string `json:"image"`
 }

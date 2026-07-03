@@ -18,6 +18,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -268,7 +269,7 @@ func (s *PostInitHandlers) prepareDatabaseUpdates(ctx context.Context, hostID st
 }
 
 // ListDatabases fetches all databases from the database service and converts them to API format.
-func (s *PostInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error) {
+func (s *PostInitHandlers) ListDatabases(ctx context.Context, req *api.ListDatabasesPayload) (*api.ListDatabasesResponse, error) {
 	// Fetch databases from the database service
 	databases, err := s.dbSvc.GetDatabases(ctx)
 	if err != nil {
@@ -287,7 +288,18 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabase
 	for _, db := range databases {
 		apiDB := databaseToSummaryAPI(db)
 		if apiDB != nil {
-			// Only append non-nil API databases
+			if includesAvailableUpgrades(req.Include) {
+				if version, err := ds.ParsePgEdgeVersion(db.Spec.PostgresVersion, db.Spec.SpockVersion); err == nil {
+					apiDB.AvailableUpgrades = availableUpgradesToAPI(s.dbSvc.AvailableUpgrades(version))
+				} else {
+					s.logger.Warn().
+						Str("database_id", db.DatabaseID).
+						Str("postgres_version", db.Spec.PostgresVersion).
+						Str("spock_version", db.Spec.SpockVersion).
+						Err(err).
+						Msg("could not parse database version for available_upgrades")
+				}
+			}
 			apiDatabases = append(apiDatabases, apiDB)
 		}
 	}
@@ -349,7 +361,20 @@ func (s *PostInitHandlers) GetDatabase(ctx context.Context, req *api.GetDatabase
 		return nil, apiErr(err)
 	}
 
-	return databaseToAPI(db), nil
+	result := databaseToAPI(db)
+	if includesAvailableUpgrades(req.Include) {
+		if version, err := ds.ParsePgEdgeVersion(db.Spec.PostgresVersion, db.Spec.SpockVersion); err == nil {
+			result.AvailableUpgrades = availableUpgradesToAPI(s.dbSvc.AvailableUpgrades(version))
+		} else {
+			s.logger.Warn().
+				Str("database_id", databaseID).
+				Str("postgres_version", db.Spec.PostgresVersion).
+				Str("spock_version", db.Spec.SpockVersion).
+				Err(err).
+				Msg("could not parse database version for available_upgrades")
+		}
+	}
+	return result, nil
 }
 
 func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
@@ -407,6 +432,31 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 
 	return &api.UpdateDatabaseResponse{
 		Database: databaseToAPI(db),
+		Task:     taskToAPI(t),
+	}, nil
+}
+
+func (s *PostInitHandlers) ApplyUpgrade(ctx context.Context, req *api.ApplyUpgradePayload) (*api.ApplyUpgradeResponse, error) {
+	databaseID, err := dbIdentToString(req.DatabaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.dbSvc.ApplyUpgrade(ctx, databaseID, req.Request.Image)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	t, err := s.workflowSvc.UpgradeDatabase(ctx, result.Database)
+	if err != nil {
+		if rollbackErr := s.dbSvc.RollbackApplyUpgrade(ctx, result); rollbackErr != nil {
+			s.logger.Err(rollbackErr).Msg("failed to roll back upgrade after workflow trigger failure")
+		}
+		return nil, apiErr(err)
+	}
+
+	return &api.ApplyUpgradeResponse{
+		Database: databaseToAPI(result.Database),
 		Task:     taskToAPI(t),
 	}, nil
 }
@@ -469,6 +519,9 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 	node, err := db.Spec.Node(req.NodeName)
 	if err != nil {
 		return nil, apiErr(err)
+	}
+	if node.BackupConfig == nil && db.Spec.BackupConfig == nil {
+		return nil, makeInvalidInputErr(errors.New("backups are not configured for this database node"))
 	}
 
 	if err := validateBackupOptions(req.Options); err != nil {

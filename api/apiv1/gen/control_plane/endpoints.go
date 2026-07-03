@@ -27,6 +27,7 @@ type Endpoints struct {
 	CreateDatabase         goa.Endpoint
 	GetDatabase            goa.Endpoint
 	UpdateDatabase         goa.Endpoint
+	ApplyUpgrade           goa.Endpoint
 	DeleteDatabase         goa.Endpoint
 	BackupDatabaseNode     goa.Endpoint
 	SwitchoverDatabaseNode goa.Endpoint
@@ -61,6 +62,7 @@ func NewEndpoints(s Service) *Endpoints {
 		CreateDatabase:         NewCreateDatabaseEndpoint(s),
 		GetDatabase:            NewGetDatabaseEndpoint(s),
 		UpdateDatabase:         NewUpdateDatabaseEndpoint(s),
+		ApplyUpgrade:           NewApplyUpgradeEndpoint(s),
 		DeleteDatabase:         NewDeleteDatabaseEndpoint(s),
 		BackupDatabaseNode:     NewBackupDatabaseNodeEndpoint(s),
 		SwitchoverDatabaseNode: NewSwitchoverDatabaseNodeEndpoint(s),
@@ -96,6 +98,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.CreateDatabase = m(e.CreateDatabase)
 	e.GetDatabase = m(e.GetDatabase)
 	e.UpdateDatabase = m(e.UpdateDatabase)
+	e.ApplyUpgrade = m(e.ApplyUpgrade)
 	e.DeleteDatabase = m(e.DeleteDatabase)
 	e.BackupDatabaseNode = m(e.BackupDatabaseNode)
 	e.SwitchoverDatabaseNode = m(e.SwitchoverDatabaseNode)
@@ -188,7 +191,8 @@ func NewRemoveHostEndpoint(s Service) goa.Endpoint {
 // "list-databases" of service "control-plane".
 func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		return s.ListDatabases(ctx)
+		p := req.(*ListDatabasesPayload)
+		return s.ListDatabases(ctx, p)
 	}
 }
 
@@ -216,6 +220,15 @@ func NewUpdateDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpdateDatabasePayload)
 		return s.UpdateDatabase(ctx, p)
+	}
+}
+
+// NewApplyUpgradeEndpoint returns an endpoint function that calls the method
+// "apply-upgrade" of service "control-plane".
+func NewApplyUpgradeEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ApplyUpgradePayload)
+		return s.ApplyUpgrade(ctx, p)
 	}
 }
 

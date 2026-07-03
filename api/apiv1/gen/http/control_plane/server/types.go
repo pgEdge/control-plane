@@ -56,6 +56,15 @@ type UpdateDatabaseRequestBody struct {
 	Spec *DatabaseSpecRequestBodyRequestBody `json:"spec"`
 }
 
+// ApplyUpgradeRequestBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP request body.
+type ApplyUpgradeRequestBody struct {
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a stable manifest entry in the same Postgres major / Spock major
+	// bucket as the current version and be strictly newer.
+	Image *string `json:"image"`
+}
+
 // BackupDatabaseNodeRequestBody is the type of the "control-plane" service
 // "backup-database-node" endpoint HTTP request body.
 type BackupDatabaseNodeRequestBody struct {
@@ -215,6 +224,9 @@ type GetDatabaseResponseBody struct {
 	ServiceInstances []*ServiceInstanceResponseBody `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `json:"spec,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgradeResponseBody `json:"available_upgrades,omitempty"`
 }
 
 // UpdateDatabaseResponseBody is the type of the "control-plane" service
@@ -223,6 +235,15 @@ type UpdateDatabaseResponseBody struct {
 	// The task that will update this database.
 	Task *TaskResponseBody `json:"task"`
 	// The database being updated.
+	Database *DatabaseResponseBody `json:"database"`
+}
+
+// ApplyUpgradeResponseBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP response body.
+type ApplyUpgradeResponseBody struct {
+	// The task tracking the upgrade operation.
+	Task *TaskResponseBody `json:"task"`
+	// The database being upgraded.
 	Database *DatabaseResponseBody `json:"database"`
 }
 
@@ -857,6 +878,65 @@ type UpdateDatabaseNotFoundResponseBody struct {
 // service "update-database" endpoint HTTP response body for the "server_error"
 // error.
 type UpdateDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ApplyUpgradeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "database_not_modifiable" error.
+type ApplyUpgradeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "apply-upgrade" endpoint HTTP response body for the
+// "operation_already_in_progress" error.
+type ApplyUpgradeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeInvalidInputResponseBody is the type of the "control-plane"
+// service "apply-upgrade" endpoint HTTP response body for the "invalid_input"
+// error.
+type ApplyUpgradeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeNotFoundResponseBody is the type of the "control-plane" service
+// "apply-upgrade" endpoint HTTP response body for the "not_found" error.
+type ApplyUpgradeNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyUpgradeServerErrorResponseBody is the type of the "control-plane"
+// service "apply-upgrade" endpoint HTTP response body for the "server_error"
+// error.
+type ApplyUpgradeServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `json:"name"`
 	// The error message.
@@ -1731,6 +1811,9 @@ type DatabaseSummaryResponseBody struct {
 	State string `json:"state"`
 	// All of the instances in the database.
 	Instances []*InstanceResponseBody `json:"instances,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgradeResponseBody `json:"available_upgrades,omitempty"`
 }
 
 // InstanceResponseBody is used to define fields on response body types.
@@ -1802,6 +1885,16 @@ type InstanceSubscriptionResponseBody struct {
 	Status string `json:"status"`
 }
 
+// AvailableUpgradeResponseBody is used to define fields on response body types.
+type AvailableUpgradeResponseBody struct {
+	// Postgres version of the upgrade candidate.
+	PostgresVersion string `json:"postgres_version"`
+	// Spock major version of the upgrade candidate.
+	SpockVersion string `json:"spock_version"`
+	// Full container image reference for the upgrade candidate.
+	Image string `json:"image"`
+}
+
 // DatabaseResponseBody is used to define fields on response body types.
 type DatabaseResponseBody struct {
 	// Unique identifier for the database.
@@ -1820,6 +1913,9 @@ type DatabaseResponseBody struct {
 	ServiceInstances []*ServiceInstanceResponseBody `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `json:"spec,omitempty"`
+	// Newer stable image versions available in the same Postgres major / Spock
+	// major bucket. Present only when ?include=available_upgrades is set.
+	AvailableUpgrades []*AvailableUpgradeResponseBody `json:"available_upgrades,omitempty"`
 }
 
 // ServiceInstanceResponseBody is used to define fields on response body types.
@@ -2148,6 +2244,12 @@ type SwarmOptsResponseBody struct {
 	ExtraNetworks []*ExtraNetworkSpecResponseBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecResponseBody is used to define fields on response body types.
@@ -2519,6 +2621,12 @@ type SwarmOptsRequestBody struct {
 	ExtraNetworks []*ExtraNetworkSpecRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBody is used to define fields on request body types.
@@ -2886,6 +2994,12 @@ type SwarmOptsRequestBodyRequestBody struct {
 	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
+	// User-specified container image override. Bypasses manifest version
+	// constraints entirely — the CP will deploy this image without validating it
+	// against the version manifest. The CP verifies the image exists in its
+	// registry before accepting the spec. Clearing this field causes the CP to
+	// fall back to the manifest-resolved image on the next reconcile.
+	Image *string `json:"image,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBodyRequestBody is used to define fields on request
@@ -3219,6 +3333,16 @@ func NewGetDatabaseResponseBody(res *controlplane.Database) *GetDatabaseResponse
 	if res.Spec != nil {
 		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(res.Spec)
 	}
+	if res.AvailableUpgrades != nil {
+		body.AvailableUpgrades = make([]*AvailableUpgradeResponseBody, len(res.AvailableUpgrades))
+		for i, val := range res.AvailableUpgrades {
+			if val == nil {
+				body.AvailableUpgrades[i] = nil
+				continue
+			}
+			body.AvailableUpgrades[i] = marshalControlplaneAvailableUpgradeToAvailableUpgradeResponseBody(val)
+		}
+	}
 	return body
 }
 
@@ -3226,6 +3350,19 @@ func NewGetDatabaseResponseBody(res *controlplane.Database) *GetDatabaseResponse
 // of the "update-database" endpoint of the "control-plane" service.
 func NewUpdateDatabaseResponseBody(res *controlplane.UpdateDatabaseResponse) *UpdateDatabaseResponseBody {
 	body := &UpdateDatabaseResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
+	}
+	if res.Database != nil {
+		body.Database = marshalControlplaneDatabaseToDatabaseResponseBody(res.Database)
+	}
+	return body
+}
+
+// NewApplyUpgradeResponseBody builds the HTTP response body from the result of
+// the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeResponseBody(res *controlplane.ApplyUpgradeResponse) *ApplyUpgradeResponseBody {
+	body := &ApplyUpgradeResponseBody{}
 	if res.Task != nil {
 		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
 	}
@@ -3946,6 +4083,69 @@ func NewUpdateDatabaseNotFoundResponseBody(res *controlplane.APIError) *UpdateDa
 // the result of the "update-database" endpoint of the "control-plane" service.
 func NewUpdateDatabaseServerErrorResponseBody(res *controlplane.APIError) *UpdateDatabaseServerErrorResponseBody {
 	body := &UpdateDatabaseServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "apply-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyUpgradeClusterNotInitializedResponseBody(res *controlplane.APIError) *ApplyUpgradeClusterNotInitializedResponseBody {
+	body := &ApplyUpgradeClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeDatabaseNotModifiableResponseBody builds the HTTP response
+// body from the result of the "apply-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyUpgradeDatabaseNotModifiableResponseBody(res *controlplane.APIError) *ApplyUpgradeDatabaseNotModifiableResponseBody {
+	body := &ApplyUpgradeDatabaseNotModifiableResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeOperationAlreadyInProgressResponseBody builds the HTTP
+// response body from the result of the "apply-upgrade" endpoint of the
+// "control-plane" service.
+func NewApplyUpgradeOperationAlreadyInProgressResponseBody(res *controlplane.APIError) *ApplyUpgradeOperationAlreadyInProgressResponseBody {
+	body := &ApplyUpgradeOperationAlreadyInProgressResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeInvalidInputResponseBody builds the HTTP response body from
+// the result of the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeInvalidInputResponseBody(res *controlplane.APIError) *ApplyUpgradeInvalidInputResponseBody {
+	body := &ApplyUpgradeInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeNotFoundResponseBody builds the HTTP response body from the
+// result of the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeNotFoundResponseBody(res *controlplane.APIError) *ApplyUpgradeNotFoundResponseBody {
+	body := &ApplyUpgradeNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyUpgradeServerErrorResponseBody builds the HTTP response body from
+// the result of the "apply-upgrade" endpoint of the "control-plane" service.
+func NewApplyUpgradeServerErrorResponseBody(res *controlplane.APIError) *ApplyUpgradeServerErrorResponseBody {
+	body := &ApplyUpgradeServerErrorResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
@@ -4791,6 +4991,15 @@ func NewRemoveHostPayload(hostID string, force bool) *controlplane.RemoveHostPay
 	return v
 }
 
+// NewListDatabasesPayload builds a control-plane service list-databases
+// endpoint payload.
+func NewListDatabasesPayload(include []string) *controlplane.ListDatabasesPayload {
+	v := &controlplane.ListDatabasesPayload{}
+	v.Include = include
+
+	return v
+}
+
 // NewCreateDatabaseRequest builds a control-plane service create-database
 // endpoint payload.
 func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.CreateDatabaseRequest {
@@ -4810,9 +5019,10 @@ func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.Cre
 
 // NewGetDatabasePayload builds a control-plane service get-database endpoint
 // payload.
-func NewGetDatabasePayload(databaseID string) *controlplane.GetDatabasePayload {
+func NewGetDatabasePayload(databaseID string, include []string) *controlplane.GetDatabasePayload {
 	v := &controlplane.GetDatabasePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.Include = include
 
 	return v
 }
@@ -4832,6 +5042,20 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.ForceUpdate = forceUpdate
 	res.RemoveHost = removeHost
+
+	return res
+}
+
+// NewApplyUpgradePayload builds a control-plane service apply-upgrade endpoint
+// payload.
+func NewApplyUpgradePayload(body *ApplyUpgradeRequestBody, databaseID string) *controlplane.ApplyUpgradePayload {
+	v := &controlplane.ApplyUpgradeRequest{
+		Image: *body.Image,
+	}
+	res := &controlplane.ApplyUpgradePayload{
+		Request: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
 
 	return res
 }
@@ -5164,6 +5388,20 @@ func ValidateUpdateDatabaseRequestBody(body *UpdateDatabaseRequestBody) (err err
 	if body.Spec != nil {
 		if err2 := ValidateDatabaseSpecRequestBodyRequestBody(body.Spec); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateApplyUpgradeRequestBody runs the validations defined on
+// Apply-UpgradeRequestBody
+func ValidateApplyUpgradeRequestBody(body *ApplyUpgradeRequestBody) (err error) {
+	if body.Image == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("image", "body"))
+	}
+	if body.Image != nil {
+		if utf8.RuneCountInString(*body.Image) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.image", *body.Image, utf8.RuneCountInString(*body.Image), 1, true))
 		}
 	}
 	return

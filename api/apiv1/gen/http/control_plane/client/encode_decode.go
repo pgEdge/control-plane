@@ -936,6 +936,23 @@ func (c *Client) BuildListDatabasesRequest(ctx context.Context, v any) (*http.Re
 	return req, nil
 }
 
+// EncodeListDatabasesRequest returns an encoder for requests sent to the
+// control-plane list-databases server.
+func EncodeListDatabasesRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ListDatabasesPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "list-databases", "*controlplane.ListDatabasesPayload", v)
+		}
+		values := req.URL.Query()
+		for _, value := range p.Include {
+			values.Add("include", value)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 // DecodeListDatabasesResponse returns a decoder for responses returned by the
 // control-plane list-databases endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
@@ -1186,6 +1203,23 @@ func (c *Client) BuildGetDatabaseRequest(ctx context.Context, v any) (*http.Requ
 	}
 
 	return req, nil
+}
+
+// EncodeGetDatabaseRequest returns an encoder for requests sent to the
+// control-plane get-database server.
+func EncodeGetDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.GetDatabasePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "get-database", "*controlplane.GetDatabasePayload", v)
+		}
+		values := req.URL.Query()
+		for _, value := range p.Include {
+			values.Add("include", value)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
 }
 
 // DecodeGetDatabaseResponse returns a decoder for responses returned by the
@@ -1472,6 +1506,186 @@ func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "update-database", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildApplyUpgradeRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "apply-upgrade" endpoint
+func (c *Client) BuildApplyUpgradeRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+	)
+	{
+		p, ok := v.(*controlplane.ApplyUpgradePayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "apply-upgrade", "*controlplane.ApplyUpgradePayload", v)
+		}
+		databaseID = string(p.DatabaseID)
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ApplyUpgradeControlPlanePath(databaseID)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "apply-upgrade", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeApplyUpgradeRequest returns an encoder for requests sent to the
+// control-plane apply-upgrade server.
+func EncodeApplyUpgradeRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ApplyUpgradePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "apply-upgrade", "*controlplane.ApplyUpgradePayload", v)
+		}
+		body := NewApplyUpgradeRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "apply-upgrade", err)
+		}
+		return nil
+	}
+}
+
+// DecodeApplyUpgradeResponse returns a decoder for responses returned by the
+// control-plane apply-upgrade endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeApplyUpgradeResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeApplyUpgradeResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ApplyUpgradeResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+			}
+			err = ValidateApplyUpgradeResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+			}
+			res := NewApplyUpgradeResponseOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body ApplyUpgradeClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+				}
+				err = ValidateApplyUpgradeClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+				}
+				return nil, NewApplyUpgradeClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body ApplyUpgradeDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+				}
+				err = ValidateApplyUpgradeDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+				}
+				return nil, NewApplyUpgradeDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body ApplyUpgradeOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+				}
+				err = ValidateApplyUpgradeOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+				}
+				return nil, NewApplyUpgradeOperationAlreadyInProgress(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "apply-upgrade", resp.StatusCode, string(body))
+			}
+		case http.StatusBadRequest:
+			var (
+				body ApplyUpgradeInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+			}
+			err = ValidateApplyUpgradeInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+			}
+			return nil, NewApplyUpgradeInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body ApplyUpgradeNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+			}
+			err = ValidateApplyUpgradeNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+			}
+			return nil, NewApplyUpgradeNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ApplyUpgradeServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-upgrade", err)
+			}
+			err = ValidateApplyUpgradeServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-upgrade", err)
+			}
+			return nil, NewApplyUpgradeServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "apply-upgrade", resp.StatusCode, string(body))
 		}
 	}
 }
@@ -4202,6 +4416,16 @@ func unmarshalDatabaseSummaryResponseBodyToControlplaneDatabaseSummary(v *Databa
 			res.Instances[i] = unmarshalInstanceResponseBodyToControlplaneInstance(val)
 		}
 	}
+	if v.AvailableUpgrades != nil {
+		res.AvailableUpgrades = make([]*controlplane.AvailableUpgrade, len(v.AvailableUpgrades))
+		for i, val := range v.AvailableUpgrades {
+			if val == nil {
+				res.AvailableUpgrades[i] = nil
+				continue
+			}
+			res.AvailableUpgrades[i] = unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade(val)
+		}
+	}
 
 	return res
 }
@@ -4309,6 +4533,22 @@ func unmarshalInstanceSubscriptionResponseBodyToControlplaneInstanceSubscription
 		ProviderNode: *v.ProviderNode,
 		Name:         *v.Name,
 		Status:       *v.Status,
+	}
+
+	return res
+}
+
+// unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade builds a
+// value of type *controlplane.AvailableUpgrade from a value of type
+// *AvailableUpgradeResponseBody.
+func unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade(v *AvailableUpgradeResponseBody) *controlplane.AvailableUpgrade {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.AvailableUpgrade{
+		PostgresVersion: *v.PostgresVersion,
+		SpockVersion:    *v.SpockVersion,
+		Image:           *v.Image,
 	}
 
 	return res
@@ -4621,7 +4861,9 @@ func marshalControlplaneSwarmOptsToSwarmOptsRequestBody(v *controlplane.SwarmOpt
 	if v == nil {
 		return nil
 	}
-	res := &SwarmOptsRequestBody{}
+	res := &SwarmOptsRequestBody{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*ExtraVolumesSpecRequestBody, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
@@ -5117,7 +5359,9 @@ func marshalSwarmOptsRequestBodyToControlplaneSwarmOpts(v *SwarmOptsRequestBody)
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.SwarmOpts{}
+	res := &controlplane.SwarmOpts{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
@@ -5341,6 +5585,16 @@ func unmarshalDatabaseResponseBodyToControlplaneDatabase(v *DatabaseResponseBody
 	}
 	if v.Spec != nil {
 		res.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v.Spec)
+	}
+	if v.AvailableUpgrades != nil {
+		res.AvailableUpgrades = make([]*controlplane.AvailableUpgrade, len(v.AvailableUpgrades))
+		for i, val := range v.AvailableUpgrades {
+			if val == nil {
+				res.AvailableUpgrades[i] = nil
+				continue
+			}
+			res.AvailableUpgrades[i] = unmarshalAvailableUpgradeResponseBodyToControlplaneAvailableUpgrade(val)
+		}
 	}
 
 	return res
@@ -5733,7 +5987,9 @@ func unmarshalSwarmOptsResponseBodyToControlplaneSwarmOpts(v *SwarmOptsResponseB
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.SwarmOpts{}
+	res := &controlplane.SwarmOpts{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
@@ -6226,7 +6482,9 @@ func marshalControlplaneSwarmOptsToSwarmOptsRequestBodyRequestBody(v *controlpla
 	if v == nil {
 		return nil
 	}
-	res := &SwarmOptsRequestBodyRequestBody{}
+	res := &SwarmOptsRequestBodyRequestBody{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*ExtraVolumesSpecRequestBodyRequestBody, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
@@ -6724,7 +6982,9 @@ func marshalSwarmOptsRequestBodyRequestBodyToControlplaneSwarmOpts(v *SwarmOptsR
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.SwarmOpts{}
+	res := &controlplane.SwarmOpts{
+		Image: v.Image,
+	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {

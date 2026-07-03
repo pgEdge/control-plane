@@ -30,7 +30,12 @@ type ExtraNetworkSpec struct {
 type SwarmOpts struct {
 	ExtraVolumes  []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
 	ExtraNetworks []ExtraNetworkSpec `json:"extra_networks,omitempty"`
-	ExtraLabels   map[string]string  `json:"extra_labels,omitempty"` // optional, used for custom labels on the swarm service
+	ExtraLabels   map[string]string  `json:"extra_labels,omitempty"`
+	// Image is a user-specified override. Never written by the CP.
+	Image string `json:"image,omitempty"`
+	// ResolvedImage is the CP-managed image tag. Written at instance creation,
+	// upgrade application, and lazy backfill. Never set simultaneously with Image.
+	ResolvedImage string `json:"resolved_image,omitempty"`
 }
 type OrchestratorOpts struct {
 	Swarm *SwarmOpts `json:"docker,omitempty"`
@@ -301,6 +306,8 @@ func (d *SwarmOpts) Clone() *SwarmOpts {
 		ExtraVolumes:  clonedVolumes,
 		ExtraNetworks: clonedNetworks,
 		ExtraLabels:   maps.Clone(d.ExtraLabels),
+		Image:         d.Image,
+		ResolvedImage: d.ResolvedImage,
 	}
 }
 
@@ -727,7 +734,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				DatabaseUsers:  s.DatabaseUsers,
 				BackupConfig:   overridableValue(s.BackupConfig, node.BackupConfig),
 				RestoreConfig:  effectiveRestore,
-				PostgreSQLConf: overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				PostgreSQLConf: mergableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				// Node entries come first so they take first-match priority;
 				// database-level entries follow as the baseline.
 				PgHbaConf:        slices.Concat(node.PgHbaConf, s.PgHbaConf),
@@ -772,9 +779,11 @@ func overridableValue[T comparable](base, override T) T {
 	return base
 }
 
-func overridableMapValue[T ~map[V]any, V comparable](base, override T) T {
-	if override != nil {
-		return override
+func mergableMapValue[T ~map[V]any, V comparable](base, override T) T {
+	if base == nil {
+		return maps.Clone(override)
 	}
-	return base
+	result := maps.Clone(base)
+	maps.Copy(result, override)
+	return result
 }
