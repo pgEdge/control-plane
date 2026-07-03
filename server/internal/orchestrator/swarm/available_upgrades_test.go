@@ -15,7 +15,7 @@ func TestVersions_AvailableUpgrades(t *testing.T) {
 			ImageRepositoryHost: "ghcr.io/pgedge",
 		},
 	}
-	v := NewVersions(cfg)
+	v := newTestVersions(t, cfg)
 
 	t.Run("returns newer entries in same bucket", func(t *testing.T) {
 		current := ds.MustParsePgEdgeVersion("17.9", "5")

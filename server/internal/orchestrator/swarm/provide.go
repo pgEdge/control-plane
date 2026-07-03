@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 func Provide(i *do.Injector) {
@@ -29,6 +30,14 @@ func provideOrchestrator(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get logger: %w", err)
 		}
-		return NewOrchestrator(context.Background(), cfg, dockerClient, logger)
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get logger factory: %w", err)
+		}
+		loader, err := NewManifestLoader(context.Background(), cfg, loggerFactory)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create manifest loader: %w", err)
+		}
+		return NewOrchestrator(context.Background(), cfg, dockerClient, logger, loader)
 	})
 }

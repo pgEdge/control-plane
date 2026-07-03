@@ -13,7 +13,7 @@ import (
 
 func TestReconcileInstanceSpec(t *testing.T) {
 	o := &Orchestrator{
-		versions: NewVersions(config.Config{
+		versions: newTestVersions(t, config.Config{
 			DockerSwarm: config.DockerSwarm{
 				ImageRepositoryHost: "registry.example.com/pgedge",
 			},

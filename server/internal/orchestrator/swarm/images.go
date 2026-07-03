@@ -21,67 +21,6 @@ type Versions struct {
 	images            map[string]map[string]*Images
 }
 
-func NewVersions(cfg config.Config) *Versions {
-	versions := &Versions{
-		cfg:    cfg,
-		images: make(map[string]map[string]*Images),
-	}
-
-	// pg16
-	versions.addImage(ds.MustParsePgEdgeVersion("16.10", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "16.10-spock5.0.4-standard-3"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("16.11", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "16.11-spock5.0.4-standard-4"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("16.12", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "16.12-spock5.0.5-standard-1"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("16.13", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "16.13-spock5.0.6-standard-2"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("16.14", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "16.14-spock5.0.9-standard-1"),
-	})
-
-	// pg17
-	versions.addImage(ds.MustParsePgEdgeVersion("17.6", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "17.6-spock5.0.4-standard-3"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("17.7", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "17.7-spock5.0.4-standard-4"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("17.8", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "17.8-spock5.0.5-standard-1"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("17.9", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "17.9-spock5.0.6-standard-2"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("17.10", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "17.10-spock5.0.9-standard-1"),
-	})
-
-	// pg18
-	versions.addImage(ds.MustParsePgEdgeVersion("18.0", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "18.0-spock5.0.4-standard-3"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("18.1", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "18.1-spock5.0.4-standard-4"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("18.2", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "18.2-spock5.0.5-standard-1"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("18.3", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "18.3-spock5.0.6-standard-2"),
-	})
-	versions.addImage(ds.MustParsePgEdgeVersion("18.4", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "18.4-spock5.0.9-standard-1"),
-	})
-
-	versions.defaultVersion = ds.MustParsePgEdgeVersion("18.4", "5")
-
-	return versions
-}
 
 func (v Versions) Supported() []*ds.PgEdgeVersion {
 	return v.supportedVersions
@@ -118,10 +57,6 @@ func (v Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
 	}
 
 	return images, nil
-}
-
-func imageTag(cfg config.Config, tag string) string {
-	return fmt.Sprintf("%s/pgedge-postgres:%s", cfg.DockerSwarm.ImageRepositoryHost, tag)
 }
 
 // FindByImage returns the PgEdgeVersion and Images for the manifest entry

@@ -15,9 +15,10 @@ import (
 
 // newTestOrchestrator returns an Orchestrator with serviceVersions initialised
 // from a minimal config, suitable for unit tests that call generateRAGInstanceResources.
-func newTestOrchestrator() *Orchestrator {
+func newTestOrchestrator(t *testing.T) *Orchestrator {
+	t.Helper()
 	return &Orchestrator{
-		serviceVersions: NewServiceVersions(config.Config{}),
+		serviceVersions: newTestServiceVersions(t, config.Config{}),
 	}
 }
 
@@ -50,7 +51,7 @@ func minimalRAGConfig() map[string]any {
 }
 
 func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
-	o := newTestOrchestrator()
+	o := newTestOrchestrator(t)
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -88,7 +89,7 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 }
 
 func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
-	o := newTestOrchestrator()
+	o := newTestOrchestrator(t)
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -126,7 +127,7 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 }
 
 func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
-	o := newTestOrchestrator()
+	o := newTestOrchestrator(t)
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "db1-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -150,7 +151,7 @@ func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
 }
 
 func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) {
-	o := newTestOrchestrator()
+	o := newTestOrchestrator(t)
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "db1-unknown-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -169,7 +170,7 @@ func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) 
 }
 
 func TestGenerateRAGInstanceResources_ConnectAs_CredentialsPopulated(t *testing.T) {
-	o := newTestOrchestrator()
+	o := newTestOrchestrator(t)
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -203,7 +204,7 @@ func TestGenerateRAGInstanceResources_ConnectAs_CredentialsPopulated(t *testing.
 }
 
 func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
-	o := newTestOrchestrator()
+	o := newTestOrchestrator(t)
 	// Override the "rag/latest" image with a constraint requiring PG >= 18.
 	o.serviceVersions.addServiceImage("rag", "latest", &ServiceImage{
 		Tag: "rag-server:latest",

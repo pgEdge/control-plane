@@ -56,8 +56,9 @@ const (
 
 type Orchestrator struct {
 	cfg                config.Config
-	versions           *Versions
-	serviceVersions    *ServiceVersions
+	loader             *ManifestLoader
+	versions           *Versions        // non-nil only in tests (overrides loader)
+	serviceVersions    *ServiceVersions // non-nil only in tests (overrides loader)
 	docker             *docker.Docker
 	logger             zerolog.Logger
 	dbNetworkAllocator Allocator
@@ -68,11 +69,28 @@ type Orchestrator struct {
 	controlAvailable   bool
 }
 
+func (o *Orchestrator) getVersions() *Versions {
+	if o.versions != nil {
+		return o.versions
+	}
+	v := o.loader.Versions()
+	return &v
+}
+
+func (o *Orchestrator) getServiceVersions() *ServiceVersions {
+	if o.serviceVersions != nil {
+		return o.serviceVersions
+	}
+	sv := o.loader.ServiceVersions()
+	return &sv
+}
+
 func NewOrchestrator(
 	ctx context.Context,
 	cfg config.Config,
 	d *docker.Docker,
 	logger zerolog.Logger,
+	loader *ManifestLoader,
 ) (*Orchestrator, error) {
 	info, err := d.Info(ctx)
 	if err != nil {
@@ -101,11 +119,10 @@ func NewOrchestrator(
 	}
 
 	return &Orchestrator{
-		cfg:             cfg,
-		versions:        NewVersions(cfg),
-		serviceVersions: NewServiceVersions(cfg),
-		docker:          d,
-		logger:          logger,
+		cfg:    cfg,
+		loader: loader,
+		docker: d,
+		logger: logger,
 		dbNetworkAllocator: Allocator{
 			Prefix: dbNetworkPrefix,
 			Bits:   cfg.DockerSwarm.DatabaseNetworksSubnetBits,
@@ -130,8 +147,8 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		MemberID:         o.swarmNodeID,
 		ControlAvailable: o.controlAvailable,
 	}
-	h.DefaultPgEdgeVersion = o.versions.Default()
-	h.SupportedPgEdgeVersions = o.versions.Supported()
+	h.DefaultPgEdgeVersion = o.getVersions().Default()
+	h.SupportedPgEdgeVersions = o.getVersions().Supported()
 
 	return nil
 }
@@ -197,7 +214,7 @@ func (o *Orchestrator) resolveInstanceImages(spec *database.InstanceSpec) (*Imag
 	case swarmOpts != nil && swarmOpts.ResolvedImage != "":
 		return &Images{PgEdgeImage: swarmOpts.ResolvedImage}, nil
 	default:
-		manifested, err := o.versions.GetImages(spec.PgEdgeVersion)
+		manifested, err := o.getVersions().GetImages(spec.PgEdgeVersion)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get images: %w", err)
 		}
@@ -261,7 +278,7 @@ func (o *Orchestrator) resolveServiceImage(spec *database.ServiceInstanceSpec) (
 	case swarmOpts != nil && swarmOpts.ResolvedImage != "":
 		return &ServiceImage{Tag: swarmOpts.ResolvedImage}, nil
 	default:
-		manifested, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+		manifested, err := o.getServiceVersions().GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get service image: %w", err)
 		}
@@ -307,11 +324,11 @@ func (o *Orchestrator) ReconcileServiceInstanceSpec(old, new *database.ServiceIn
 }
 
 func (o *Orchestrator) AvailableUpgrades(current *ds.PgEdgeVersion) []*database.AvailableUpgrade {
-	return o.versions.AvailableUpgrades(current)
+	return o.getVersions().AvailableUpgrades(current)
 }
 
 func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*database.AvailableUpgrade, error) {
-	ver, img, ok := o.versions.FindByImage(targetImage)
+	ver, img, ok := o.getVersions().FindByImage(targetImage)
 	if !ok {
 		return nil, fmt.Errorf("%w: image not found in manifest: %s", database.ErrUpgradeNotAvailable, targetImage)
 	}
@@ -1272,10 +1289,10 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	specVersion := spec.PgEdgeVersion
 	if specVersion == nil {
 		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
-		specVersion = o.versions.defaultVersion
+		specVersion = o.getVersions().defaultVersion
 	}
 
-	images, err := o.versions.GetImages(specVersion)
+	images, err := o.getVersions().GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
@@ -1357,8 +1374,8 @@ func (o *Orchestrator) validatePortAvailable(ctx context.Context, nodeName strin
 		return nil
 	}
 
-	specVersion := o.versions.defaultVersion
-	images, err := o.versions.GetImages(specVersion)
+	specVersion := o.getVersions().defaultVersion
+	images, err := o.getVersions().GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
@@ -1384,8 +1401,8 @@ func (o *Orchestrator) validateVolumes(ctx context.Context, nodeName string, vol
 		targets = append(targets, v.DestinationPath)
 	}
 
-	specVersion := o.versions.defaultVersion
-	images, err := o.versions.GetImages(specVersion)
+	specVersion := o.getVersions().defaultVersion
+	images, err := o.getVersions().GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
