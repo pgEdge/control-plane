@@ -59,9 +59,14 @@ jobs:
               run: |
                   set -euo pipefail
                   mkdir -p .github/actions
-                  git clone --depth 1 \
-                      "https://x-access-token:${TOKEN}@github.com/pgEdge/pgedge-parse-release-tag.git" \
+                  # Pass the token via a transient auth header (kept out of the
+                  # remote URL) and drop .git after clone, so the credential does
+                  # not persist in the workspace for later steps to read.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+                  git -c "http.extraheader=${auth}" clone --depth 1 \
+                      "https://github.com/pgEdge/pgedge-parse-release-tag.git" \
                       ".github/actions/pgedge-parse-release-tag"
+                  rm -rf ".github/actions/pgedge-parse-release-tag/.git"
             - name: Parse release tag
               id: parse
               uses: ./.github/actions/pgedge-parse-release-tag
@@ -138,6 +143,10 @@ jobs:
                       done
                   done
                   rm -rf rpm-dl
+                  if [ "$(jq 'length' <<<"$push")" -eq 0 ]; then
+                      echo "::error::no RPM publish targets derived from the release assets (no *.rpm attached, or none matched the .elN. naming)"
+                      exit 1
+                  fi
                   echo "push=$push"       >> "$GITHUB_OUTPUT"
                   echo "backups=$backups" >> "$GITHUB_OUTPUT"
                   echo "cells=$cells"     >> "$GITHUB_OUTPUT"
@@ -147,9 +156,13 @@ jobs:
               run: |
                   set -euo pipefail
                   mkdir -p .github/actions
+                  # Token via transient auth header; drop .git after clone so the
+                  # credential does not persist in the workspace.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
                   for repo in pgedge-dnf-repo-builder pgedge-backup-artifacts; do
-                      git clone --depth 1 --branch multi-target \
-                          "https://x-access-token:${TOKEN}@github.com/pgEdge/${repo}.git" ".github/actions/${repo}"
+                      git -c "http.extraheader=${auth}" clone --depth 1 --branch multi-target \
+                          "https://github.com/pgEdge/${repo}.git" ".github/actions/${repo}"
+                      rm -rf ".github/actions/${repo}/.git"
                   done
             - name: Push RPMs to yum repo (all EL majors batched)
               uses: ./.github/actions/pgedge-dnf-repo-builder
@@ -231,6 +244,10 @@ jobs:
                       done
                   done
                   rm -rf deb-dl
+                  if [ "$(jq 'length' <<<"$push")" -eq 0 ]; then
+                      echo "::error::no DEB publish targets derived from the release assets (no *.deb attached, or none matched the -1.<codename>_<arch> naming)"
+                      exit 1
+                  fi
                   echo "push=$push"       >> "$GITHUB_OUTPUT"
                   echo "backups=$backups" >> "$GITHUB_OUTPUT"
                   echo "cells=$cells"     >> "$GITHUB_OUTPUT"
@@ -240,9 +257,13 @@ jobs:
               run: |
                   set -euo pipefail
                   mkdir -p .github/actions
+                  # Token via transient auth header; drop .git after clone so the
+                  # credential does not persist in the workspace.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
                   for repo in pgedge-apt-repo-builder pgedge-backup-artifacts; do
-                      git clone --depth 1 --branch multi-target \
-                          "https://x-access-token:${TOKEN}@github.com/pgEdge/${repo}.git" ".github/actions/${repo}"
+                      git -c "http.extraheader=${auth}" clone --depth 1 --branch multi-target \
+                          "https://github.com/pgEdge/${repo}.git" ".github/actions/${repo}"
+                      rm -rf ".github/actions/${repo}/.git"
                   done
             - name: Push DEBs to apt repo (all distros batched)
               uses: ./.github/actions/pgedge-apt-repo-builder
@@ -331,9 +352,13 @@ jobs:
               run: |
                   set -euo pipefail
                   mkdir -p .github/actions
-                  git clone --depth 1 \
-                      "https://x-access-token:${TOKEN}@github.com/pgEdge/pgedge-build-publisher.git" \
+                  # Token via transient auth header; drop .git after clone so the
+                  # credential does not persist in the workspace.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+                  git -c "http.extraheader=${auth}" clone --depth 1 \
+                      "https://github.com/pgEdge/pgedge-build-publisher.git" \
                       ".github/actions/pgedge-build-publisher"
+                  rm -rf ".github/actions/pgedge-build-publisher/.git"
             - name: Compose Slack fields
               id: compose_slack
               env:

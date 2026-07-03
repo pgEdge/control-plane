@@ -138,9 +138,20 @@ jobs:
             fi
             # rpm provides rpmsign (used to sign the rpms below)
             sudo apt-get update -qq && sudo apt-get install -y -qq rpm
-            SYFT_VERSION=v1.45.1
-            curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
-              | sudo sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
+            # Install syft from the pinned release tarball and verify it against
+            # the published checksums file before installing (avoids piping a
+            # remote installer script straight into a shell).
+            SYFT_VERSION=1.45.1
+            SYFT_TGZ="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+            SYFT_BASE="https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}"
+            syft_tmp="$(mktemp -d)"
+            curl -sSfL "${SYFT_BASE}/${SYFT_TGZ}" -o "${syft_tmp}/${SYFT_TGZ}"
+            curl -sSfL "${SYFT_BASE}/syft_${SYFT_VERSION}_checksums.txt" -o "${syft_tmp}/checksums.txt"
+            ( cd "${syft_tmp}" && grep " ${SYFT_TGZ}\$" checksums.txt | sha256sum -c - )
+            tar -xzf "${syft_tmp}/${SYFT_TGZ}" -C "${syft_tmp}" syft
+            sudo install -m 0755 "${syft_tmp}/syft" /usr/local/bin/syft
+            rm -rf "${syft_tmp}"
+            syft version
             # The two secrets hold the base64 of the armored private keys
             # (single line — CircleCI mangles multi-line values), so decode them.
             keyid() {  # fingerprint of a base64 key blob, read in an isolated keyring
