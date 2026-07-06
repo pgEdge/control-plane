@@ -113,7 +113,7 @@ postgresql:
   remove_data_directory_on_diverged_timelines: true
 restapi:
   connect_address: storefront-n1-689qacsi.storefront-database:8888
-  listen: 0.0.0.0:8888
+  listen: :8888
   allowlist:
   - 10.10.0.2
   - 10.10.0.3

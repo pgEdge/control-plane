@@ -115,7 +115,7 @@ postgresql:
   remove_data_directory_on_diverged_timelines: true
 restapi:
   connect_address: pghba-n1-689qacsi.pghba-database:8888
-  listen: 0.0.0.0:8888
+  listen: :8888
   allowlist:
   - 172.17.0.1/32
   - 10.128.165.128/26
