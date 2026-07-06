@@ -74,7 +74,7 @@ postgresql:
     lolor.node: 1
     maintenance_work_mem: 137518
     max_parallel_workers: 8
-    password_encryption: md5
+    password_encryption: scram-sha-256
     shared_buffers: 262144
     shared_preload_libraries: pg_stat_statements,spock
     snowflake.node: 1
@@ -106,8 +106,8 @@ postgresql:
   - hostssl replication     pgedge,patroni_replicator 10.10.0.4/32            cert clientcert=verify-full
   - host    all             pgedge,patroni_replicator 0.0.0.0/0               reject
   - host    all             pgedge,patroni_replicator ::/0                    reject
-  - host    all             all             0.0.0.0/0               md5
-  - host    all             all             ::/0                    md5
+  - host    all             all             0.0.0.0/0               scram-sha-256
+  - host    all             all             ::/0                    scram-sha-256
   use_pg_rewind: true
   remove_data_directory_on_rewind_failure: true
   remove_data_directory_on_diverged_timelines: true
