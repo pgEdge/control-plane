@@ -61,13 +61,21 @@ commands:
               docker-compose-plugin
             sudo systemctl start docker
 jobs:
-  test:
+  # basic_check: unit tests + lint + license check (make ci)
+  basic_check:
     executor: common
     steps:
       - common_setup
       - run:
           name: Run CI checks
           command: make ci TEST_RERUN_FAILS=2
+      - store_test_results:
+          path: .
+
+  test_cluster:
+    executor: common
+    steps:
+      - common_setup
       - run:
           name: Run cluster tests
           command: |
@@ -75,11 +83,44 @@ jobs:
             make start-local-registry
             make buildx-init
             make test-cluster CONTROL_PLANE_IMAGE_REPO=172.17.0.1:5000/control-plane TEST_RERUN_FAILS=2
+      - store_test_results:
+          path: .
+
+  test_e2e:
+    executor: common
+    parallelism: 3
+    steps:
+      - common_setup
+      - run:
+          name: Select this container's e2e tests
+          command: |
+            # Split e2e test files (excluding main_test.go, whose only test
+            # is the special TestMain entrypoint and can't be filtered via
+            # -run) across the 3 parallel containers, falling back to an
+            # even file-count split until enough --junitfile timing history
+            # (test-e2e-results.xml) has accumulated across runs.
+            TEST_FILES=$(grep -l '^func Test' e2e/*_test.go | grep -v 'e2e/main_test.go' \
+              | circleci tests split --split-by=timings --timings-type=filename)
+            if [ -z "$TEST_FILES" ]; then
+              TEST_NAMES=""
+            else
+              TEST_NAMES=$(grep -h '^func Test' $TEST_FILES \
+                | sed -E 's/^func (Test[A-Za-z0-9_]*).*/\1/' | paste -sd '|')
+            fi
+            # $$ (not $) so that Make's own recursive variable expansion of
+            # $(E2E_RUN) in the Makefile collapses it back to a single
+            # literal $ instead of silently dropping a lone trailing $.
+            echo "export E2E_RUN='^(${TEST_NAMES})\$\$'" >> "$BASH_ENV"
+            echo "Running tests: ${TEST_NAMES}"
       - run:
           name: Run e2e tests with Docker Compose
           command: |
-            make ci-compose-detached
-            make test-e2e E2E_PARALLEL=4 E2E_DEBUG=1 E2E_FIXTURE=ci TEST_RERUN_FAILS=2
+            if [ -z "$E2E_RUN" ] || [ "$E2E_RUN" = '^()$' ]; then
+              echo "No tests assigned to this container, skipping"
+            else
+              make ci-compose-detached
+              make test-e2e E2E_PARALLEL=4 E2E_DEBUG=1 E2E_FIXTURE=ci TEST_RERUN_FAILS=2
+            fi
       - run:
           name: Archive debug output
           command: |
@@ -172,7 +213,9 @@ workflows:
   test:
     unless: << pipeline.parameters.build_ref >>
     jobs:
-      - test
+      - basic_check
+      - test_cluster
+      - test_e2e
 
   release:
     jobs:

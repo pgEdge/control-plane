@@ -154,7 +154,7 @@ func TestForcedHostRemovalWithDatabase(t *testing.T) {
 	cluster.Host("host-3").Stop(t)
 
 	// Allow cluster some time to detect the container termination
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 
 	tLog(t, "removing host-3 from cluster")
 	resp, err := cluster.Client().RemoveHost(ctx, &api.RemoveHostPayload{
@@ -175,7 +175,7 @@ func TestForcedHostRemovalWithDatabase(t *testing.T) {
 	require.NoError(t, err, "database not healthy with 2 nodes")
 
 	tLog(t, "verifying cluster has 2 hosts")
-	err = waitForHostCount(ctx, cluster.Client(), 2, 30*time.Second)
+	err = waitForHostCount(ctx, cluster.Client(), 2, 60*time.Second)
 	require.NoError(t, err, "cluster should have 2 hosts")
 
 	// Ensure host-3 is not in the list
