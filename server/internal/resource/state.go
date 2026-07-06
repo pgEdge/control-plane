@@ -139,9 +139,11 @@ func (s *State) Merge(other *State) {
 	}
 }
 
-// MarkPendingDeletion takes an end state and marks all current resources that
-// aren't in the end state with PendingDeletion = true.
-func (s *State) MarkPendingDeletion(end *State) {
+// PreparePendingDeletesAndRecreates takes an end state and marks all current
+// resources that aren't in the end state with PendingDeletion = true. Resources
+// that need to be recreated and are in the end state are removed from this
+// state so that we can plan their creation in the appropriate phase.
+func (s *State) PreparePendingDeletesAndRecreates(end *State) {
 	for t, byType := range s.Resources {
 		endByType, ok := end.Resources[t]
 		if !ok {
@@ -153,6 +155,11 @@ func (s *State) MarkPendingDeletion(end *State) {
 		for id, resource := range byType {
 			if _, ok := endByType[id]; !ok {
 				resource.PendingDeletion = true
+			} else if resource.NeedsRecreate {
+				// This resource will be recreated since it's in the end state.
+				// Removing the old copy of it from the start state avoids an
+				// accidental create before it would normally occur.
+				delete(byType, id)
 			}
 		}
 	}

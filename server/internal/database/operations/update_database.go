@@ -40,6 +40,9 @@ func UpdateDatabase(
 	nodes []*NodeResources,
 	services []*ServiceResources,
 ) ([]resource.Plan, error) {
+	// avoid modifying the caller's copy of the start state
+	start = start.Clone()
+
 	update, err := updateFunc(options)
 	if err != nil {
 		return nil, err
@@ -81,7 +84,7 @@ func UpdateDatabase(
 	}
 	// Mark resources not in the end state with PendingDeletion = true so that
 	// we skip updating them.
-	start.MarkPendingDeletion(end)
+	start.PreparePendingDeletesAndRecreates(end)
 
 	// The states produced by the *Nodes functions are just diffs. Here's where
 	// we create a sequence of incremental updates by iteratively applying those

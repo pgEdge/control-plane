@@ -216,6 +216,35 @@ func TestUpdateDatabase(t *testing.T) {
 		),
 	)
 
+	failedService := makeServiceResources(t, "database-id", "test-svc", "host-1-id", nil)
+	// This first resource should have a planned delete since it won't be in the
+	// end state.
+	failedService.Resources[0].Identifier.ID += "-should-delete"
+	failedService.Resources[0].NeedsRecreate = true
+	// This resource should have a planned create since it is in the end state.
+	failedService.Resources[1].NeedsRecreate = true
+	failedServiceState := makeState(t,
+		[]resource.Resource{
+			n1Instance1.Instance,
+			makeMonitorResource(n1Instance1),
+			&database.NodeResource{
+				Name:              "n1",
+				PrimaryInstanceID: n1Instance1.InstanceID(),
+				InstanceIDs:       []string{n1Instance1.InstanceID()},
+			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
+		},
+		slices.Concat(
+			n1Instance1.InstanceDependencies,
+			// Only the first two resources got deployed, and both are marked
+			// with needs_recreate = true.
+			failedService.Resources[:2],
+		),
+	)
+
 	for _, tc := range []struct {
 		name        string
 		options     operations.UpdateDatabaseOptions
@@ -625,6 +654,19 @@ func TestUpdateDatabase(t *testing.T) {
 					DatabaseName:      "test",
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1WithNewDependency},
+				},
+			},
+			services: []*operations.ServiceResources{svcRes},
+		},
+		{
+			name:    "update after failed service deployment",
+			options: operations.UpdateDatabaseOptions{},
+			start:   failedServiceState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 			},
 			services: []*operations.ServiceResources{svcRes},
