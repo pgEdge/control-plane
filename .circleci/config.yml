@@ -61,8 +61,8 @@ commands:
               docker-compose-plugin
             sudo systemctl start docker
 jobs:
-  # basic_check_1: unit tests + lint + license check (make ci)
-  basic_check_1:
+  # basic_check: unit tests + lint + license check (make ci)
+  basic_check:
     executor: common
     steps:
       - common_setup
@@ -72,8 +72,7 @@ jobs:
       - store_test_results:
           path: .
 
-  # basic_check_2: multi-host cluster integration tests (clustertest/)
-  basic_check_2:
+  test_cluster:
     executor: common
     steps:
       - common_setup
@@ -87,8 +86,7 @@ jobs:
       - store_test_results:
           path: .
 
-  # basic_check_3: end-to-end tests (e2e/), split across 3 parallel containers
-  basic_check_3:
+  test_e2e:
     executor: common
     parallelism: 3
     steps:
@@ -215,9 +213,9 @@ workflows:
   test:
     unless: << pipeline.parameters.build_ref >>
     jobs:
-      - basic_check_1
-      - basic_check_2
-      - basic_check_3
+      - basic_check
+      - test_cluster
+      - test_e2e
 
   release:
     jobs:

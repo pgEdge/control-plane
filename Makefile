@@ -124,7 +124,6 @@ test-e2e:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--format standard-verbose \
-		--junitfile test-e2e-results.xml \
 		--rerun-fails=$(TEST_RERUN_FAILS) \
 		--rerun-fails-max-failures=4 \
 		--packages='./e2e/...' \
