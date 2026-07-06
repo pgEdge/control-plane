@@ -365,7 +365,7 @@ func addEtcdServerCredentials(
 ) error {
 	// Ensure that localhost is included in the addresses
 	combined := ds.NewSet(addresses...)
-	combined.Add("127.0.0.1", "localhost")
+	combined.Add("127.0.0.1", "localhost", "::1")
 
 	// Create a cert for the peer server
 	serverPrincipal, err := certSvc.EtcdServer(ctx,

@@ -6,8 +6,10 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/rs/zerolog"
@@ -31,7 +33,7 @@ func newHTTPServer(
 		errCh:  make(chan error, 1),
 		server: &http.Server{
 			Handler: handler,
-			Addr:    fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port),
+			Addr:    net.JoinHostPort(cfg.BindAddr, strconv.Itoa(cfg.Port)),
 		},
 	}
 }
