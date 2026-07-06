@@ -1,0 +1,3 @@
+kind: Changed
+body: '**Breaking:** Changed the default `password_encryption` from `md5` to `scram-sha-256`. If you''re using the default password encryption, every role in a database''s `database_users` will be automatically updated to `scram-sha-256` the next time you update that database. Roles created outside of `database_users` will need their passwords updated manually. To keep using `md5`, set `postgresql_conf.password_encryption` to `md5` in your database spec.'
+time: 2026-07-06T20:44:31.76441+05:00

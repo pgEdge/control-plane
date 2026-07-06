@@ -8,6 +8,10 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 )
 
+func TestDefaultGUCs(t *testing.T) {
+	assert.Equal(t, "scram-sha-256", postgres.DefaultGUCs()["password_encryption"])
+}
+
 func TestDefaultTunableGUCs(t *testing.T) {
 	for _, tc := range []struct {
 		name        string

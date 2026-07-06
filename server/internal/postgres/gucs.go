@@ -20,7 +20,7 @@ func DefaultGUCs() map[string]any {
 		"log_rotation_size":            "0",
 		"log_truncate_on_rotation":     "on",
 		"logging_collector":            "on",
-		"password_encryption":          "md5", // TODO: Can we default to scram-sha-256?
+		"password_encryption":          "scram-sha-256",
 		"shared_preload_libraries":     "pg_stat_statements,snowflake,spock",
 		"track_commit_timestamp":       "on",
 		"track_io_timing":              "on",
