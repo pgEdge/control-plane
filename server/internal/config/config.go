@@ -151,9 +151,6 @@ func (h HTTP) validate() []error {
 		return nil
 	}
 	var errs []error
-	if h.BindAddr == "" {
-		errs = append(errs, errors.New("bind_addr cannot be empty"))
-	}
 	if h.Port == 0 {
 		errs = append(errs, errors.New("port cannot be empty"))
 	}
@@ -161,9 +158,8 @@ func (h HTTP) validate() []error {
 }
 
 var httpDefault = HTTP{
-	Enabled:  true,
-	BindAddr: "0.0.0.0",
-	Port:     3000,
+	Enabled: true,
+	Port:    3000,
 }
 
 type EtcdServer struct {

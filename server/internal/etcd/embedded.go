@@ -669,14 +669,12 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
-	// Use :: on IPv6/dual-stack hosts (dual-stack socket via IPV6_V6ONLY=0 on Linux).
-	// Fall back to 0.0.0.0 on IPv4-only hosts where :: may not be available.
-	wildcard := "0.0.0.0"
-	if len(cfg.PeerAddresses) > 0 {
-		if ip := net.ParseIP(cfg.PeerAddresses[0]); ip != nil && ip.To4() == nil {
-			wildcard = "::"
-		}
+
+	wildcard, err := utils.GetBindAddr()
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect bind address: %w", err)
 	}
+
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "https", Host: net.JoinHostPort(wildcard, strconv.Itoa(clientPort))},
 	}
@@ -724,11 +722,6 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
 	loopback := "127.0.0.1"
-	if len(cfg.PeerAddresses) > 0 {
-		if ip := net.ParseIP(cfg.PeerAddresses[0]); ip != nil && ip.To4() == nil {
-			loopback = "::1"
-		}
-	}
 
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "http", Host: net.JoinHostPort(loopback, strconv.Itoa(clientPort))},
