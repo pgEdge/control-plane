@@ -7,15 +7,20 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 )
 
-// newTestVersions builds a *Versions from the embedded manifest.
-// Use this in tests instead of the deleted NewVersions constructor.
-func newTestVersions(t *testing.T, cfg config.Config) *Versions {
+func parseEmbeddedManifest(t *testing.T) *versionManifest {
 	t.Helper()
 	var mf versionManifest
 	if err := json.Unmarshal(embeddedManifest, &mf); err != nil {
 		t.Fatalf("unmarshal embedded manifest: %v", err)
 	}
-	v, err := buildVersions(cfg, &mf)
+	return &mf
+}
+
+// newTestVersions builds a *Versions from the embedded manifest.
+// Use this in tests instead of the deleted NewVersions constructor.
+func newTestVersions(t *testing.T, cfg config.Config) *Versions {
+	t.Helper()
+	v, err := buildVersions(cfg, parseEmbeddedManifest(t))
 	if err != nil {
 		t.Fatalf("buildVersions: %v", err)
 	}
@@ -26,11 +31,7 @@ func newTestVersions(t *testing.T, cfg config.Config) *Versions {
 // Use this in tests instead of the deleted NewServiceVersions constructor.
 func newTestServiceVersions(t *testing.T, cfg config.Config) *ServiceVersions {
 	t.Helper()
-	var mf versionManifest
-	if err := json.Unmarshal(embeddedManifest, &mf); err != nil {
-		t.Fatalf("unmarshal embedded manifest: %v", err)
-	}
-	sv, err := buildServiceVersions(cfg, &mf)
+	sv, err := buildServiceVersions(cfg, parseEmbeddedManifest(t))
 	if err != nil {
 		t.Fatalf("buildServiceVersions: %v", err)
 	}

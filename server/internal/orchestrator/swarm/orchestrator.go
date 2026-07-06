@@ -147,8 +147,9 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		MemberID:         o.swarmNodeID,
 		ControlAvailable: o.controlAvailable,
 	}
-	h.DefaultPgEdgeVersion = o.getVersions().Default()
-	h.SupportedPgEdgeVersions = o.getVersions().Supported()
+	v := o.getVersions()
+	h.DefaultPgEdgeVersion = v.Default()
+	h.SupportedPgEdgeVersions = v.Supported()
 
 	return nil
 }
@@ -1287,12 +1288,13 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	}
 
 	specVersion := spec.PgEdgeVersion
+	vers := o.getVersions()
 	if specVersion == nil {
 		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
-		specVersion = o.getVersions().defaultVersion
+		specVersion = vers.defaultVersion
 	}
 
-	images, err := o.getVersions().GetImages(specVersion)
+	images, err := vers.GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
@@ -1374,8 +1376,9 @@ func (o *Orchestrator) validatePortAvailable(ctx context.Context, nodeName strin
 		return nil
 	}
 
-	specVersion := o.getVersions().defaultVersion
-	images, err := o.getVersions().GetImages(specVersion)
+	v := o.getVersions()
+	specVersion := v.defaultVersion
+	images, err := v.GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
@@ -1401,8 +1404,9 @@ func (o *Orchestrator) validateVolumes(ctx context.Context, nodeName string, vol
 		targets = append(targets, v.DestinationPath)
 	}
 
-	specVersion := o.getVersions().defaultVersion
-	images, err := o.getVersions().GetImages(specVersion)
+	v := o.getVersions()
+	specVersion := v.defaultVersion
+	images, err := v.GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
