@@ -458,8 +458,8 @@ func getFirstIP() (net.IP, error) {
 				ip = v.IP
 			}
 
-			// Check if it is a valid address and not a loopback address
-			if ip == nil || ip.IsLoopback() {
+			// Check if it is a valid, routable address
+			if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
 				continue
 			}
 
