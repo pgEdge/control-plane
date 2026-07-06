@@ -669,13 +669,19 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
+	// Use :: on IPv6/dual-stack hosts (dual-stack socket via IPV6_V6ONLY=0 on Linux).
+	// Fall back to 0.0.0.0 on IPv4-only hosts where :: may not be available.
+	wildcard := "0.0.0.0"
+	if len(cfg.PeerAddresses) > 0 {
+		if ip := net.ParseIP(cfg.PeerAddresses[0]); ip != nil && ip.To4() == nil {
+			wildcard = "::"
+		}
+	}
 	c.ListenClientUrls = []url.URL{
-		{Scheme: "https", Host: net.JoinHostPort("0.0.0.0", strconv.Itoa(clientPort))},
-		{Scheme: "https", Host: net.JoinHostPort("::", strconv.Itoa(clientPort))},
+		{Scheme: "https", Host: net.JoinHostPort(wildcard, strconv.Itoa(clientPort))},
 	}
 	c.ListenPeerUrls = []url.URL{
-		{Scheme: "https", Host: net.JoinHostPort("0.0.0.0", strconv.Itoa(peerPort))},
-		{Scheme: "https", Host: net.JoinHostPort("::", strconv.Itoa(peerPort))},
+		{Scheme: "https", Host: net.JoinHostPort(wildcard, strconv.Itoa(peerPort))},
 	}
 
 	clientURLs := make([]url.URL, len(cfg.PeerAddresses))
