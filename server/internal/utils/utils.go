@@ -185,7 +185,7 @@ func GetBindAddr() (string, error) {
 			if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
 				continue
 			}
-			if ip.To4() == nil {
+			if ip.To4() == nil && ip.To16() != nil {
 				return "::", nil
 			}
 		}
