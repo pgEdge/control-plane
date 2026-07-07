@@ -10,9 +10,10 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 )
 
-func newTestServiceOrchestrator() *Orchestrator {
+func newTestServiceOrchestrator(t *testing.T) *Orchestrator {
+	t.Helper()
 	return &Orchestrator{
-		serviceVersions: NewServiceVersions(config.Config{
+		serviceVersions: newTestServiceVersions(t, config.Config{
 			DockerSwarm: config.DockerSwarm{
 				ImageRepositoryHost: "registry.example.com/pgedge",
 			},
@@ -32,7 +33,7 @@ func serviceSpecWith(serviceType, version string, swarm *database.SwarmOpts) *da
 }
 
 func TestResolveServiceImage(t *testing.T) {
-	o := newTestServiceOrchestrator()
+	o := newTestServiceOrchestrator(t)
 
 	manifestImage, err := o.serviceVersions.GetServiceImage("mcp", "latest")
 	require.NoError(t, err)
@@ -106,7 +107,7 @@ func TestResolveServiceImage(t *testing.T) {
 }
 
 func TestReconcileServiceInstanceSpec(t *testing.T) {
-	o := newTestServiceOrchestrator()
+	o := newTestServiceOrchestrator(t)
 
 	manifestImage, err := o.serviceVersions.GetServiceImage("mcp", "latest")
 	require.NoError(t, err)

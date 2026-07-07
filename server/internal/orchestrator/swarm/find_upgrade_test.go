@@ -14,7 +14,7 @@ import (
 
 func testVersions(t *testing.T) *Versions {
 	t.Helper()
-	return NewVersions(config.Config{
+	return newTestVersions(t, config.Config{
 		DockerSwarm: config.DockerSwarm{
 			ImageRepositoryHost: "ghcr.io/pgedge",
 		},

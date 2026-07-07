@@ -14,7 +14,7 @@ func TestGetServiceImage(t *testing.T) {
 			ImageRepositoryHost: "ghcr.io/pgedge",
 		},
 	}
-	sv := NewServiceVersions(cfg)
+	sv := newTestServiceVersions(t, cfg)
 
 	tests := []struct {
 		name        string
@@ -86,7 +86,7 @@ func TestSupportedServiceVersions(t *testing.T) {
 			ImageRepositoryHost: "ghcr.io/pgedge",
 		},
 	}
-	sv := NewServiceVersions(cfg)
+	sv := newTestServiceVersions(t, cfg)
 
 	tests := []struct {
 		name           string
@@ -195,7 +195,7 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 			ImageRepositoryHost: "ghcr.io/pgedge",
 		},
 	}
-	sv := NewServiceVersions(cfg)
+	sv := newTestServiceVersions(t, cfg)
 
 	t.Run("mcp has no constraints", func(t *testing.T) {
 		img, err := sv.GetServiceImage("mcp", "latest")

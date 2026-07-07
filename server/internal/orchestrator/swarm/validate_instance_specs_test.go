@@ -14,7 +14,7 @@ import (
 
 func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 	o := &Orchestrator{
-		versions: NewVersions(config.Config{
+		versions: newTestVersions(t, config.Config{
 			DockerSwarm: config.DockerSwarm{
 				ImageRepositoryHost: "ghcr.io/pgedge",
 			},
