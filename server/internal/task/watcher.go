@@ -75,6 +75,7 @@ type sharedWatcher struct {
 	subscribers  []*Watcher
 	terminal     bool
 	terminalErr  error
+	streamErr    error // non-nil after the watch stream fails
 	watchOp      storage.WatchOp[*StoredTask]
 	registry     *watcherRegistry
 	taskID       uuid.UUID
@@ -85,6 +86,7 @@ type sharedWatcher struct {
 
 // newSubscription creates and registers a new Watcher. If the task is already
 // in a terminal state, the returned Watcher's Done channel is closed immediately.
+// If the watch stream has already failed, the error is sent to errCh immediately.
 func (sw *sharedWatcher) newSubscription() *Watcher {
 	w := &Watcher{
 		done:   make(chan struct{}),
@@ -97,6 +99,8 @@ func (sw *sharedWatcher) newSubscription() *Watcher {
 		w.closed = true
 		w.err = sw.terminalErr
 		close(w.done)
+	} else if sw.streamErr != nil {
+		w.errCh <- sw.streamErr
 	}
 	sw.mu.Unlock()
 	return w
@@ -104,6 +108,10 @@ func (sw *sharedWatcher) newSubscription() *Watcher {
 
 func (sw *sharedWatcher) finishAll(err error) {
 	sw.mu.Lock()
+	if sw.terminal {
+		sw.mu.Unlock()
+		return
+	}
 	sw.terminal = true
 	sw.terminalErr = err
 	subs := make([]*Watcher, len(sw.subscribers))
@@ -136,9 +144,10 @@ func (sw *sharedWatcher) handleEvent(e *storage.Event[*StoredTask]) error {
 	return nil
 }
 
-// propagateErrors forwards watch stream errors to all active subscriptions.
-// context.Canceled is filtered out — it indicates normal cleanup when
-// cancelWatch is called and should not be surfaced as an error.
+// propagateErrors forwards watch stream errors to all active subscriptions and
+// then removes the sharedWatcher from the registry so future callers start
+// a fresh stream. context.Canceled is filtered out — it indicates normal
+// cleanup when cancelWatch is called and should not be surfaced as an error.
 func (sw *sharedWatcher) propagateErrors() {
 	select {
 	case <-sw.shutdownCh:
@@ -147,6 +156,7 @@ func (sw *sharedWatcher) propagateErrors() {
 			return
 		}
 		sw.mu.Lock()
+		sw.streamErr = err
 		subs := make([]*Watcher, len(sw.subscribers))
 		copy(subs, sw.subscribers)
 		sw.mu.Unlock()
@@ -156,6 +166,10 @@ func (sw *sharedWatcher) propagateErrors() {
 			default:
 			}
 		}
+		// Remove from registry so a subsequent acquire starts a new stream.
+		// Any subscriber added between the lock above and the registry removal
+		// below will receive streamErr via newSubscription.
+		sw.shutdown()
 	}
 }
 
