@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"path"
 	"regexp"
 	"slices"
@@ -153,6 +154,43 @@ func BuildOptionArgs(options map[string]string) []string {
 		res = append(res, prefix+k+"="+v)
 	}
 	return res
+}
+
+// GetBindAddr returns the wildcard address to bind listeners on this host.
+// Returns "::" when a routable IPv6 address is present otherwise "0.0.0.0".
+func GetBindAddr() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("failed to list interfaces: %w", err)
+	}
+
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+				continue
+			}
+			if ip.To4() == nil && ip.To16() != nil {
+				return "::", nil
+			}
+		}
+	}
+	return "0.0.0.0", nil
 }
 
 var idPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,34}[a-z0-9])?$`)

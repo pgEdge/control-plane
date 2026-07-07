@@ -306,7 +306,7 @@ func (p *PatroniConfigGenerator) restAPI(systemAddresses []string) *patroni.Rest
 
 	return &patroni.RestAPI{
 		ConnectAddress: utils.PointerTo(net.JoinHostPort(p.FQDN, strconv.Itoa(p.PatroniPort))),
-		Listen:         utils.PointerTo(fmt.Sprintf("0.0.0.0:%d", p.PatroniPort)),
+		Listen:         utils.PointerTo(fmt.Sprintf(":%d", p.PatroniPort)),
 		Allowlist:      combined,
 	}
 }

@@ -669,12 +669,19 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
+
+	wildcard, err := utils.GetBindAddr()
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect bind address: %w", err)
+	}
+
 	c.ListenClientUrls = []url.URL{
-		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", clientPort)},
+		{Scheme: "https", Host: net.JoinHostPort(wildcard, strconv.Itoa(clientPort))},
 	}
 	c.ListenPeerUrls = []url.URL{
-		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", peerPort)},
+		{Scheme: "https", Host: net.JoinHostPort(wildcard, strconv.Itoa(peerPort))},
 	}
+
 	clientURLs := make([]url.URL, len(cfg.PeerAddresses))
 	peerURLs := make([]url.URL, len(cfg.PeerAddresses))
 	for i, address := range cfg.PeerAddresses {
@@ -714,22 +721,25 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 	// Only bind/advertise localhost for initialization
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
+	loopback := "127.0.0.1"
+
 	c.ListenClientUrls = []url.URL{
-		{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", clientPort)},
+		{Scheme: "http", Host: net.JoinHostPort(loopback, strconv.Itoa(clientPort))},
 	}
 	c.AdvertiseClientUrls = []url.URL{
-		{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", clientPort)},
+		{Scheme: "http", Host: net.JoinHostPort(loopback, strconv.Itoa(clientPort))},
 	}
+
 	c.ListenPeerUrls = []url.URL{
-		{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", peerPort)},
+		{Scheme: "http", Host: net.JoinHostPort(loopback, strconv.Itoa(peerPort))},
 	}
 	c.AdvertisePeerUrls = []url.URL{
-		{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", peerPort)},
+		{Scheme: "http", Host: net.JoinHostPort(loopback, strconv.Itoa(peerPort))},
 	}
 	c.InitialCluster = fmt.Sprintf(
-		"%s=http://127.0.0.1:%d",
+		"%s=http://%s",
 		cfg.HostID,
-		cfg.EtcdServer.PeerPort,
+		net.JoinHostPort(loopback, strconv.Itoa(cfg.EtcdServer.PeerPort)),
 	)
 	c.QuotaBackendBytes = quotaBackendBytes
 
