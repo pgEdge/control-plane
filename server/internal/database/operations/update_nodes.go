@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -16,7 +14,6 @@ import (
 func UpdateNode(start *resource.State, node *NodeResources) ([]*resource.State, error) {
 	var primary *resource.State
 	var replicaUpdates, replicaAdds []*resource.State
-	var primaryHostID string
 
 	for _, inst := range node.InstanceResources {
 		state, err := inst.InstanceState()
@@ -30,7 +27,6 @@ func UpdateNode(start *resource.State, node *NodeResources) ([]*resource.State, 
 				return nil, fmt.Errorf("invalid state: node %s exists, but its primary instance '%s' hasn't been created yet", node.NodeName, node.PrimaryInstanceID)
 			}
 			primary = state
-			primaryHostID = inst.HostID()
 		case start.HasResources(inst.Instance.Identifier()):
 			replicaUpdates = append(replicaUpdates, state)
 		default:
@@ -46,18 +42,23 @@ func UpdateNode(start *resource.State, node *NodeResources) ([]*resource.State, 
 		return nil, fmt.Errorf("node %s has no primary instance", node.NodeName)
 	}
 
-	// This condition is true when we have existing replicas
-	if len(replicaUpdates) != 0 {
-		// Ensure that we always switch back to the original primary
-		err := primary.AddResource(&database.SwitchoverResource{
-			HostID:     primaryHostID,
-			InstanceID: node.PrimaryInstanceID,
-			TargetRole: patroni.InstanceRolePrimary,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to add switchover resource to replica state: %w", err)
-		}
-	}
+	// TODO(PLAT-665): Commented out to fix rolling update failures caused by
+	// the Spock 5.x replication slot race condition. The second switchover that
+	// restores the original primary runs before Spock's worker has had time to
+	// create failover slots (~60 s), breaking all subscriptions to that node.
+	// Re-enable this block to restore "retain primary" behavior once the race
+	// is fully resolved.
+	//
+	// if len(replicaUpdates) != 0 {
+	// 	err := primary.AddResource(&database.SwitchoverResource{
+	// 		HostID:     primaryHostID,
+	// 		InstanceID: node.PrimaryInstanceID,
+	// 		TargetRole: patroni.InstanceRolePrimary,
+	// 	})
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to add switchover resource to replica state: %w", err)
+	// 	}
+	// }
 
 	// Existing replicas should be updated first and new replicas should be
 	// added last.
