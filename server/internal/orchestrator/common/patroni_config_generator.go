@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"net/netip"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -297,6 +298,10 @@ func (p *PatroniConfigGenerator) restAPI(systemAddresses []string) *patroni.Rest
 	combined := utils.PointerTo(slices.Concat(
 		p.PatroniAllowlist,
 		systemAddresses,
+		// Patroni doesn't properly unwrap 4In6 addresses when its comparing
+		// against this allowlist, so every IPv4 address needs to be duplicated
+		// with the ::ffff: prefix to ensure it works as intended.
+		mapIPv4Addresses(p.PatroniAllowlist, systemAddresses),
 		[]string{
 			"127.0.0.1", // Always allow local connections
 			"localhost",
@@ -490,4 +495,32 @@ func (p *PatroniConfigGenerator) pgIdent() *[]string {
 		return nil
 	}
 	return &p.PgIdentConf
+}
+
+// mapIPv4Addresses return IPv4-mapped IPv6 (aka 4in6) versions of every IPv4
+// address and CIDR in the given address lists, e.g.
+// - 192.168.1.1    -> ::ffff:192.168.1.1
+// - 192.168.1.1/32 -> ::ffff:192.168.1.1/128
+func mapIPv4Addresses(addresses ...[]string) []string {
+	var prefixed []string
+	for _, addrs := range addresses {
+		for _, addr := range addrs {
+			ip, err := netip.ParseAddr(addr)
+			if err == nil {
+				if ip.Is4() {
+					prefixed = append(prefixed, netip.AddrFrom16(ip.As16()).String())
+				}
+				continue
+			}
+			cidr, err := netip.ParsePrefix(addr)
+			if err == nil {
+				if ip := cidr.Addr(); ip.Is4() {
+					// IPv4 is 32 bits, IPv6 is 128 bits, 128 - 32 = 96
+					ip = netip.AddrFrom16(ip.As16())
+					prefixed = append(prefixed, netip.PrefixFrom(ip, 96+cidr.Bits()).String())
+				}
+			}
+		}
+	}
+	return prefixed
 }

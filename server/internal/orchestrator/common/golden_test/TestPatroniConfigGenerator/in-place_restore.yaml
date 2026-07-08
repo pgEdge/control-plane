@@ -120,8 +120,10 @@ restapi:
   connect_address: storefront-n1-689qacsi.storefront-database:8888
   listen: :8888
   allowlist:
-  - 172.17.0.1/32
+  - 172.17.0.1
   - 10.128.165.128/26
+  - ::ffff:172.17.0.1
+  - ::ffff:10.128.165.128/122
   - 127.0.0.1
   - localhost
   - ::1
