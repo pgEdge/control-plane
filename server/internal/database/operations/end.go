@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -35,20 +34,29 @@ func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.S
 		}
 		end.Merge(databaseState)
 
-		if len(node.InstanceResources) > 1 {
-			primary := node.primaryInstance()
-			if primary != nil {
-				// Primary will be non-nil for existing nodes. Adding the
-				// switchover resource to the end state prevents "permadrift"
-				// where this resource is created and deleted even if the update
-				// is a no-op.
-				resources = append(resources, &database.SwitchoverResource{
-					HostID:     primary.HostID(),
-					InstanceID: primary.InstanceID(),
-					TargetRole: patroni.InstanceRolePrimary,
-				})
-			}
-		}
+		// TODO(PLAT-665): Commented out to fix rolling update failures caused by
+		// the Spock 5.x replication slot race condition. The end-state
+		// switchover that restores the original primary runs before Spock's
+		// worker has had time to create failover slots (~60 s), breaking all
+		// subscriptions to that node. Re-enable this block to restore
+		// "retain primary" behavior once the race is fully resolved. When
+		// re-enabling, verify that the "patroni" import is present and that
+		// SwitchoverResource is also re-enabled in update_nodes.go.
+		//
+		// if len(node.InstanceResources) > 1 {
+		// 	primary := node.primaryInstance()
+		// 	if primary != nil {
+		// 		// Primary will be non-nil for existing nodes. Adding the
+		// 		// switchover resource to the end state prevents "permadrift"
+		// 		// where this resource is created and deleted even if the
+		// 		// update is a no-op.
+		// 		resources = append(resources, &database.SwitchoverResource{
+		// 			HostID:     primary.HostID(),
+		// 			InstanceID: primary.InstanceID(),
+		// 			TargetRole: patroni.InstanceRolePrimary,
+		// 		})
+		// 	}
+		// }
 
 		for _, peer := range nodes {
 			if peer.NodeName == node.NodeName {

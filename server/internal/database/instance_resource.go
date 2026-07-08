@@ -293,7 +293,11 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 			if exists {
 				break
 			}
-			time.Sleep(pollInterval)
+			select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(pollInterval):
+				}
 		}
 	}
 	return nil

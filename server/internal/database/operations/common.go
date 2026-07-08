@@ -20,15 +20,6 @@ type NodeResources struct {
 	Scripts           database.Scripts
 }
 
-func (n *NodeResources) primaryInstance() *database.InstanceResources {
-	for _, instance := range n.InstanceResources {
-		if instance.InstanceID() == n.PrimaryInstanceID {
-			return instance
-		}
-	}
-
-	return nil
-}
 
 func (n *NodeResources) nodeResourceState() (*resource.State, error) {
 	var instanceIDs []string

@@ -125,20 +125,6 @@
         "reason": "does_not_exist",
         "diff": null
       }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.switchover::n1-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
-      },
-      {
-        "type": "create",
-        "resource_id": "database.switchover::n2-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
-      }
     ]
   ]
 ]
