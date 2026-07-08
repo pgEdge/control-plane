@@ -79,7 +79,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 			generateOptions: common.GenerateOptions{
 				SystemAddresses: []string{
-					"172.17.0.1/32",
+					"172.17.0.1",
 					"10.128.165.128/26",
 				},
 				ExtraHbaEntries: []hba.Entry{
@@ -87,7 +87,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 						Type:       hba.EntryTypeHost,
 						Database:   "all",
 						User:       "all",
-						Address:    "172.17.0.1/32",
+						Address:    "172.17.0.1",
 						AuthMethod: hba.AuthMethodMD5,
 					},
 					{
@@ -138,7 +138,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 			generateOptions: common.GenerateOptions{
 				SystemAddresses: []string{
-					"172.17.0.1/32",
+					"172.17.0.1",
 					"10.128.165.128/26",
 				},
 				ExtraHbaEntries: []hba.Entry{
@@ -146,7 +146,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 						Type:       hba.EntryTypeHost,
 						Database:   "all",
 						User:       "all",
-						Address:    "172.17.0.1/32",
+						Address:    "172.17.0.1",
 						AuthMethod: hba.AuthMethodMD5,
 					},
 					{
@@ -197,7 +197,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 			generateOptions: common.GenerateOptions{
 				SystemAddresses: []string{
-					"172.17.0.1/32",
+					"172.17.0.1",
 					"10.128.165.128/26",
 				},
 				ExtraHbaEntries: []hba.Entry{
@@ -205,7 +205,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 						Type:       hba.EntryTypeHost,
 						Database:   "all",
 						User:       "all",
-						Address:    "172.17.0.1/32",
+						Address:    "172.17.0.1",
 						AuthMethod: hba.AuthMethodMD5,
 					},
 					{
@@ -257,7 +257,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 			generateOptions: common.GenerateOptions{
 				SystemAddresses: []string{
-					"172.17.0.1/32",
+					"172.17.0.1",
 					"10.128.165.128/26",
 				},
 				ExtraHbaEntries: []hba.Entry{
@@ -265,7 +265,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 						Type:       hba.EntryTypeHost,
 						Database:   "all",
 						User:       "all",
-						Address:    "172.17.0.1/32",
+						Address:    "172.17.0.1",
 						AuthMethod: hba.AuthMethodMD5,
 					},
 					{
@@ -411,7 +411,7 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				Password: "password",
 			},
 			generateOptions: common.GenerateOptions{
-				SystemAddresses: []string{"172.17.0.1/32", "10.128.165.128/26"},
+				SystemAddresses: []string{"172.17.0.1", "10.128.165.128/26"},
 			},
 		},
 	} {
