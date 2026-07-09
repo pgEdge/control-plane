@@ -57,7 +57,7 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "rag",
 			ServiceType: "rag",
-			Version:     "latest",
+			Version:     "1.0.0",
 			Config:      minimalRAGConfig(),
 			ConnectAs:   "app_read_only",
 		},
@@ -95,7 +95,7 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "rag",
 			ServiceType: "rag",
-			Version:     "latest",
+			Version:     "1.0.0",
 			Config:      minimalRAGConfig(),
 			ConnectAs:   "app_read_only",
 		},
@@ -133,7 +133,7 @@ func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "rag",
 			ServiceType: "rag",
-			Version:     "latest",
+			Version:     "1.0.0",
 			Config:      minimalRAGConfig(),
 			ConnectAs:   "app_read_only",
 		},
@@ -176,7 +176,7 @@ func TestGenerateRAGInstanceResources_ConnectAs_CredentialsPopulated(t *testing.
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "rag",
 			ServiceType: "rag",
-			Version:     "latest",
+			Version:     "1.0.0",
 			Config:      minimalRAGConfig(),
 			ConnectAs:   "app_read_only",
 		},
@@ -206,8 +206,8 @@ func TestGenerateRAGInstanceResources_ConnectAs_CredentialsPopulated(t *testing.
 func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
 	o := newTestOrchestrator(t)
 	// Override the "rag/latest" image with a constraint requiring PG >= 18.
-	o.serviceVersions.addServiceImage("rag", "latest", &ServiceImage{
-		Tag: "rag-server:latest",
+	o.serviceVersions.addServiceImage("rag", "1.0.0", &ServiceImage{
+		Tag: "rag-server:1.0.0",
 		PostgresConstraint: &ds.VersionConstraint{
 			Min: ds.MustParseVersion("18"),
 		},
@@ -218,7 +218,7 @@ func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "rag",
 			ServiceType: "rag",
-			Version:     "latest",
+			Version:     "1.0.0",
 			Config:      minimalRAGConfig(),
 			ConnectAs:   "app_read_only",
 		},

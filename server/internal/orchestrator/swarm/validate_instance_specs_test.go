@@ -50,11 +50,11 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		}
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
-		// Registry check skipped (no docker client). Image accepted as-is.
+		// Registry check skipped (no docker client). Version check passes.
 		assert.Empty(t, results)
 	})
 
-	t.Run("no result when Image differs from manifest (registry check skipped in unit tests)", func(t *testing.T) {
+	t.Run("no result when image tag format is unrecognizable (dev build)", func(t *testing.T) {
 		changes := []*database.InstanceSpecChange{
 			{Current: &database.InstanceSpec{
 				NodeName:      "n1",
@@ -67,11 +67,11 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		}
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
-		// Registry check skipped (no docker client). Any image override is accepted as-is.
+		// Unrecognizable tag format skips version validation and is accepted.
 		assert.Empty(t, results)
 	})
 
-	t.Run("no result when Image is set for an unknown version", func(t *testing.T) {
+	t.Run("no result when image tag format is unrecognizable for unknown spec version", func(t *testing.T) {
 		changes := []*database.InstanceSpecChange{
 			{Current: &database.InstanceSpec{
 				NodeName:      "n1",
@@ -85,5 +85,81 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		results, err := o.ValidateInstanceSpecs(ctx, changes)
 		require.NoError(t, err)
 		assert.Empty(t, results)
+	})
+
+	t.Run("no result for recognizable tag with matching versions (multi-digit patch)", func(t *testing.T) {
+		changes := []*database.InstanceSpecChange{
+			{Current: &database.InstanceSpec{
+				NodeName:      "n1",
+				HostID:        "host-1",
+				PgEdgeVersion: knownVersion, // 17.9 / 5
+				OrchestratorOpts: &database.OrchestratorOpts{
+					Swarm: &database.SwarmOpts{Image: "ghcr.io/pgedge/pgedge-postgres:17.9-spock5.0.10-standard-1"},
+				},
+			}},
+		}
+		results, err := o.ValidateInstanceSpecs(ctx, changes)
+		require.NoError(t, err)
+		assert.Empty(t, results)
+	})
+
+	t.Run("error when image tag postgres version mismatches spec", func(t *testing.T) {
+		changes := []*database.InstanceSpecChange{
+			{Current: &database.InstanceSpec{
+				NodeName:      "n1",
+				HostID:        "host-1",
+				PgEdgeVersion: knownVersion, // 17.9 / 5
+				OrchestratorOpts: &database.OrchestratorOpts{
+					Swarm: &database.SwarmOpts{Image: "ghcr.io/pgedge/pgedge-postgres:18.3-spock5.0.6-standard-2"},
+				},
+			}},
+		}
+		results, err := o.ValidateInstanceSpecs(ctx, changes)
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		assert.False(t, results[0].Valid)
+		assert.Contains(t, results[0].Errors[0], "18.3")
+		assert.Contains(t, results[0].Errors[0], "17.9")
+	})
+
+	t.Run("accepted when upgrading spock patch within same major (e.g. 5.0.9 → 5.0.10)", func(t *testing.T) {
+		pgEdgeVersion := ds.MustParsePgEdgeVersion("17.10", "5")
+		for _, img := range []string{
+			"ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-2",
+			"ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.10-standard-2",
+		} {
+			changes := []*database.InstanceSpecChange{
+				{Current: &database.InstanceSpec{
+					NodeName:      "n1",
+					HostID:        "host-1",
+					PgEdgeVersion: pgEdgeVersion,
+					OrchestratorOpts: &database.OrchestratorOpts{
+						Swarm: &database.SwarmOpts{Image: img},
+					},
+				}},
+			}
+			results, err := o.ValidateInstanceSpecs(ctx, changes)
+			require.NoError(t, err)
+			assert.Emptyf(t, results, "image %s should be accepted", img)
+		}
+	})
+
+	t.Run("error when image tag spock version mismatches spec", func(t *testing.T) {
+		changes := []*database.InstanceSpecChange{
+			{Current: &database.InstanceSpec{
+				NodeName:      "n1",
+				HostID:        "host-1",
+				PgEdgeVersion: knownVersion, // 17.9 / 5
+				OrchestratorOpts: &database.OrchestratorOpts{
+					Swarm: &database.SwarmOpts{Image: "ghcr.io/pgedge/pgedge-postgres:17.9-spock4.0.0-standard-1"},
+				},
+			}},
+		}
+		results, err := o.ValidateInstanceSpecs(ctx, changes)
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		assert.False(t, results[0].Valid)
+		assert.Contains(t, results[0].Errors[0], "4.0.0")
+		assert.Contains(t, results[0].Errors[0], "5")
 	})
 }

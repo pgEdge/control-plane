@@ -96,11 +96,6 @@
     ],
     "postgrest": [
       {
-        "version": "latest",
-        "image": "postgrest:latest",
-        "stability": "stable"
-      },
-      {
         "version": "14.5",
         "image": "postgrest:14.5",
         "stability": "stable",
@@ -109,16 +104,16 @@
     ],
     "mcp": [
       {
-        "version": "latest",
-        "image": "postgres-mcp:latest",
+        "version": "1.0.0",
+        "image": "postgres-mcp:1.0.0",
         "stability": "stable",
         "default": true
       }
     ],
     "rag": [
       {
-        "version": "latest",
-        "image": "rag-server:latest",
+        "version": "1.0.0",
+        "image": "rag-server:1.0.0",
         "stability": "stable",
         "default": true
       }

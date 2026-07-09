@@ -134,7 +134,7 @@ type ValidationResult struct {
 	HostID     string   `json:"host_id"`
 	NodeName   string   `json:"node_name"`
 	Valid      bool     `json:"valid"`
-	Errors     []string `json:"errors"`
+	Errors []string `json:"errors"`
 }
 
 type ConnectionInfo struct {
