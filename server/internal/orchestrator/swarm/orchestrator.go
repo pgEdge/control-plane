@@ -1131,7 +1131,10 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*dat
 				// If the tag follows the pgEdge format, validate that the
 				// versions encoded in the tag match the spec. Unrecognizable
 				// tags (e.g. dev builds) skip version validation and are accepted.
-				if pgTagVer, spockTagVer, ok := parseImageTag(userImage); ok && cur.PgEdgeVersion != nil {
+				if pgTagVer, spockTagVer, ok := parseImageTag(userImage); ok &&
+					cur.PgEdgeVersion != nil &&
+					cur.PgEdgeVersion.PostgresVersion != nil &&
+					cur.PgEdgeVersion.SpockVersion != nil {
 					var errs []string
 					if !versionHasPrefix(pgTagVer, cur.PgEdgeVersion.PostgresVersion) {
 						errs = append(errs, fmt.Sprintf("image tag postgres version %s does not match spec version %s",
