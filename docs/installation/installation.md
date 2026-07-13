@@ -1,8 +1,13 @@
-# Installing the pgEdge Control Plane
+# Installing the pgEdge Control Plane (Docker Swarm)
 
-This guide contains instructions for deploying the Control Plane on a set of Linux hosts, such as virtual machines or bare metal servers. 
+This guide covers deploying the Control Plane using the **Docker Swarm** orchestrator. With this method, the Control Plane and each Postgres instance run as Docker containers, with Docker Swarm handling placement across hosts. This is the default, production-ready installation method.
 
-Control Plane excels at managing Postgres in a highly-available configuration.  To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using-ha/index.md).
+!!! tip "Prefer to run without Docker?"
+
+    If you'd rather manage Postgres as native Linux services without containers, see
+    [Installing via System Packages](systemd.md) for the systemd-based installation.
+
+Control Plane excels at managing Postgres in a highly-available configuration. To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using-ha/index.md).
 
 
 ## Initializing Docker Swarm

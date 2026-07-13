@@ -39,8 +39,10 @@ When a node which has multiple instances is created, the primary instance for th
 
 ## Orchestrators
 
-The Control Plane is architected to support various orchestrators, allowing for flexible deployment and management of database instances. At present, Docker Swarm is the only supported orchestrator, enabling containerized deployment of databases across multiple hosts.
+The Control Plane is architected to support multiple orchestrators, giving you flexibility in how database instances are deployed and managed.
 
-For the Docker Swarm orchestrator, each host corresponds to a Docker Swarm node, with the Control Plane running as a Docker container. Each database instance runs as a separate Docker container within the Swarm environment. 
+**Docker Swarm** is the default orchestrator. Each host corresponds to a Docker Swarm node, with the Control Plane running as a Docker container. Each database instance runs as a separate Docker container within the Swarm environment.
 
-We plan to support additional orchestration approaches in the near future, including direct deployment to hosts without containerization.
+**systemd** is available as an alternative orchestrator for deployments on bare metal or VMs where you prefer not to use containers. With the systemd orchestrator, the Control Plane runs as a native Linux service and manages each Postgres instance as a systemd unit. This is a good fit for organizations with existing infrastructure built around system package managers, or for environments where standard Linux processes are preferred over containers. See [Installing via System Packages](../installation/systemd.md) for setup instructions.
+
+All orchestrators provide the same core API and feature set: declarative database management, Patroni-based high availability, and pgBackRest backup/restore integration.
