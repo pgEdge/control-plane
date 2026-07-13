@@ -55,6 +55,28 @@ func (a *Activities) ExecuteApplyEvent(
 }
 
 func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*ApplyEventOutput, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	if input.TaskID != uuid.Nil {
+		watcher, err := a.TaskSvc.NewWatcher(ctx, task.ScopeDatabase, input.DatabaseID, input.TaskID)
+		if err != nil {
+			activity.Logger(ctx).Warn("failed to start task watcher; activity won't be interrupted on task cancellation", "error", err)
+		} else {
+			go func() {
+				defer watcher.Close()
+				select {
+				case <-watcher.Done():
+					cancel()
+				case <-watcher.Error():
+					// Watch stream died; stop monitoring without cancelling
+					// the activity — we don't know the task's current state.
+				case <-ctx.Done():
+				}
+			}()
+		}
+	}
+
 	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logStart := logger.With(
 		"event_type", input.Event.Type,
