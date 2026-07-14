@@ -1,4 +1,10 @@
-# Upgrading the Control Plane
+# Upgrading the Control Plane (Docker Swarm)
+
+!!! note "systemd installations"
+
+    This page covers upgrading the Control Plane on Docker Swarm clusters.
+    If you installed via system packages, see
+    [Updating the Control Plane](./systemd.md#updating-the-control-plane) instead.
 
 We publish a new Docker image whenever we release a new version of the Control
 Plane. The Control Plane version is specified in the image property of the [stack definition file](../installation/installation.md#creating-the-stack-definition-file):
