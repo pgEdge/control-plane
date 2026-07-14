@@ -101,11 +101,11 @@ nfpms:
     id: trixie
     formats: [deb]
     release: "1.trixie"
-  # Ubuntu 26.04 LTS — enable when targeted:
-  # - <<: *nfpm_defaults
-  #   id: resolute
-  #   formats: [deb]
-  #   release: "1.resolute"
+  # Ubuntu 26.04 LTS
+  - <<: *nfpm_defaults
+    id: resolute
+    formats: [deb]
+    release: "1.resolute"
 
 release:
   github:
