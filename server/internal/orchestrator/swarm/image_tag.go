@@ -9,8 +9,10 @@ import (
 
 // imageTagRegexp matches the pgEdge image tag format:
 // {pgver}-spock{spockver}-{variant}[-{build}]
-// e.g. 17.9-spock5.0.6-standard-2, 17-spock5-standard
-var imageTagRegexp = regexp.MustCompile(`^(\d+(?:\.\d+){0,2})-spock(\d+(?:\.\d+){0,2})-`)
+// e.g. 17.9-spock5.0.6-standard-2, 17.10-spock5-standard
+// The Postgres version requires at least major.minor; the Spock version may be
+// major-only (e.g. spock5) to support mutable channel tags.
+var imageTagRegexp = regexp.MustCompile(`^(\d+\.\d+(?:\.\d+)?)-spock(\d+(?:\.\d+){0,2})-`)
 
 // parseImageTag extracts the Postgres and Spock versions from an image
 // reference following the pgEdge tag format. Returns ok=false if the tag

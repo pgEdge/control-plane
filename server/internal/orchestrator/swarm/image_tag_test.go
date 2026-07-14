@@ -24,7 +24,7 @@ func TestParseImageTag(t *testing.T) {
 		{"custom registry", "registry.example.com/postgres:17.9-spock5.0.6-standard-2", "17.9", "5.0.6", true},
 		{"no build number", "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.10-standard", "17.10", "5.0.10", true},
 		{"major-only spock", "ghcr.io/pgedge/pgedge-postgres:17.10-spock5-standard", "17.10", "5", true},
-		{"major-only pg and spock", "ghcr.io/pgedge/pgedge-postgres:17-spock5-standard", "17", "5", true},
+		{"unrecognizable: major-only pg", "ghcr.io/pgedge/pgedge-postgres:17-spock5-standard", "", "", false},
 		{"digest-pinned with tag", "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-1@sha256:abc123", "17.10", "5.0.9", true},
 		{"unrecognizable: dev tag", "ghcr.io/pgedge/pgedge-postgres:my-custom-image", "", "", false},
 		{"unrecognizable: latest", "ghcr.io/pgedge/pgedge-postgres:latest", "", "", false},

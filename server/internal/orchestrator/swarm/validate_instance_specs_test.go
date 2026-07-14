@@ -178,13 +178,15 @@ func TestValidateInstanceSpecs_ImageValidation(t *testing.T) {
 		assert.Contains(t, results[0].Errors[0], "18.3")
 	})
 
-	t.Run("no result for major-only mutable tag matching spec", func(t *testing.T) {
-		pgEdgeVersion := ds.MustParsePgEdgeVersion("17", "5")
+	t.Run("no result for major-only pg mutable tag (unrecognizable, skips version check)", func(t *testing.T) {
+		// The API requires postgres_version in major.minor format, so a tag like
+		// "17-spock5-standard" (major-only pg) is treated as unrecognizable and
+		// accepted without version validation — same as a dev build tag.
 		changes := []*database.InstanceSpecChange{
 			{Current: &database.InstanceSpec{
 				NodeName:      "n1",
 				HostID:        "host-1",
-				PgEdgeVersion: pgEdgeVersion,
+				PgEdgeVersion: knownVersion, // 17.9 / 5
 				OrchestratorOpts: &database.OrchestratorOpts{
 					Swarm: &database.SwarmOpts{Image: "ghcr.io/pgedge/pgedge-postgres:17-spock5-standard"},
 				},
