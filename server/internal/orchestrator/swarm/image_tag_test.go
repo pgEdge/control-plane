@@ -22,10 +22,15 @@ func TestParseImageTag(t *testing.T) {
 		{"two-digit patch", "ghcr.io/pgedge/pgedge-postgres:17.9-spock5.0.10-standard-1", "17.9", "5.0.10", true},
 		{"pg18", "ghcr.io/pgedge/pgedge-postgres:18.3-spock5.0.6-standard-2", "18.3", "5.0.6", true},
 		{"custom registry", "registry.example.com/postgres:17.9-spock5.0.6-standard-2", "17.9", "5.0.6", true},
+		{"no build number", "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.10-standard", "17.10", "5.0.10", true},
+		{"major-only spock", "ghcr.io/pgedge/pgedge-postgres:17.10-spock5-standard", "17.10", "5", true},
+		{"major-only pg and spock", "ghcr.io/pgedge/pgedge-postgres:17-spock5-standard", "17", "5", true},
+		{"digest-pinned with tag", "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-1@sha256:abc123", "17.10", "5.0.9", true},
 		{"unrecognizable: dev tag", "ghcr.io/pgedge/pgedge-postgres:my-custom-image", "", "", false},
 		{"unrecognizable: latest", "ghcr.io/pgedge/pgedge-postgres:latest", "", "", false},
 		{"unrecognizable: semver only", "ghcr.io/pgedge/pgedge-postgres:17.9", "", "", false},
 		{"unrecognizable: missing spock", "ghcr.io/pgedge/pgedge-postgres:17.9-standard-2", "", "", false},
+		{"unrecognizable: digest only, no tag", "ghcr.io/pgedge/pgedge-postgres@sha256:abc123", "", "", false},
 	}
 
 	for _, tc := range cases {
