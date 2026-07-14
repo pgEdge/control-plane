@@ -278,12 +278,15 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 	}
 	defer conn.Close(ctx)
 
-	const pollInterval = 2 * time.Second
+	const (
+		pollInterval    = 2 * time.Second
+		slotWaitTimeout = 2 * time.Minute
+	)
+	ctx, cancel := context.WithTimeout(ctx, slotWaitTimeout)
+	defer cancel()
+
 	for _, sub := range relevant {
 		for {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
 			exists, err := postgres.ReplicationSlotExists(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode).
 				Scalar(ctx, conn)
 			if err != nil {
@@ -294,10 +297,10 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 				break
 			}
 			select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case <-time.After(pollInterval):
-				}
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(pollInterval):
+			}
 		}
 	}
 	return nil

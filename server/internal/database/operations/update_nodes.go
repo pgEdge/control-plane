@@ -42,24 +42,6 @@ func UpdateNode(start *resource.State, node *NodeResources) ([]*resource.State, 
 		return nil, fmt.Errorf("node %s has no primary instance", node.NodeName)
 	}
 
-	// TODO(PLAT-665): Commented out to fix rolling update failures caused by
-	// the Spock 5.x replication slot race condition. The second switchover that
-	// restores the original primary runs before Spock's worker has had time to
-	// create failover slots (~60 s), breaking all subscriptions to that node.
-	// Re-enable this block to restore "retain primary" behavior once the race
-	// is fully resolved.
-	//
-	// if len(replicaUpdates) != 0 {
-	// 	err := primary.AddResource(&database.SwitchoverResource{
-	// 		HostID:     primaryHostID,
-	// 		InstanceID: node.PrimaryInstanceID,
-	// 		TargetRole: patroni.InstanceRolePrimary,
-	// 	})
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to add switchover resource to replica state: %w", err)
-	// 	}
-	// }
-
 	// Existing replicas should be updated first and new replicas should be
 	// added last.
 	states := slices.Concat(replicaUpdates, []*resource.State{primary}, replicaAdds)
