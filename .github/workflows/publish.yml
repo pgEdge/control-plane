@@ -227,7 +227,7 @@ jobs:
                   # codename lives in the deb revision: ..._<ver>-1.<codename>_<arch>.deb
                   for code in $(ls deb-dl/*.deb | sed -E 's/.*-1\.([a-z]+)_[a-z0-9]+\.deb$/\1/' | sort -u); do
                       case "$code" in
-                          jammy|noble)               image="ubuntu:${code}" ;;
+                          jammy|noble|resolute)       image="ubuntu:${code}" ;;
                           bullseye|bookworm|trixie)   image="debian:${code}" ;;
                           *) echo "::error::unknown codename '${code}'"; exit 1 ;;
                       esac
