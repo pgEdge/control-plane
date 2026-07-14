@@ -45,4 +45,4 @@ The Control Plane is architected to support multiple orchestrators, giving you f
 
 **systemd** is available as an alternative orchestrator for deployments on bare metal or VMs where you prefer not to use containers. With the systemd orchestrator, the Control Plane runs as a native Linux service and manages each Postgres instance as a systemd unit. This is a good fit for organizations with existing infrastructure built around system package managers, or for environments where standard Linux processes are preferred over containers. See [Installing via System Packages](../installation/systemd.md) for setup instructions.
 
-All orchestrators provide the same core API and feature set: declarative database management, Patroni-based high availability, and pgBackRest backup/restore integration.
+Both orchestrators share the same core API and capabilities: declarative database management, Patroni-based high availability, and pgBackRest backup/restore integration. The systemd orchestrator has some limitations not present in Docker Swarm; see the [systemd installation guide](../installation/systemd.md#limitations) for details.

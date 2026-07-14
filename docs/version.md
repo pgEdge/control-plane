@@ -11,8 +11,8 @@ pgEdge Control Plane supports deploying Postgres 16, 17, and 18 with support for
 
 ## Supported Operating Systems
 
-Currently, the pgEdge Control Plane supports deploying databases to virtual machines and bare metal hosts using the Docker Swarm orchestrator, with both the Control Plane and Postgres instances running in containers.
+The pgEdge Control Plane supports two orchestration models:
 
-With this model, the pgEdge Control Plane can be deployed to hosts running any Linux distribution supported by [Docker Engine for Linux](https://docs.docker.com/engine/install/), on either x86_64 or arm64 architectures.
+**Docker Swarm** (generally available): deploys the Control Plane and Postgres instances as Docker containers. Supported on any Linux distribution supported by [Docker Engine for Linux](https://docs.docker.com/engine/install/), on either x86_64 or arm64 architectures.
 
-We plan to support additional orchestration approaches in the near future, including direct deployment to hosts without containerization.
+**systemd** (preview): deploys the Control Plane and Postgres instances as native Linux services without Docker. Supported on RPM-based distributions (RHEL, Rocky Linux, AlmaLinux) and Debian-based distributions (Debian, Ubuntu), on either x86_64 or arm64 architectures. See [Installing via System Packages](installation/systemd.md) for details and current limitations.

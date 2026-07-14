@@ -7,6 +7,12 @@ from Postgres 18.0 to 18.1, via the API. The Postgres version is a field in the
 `spec` that you submit in the [create](./create-db.md) and
 [update](./update-db.md) requests.
 
+!!! note "systemd clusters"
+
+    API-driven minor version upgrades are not supported on systemd clusters.
+    See [Performing Postgres Minor Version Upgrades](../installation/systemd.md#performing-postgres-minor-version-upgrades)
+    for the manual upgrade procedure.
+
 !!! tip
 
     Before you upgrade, make sure that your desired version is supported by
