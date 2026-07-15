@@ -24,7 +24,7 @@ You'll need to place the following files in a directory on the host machine for 
 
 Place the certificate files on the host filesystem, then configure the Control Plane to use them using one of the methods below.
 
-**Docker Swarm:** add the directory to the `volumes` section for each `service` in the [Control Plane stack definition file](./installation.md#creating-the-stack-definition-file) and set these variables in the `environment` section:
+**Docker Swarm:** add the directory to the `volumes` section for each `service` in the [Control Plane stack definition file](./swarm-installation.md#creating-the-stack-definition-file) and set these variables in the `environment` section:
 
 - `PGEDGE_HTTP__CA_CERT`: the path to the CA certificate
 - `PGEDGE_HTTP__SERVER_CERT`: the path to the server certificate

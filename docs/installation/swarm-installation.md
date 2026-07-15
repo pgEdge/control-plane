@@ -5,7 +5,7 @@ This guide covers deploying the Control Plane using the **Docker Swarm** orchest
 !!! tip "Prefer to run without Docker?"
 
     If you'd rather manage Postgres as native Linux services without containers, see
-    [Installing via System Packages](systemd.md) for the systemd-based installation.
+    [Installing via System Packages](systemd-installation.md) for the systemd-based installation.
 
 Control Plane excels at managing Postgres in a highly-available configuration. To review a list of best practices for Control Plane deployment in a high-availability environment, see [High-Availability Best Practices](../using-ha/index.md).
 

@@ -39,7 +39,7 @@ Before starting the recovery process, ensure you have:
   remains, you can recover using that host's existing data; a backup is not
   required.
 
-See [Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file)
+See [Creating the stack definition file](../installation/swarm-installation.md#creating-the-stack-definition-file)
 in the installation documentation.
 
 ## Set Variables

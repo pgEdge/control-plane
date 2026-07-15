@@ -10,7 +10,7 @@ from Postgres 18.0 to 18.1, via the API. The Postgres version is a field in the
 !!! note "systemd clusters"
 
     API-driven minor version upgrades are not supported on systemd clusters.
-    See [Performing Postgres Minor Version Upgrades](../installation/systemd.md#performing-postgres-minor-version-upgrades)
+    See [Performing Postgres Minor Version Upgrades](../installation/upgrading.md#performing-postgres-minor-version-upgrades)
     for the manual upgrade procedure.
 
 !!! tip
