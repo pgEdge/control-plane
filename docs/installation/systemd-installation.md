@@ -309,8 +309,6 @@ sudo apt install /tmp/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
 curl http://localhost:3000/v1/version
 ```
 
-
-//include with installation guide
 ## Uninstalling the Control Plane
 
 This section describes how to fully remove the Control Plane and its data from

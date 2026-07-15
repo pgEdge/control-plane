@@ -14,7 +14,6 @@ resolving the underlying issue.
 
 The pgEdge Control Plane supports:
 
-- flexible orchestrator support: run Postgres as Docker containers via **Docker Swarm**, or as native Linux services via **systemd** on bare metal or VMs without containers.
 - deploying Postgres 16, 17, and 18 with support for managed extensions.
     - Extension support includes: Spock, LOLOR, Snowflake, pgAudit, PostGIS, pgVector, pgEdge Vectorizer, pg_tokenizer, vchord_bm25, pg_vectorize, pgmq, pg_cron, pg_stat_monitor.
 - deploying multiple Postgres instances on the same host, enabling efficient resource utilization and consolidation of workloads.
@@ -36,3 +35,4 @@ The pgEdge Control Plane supports:
 - secure API access with certificate-based authentication.
 - performing in-place minor version upgrades of Postgres and supporting components.
 - performing major version upgrades of Postgres using zero downtime node addition.
+- flexible orchestrator support: run Postgres as native Linux services via **systemd** on bare metal or VMs without containers, or as Docker containers via **Docker Swarm**.

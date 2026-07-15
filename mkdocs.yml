@@ -59,9 +59,10 @@ nav:
       - Guided Walkthrough: walkthrough.md
   - Installing Control Plane:
       - Deployment Options: installation/index.md
-      - Installing Control Plane on Your Host: installation/swarm-installation.md
+      - Installing the pgEdge Control Plane with Swarm: installation/swarm-installation.md
       - Configuration Options: installation/configuration.md
-      - Upgrading a Control Plane Installation: installation/upgrading.md
+      - Upgrading the Control Plane with Docker Swarm: installation/swarm-upgrading.md
+      - Upgrading the Control Plane with systemd: installation/systemd-upgrading.md
       - Configuring mTLS: installation/mtls.md
       - Installing the pgEdge Control Plane via System Packages: installation/systemd-installation.md
   - Managing a High-Availability Environment:

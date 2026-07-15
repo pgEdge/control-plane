@@ -41,8 +41,9 @@ When a node which has multiple instances is created, the primary instance for th
 
 The Control Plane is architected to support multiple orchestrators, giving you flexibility in how database instances are deployed and managed.
 
-**Docker Swarm** is the default orchestrator. Each host corresponds to a Docker Swarm node, with the Control Plane running as a Docker container. Each database instance runs as a separate Docker container within the Swarm environment.
+**systemd**he Control Plane and Postgres instances run as native Linux services managed by systemd units. This is a good fit for organizations that prefer system package managers over containers. See [Installing via System Packages](../installation/systemd-installation.md) for setup instructions.
 
-**systemd** is available as an alternative orchestrator for deployments on bare metal or VMs where you prefer not to use containers. With the systemd orchestrator, the Control Plane runs as a native Linux service and manages each Postgres instance as a systemd unit. This is a good fit for organizations with existing infrastructure built around system package managers, or for environments where standard Linux processes are preferred over containers. See [Installing via System Packages](../installation/systemd-installation.md) for setup instructions.
+**Docker Swarm** Orchestrator in which each host corresponds to a Docker Swarm node, with the Control Plane running as a Docker container. Each database instance runs as a separate Docker container within the Swarm environment. See [Installing the Control Plane with Swarm](../installation/swarm-installation.md) for setup instructions. 
 
-Both orchestrators share the same core API and capabilities: declarative database management, Patroni-based high availability, and pgBackRest backup/restore integration. The systemd orchestrator has some limitations not present in Docker Swarm; see the [systemd installation guide](../installation/systemd-installation.md#limitations) for details.
+
+Both orchestrators share the same core API and capabilities: declarative database management, Patroni-based high availability, and pgBackRest backup/restore integration. 

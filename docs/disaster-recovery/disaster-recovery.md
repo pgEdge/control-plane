@@ -161,7 +161,7 @@ majority of managers are gone). If your Swarm still has a quorum, go to
     If the container registry or Control Plane image resided on a lost
     host, recreate the registry and image on a surviving host before
     starting the Control Plane; for details, see
-    [Upgrading the Control Plane](../installation/upgrading.md).
+    [Upgrading the Control Plane with Docker Swarm](../installation/swarm-upgrading.md).
 
 ---
 
