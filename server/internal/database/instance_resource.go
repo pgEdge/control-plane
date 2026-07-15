@@ -204,6 +204,12 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	}
 
 	if r.Spec.InstanceID != r.PrimaryInstanceID {
+		// Spock 5.x takes up to 60 s to create failover replication slots after a
+		// switchover. Wait for them before marking this replica available so that
+		// subscribers connected to this node do not lose their slots.
+		if err := r.waitForReplicationSlots(ctx, rc); err != nil {
+			return r.recordError(ctx, rc, err)
+		}
 		err := r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
 		if err != nil {
 			return r.recordError(ctx, rc, err)
@@ -243,6 +249,60 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return r.recordError(ctx, rc, err)
 	}
 
+	return nil
+}
+
+// waitForReplicationSlots polls pg_replication_slots on this instance until the
+// replication slot for every subscription where this node is the provider exists.
+// In Spock 5.x the worker process on a replica takes up to 60 s to create
+// failover slots after a switchover; this blocks until they are ready.
+func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *resource.Context) error {
+	subs, err := resource.AllFromContext[*SubscriptionResource](rc, ResourceTypeSubscription)
+	if err != nil {
+		return fmt.Errorf("failed to list subscriptions: %w", err)
+	}
+
+	var relevant []*SubscriptionResource
+	for _, sub := range subs {
+		if sub.ProviderNode == r.Spec.NodeName {
+			relevant = append(relevant, sub)
+		}
+	}
+	if len(relevant) == 0 {
+		return nil
+	}
+
+	conn, err := r.Connection(ctx, rc, r.Spec.DatabaseName)
+	if err != nil {
+		return fmt.Errorf("failed to connect for replication slot check: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	const (
+		pollInterval    = 2 * time.Second
+		slotWaitTimeout = 2 * time.Minute
+	)
+	ctx, cancel := context.WithTimeout(ctx, slotWaitTimeout)
+	defer cancel()
+
+	for _, sub := range relevant {
+		for {
+			exists, err := postgres.ReplicationSlotExists(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode).
+				Scalar(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to check replication slot for %s→%s: %w",
+					sub.ProviderNode, sub.SubscriberNode, err)
+			}
+			if exists {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(pollInterval):
+			}
+		}
+	}
 	return nil
 }
 

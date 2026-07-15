@@ -8,7 +8,6 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -105,11 +104,6 @@ func TestUpdateNode(t *testing.T) {
 								instance2.InstanceID(),
 							},
 						},
-						&database.SwitchoverResource{
-							HostID:     instance1.HostID(),
-							InstanceID: instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
-						},
 					},
 					instance1.InstanceDependencies,
 				),
@@ -172,11 +166,6 @@ func TestUpdateNode(t *testing.T) {
 								instance2.InstanceID(),
 								instance3.InstanceID(),
 							},
-						},
-						&database.SwitchoverResource{
-							HostID:     instance1.HostID(),
-							InstanceID: instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
 						},
 					},
 					instance1.InstanceDependencies,
@@ -438,11 +427,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 								n1Instance2.InstanceID(),
 							},
 						},
-						&database.SwitchoverResource{
-							HostID:     n1Instance1.HostID(),
-							InstanceID: n1Instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
-						},
 					},
 					n1Instance1.InstanceDependencies,
 				),
@@ -527,11 +511,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 								n1Instance2.InstanceID(),
 							},
 						},
-						&database.SwitchoverResource{
-							HostID:     n1Instance1.HostID(),
-							InstanceID: n1Instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
-						},
 					},
 					n1Instance1.InstanceDependencies,
 				),
@@ -550,11 +529,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 								n2Instance1.InstanceID(),
 								n2Instance2.InstanceID(),
 							},
-						},
-						&database.SwitchoverResource{
-							HostID:     n2Instance1.HostID(),
-							InstanceID: n2Instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
 						},
 					},
 					n2Instance1.InstanceDependencies,
@@ -820,11 +794,6 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 								n1Instance2.InstanceID(),
 							},
 						},
-						&database.SwitchoverResource{
-							HostID:     n1Instance1.HostID(),
-							InstanceID: n1Instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
-						},
 					},
 					n1Instance1.InstanceDependencies,
 				),
@@ -910,16 +879,6 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 								n2Instance1.InstanceID(),
 								n2Instance2.InstanceID(),
 							},
-						},
-						&database.SwitchoverResource{
-							HostID:     n1Instance1.HostID(),
-							InstanceID: n1Instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
-						},
-						&database.SwitchoverResource{
-							HostID:     n2Instance1.HostID(),
-							InstanceID: n2Instance1.InstanceID(),
-							TargetRole: patroni.InstanceRolePrimary,
 						},
 					},
 					slices.Concat(

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -34,21 +33,6 @@ func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.S
 			return nil, err
 		}
 		end.Merge(databaseState)
-
-		if len(node.InstanceResources) > 1 {
-			primary := node.primaryInstance()
-			if primary != nil {
-				// Primary will be non-nil for existing nodes. Adding the
-				// switchover resource to the end state prevents "permadrift"
-				// where this resource is created and deleted even if the update
-				// is a no-op.
-				resources = append(resources, &database.SwitchoverResource{
-					HostID:     primary.HostID(),
-					InstanceID: primary.InstanceID(),
-					TargetRole: patroni.InstanceRolePrimary,
-				})
-			}
-		}
 
 		for _, peer := range nodes {
 			if peer.NodeName == node.NodeName {

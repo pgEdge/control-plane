@@ -366,6 +366,19 @@ func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) 
 	}
 }
 
+// ReplicationSlotExists checks whether the replication slot for the given
+// subscription exists. Used to poll for Spock 5.x failover slot creation after
+// a switchover, which can take up to 60 seconds.
+func ReplicationSlotExists(databaseName, providerNode, subscriberNode string) Query[bool] {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+	return Query[bool]{
+		SQL: "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+		},
+	}
+}
+
 func GetReplicationSlotLSNFromCommitTS(databaseName, providerNode, subscriberNode string, commitTS time.Time) Query[string] {
 	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 
