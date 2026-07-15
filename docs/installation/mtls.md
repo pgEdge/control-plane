@@ -32,6 +32,12 @@ Place the certificate files on the host filesystem, then configure the Control P
 - `PGEDGE_HTTP__CLIENT_CERT`: the path to the client certificate
 - `PGEDGE_HTTP__CLIENT_KEY`: the path to the client key
 
+Then redeploy the stack for the changes to take effect:
+
+```sh
+docker stack deploy -c control-plane.yaml control-plane
+```
+
 **systemd:** place the certificate files on the host, then configure the paths in `/etc/pgedge-control-plane/config.json`:
 
 ```json
@@ -48,7 +54,11 @@ Place the certificate files on the host filesystem, then configure the Control P
 }
 ```
 
-Restart the service after making changes.
+Restart the service after making changes to the configuration file:
+
+```sh
+sudo systemctl restart pgedge-control-plane.service
+```
 
 For example, if you've placed the certificates in a `/opt/pgedge/control-plane` on each host machine your stack definition might look like:
 
