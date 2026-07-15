@@ -240,7 +240,7 @@ func TestGenerateRAGInstanceResources_IncludesKeysResource(t *testing.T) {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "rag",
 			ServiceType: "rag",
-			Version:     "latest",
+			Version:     "1.0.0",
 			Config: map[string]any{
 				"pipelines": []any{
 					map[string]any{

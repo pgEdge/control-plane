@@ -24,10 +24,10 @@ func TestGetServiceImage(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "valid mcp latest",
+			name:        "valid mcp 1.0.0",
 			serviceType: "mcp",
-			version:     "latest",
-			wantTag:     "ghcr.io/pgedge/postgres-mcp:latest",
+			version:     "1.0.0",
+			wantTag:     "ghcr.io/pgedge/postgres-mcp:1.0.0",
 			wantErr:     false,
 		},
 		{
@@ -47,7 +47,7 @@ func TestGetServiceImage(t *testing.T) {
 		{
 			name:        "unregistered version",
 			serviceType: "mcp",
-			version:     "1.0.0",
+			version:     "2.0.0",
 			wantTag:     "",
 			wantErr:     true,
 		},
@@ -98,8 +98,8 @@ func TestSupportedServiceVersions(t *testing.T) {
 		{
 			name:           "mcp service has versions",
 			serviceType:    "mcp",
-			wantLatest:     true,
-			minPinnedCount: 0,
+			wantLatest:     false,
+			minPinnedCount: 1,
 			wantErr:        false,
 		},
 		{
@@ -198,7 +198,7 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 	sv := newTestServiceVersions(t, cfg)
 
 	t.Run("mcp has no constraints", func(t *testing.T) {
-		img, err := sv.GetServiceImage("mcp", "latest")
+		img, err := sv.GetServiceImage("mcp", "1.0.0")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

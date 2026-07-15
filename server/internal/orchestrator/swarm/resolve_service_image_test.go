@@ -35,12 +35,12 @@ func serviceSpecWith(serviceType, version string, swarm *database.SwarmOpts) *da
 func TestResolveServiceImage(t *testing.T) {
 	o := newTestServiceOrchestrator(t)
 
-	manifestImage, err := o.serviceVersions.GetServiceImage("mcp", "latest")
+	manifestImage, err := o.serviceVersions.GetServiceImage("mcp", "1.0.0")
 	require.NoError(t, err)
 	pinnedTag := manifestImage.Tag
 
 	t.Run("Image override used directly, manifest not consulted", func(t *testing.T) {
-		spec := serviceSpecWith("mcp", "latest", &database.SwarmOpts{Image: "my-registry/mcp:dev"})
+		spec := serviceSpecWith("mcp", "1.0.0", &database.SwarmOpts{Image: "my-registry/mcp:dev"})
 
 		img, err := o.resolveServiceImage(spec)
 		require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestResolveServiceImage(t *testing.T) {
 	})
 
 	t.Run("Image takes precedence over ResolvedImage", func(t *testing.T) {
-		spec := serviceSpecWith("mcp", "latest", &database.SwarmOpts{
+		spec := serviceSpecWith("mcp", "1.0.0", &database.SwarmOpts{
 			Image:         "custom-override:latest",
 			ResolvedImage: "previously-resolved:tag",
 		})
@@ -71,7 +71,7 @@ func TestResolveServiceImage(t *testing.T) {
 	})
 
 	t.Run("ResolvedImage used when Image is empty", func(t *testing.T) {
-		spec := serviceSpecWith("mcp", "latest", &database.SwarmOpts{ResolvedImage: "registry.example.com/pgedge:pinned"})
+		spec := serviceSpecWith("mcp", "1.0.0", &database.SwarmOpts{ResolvedImage: "registry.example.com/pgedge:pinned"})
 
 		img, err := o.resolveServiceImage(spec)
 		require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestResolveServiceImage(t *testing.T) {
 	})
 
 	t.Run("lazy backfill: resolves from manifest and writes ResolvedImage", func(t *testing.T) {
-		spec := serviceSpecWith("mcp", "latest", nil)
+		spec := serviceSpecWith("mcp", "1.0.0", nil)
 
 		img, err := o.resolveServiceImage(spec)
 		require.NoError(t, err)
@@ -109,12 +109,12 @@ func TestResolveServiceImage(t *testing.T) {
 func TestReconcileServiceInstanceSpec(t *testing.T) {
 	o := newTestServiceOrchestrator(t)
 
-	manifestImage, err := o.serviceVersions.GetServiceImage("mcp", "latest")
+	manifestImage, err := o.serviceVersions.GetServiceImage("mcp", "1.0.0")
 	require.NoError(t, err)
 	pinnedTag := manifestImage.Tag
 
 	t.Run("first creation: old nil, ResolvedImage written from manifest", func(t *testing.T) {
-		spec := serviceSpecWith("mcp", "latest", nil)
+		spec := serviceSpecWith("mcp", "1.0.0", nil)
 		require.NoError(t, o.ReconcileServiceInstanceSpec(nil, spec))
 		require.NotNil(t, spec.ServiceSpec.OrchestratorOpts)
 		require.NotNil(t, spec.ServiceSpec.OrchestratorOpts.Swarm)
@@ -122,8 +122,8 @@ func TestReconcileServiceInstanceSpec(t *testing.T) {
 	})
 
 	t.Run("same version: old.ResolvedImage carried forward, manifest not re-consulted", func(t *testing.T) {
-		old := serviceSpecWith("mcp", "latest", &database.SwarmOpts{ResolvedImage: "registry.example.com/pgedge:pinned-mcp"})
-		newSpec := serviceSpecWith("mcp", "latest", nil)
+		old := serviceSpecWith("mcp", "1.0.0", &database.SwarmOpts{ResolvedImage: "registry.example.com/pgedge:pinned-mcp"})
+		newSpec := serviceSpecWith("mcp", "1.0.0", nil)
 
 		require.NoError(t, o.ReconcileServiceInstanceSpec(old, newSpec))
 		require.NotNil(t, newSpec.ServiceSpec.OrchestratorOpts)
@@ -132,8 +132,8 @@ func TestReconcileServiceInstanceSpec(t *testing.T) {
 	})
 
 	t.Run("same version, old has no ResolvedImage: manifest lookup runs", func(t *testing.T) {
-		old := serviceSpecWith("mcp", "latest", nil)
-		newSpec := serviceSpecWith("mcp", "latest", nil)
+		old := serviceSpecWith("mcp", "1.0.0", nil)
+		newSpec := serviceSpecWith("mcp", "1.0.0", nil)
 
 		require.NoError(t, o.ReconcileServiceInstanceSpec(old, newSpec))
 		require.NotNil(t, newSpec.ServiceSpec.OrchestratorOpts)
