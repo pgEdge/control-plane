@@ -415,16 +415,17 @@ func buildServiceVersions(cfg config.Config, mf *versionManifest) (*ServiceVersi
 		{"mcp", mf.Images.MCP},
 		{"rag", mf.Images.RAG},
 	} {
-		var defaultImage *ServiceImage
+		var defaultImage, lastImage *ServiceImage
 		for _, e := range s.entries {
 			img := &ServiceImage{Tag: serviceImageTag(cfg, e.Image)}
 			sv.addServiceImage(s.name, e.Version, img)
 			if e.Default {
 				defaultImage = img
 			}
+			lastImage = img
 		}
-		if defaultImage == nil && len(s.entries) > 0 {
-			defaultImage = &ServiceImage{Tag: serviceImageTag(cfg, s.entries[len(s.entries)-1].Image)}
+		if defaultImage == nil {
+			defaultImage = lastImage
 		}
 		if defaultImage != nil {
 			sv.addServiceImage(s.name, "latest", defaultImage)
