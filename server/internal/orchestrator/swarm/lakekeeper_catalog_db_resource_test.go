@@ -1,12 +1,14 @@
 package swarm
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"testing"
 	"unicode/utf8"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 )
 
 func TestLakekeeperCatalogDBName(t *testing.T) {
@@ -62,5 +64,69 @@ func TestBuildManagedCatalogDBURL(t *testing.T) {
 	}
 	if user := u.User.Username(); user != "app_ro" {
 		t.Fatalf("username did not round-trip: got %q, want %q", user, "app_ro")
+	}
+}
+
+func TestEnsureCatalogDBStatements(t *testing.T) {
+	stmts := ensureCatalogDBStatements("mydb_lakekeeper", "app_ro")
+	if len(stmts) != 2 {
+		t.Fatalf("expected 2 statements, got %d", len(stmts))
+	}
+	// First statement: the idempotent conditional CREATE DATABASE.
+	cond, ok := stmts[0].(postgres.ConditionalStatement)
+	if !ok {
+		t.Fatalf("statement 0 is %T, want ConditionalStatement", stmts[0])
+	}
+	// ConditionalStatement.Then is an IStatement (interface) — assert to the
+	// concrete postgres.Statement before reading .SQL (it has no .SQL field
+	// through the interface).
+	then, ok := cond.Then.(postgres.Statement)
+	if !ok {
+		t.Fatalf("cond.Then is %T, want postgres.Statement", cond.Then)
+	}
+	if !strings.Contains(then.SQL, `CREATE DATABASE "mydb_lakekeeper"`) {
+		t.Fatalf("unexpected create SQL: %s", then.SQL)
+	}
+	// Second statement: owner alignment with quoted identifiers.
+	own, ok := stmts[1].(postgres.Statement)
+	if !ok {
+		t.Fatalf("statement 1 is %T, want Statement", stmts[1])
+	}
+	want := `ALTER DATABASE "mydb_lakekeeper" OWNER TO "app_ro";`
+	if own.SQL != want {
+		t.Fatalf("owner SQL = %q, want %q", own.SQL, want)
+	}
+}
+
+func TestLakekeeperCatalogDBResourceRefresh(t *testing.T) {
+	r := &LakekeeperCatalogDBResource{}
+	if err := r.Refresh(context.Background(), nil); err == nil {
+		t.Fatal("expected ErrNotFound before creation")
+	}
+	r.Created = true
+	if err := r.Refresh(context.Background(), nil); err != nil {
+		t.Fatalf("expected nil after creation, got %v", err)
+	}
+}
+
+func TestCatalogDBExtensionNames(t *testing.T) {
+	// Pin the resource's actual extension list (the one ensure iterates), and
+	// the quoted-identifier form ("uuid-ossp" needs quoting — it has a hyphen).
+	// Asserting against catalogDBExtensions() rather than a local literal means
+	// reordering or editing the real list is caught here.
+	want := []string{
+		`"uuid-ossp"`,
+		`"pgcrypto"`,
+		`"pg_trgm"`,
+		`"btree_gin"`,
+	}
+	exts := catalogDBExtensions()
+	if len(exts) != len(want) {
+		t.Fatalf("expected %d extensions, got %d", len(want), len(exts))
+	}
+	for i, ext := range exts {
+		if got := postgres.QuoteIdentifier(ext); got != want[i] {
+			t.Fatalf("extension %d (%q) quoted = %q, want %q", i, ext, got, want[i])
+		}
 	}
 }

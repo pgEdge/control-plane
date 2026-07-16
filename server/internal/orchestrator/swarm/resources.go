@@ -24,4 +24,5 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*LakekeeperMigrateResource](registry, ResourceTypeLakekeeperMigrate)
 	resource.RegisterResourceType[*LakekeeperBootstrapResource](registry, ResourceTypeLakekeeperBootstrap)
 	resource.RegisterResourceType[*LakekeeperStorageSecretResource](registry, ResourceTypeLakekeeperStorageSecret)
+	resource.RegisterResourceType[*LakekeeperCatalogDBResource](registry, ResourceTypeLakekeeperCatalogDB)
 }
