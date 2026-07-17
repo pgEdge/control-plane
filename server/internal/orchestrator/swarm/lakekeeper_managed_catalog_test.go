@@ -154,8 +154,9 @@ func TestGenerateLakekeeperInstanceResources_ManagedCatalog(t *testing.T) {
 // resource is generated and the migrate resource has no dependencies.
 func TestGenerateLakekeeperInstanceResources_ExternalCatalogRegression(t *testing.T) {
 	o := newLakekeeperTestOrchestrator(t)
+	const externalURL = "postgres://lakekeeper:secret@pg-host:5432/lakekeeper?sslmode=disable"
 	spec := makeLakekeeperSpec(
-		"postgres://lakekeeper:secret@pg-host:5432/lakekeeper?sslmode=disable",
+		externalURL,
 		"dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
 	)
 
@@ -181,6 +182,23 @@ func TestGenerateLakekeeperInstanceResources_ExternalCatalogRegression(t *testin
 	}
 	if deps := migrateRes.Dependencies(); len(deps) != 0 {
 		t.Errorf("migrate resource Dependencies() = %v, want empty in external mode", deps)
+	}
+	// Positive assertion: the caller-supplied URL must pass through unchanged
+	// (control-plane builds nothing in external mode), both to the migrate
+	// resource and to the serve container's config.
+	if migrateRes.CatalogDBURL != externalURL {
+		t.Errorf("migrate CatalogDBURL = %q, want caller URL %q", migrateRes.CatalogDBURL, externalURL)
+	}
+	specRD := findResourceByType(result.Resources, ResourceTypeServiceInstanceSpec)
+	if specRD == nil {
+		t.Fatal("resource graph missing ServiceInstanceSpecResource")
+	}
+	specRes, err := resource.ToResource[*ServiceInstanceSpecResource](specRD)
+	if err != nil {
+		t.Fatalf("failed to decode ServiceInstanceSpecResource: %v", err)
+	}
+	if got, _ := specRes.ServiceSpec.Config["catalog_db_url"].(string); got != externalURL {
+		t.Errorf("ServiceInstanceSpecResource config catalog_db_url = %q, want caller URL %q", got, externalURL)
 	}
 }
 

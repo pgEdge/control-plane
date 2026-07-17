@@ -33,12 +33,19 @@ func lakekeeperCatalogDBName(databaseName string) string {
 // control-plane-managed catalog, using the overlay-network host entry
 // and the service's connect-as credentials. The result contains a
 // password: never log it.
+//
+// sslmode=prefer matches how the other node-attached services (MCP, RAG)
+// connect to Postgres over the swarm overlay (mcp_config.go / rag_config.go):
+// use TLS if the server offers it, fall back to plaintext otherwise. It is set
+// explicitly rather than relying on the client library's default so both the
+// migrate and serve containers agree regardless of their driver defaults.
 func buildManagedCatalogDBURL(host database.ServiceHostEntry, username, password, dbName string) string {
 	u := url.URL{
-		Scheme: "postgres",
-		User:   url.UserPassword(username, password),
-		Host:   fmt.Sprintf("%s:%d", host.Host, host.Port),
-		Path:   "/" + dbName,
+		Scheme:   "postgres",
+		User:     url.UserPassword(username, password),
+		Host:     fmt.Sprintf("%s:%d", host.Host, host.Port),
+		Path:     "/" + dbName,
+		RawQuery: "sslmode=prefer",
 	}
 	return u.String()
 }

@@ -1526,6 +1526,45 @@ func TestValidateDatabaseSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "single-node ColdFront (lakekeeper) missing pg_encryption_key is rejected",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "lakekeeper",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							// pg_encryption_key is required in both external and
+							// managed catalog modes; omit it here (managed mode, so
+							// catalog_db_url is legitimately absent) to prove that
+							// requirement is independent of the catalog_db_url gate.
+							"catalog_db_create": true,
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"pg_encryption_key is required",
+			},
+		},
+		{
 			name: "invalid multi-node ColdFront (lakekeeper) is rejected",
 			spec: &api.DatabaseSpec{
 				DatabaseName:    "testdb",

@@ -48,7 +48,7 @@ func TestBuildManagedCatalogDBURL(t *testing.T) {
 		database.ServiceHostEntry{Host: "postgres-abc123", Port: 5432},
 		"app_ro", "p@ss/word", "mydb_lakekeeper",
 	)
-	want := "postgres://app_ro:p%40ss%2Fword@postgres-abc123:5432/mydb_lakekeeper"
+	want := "postgres://app_ro:p%40ss%2Fword@postgres-abc123:5432/mydb_lakekeeper?sslmode=prefer"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
