@@ -582,7 +582,7 @@ func validateLakekeeperServiceConfig(config map[string]any, path validation.Path
 	// The warehouse bootstrap and coldfront.set_storage_secret both need the
 	// object-store coordinates and a provider-specific credential. Fail loud
 	// here so a database is never left with an unbootstrapped (broken)
-	// warehouse. Some of these keys are a saas follow-up.
+	// warehouse. Some of these keys are supplied by a consumer-side follow-up.
 	provider, _ := config["provider"].(string)
 	switch provider {
 	case "aws", "azure", "gcs":

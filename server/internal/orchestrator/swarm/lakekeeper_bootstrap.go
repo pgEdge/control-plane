@@ -13,7 +13,7 @@ import (
 
 // lakekeeperStorageConfig holds the object-store coordinates and parsed
 // credential needed to build a Lakekeeper warehouse storage profile. It is
-// derived from the lakekeeper ServiceSpec.Config supplied by saas.
+// derived from the lakekeeper ServiceSpec.Config supplied by the caller.
 //
 // The Credential map is provider-specific and MUST NOT be logged: it carries
 // secret access keys / connection strings.
@@ -40,8 +40,9 @@ const lakekeeperBootstrapHTTPTimeout = 30 * time.Second
 // ServiceSpec.Config map. It fails loud when a required key is missing so that
 // a database is never left with an unbootstrapped (broken) warehouse.
 //
-// Some of these keys are a saas follow-up; an absent required key therefore
-// yields a clear, actionable error rather than a silent misconfiguration.
+// Some of these keys are supplied by a consumer-side follow-up; an absent
+// required key therefore yields a clear, actionable error rather than a
+// silent misconfiguration.
 func parseLakekeeperStorageConfig(config map[string]any) (*lakekeeperStorageConfig, error) {
 	get := func(key string) string {
 		v, _ := config[key].(string)
