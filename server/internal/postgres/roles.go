@@ -11,6 +11,29 @@ import (
 var defaultSchemas = []string{"public", "spock", "pg_catalog", "information_schema"}
 var builtinRoles = []string{"pgedge_superuser"}
 
+// allowedRoleAttributes is the fixed set of boolean-style PostgreSQL role
+// attribute keywords accepted in UserRoleOptions.Attributes. Attribute forms
+// that carry an embedded literal (CONNECTION LIMIT n, VALID UNTIL 'ts',
+// [ENCRYPTED] PASSWORD 'pw') are deliberately excluded: they can't be safely
+// interpolated into the ALTER ROLE statement below, and passwords already
+// have a dedicated, properly-escaped field.
+var allowedRoleAttributes = map[string]bool{
+	"SUPERUSER":     true,
+	"NOSUPERUSER":   true,
+	"CREATEDB":      true,
+	"NOCREATEDB":    true,
+	"CREATEROLE":    true,
+	"NOCREATEROLE":  true,
+	"INHERIT":       true,
+	"NOINHERIT":     true,
+	"LOGIN":         true,
+	"NOLOGIN":       true,
+	"REPLICATION":   true,
+	"NOREPLICATION": true,
+	"BYPASSRLS":     true,
+	"NOBYPASSRLS":   true,
+}
+
 // UserRoleNeedsCreate returns a query that evaluates to true when the named
 // role does not yet exist in pg_catalog.pg_roles.
 func UserRoleNeedsCreate(name string) Query[bool] {
@@ -54,8 +77,12 @@ func CreateUserRole(opts UserRoleOptions) (Statements, error) {
 		})
 	}
 	for _, attr := range opts.Attributes {
+		if !allowedRoleAttributes[strings.ToUpper(attr)] {
+			return nil, fmt.Errorf("unsupported role attribute %q", attr)
+		}
 		statements = append(statements, Statement{
-			// Attributes can't be quoted, so we're using %s instead of %q
+			// attr is checked against a fixed keyword allowlist above, so it
+			// can't carry arbitrary SQL; quoting doesn't apply to attributes.
 			SQL: fmt.Sprintf("ALTER ROLE %s WITH %s;", QuoteIdentifier(opts.Name), attr),
 		})
 	}
