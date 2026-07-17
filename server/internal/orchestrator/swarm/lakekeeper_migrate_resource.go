@@ -52,6 +52,10 @@ type LakekeeperMigrateResource struct {
 	Image             string `json:"image"`
 	CatalogDBURL      string `json:"catalog_db_url"`
 	PGEncryptionKey   string `json:"pg_encryption_key"`
+	// CatalogDBManaged marks the catalog database as control-plane
+	// managed (spec key catalog_db_create): migration must wait for the
+	// LakekeeperCatalogDBResource to create it.
+	CatalogDBManaged bool `json:"catalog_db_managed"`
 	// MigratedOnce is set to true after the first successful migration so that
 	// Refresh can distinguish "never run" from "already applied".
 	MigratedOnce bool `json:"migrated_once"`
@@ -76,9 +80,14 @@ func (r *LakekeeperMigrateResource) Executor() resource.Executor {
 }
 
 func (r *LakekeeperMigrateResource) Dependencies() []resource.Identifier {
-	// No resource-level dependencies: the external catalog Postgres is not
-	// managed by control-plane, so there is no resource to depend on. The
-	// catalog URL is validated at spec time (fail-loud check).
+	// When control-plane manages the catalog database, migration must run
+	// after it exists. For an external catalog there is no resource to
+	// depend on; the URL is validated at spec time (fail-loud check).
+	if r.CatalogDBManaged {
+		return []resource.Identifier{
+			LakekeeperCatalogDBResourceIdentifier(r.ServiceInstanceID),
+		}
+	}
 	return nil
 }
 

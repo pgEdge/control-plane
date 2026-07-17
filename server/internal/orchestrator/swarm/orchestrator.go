@@ -854,25 +854,65 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		}
 	}
 
-	// Fail loudly if the external catalog Postgres connection details are
-	// absent. An empty catalog_db_url or pg_encryption_key would cause
-	// Lakekeeper to start with blank env vars and crash-loop silently;
-	// returning a clear error at plan time is far more helpful.
-	catalogDBURL, _ := spec.ServiceSpec.Config["catalog_db_url"].(string)
+	// Catalog database: either the caller supplies a reachable external
+	// catalog URL, or (catalog_db_create) control-plane provisions a
+	// catalog database on the node's primary and constructs the URL
+	// itself from deploy-time facts (overlay host + connect-as
+	// credentials) — no caller can know these at spec-build time.
+	serviceConfig := spec.ServiceSpec.Config
+	catalogDBCreate, _ := serviceConfig["catalog_db_create"].(bool)
+	var lakekeeperCatalogDBRes *LakekeeperCatalogDBResource
+	if catalogDBCreate {
+		if len(spec.DatabaseHosts) == 0 {
+			return nil, fmt.Errorf(
+				"lakekeeper service %q: catalog_db_create requires at least one database host",
+				spec.ServiceSpec.ServiceID,
+			)
+		}
+		catalogDBName := lakekeeperCatalogDBName(spec.DatabaseName)
+		lakekeeperCatalogDBRes = &LakekeeperCatalogDBResource{
+			ServiceInstanceID: spec.ServiceInstanceID,
+			DatabaseID:        spec.DatabaseID,
+			DatabaseName:      spec.DatabaseName,
+			NodeName:          spec.NodeName,
+			CatalogDBName:     catalogDBName,
+			CatalogDBOwner:    spec.ConnectAsUsername,
+		}
+		serviceConfig = maps.Clone(serviceConfig)
+		serviceConfig["catalog_db_url"] = buildManagedCatalogDBURL(
+			spec.DatabaseHosts[0], spec.ConnectAsUsername, spec.ConnectAsPassword, catalogDBName)
+	}
+
+	// Fail loudly if the catalog Postgres connection details are absent. An
+	// empty catalog_db_url or pg_encryption_key would cause Lakekeeper to
+	// start with blank env vars and crash-loop silently; returning a clear
+	// error at plan time is far more helpful.
+	catalogDBURL, _ := serviceConfig["catalog_db_url"].(string)
 	if catalogDBURL == "" {
 		return nil, fmt.Errorf(
 			"lakekeeper service %q: catalog_db_url is required in config; "+
-				"provide the connection URL for the external catalog Postgres — "+
-				"control-plane does not provision catalog databases",
+				"provide the connection URL for an external catalog Postgres, "+
+				"or set catalog_db_create for a control-plane-managed catalog",
 			spec.ServiceSpec.ServiceID,
 		)
 	}
-	pgEncryptionKey, _ := spec.ServiceSpec.Config["pg_encryption_key"].(string)
+	pgEncryptionKey, _ := serviceConfig["pg_encryption_key"].(string)
 	if pgEncryptionKey == "" {
 		return nil, fmt.Errorf(
 			"lakekeeper service %q: pg_encryption_key is required in config",
 			spec.ServiceSpec.ServiceID,
 		)
+	}
+
+	// In managed mode, thread the injected Config through every downstream
+	// consumer. ServiceSpec is a pointer and Config is a reference type, so
+	// build a shallow copy carrying the cloned map rather than mutating the
+	// caller's spec in place.
+	specForResources := spec.ServiceSpec
+	if catalogDBCreate {
+		patched := *spec.ServiceSpec // shallow struct copy
+		patched.Config = serviceConfig
+		specForResources = &patched
 	}
 
 	// Database network (shared with Postgres instances).
@@ -912,13 +952,14 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		Image:             serviceImage.Tag,
 		CatalogDBURL:      catalogDBURL,
 		PGEncryptionKey:   pgEncryptionKey,
+		CatalogDBManaged:  catalogDBCreate,
 	}
 
 	// Service instance spec resource — holds the computed Docker Swarm service spec.
 	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
 		ServiceInstanceID:  spec.ServiceInstanceID,
-		ServiceSpec:        spec.ServiceSpec,
+		ServiceSpec:        specForResources,
 		DatabaseID:         spec.DatabaseID,
 		DatabaseName:       spec.DatabaseName,
 		HostID:             spec.HostID,
@@ -954,7 +995,7 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		HostID:            spec.HostID,
 		ServiceName:       serviceName,
 		Port:              utils.FromPointer(spec.Port),
-		Config:            spec.ServiceSpec.Config,
+		Config:            specForResources.Config,
 	}
 
 	// Storage secret resource — stores the object-store credential inside the
@@ -965,25 +1006,30 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		DatabaseID:        spec.DatabaseID,
 		DatabaseName:      spec.DatabaseName,
 		NodeName:          spec.NodeName,
-		Config:            spec.ServiceSpec.Config,
+		Config:            specForResources.Config,
 	}
 
 	orchestratorResources := []resource.Resource{
 		databaseNetwork,
 		dataDir,
 		lakekeeperConfigRes,
+	}
+	if lakekeeperCatalogDBRes != nil {
+		orchestratorResources = append(orchestratorResources, lakekeeperCatalogDBRes)
+	}
+	orchestratorResources = append(orchestratorResources,
 		lakekeeperMigrateRes,
 		serviceInstanceSpec,
 		serviceInstance,
 		lakekeeperBootstrapRes,
 		lakekeeperStorageSecretRes,
-	}
+	)
 
 	// Append tiering schedule resources when storage config is present. If the
 	// provider key is absent (not yet configured), no schedules are registered.
 	// Cron defaults: archiver hourly, partitioner every 6h, compactor daily.
 	// Override via service_config keys archiver_cron / partitioner_cron / compactor_cron.
-	if _, hasProvider := spec.ServiceSpec.Config["provider"]; hasProvider {
+	if _, hasProvider := serviceConfig["provider"]; hasProvider {
 		port := utils.FromPointer(spec.Port)
 		if port == 0 {
 			port = 8181
@@ -991,7 +1037,7 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		lakekeeperEndpoint := fmt.Sprintf("http://%s:%d", serviceName, port)
 
 		// Build the args that the scheduled-job executor will decode.
-		serviceConfigCopy := maps.Clone(spec.ServiceSpec.Config)
+		serviceConfigCopy := maps.Clone(serviceConfig)
 		serviceConfigCopy["lakekeeper_endpoint"] = lakekeeperEndpoint
 
 		tieringArgs := map[string]interface{}{
@@ -1003,7 +1049,7 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		}
 
 		getCron := func(key, defaultExpr string) string {
-			if v, ok := spec.ServiceSpec.Config[key].(string); ok && v != "" {
+			if v, ok := serviceConfig[key].(string); ok && v != "" {
 				return v
 			}
 			return defaultExpr
