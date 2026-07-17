@@ -549,18 +549,24 @@ func validateColdFrontSingleNode(svc *api.ServiceSpec, nodeCount int, path valid
 	return []error{validation.NewError(errors.New(coldFrontMultiNodeError), path.Append("service_type"))}
 }
 
-// validateLakekeeperServiceConfig checks that the two required catalog
-// configuration keys are present and non-empty. An absent or empty
-// catalog_db_url would cause Lakekeeper to start with a blank connection
-// string and crash-loop silently; we surface the error at spec-validation
-// time instead.
+// validateLakekeeperServiceConfig checks that the required catalog
+// configuration keys are present and non-empty. catalog_db_url is required
+// unless catalog_db_create is set, in which case the control plane
+// provisions and connects to a managed catalog database itself. An absent
+// or empty catalog_db_url in external mode would cause Lakekeeper to start
+// with a blank connection string and crash-loop silently; pg_encryption_key
+// is always required regardless of mode. We surface these errors at
+// spec-validation time instead.
 func validateLakekeeperServiceConfig(config map[string]any, path validation.Path) []error {
 	var errs []error
 
+	catalogDBCreate, _ := config["catalog_db_create"].(bool)
 	catalogDBURL, _ := config["catalog_db_url"].(string)
-	if catalogDBURL == "" {
+	if catalogDBURL == "" && !catalogDBCreate {
 		errs = append(errs, validation.NewError(
-			errors.New("catalog_db_url is required: provide the connection URL for the external Lakekeeper catalog Postgres"),
+			errors.New("catalog_db_url is required unless catalog_db_create is set: "+
+				"provide the connection URL for an external catalog Postgres, or set "+
+				"catalog_db_create for a control-plane-managed catalog"),
 			path.Append("catalog_db_url"),
 		))
 	}
