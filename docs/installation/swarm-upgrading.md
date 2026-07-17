@@ -1,4 +1,4 @@
-# Upgrading the Control Plane with Docker Swarm
+# Upgrading the Control Plane with Swarm
 We publish a new Docker image whenever we release a new version of the Control
 Plane. The Control Plane version is specified in the image property of the [stack definition file](../installation/swarm-installation.md#creating-the-stack-definition-file):
 

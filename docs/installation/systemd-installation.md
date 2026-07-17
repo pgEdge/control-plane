@@ -1,15 +1,4 @@
-# Installing the pgEdge Control Plane via System Packages
-
-!!! tip "Preview Feature"
-
-    System package-based installation is a preview feature that is under active
-    development. The core database management API is fully functional and
-    tested, but some features are not yet supported (see
-    [Limitations](#limitations) below). The installation method and upgrade
-    process between releases may change before this feature is finalized. We'd
-    love your feedback - please share your experience in our
-    [GitHub issues](https://github.com/pgedge/control-plane/issues) or join our
-    [Discord](https://discord.com/invite/pgedge/login).
+# Installing the Control Plane with systemd
 
 This guide covers installing the pgEdge Control Plane on Linux hosts that use
 the RPM Package Manager (RPM) package format (e.g., Red Hat Enterprise Linux
@@ -34,6 +23,7 @@ current release.
 - All hosts in a cluster must use the same orchestrator (either `swarm` or
   `systemd`); the orchestrator must not change after the cluster is initialized.
 
+ We'd love your feedback - please share your experience in our [GitHub issues](https://github.com/pgedge/control-plane/issues) or join our [Discord](https://discord.com/invite/pgedge/login).
 
 ### Packages
 

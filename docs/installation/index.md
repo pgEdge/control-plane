@@ -6,11 +6,11 @@ The Control Plane simplifies deployment of high-availability Postgres clusters i
 
 The Control Plane supports two orchestration models. Pick the one that fits your infrastructure:
 
-| | [Docker Swarm](swarm-installation.md) | [systemd](systemd-installation.md) |
+| | [systemd](systemd-installation.md) | [Docker Swarm](swarm-installation.md) |
 |---|---|---|
-| **How it works** | Control Plane and Postgres run as Docker containers | Control Plane and Postgres run as native Linux services |
-| **Best for** | Container-based infrastructure | Bare metal or VMs without Docker |
-| **Package format** | Docker image | RPM or Deb system packages |
+| **How it works** | Control Plane and Postgres run as native Linux services | Control Plane and Postgres run as Docker containers |
+| **Best for** | Bare metal or VMs without Docker | Container-based infrastructure |
+| **Package format** | RPM or Deb system packages | Docker image |
 
 ## Installation Guides
 

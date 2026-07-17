@@ -41,7 +41,7 @@ When a node which has multiple instances is created, the primary instance for th
 
 The Control Plane is architected to support multiple orchestrators, giving you flexibility in how database instances are deployed and managed.
 
-**systemd**he Control Plane and Postgres instances run as native Linux services managed by systemd units. This is a good fit for organizations that prefer system package managers over containers. See [Installing via System Packages](../installation/systemd-installation.md) for setup instructions.
+**systemd** The Control Plane and Postgres instances run as native Linux services managed by systemd units. This is a good fit for organizations that prefer system package managers over containers. See [Installing via System Packages](../installation/systemd-installation.md) for setup instructions.
 
 **Docker Swarm** Orchestrator in which each host corresponds to a Docker Swarm node, with the Control Plane running as a Docker container. Each database instance runs as a separate Docker container within the Swarm environment. See [Installing the Control Plane with Swarm](../installation/swarm-installation.md) for setup instructions. 
 
