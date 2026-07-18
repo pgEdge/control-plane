@@ -55,6 +55,12 @@ func GetServiceContainer(ctx context.Context, dockerClient *docker.Docker, servi
 	return matches[0], nil
 }
 
+// PostgresContainerExec runs cmd inside the instance's postgres container via
+// the Docker Engine exec API. cmd is passed as a literal argv array (Docker's
+// ContainerExecCreate never invokes a shell), so its elements are not subject
+// to shell/SQL injection regardless of their contents — callers should still
+// avoid building cmd from unvalidated external input as a matter of defense
+// in depth, since the exec'd program is free to interpret its own arguments.
 func PostgresContainerExec(ctx context.Context, w io.Writer, dockerClient *docker.Docker, instanceID string, cmd []string) error {
 	container, err := GetPostgresContainer(ctx, dockerClient, instanceID)
 	if err != nil {
