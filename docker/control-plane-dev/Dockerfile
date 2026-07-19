@@ -8,4 +8,6 @@ COPY ./entrypoint.sh /entrypoint.sh
 COPY ./pgedge-control-plane /pgedge-control-plane
 
 # nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
+# trivy:ignore:DS-0002 -- dev-only image; runs as root by design, same
+# reasoning as the production Dockerfile (bind-mount ownership management).
 ENTRYPOINT [ "/entrypoint.sh" ]
