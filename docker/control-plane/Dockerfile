@@ -5,11 +5,13 @@ ARG TARGETARCH
 ARG ARCHIVE_VERSION
 
 # nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
-# trivy:ignore:DS-0002 -- runs as root by design: the control-plane process
-# manages bind-mounted host directories and files on behalf of arbitrary
-# database owner UIDs/GIDs (chown, permission setup for Postgres/Patroni data
-# dirs and certs), which requires root privileges. Distroless static has no
-# shell/su-exec to safely drop privileges after that setup either.
+# Runs as root by design: the control-plane process manages bind-mounted host
+# directories and files on behalf of arbitrary database owner UIDs/GIDs (chown,
+# permission setup for Postgres/Patroni data dirs and certs), which requires
+# root privileges. Distroless static has no shell/su-exec to safely drop
+# privileges after that setup either. Trivy's DS-0002 (non-root user) is
+# suppressed repo-wide in .trivyignore since inline ignore comments don't work
+# for this whole-file check.
 ENTRYPOINT ["/pgedge-control-plane"]
 
 ADD pgedge-control-plane_${ARCHIVE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz /

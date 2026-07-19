@@ -1,0 +1,18 @@
+# DS-0002: "Specify at least 1 USER command in Dockerfile with non-root user"
+#
+# Every Dockerfile in this repo (docker/control-plane, docker/control-plane-dev,
+# docker/control-plane-ci) intentionally runs as root: the control-plane
+# process manages ownership (chown) of bind-mounted Postgres/Patroni data,
+# config, and cert directories on behalf of arbitrary database-owner
+# UIDs/GIDs, which requires root privileges. The distroless static base used
+# in production also has no shell/su-exec to drop privileges after that setup.
+# See the matching `# nosemgrep: dockerfile.security.missing-user-entrypoint`
+# comments in each Dockerfile for the same rationale.
+#
+# NOTE: inline `# trivy:ignore:DS-0002` comments do NOT suppress this check
+# (verified empirically — DS-0002 is a whole-file "is USER present anywhere"
+# check, not a line-specific one, so Trivy's line-scoped ignore-comment
+# mechanism doesn't apply to it). This global entry is the only form that
+# actually works; per-path scoping (`path:DS-0002` or a paths: list in
+# .trivyignore.yaml) was tested and does not suppress the finding either.
+DS-0002
