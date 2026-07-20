@@ -11,19 +11,24 @@ import (
 
 func TestColdfrontExtensionStatements(t *testing.T) {
 	stmts := coldfrontExtensionStatements()
-	if len(stmts) != 1 {
-		t.Fatalf("expected 1 statement, got %d", len(stmts))
+	// pg_duckdb MUST be created explicitly and first: the native-packages build
+	// dropped `requires = 'pg_duckdb'` from coldfront.control, so CASCADE alone
+	// no longer pulls it. Both are IF NOT EXISTS for idempotency.
+	want := []string{
+		"CREATE EXTENSION IF NOT EXISTS pg_duckdb;",
+		"CREATE EXTENSION IF NOT EXISTS coldfront CASCADE;",
 	}
-	stmt, ok := stmts[0].(postgres.Statement)
-	if !ok {
-		t.Fatalf("statement 0 is %T, want postgres.Statement", stmts[0])
+	if len(stmts) != len(want) {
+		t.Fatalf("expected %d statements, got %d", len(want), len(stmts))
 	}
-	// CASCADE is load-bearing: coldfront's control file requires pg_duckdb, so
-	// CASCADE auto-installs it. IF NOT EXISTS keeps the step idempotent for the
-	// resource's Update path and for images that pre-create the extension.
-	want := "CREATE EXTENSION IF NOT EXISTS coldfront CASCADE;"
-	if stmt.SQL != want {
-		t.Fatalf("coldfront extension SQL = %q, want %q", stmt.SQL, want)
+	for i, w := range want {
+		stmt, ok := stmts[i].(postgres.Statement)
+		if !ok {
+			t.Fatalf("statement %d is %T, want postgres.Statement", i, stmts[i])
+		}
+		if stmt.SQL != w {
+			t.Fatalf("statement %d SQL = %q, want %q", i, stmt.SQL, w)
+		}
 	}
 }
 
