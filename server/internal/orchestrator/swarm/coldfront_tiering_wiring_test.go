@@ -28,10 +28,11 @@ func makeLakekeeperSpecWithStorage() *database.ServiceInstanceSpec {
 			Version:     "0.9.0",
 			Config:      cfg,
 		},
-		DatabaseID:   "db-1",
-		DatabaseName: "testdb",
-		HostID:       "host-1",
-		NodeName:     "n1",
+		DatabaseID:        "db-1",
+		DatabaseName:      "testdb",
+		HostID:            "host-1",
+		NodeName:          "n1",
+		ConnectAsUsername: "app_owner",
 	}
 }
 
@@ -79,6 +80,42 @@ func TestGenerateLakekeeperInstanceResources_TieringSchedules(t *testing.T) {
 		if !foundWorkflows[wf] {
 			t.Errorf("missing scheduled job for workflow %q; found: %v", wf, scheduledIDs)
 		}
+	}
+}
+
+// TestGenerateLakekeeperInstanceResources_TieringDSNUser verifies that the
+// connect-as user is threaded into every tiering job's args (as
+// local_pg_dsn_user inside service_config), so the binaries authenticate to the
+// node's local Postgres as the database owner rather than a hardcoded role.
+func TestGenerateLakekeeperInstanceResources_TieringDSNUser(t *testing.T) {
+	o := newLakekeeperTestOrchestrator(t)
+	spec := makeLakekeeperSpecWithStorage()
+
+	result, err := o.generateLakekeeperInstanceResources(spec)
+	if err != nil {
+		t.Fatalf("generateLakekeeperInstanceResources() unexpected error: %v", err)
+	}
+
+	var checked int
+	for _, rd := range result.Resources {
+		if rd.Identifier.Type != scheduler.ResourceTypeScheduledJob {
+			continue
+		}
+		job, decErr := resource.ToResource[*scheduler.ScheduledJobResource](rd)
+		if decErr != nil {
+			t.Fatalf("failed to decode ScheduledJobResource %q: %v", rd.Identifier.ID, decErr)
+		}
+		svcCfg, ok := job.Args["service_config"].(map[string]any)
+		if !ok {
+			t.Fatalf("job %q: service_config missing or wrong type: %T", rd.Identifier.ID, job.Args["service_config"])
+		}
+		if got := svcCfg["local_pg_dsn_user"]; got != "app_owner" {
+			t.Errorf("job %q: local_pg_dsn_user = %v, want %q", rd.Identifier.ID, got, "app_owner")
+		}
+		checked++
+	}
+	if checked == 0 {
+		t.Fatal("no tiering ScheduledJobResource found to assert on")
 	}
 }
 

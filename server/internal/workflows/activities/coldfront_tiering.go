@@ -78,10 +78,17 @@ func parseColdFrontStorageConfig(config map[string]any) (*coldFrontStorageConfig
 // the binaries resolve which tables to process from the DB registry
 // (coldfront.partition_config). Credentials are written to the YAML but the
 // caller must ensure the file is ephemeral and the content is never logged.
-func buildColdFrontConfigYAML(cfg coldFrontStorageConfig, dbName, lakekeeperEndpoint string) ([]byte, error) {
+//
+// dsnUser is the connect-as user the binary should authenticate as against the
+// node's local Postgres; it falls back to "coldfront" when empty so the DSN is
+// always well-formed.
+func buildColdFrontConfigYAML(cfg coldFrontStorageConfig, dbName, lakekeeperEndpoint, dsnUser string) ([]byte, error) {
+	if dsnUser == "" {
+		dsnUser = "coldfront"
+	}
 	m := map[string]any{
 		"postgres": map[string]any{
-			"dsn": fmt.Sprintf("host=localhost port=5432 user=coldfront dbname=%s sslmode=disable", dbName),
+			"dsn": fmt.Sprintf("host=localhost port=5432 user=%s dbname=%s sslmode=disable", dsnUser, dbName),
 		},
 		"iceberg": map[string]any{
 			"warehouse":           cfg.Warehouse,
@@ -258,7 +265,22 @@ func (a *Activities) RunColdFrontBinary(ctx context.Context, input *RunColdFront
 		lakekeeperEndpoint = ep
 	}
 
-	configYAML, err := buildColdFrontConfigYAML(*storageCfg, input.DatabaseName, lakekeeperEndpoint)
+	// The connect-as user is likewise baked into the service config at
+	// reconciliation time (from spec.ConnectAsUsername). buildColdFrontConfigYAML
+	// falls back to "coldfront" when it is absent.
+	dsnUser := ""
+	if u, ok := input.ServiceConfig["local_pg_dsn_user"].(string); ok {
+		dsnUser = u
+	}
+	if dsnUser == "" {
+		// The orchestrator always injects the connect-as user, so an empty value
+		// signals a misconfiguration. buildColdFrontConfigYAML still falls back to
+		// "coldfront" to stay functional, but surface it rather than silently
+		// reverting to the hardcode this fix removed.
+		logger.Warn("no connect-as user in tiering config; falling back to coldfront DSN user")
+	}
+
+	configYAML, err := buildColdFrontConfigYAML(*storageCfg, input.DatabaseName, lakekeeperEndpoint, dsnUser)
 	if err != nil {
 		return nil, fmt.Errorf("coldfront %s: failed to render config: %w", input.Binary, err)
 	}

@@ -53,7 +53,7 @@ func TestBuildColdFrontConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			yaml, err := buildColdFrontConfigYAML(tc.cfg, tc.dbName, "lakekeeper-svc:8181")
+			yaml, err := buildColdFrontConfigYAML(tc.cfg, tc.dbName, "lakekeeper-svc:8181", "coldfront")
 			if err != nil {
 				t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
 			}
@@ -72,6 +72,41 @@ func TestBuildColdFrontConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestBuildColdFrontConfigDSNUser verifies the tiering DSN uses the supplied
+// connect-as user, and falls back to "coldfront" when none is provided.
+func TestBuildColdFrontConfigDSNUser(t *testing.T) {
+	cfg := coldFrontStorageConfig{
+		Provider:  "aws",
+		Warehouse: "s3://my-bucket/warehouse",
+		Bucket:    "my-bucket",
+		Region:    "us-east-1",
+		Credential: map[string]string{
+			"access_key_id":     "AKID",
+			"secret_access_key": "SECRET",
+		},
+	}
+
+	t.Run("explicit user", func(t *testing.T) {
+		yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "lakekeeper-svc:8181", "app_owner")
+		if err != nil {
+			t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
+		}
+		if !strings.Contains(string(yaml), "user=app_owner ") {
+			t.Errorf("expected DSN to use connect-as user app_owner, got:\n%s", yaml)
+		}
+	})
+
+	t.Run("empty user falls back to coldfront", func(t *testing.T) {
+		yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "lakekeeper-svc:8181", "")
+		if err != nil {
+			t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
+		}
+		if !strings.Contains(string(yaml), "user=coldfront ") {
+			t.Errorf("expected DSN to fall back to coldfront user, got:\n%s", yaml)
+		}
+	})
 }
 
 // TestIsBenignArchiverEmpty verifies the benign-empty detection logic. The

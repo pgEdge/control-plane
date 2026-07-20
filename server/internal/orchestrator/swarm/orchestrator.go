@@ -1040,9 +1040,13 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		}
 		lakekeeperEndpoint := fmt.Sprintf("http://%s:%d", serviceName, port)
 
-		// Build the args that the scheduled-job executor will decode.
+		// Build the args that the scheduled-job executor will decode. The
+		// connect-as user is carried alongside the derived endpoint so the tiering
+		// binaries authenticate to the node's local Postgres as the database's
+		// owner rather than a hardcoded "coldfront" role.
 		serviceConfigCopy := maps.Clone(serviceConfig)
 		serviceConfigCopy["lakekeeper_endpoint"] = lakekeeperEndpoint
+		serviceConfigCopy["local_pg_dsn_user"] = spec.ConnectAsUsername
 
 		tieringArgs := map[string]interface{}{
 			"database_id":    spec.DatabaseID,
