@@ -156,6 +156,14 @@ licenses:
 	--ignore github.com/pgEdge/control-plane \
 	--ignore github.com/eclipse/paho.golang \
 	--template=NOTICE.txt.tmpl > NOTICE.txt
+	# go-licenses duplicates the package subpath before "LICENSE" for
+	# opentelemetry-go's per-submodule tags (e.g. .../blob/metric/v1.44.0/metric/LICENSE),
+	# but the LICENSE file only exists once at the repo root, so those links 404.
+	# Collapse the duplicated segment; verified via HTTP status that the
+	# resulting root-tag URL always resolves. See
+	# https://github.com/google/go-licenses/issues for upstream tracking.
+	sed -i.bak -E 's#(open-telemetry/opentelemetry-go/blob/[a-zA-Z0-9_./-]*v[0-9]+\.[0-9]+\.[0-9]+)(/[a-zA-Z0-9_./-]+)?/LICENSE#\1/LICENSE#' NOTICE.txt
+	rm -f NOTICE.txt.bak
 
 .PHONY: licenses-ci
 licenses-ci: licenses
