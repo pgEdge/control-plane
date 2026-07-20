@@ -8,6 +8,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
 // fakeExec captures the SQL and args passed to Exec so the test can assert the
@@ -199,4 +201,66 @@ func TestExecSetStorageSecret_BindsCredentialAsArgs(t *testing.T) {
 	assert.Contains(t, fe.args, "S3KRET")
 	assert.NotContains(t, fe.sql, "S3KRET")
 	assert.True(t, strings.Contains(fe.sql, "$1"), "expected parameter placeholders in SQL")
+}
+
+// TestBuildColdfrontLocalPGDSN pins the libpq keyword DSN the coldfront
+// extension attaches as `pglocal` (loopback read of PG rows for Iceberg
+// writes). Format mirrors the tiering DSN (finding #8): host/port/user/dbname
+// with sslmode=disable. The sslmode=disable + local-trust assumption is the
+// same tracked residual as #8, to revisit with the connectivity/auth work.
+func TestBuildColdfrontLocalPGDSN(t *testing.T) {
+	got := buildColdfrontLocalPGDSN("mydb", "app_user")
+	want := "host=localhost port=5432 user=app_user dbname=mydb sslmode=disable"
+	assert.Equal(t, want, got)
+}
+
+// TestBuildColdfrontGUCStatements pins the three per-database GUCs the
+// extension's attach path reads: warehouse (name), lakekeeper_endpoint (MUST
+// carry the /catalog path), local_pg_dsn. All are PGC_SUSET so ALTER DATABASE
+// SET by the superuser applies to new sessions with no restart. Values are
+// single-quoted with embedded quotes doubled (standard_conforming_strings=on),
+// matching the roles.go literal-quoting precedent.
+func TestBuildColdfrontGUCStatements(t *testing.T) {
+	stmts := buildColdfrontGUCStatements(
+		"mydb",
+		"wh",
+		"http://svc:8181/catalog",
+		"host=localhost port=5432 user=app_user dbname=mydb sslmode=disable",
+	)
+	require.Len(t, stmts, 3)
+	assert.Equal(t, `ALTER DATABASE "mydb" SET coldfront.warehouse = 'wh';`, stmts[0].SQL)
+	assert.Equal(t, `ALTER DATABASE "mydb" SET coldfront.lakekeeper_endpoint = 'http://svc:8181/catalog';`, stmts[1].SQL)
+	assert.Equal(t, `ALTER DATABASE "mydb" SET coldfront.local_pg_dsn = 'host=localhost port=5432 user=app_user dbname=mydb sslmode=disable';`, stmts[2].SQL)
+}
+
+// TestBuildColdfrontGUCStatements_QuotesValues verifies a single quote in a
+// value (e.g. a warehouse name) is doubled, not broken out of the literal.
+func TestBuildColdfrontGUCStatements_QuotesValues(t *testing.T) {
+	stmts := buildColdfrontGUCStatements("my'db", "wh's", "http://svc:8181/catalog", "dsn")
+	require.Len(t, stmts, 3)
+	// Identifier: embedded double-quote handling not exercised here, but the db
+	// name is quoted as an identifier; a single quote is legal inside it.
+	assert.Equal(t, `ALTER DATABASE "my'db" SET coldfront.warehouse = 'wh''s';`, stmts[0].SQL)
+}
+
+// TestGenerateLakekeeperInstanceResources_StorageSecretGUCFields verifies the
+// orchestrator threads the /catalog endpoint (derived from the generated
+// service name) and the connect-as user into the storage-secret resource, so it
+// can set the coldfront GUCs.
+func TestGenerateLakekeeperInstanceResources_StorageSecretGUCFields(t *testing.T) {
+	o := newLakekeeperTestOrchestrator(t)
+	spec := makeManagedLakekeeperSpec()
+
+	result, err := o.generateLakekeeperInstanceResources(spec)
+	require.NoError(t, err)
+
+	secretRD := findResourceByType(result.Resources, ResourceTypeLakekeeperStorageSecret)
+	require.NotNil(t, secretRD)
+	secretRes, err := resource.ToResource[*LakekeeperStorageSecretResource](secretRD)
+	require.NoError(t, err)
+
+	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	wantEndpoint := "http://" + serviceName + ":8181/catalog"
+	assert.Equal(t, wantEndpoint, secretRes.LakekeeperEndpoint)
+	assert.Equal(t, spec.ConnectAsUsername, secretRes.ConnectAsUsername)
 }

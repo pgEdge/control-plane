@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -23,17 +24,22 @@ func LakekeeperStorageSecretResourceIdentifier(serviceInstanceID string) resourc
 	}
 }
 
-// LakekeeperStorageSecretResource stores the object-store credential inside the
-// database via ColdFront's set_storage_secret function, so that the ColdFront
-// extension on the node can read/write Iceberg data in the warehouse's bucket.
+// LakekeeperStorageSecretResource configures the ColdFront extension in the
+// node's application database: it sets the per-database GUCs the extension's
+// attach path reads (coldfront.warehouse / coldfront.lakekeeper_endpoint /
+// coldfront.local_pg_dsn) and stores the object-store credential via ColdFront's
+// set_storage_secret function, so that the extension can read/write Iceberg data
+// in the warehouse's bucket.
 //
 // It runs once against the node's primary Postgres (PrimaryExecutor, like the
-// PostgREST preflight resource) after the database — and therefore the
-// coldfront extension — is available. It depends on the Postgres database
-// resource for that ordering.
+// PostgREST preflight resource) after the coldfront extension is available. It
+// depends on the coldfront extension resource for that ordering.
 //
-// The set_storage_secret functions upsert, so re-running is safe; SecretSet is
-// a sentinel so Refresh can distinguish "never run" from "already applied".
+// The GUCs are PGC_SUSET, so ALTER DATABASE ... SET by the superuser applies to
+// every new session with no restart; the extension re-reads them per statement.
+// The set_storage_secret functions upsert and the GUC sets are idempotent, so
+// re-running is safe; SecretSet is a sentinel so Refresh can distinguish "never
+// run" from "already applied".
 //
 // The credential is passed to Postgres exclusively as bound query parameters
 // and is NEVER logged.
@@ -43,7 +49,14 @@ type LakekeeperStorageSecretResource struct {
 	DatabaseName      string         `json:"database_name"`
 	NodeName          string         `json:"node_name"`
 	Config            map[string]any `json:"config"`
-	SecretSet         bool           `json:"secret_set"`
+	// LakekeeperEndpoint is the Iceberg REST catalog URL for coldfront's ATTACH,
+	// including the trailing /catalog path segment the extension requires. Built
+	// by the orchestrator from the generated service name.
+	LakekeeperEndpoint string `json:"lakekeeper_endpoint"`
+	// ConnectAsUsername is the database owner; the coldfront.local_pg_dsn GUC
+	// connects back to the local database as this user.
+	ConnectAsUsername string `json:"connect_as_username"`
+	SecretSet         bool   `json:"secret_set"`
 }
 
 func (r *LakekeeperStorageSecretResource) ResourceVersion() string { return "1" }
@@ -118,7 +131,54 @@ func (r *LakekeeperStorageSecretResource) setSecret(ctx context.Context, rc *res
 	}
 	defer conn.Close(ctx)
 
+	// Set the per-database coldfront GUCs the extension's attach path reads.
+	// These are ALTER DATABASE ... SET (DDL, no bound parameters), applied
+	// before the storage secret so a subsequent session has both in place.
+	dsn := buildColdfrontLocalPGDSN(r.DatabaseName, r.ConnectAsUsername)
+	for _, stmt := range buildColdfrontGUCStatements(r.DatabaseName, cfg.Warehouse, r.LakekeeperEndpoint, dsn) {
+		if err := stmt.Exec(ctx, conn); err != nil {
+			return fmt.Errorf("coldfront set guc in database %q: %w", r.DatabaseName, err)
+		}
+	}
+
 	return execSetStorageSecret(ctx, conn, cfg)
+}
+
+// buildColdfrontLocalPGDSN builds the libpq keyword DSN for the
+// coldfront.local_pg_dsn GUC — the loopback connection DuckDB attaches as
+// `pglocal` to stream PG-source rows into Iceberg on the write path. Format
+// mirrors the tiering DSN (finding #8): a localhost TCP connection as the
+// database owner. The sslmode=disable + local-trust assumption is the same
+// tracked residual as #8, to revisit with the connectivity/auth work.
+func buildColdfrontLocalPGDSN(dbName, user string) string {
+	return fmt.Sprintf("host=localhost port=5432 user=%s dbname=%s sslmode=disable", user, dbName)
+}
+
+// buildColdfrontGUCStatements returns the ALTER DATABASE ... SET statements for
+// the three per-database GUCs the coldfront extension requires. ALTER DATABASE
+// SET is DDL and does not accept bound parameters, so values are single-quoted
+// with embedded quotes doubled — safe with standard_conforming_strings=on
+// (matching the roles.go password-quoting precedent). The database name is
+// quoted as an identifier; the GUC names are fixed, trusted literals.
+func buildColdfrontGUCStatements(dbName, warehouse, lakekeeperEndpoint, localPGDSN string) []postgres.Statement {
+	quotedDB := postgres.QuoteIdentifier(dbName)
+	set := func(guc, value string) postgres.Statement {
+		return postgres.Statement{
+			SQL: fmt.Sprintf("ALTER DATABASE %s SET %s = %s;",
+				quotedDB, guc, quoteColdfrontGUCLiteral(value)),
+		}
+	}
+	return []postgres.Statement{
+		set("coldfront.warehouse", warehouse),
+		set("coldfront.lakekeeper_endpoint", lakekeeperEndpoint),
+		set("coldfront.local_pg_dsn", localPGDSN),
+	}
+}
+
+// quoteColdfrontGUCLiteral wraps a value as a SQL string literal, doubling any
+// embedded single quotes. Safe with standard_conforming_strings=on.
+func quoteColdfrontGUCLiteral(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 // setStorageSecretExec is the minimal Postgres exec surface needed by

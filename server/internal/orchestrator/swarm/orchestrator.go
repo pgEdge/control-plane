@@ -1014,15 +1014,24 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		NodeName:          spec.NodeName,
 	}
 
-	// Storage secret resource — stores the object-store credential inside the
-	// database via ColdFront's set_storage_secret. Runs on the node's primary
-	// after the coldfront extension is available.
+	// Storage secret resource — sets the per-database coldfront GUCs and stores
+	// the object-store credential via ColdFront's set_storage_secret. Runs on the
+	// node's primary after the coldfront extension is available. The GUC endpoint
+	// is the catalog root: the generated service name plus the /catalog path the
+	// extension's Iceberg ATTACH requires.
+	lakekeeperPort := utils.FromPointer(spec.Port)
+	if lakekeeperPort == 0 {
+		lakekeeperPort = 8181
+	}
+	lakekeeperGUCEndpoint := fmt.Sprintf("http://%s:%d/catalog", serviceName, lakekeeperPort)
 	lakekeeperStorageSecretRes := &LakekeeperStorageSecretResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		NodeName:          spec.NodeName,
-		Config:            specForResources.Config,
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		NodeName:           spec.NodeName,
+		Config:             specForResources.Config,
+		LakekeeperEndpoint: lakekeeperGUCEndpoint,
+		ConnectAsUsername:  spec.ConnectAsUsername,
 	}
 
 	orchestratorResources := []resource.Resource{
@@ -1047,11 +1056,10 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 	// Cron defaults: archiver hourly, partitioner every 6h, compactor daily.
 	// Override via service_config keys archiver_cron / partitioner_cron / compactor_cron.
 	if _, hasProvider := serviceConfig["provider"]; hasProvider {
-		port := utils.FromPointer(spec.Port)
-		if port == 0 {
-			port = 8181
-		}
-		lakekeeperEndpoint := fmt.Sprintf("http://%s:%d", serviceName, port)
+		// Bare endpoint (no /catalog path): the tiering binaries build their own
+		// REST paths. This differs from the coldfront.lakekeeper_endpoint GUC,
+		// which needs the /catalog catalog root.
+		lakekeeperEndpoint := fmt.Sprintf("http://%s:%d", serviceName, lakekeeperPort)
 
 		// Build the args that the scheduled-job executor will decode. The
 		// connect-as user is carried alongside the derived endpoint so the tiering
