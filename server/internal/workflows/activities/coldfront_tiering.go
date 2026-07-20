@@ -23,6 +23,25 @@ import (
 // classification is scoped to this binary only (see runColdFrontBinary).
 const coldFrontArchiverBinary = "archiver"
 
+// coldFrontBinDir is where the tiering binaries (archiver/partitioner/compactor)
+// live in the data-node image. The pgedge-coldfront package installs them to
+// /usr/bin (RPM %{_bindir}), matching CP's other externally-installed binaries
+// (pgbackrest/patroni default to /usr/bin too).
+const coldFrontBinDir = "/usr/bin"
+
+// buildTieringCommand builds the `sh -c` argv that writes the base64-encoded
+// config to a temp file inside the container and runs the tiering binary against
+// it. base64 is used so the config never has to be shell-quoted. The binary is
+// resolved under coldFrontBinDir.
+func buildTieringCommand(encodedConfig, configPath, binary string) []string {
+	binaryPath := coldFrontBinDir + "/" + binary
+	return []string{
+		"sh", "-c",
+		fmt.Sprintf("printf '%%s' '%s' | base64 -d > %s && %s --config %s",
+			encodedConfig, configPath, binaryPath, configPath),
+	}
+}
+
 // coldFrontStorageConfig holds the parsed object-store coordinates extracted
 // from a lakekeeper ServiceSpec.Config. The Credential field MUST NOT be logged.
 type coldFrontStorageConfig struct {
@@ -305,13 +324,7 @@ func (a *Activities) RunColdFrontBinary(ctx context.Context, input *RunColdFront
 	// Write the config file into the container using base64 to avoid any shell
 	// quoting or injection issues, then run the binary.
 	encoded := base64.StdEncoding.EncodeToString(configYAML)
-	configPath := "/tmp/coldfront-config.yaml"
-	binaryPath := "/usr/local/bin/" + input.Binary
-	cmd := []string{
-		"sh", "-c",
-		fmt.Sprintf("printf '%%s' '%s' | base64 -d > %s && %s --config %s",
-			encoded, configPath, binaryPath, configPath),
-	}
+	cmd := buildTieringCommand(encoded, "/tmp/coldfront-config.yaml", input.Binary)
 
 	if err := runColdFrontBinary(ctx, dockerTieringExecer{docker: dockerClient}, pgContainer.ID, input.Binary, cmd); err != nil {
 		return nil, err

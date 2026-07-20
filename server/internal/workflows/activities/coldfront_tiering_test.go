@@ -109,6 +109,27 @@ func TestBuildColdFrontConfigDSNUser(t *testing.T) {
 	})
 }
 
+// TestBuildTieringCommand_UsesUsrBin verifies the tiering binary is invoked from
+// /usr/bin (where the pgedge-coldfront package installs it), not the legacy
+// /usr/local/bin, and that the config file is written and passed via --config.
+func TestBuildTieringCommand_UsesUsrBin(t *testing.T) {
+	cmd := buildTieringCommand("QkFTRTY0", "/tmp/coldfront-config.yaml", "archiver")
+
+	if len(cmd) != 3 || cmd[0] != "sh" || cmd[1] != "-c" {
+		t.Fatalf("expected [sh -c <script>], got %#v", cmd)
+	}
+	script := cmd[2]
+	if !strings.Contains(script, "/usr/bin/archiver --config /tmp/coldfront-config.yaml") {
+		t.Errorf("expected binary invoked from /usr/bin with --config, got:\n%s", script)
+	}
+	if strings.Contains(script, "/usr/local/bin/") {
+		t.Errorf("binary must not be invoked from /usr/local/bin, got:\n%s", script)
+	}
+	if !strings.Contains(script, "QkFTRTY0") {
+		t.Errorf("expected base64 config payload in the script, got:\n%s", script)
+	}
+}
+
 // TestIsBenignArchiverEmpty verifies the benign-empty detection logic. The
 // classification is scoped to the archiver only: the partitioner and compactor
 // must never have the "no tables configured" text treated as benign.
