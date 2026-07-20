@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -154,7 +155,9 @@ func execSetStorageSecret(ctx context.Context, conn setStorageSecretExec, cfg *l
 //     non-NULL endpoint here forces path-style and breaks modern Regions with
 //     HTTP 400 (ColdFront docs/object_store.md).
 //   - endpoint PRESENT (S3-compatible / GCS): pass the endpoint with
-//     url_style => 'path' and use_ssl => true.
+//     url_style => 'path' and use_ssl derived from the endpoint scheme
+//     (https:// => true, http:// => false, schemeless => true). The scheme is
+//     stripped so the DuckDB secret stores host:port, not a URL.
 func buildSetStorageSecretSQL(cfg *lakekeeperStorageConfig) (string, []any) {
 	switch cfg.Provider {
 	case "aws":
@@ -202,7 +205,10 @@ func buildS3SetStorageSecretSQL(keyID, secret, endpoint, region string) (string,
 			p_region => $3
 		)`, []any{keyID, secret, region}
 	}
-	// S3-compatible / GCS: explicit endpoint with path-style + SSL.
+	// S3-compatible / GCS: explicit endpoint with path-style. The DuckDB secret
+	// wants a bare host:port, and use_ssl is driven off the endpoint scheme so
+	// plain-HTTP stores (MinIO / self-hosted) work, not just HTTPS.
+	host, useSSL := deriveEndpointSSL(endpoint)
 	return `SELECT coldfront.set_storage_secret(
 		p_key_id => $1,
 		p_secret => $2,
@@ -210,7 +216,28 @@ func buildS3SetStorageSecretSQL(keyID, secret, endpoint, region string) (string,
 		p_region => $4,
 		p_url_style => $5,
 		p_use_ssl => $6
-	)`, []any{keyID, secret, endpoint, region, "path", true}
+	)`, []any{keyID, secret, host, region, "path", useSSL}
+}
+
+// deriveEndpointSSL splits an S3 endpoint into its bare host:port form and the
+// use_ssl flag implied by its scheme. An https:// endpoint => TLS; an http://
+// endpoint => plaintext; a schemeless endpoint keeps its value and defaults to
+// TLS (the safe assumption for a public host such as storage.googleapis.com).
+// Surrounding whitespace and a trailing slash are trimmed, and the scheme match
+// is case-insensitive, so copy-pasted values like " HTTPS://minio:9000/ " yield
+// a clean host:port that DuckDB accepts.
+func deriveEndpointSSL(endpoint string) (host string, useSSL bool) {
+	endpoint = strings.TrimSpace(endpoint)
+	lower := strings.ToLower(endpoint)
+	switch {
+	case strings.HasPrefix(lower, "https://"):
+		host, useSSL = endpoint[len("https://"):], true
+	case strings.HasPrefix(lower, "http://"):
+		host, useSSL = endpoint[len("http://"):], false
+	default:
+		host, useSSL = endpoint, true
+	}
+	return strings.TrimRight(host, "/"), useSSL
 }
 
 // ensure *pgx.Conn satisfies setStorageSecretExec at compile time.

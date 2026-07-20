@@ -50,8 +50,9 @@ func TestBuildSetStorageSecretSQL_CloudAWS(t *testing.T) {
 	assert.NotContains(t, sql, "SECRET_TEST")
 }
 
-// TestBuildSetStorageSecretSQL_S3CompatAWS: endpoint present => pass endpoint +
-// path-style + SSL.
+// TestBuildSetStorageSecretSQL_S3CompatAWS: endpoint present => pass the bare
+// host:port (scheme stripped) + path-style, with use_ssl derived from the
+// scheme (http:// => false here).
 func TestBuildSetStorageSecretSQL_S3CompatAWS(t *testing.T) {
 	cfg := &lakekeeperStorageConfig{
 		Provider: "aws",
@@ -67,8 +68,8 @@ func TestBuildSetStorageSecretSQL_S3CompatAWS(t *testing.T) {
 	assert.Contains(t, sql, "coldfront.set_storage_secret(")
 	assert.Contains(t, sql, "p_url_style => $5")
 	assert.NotContains(t, sql, "p_endpoint => NULL")
-	// endpoint present as a bound arg, alongside path-style + SSL.
-	assert.Equal(t, []any{"AKIA_TEST", "SECRET_TEST", "http://seaweedfs:8333", "us-east-1", "path", true}, args)
+	// endpoint present as a bound arg (scheme stripped), path-style, http=>no SSL.
+	assert.Equal(t, []any{"AKIA_TEST", "SECRET_TEST", "seaweedfs:8333", "us-east-1", "path", false}, args)
 	assert.NotContains(t, sql, "AKIA_TEST")
 }
 
@@ -92,6 +93,78 @@ func TestBuildSetStorageSecretSQL_GCS(t *testing.T) {
 	assert.Contains(t, args, "path")
 	assert.Contains(t, args, "GOOG_ID")
 	assert.NotContains(t, sql, "GOOG_SECRET")
+}
+
+// TestBuildSetStorageSecretSQL_HTTPEndpoint: a plain-HTTP endpoint (MinIO /
+// self-hosted S3) must derive use_ssl=false and be stored WITHOUT the scheme —
+// the DuckDB secret wants host:port, not a URL.
+func TestBuildSetStorageSecretSQL_HTTPEndpoint(t *testing.T) {
+	cfg := &lakekeeperStorageConfig{
+		Provider: "aws",
+		Region:   "us-east-1",
+		Endpoint: "http://minio:9000",
+		Credential: map[string]string{
+			"access_key_id":     "AKIA_TEST",
+			"secret_access_key": "SECRET_TEST",
+		},
+	}
+	sql, args := buildSetStorageSecretSQL(cfg)
+
+	assert.Contains(t, sql, "p_use_ssl => $6")
+	// Scheme stripped to host:port; use_ssl derived false from http://.
+	assert.Equal(t, []any{"AKIA_TEST", "SECRET_TEST", "minio:9000", "us-east-1", "path", false}, args)
+}
+
+// TestBuildSetStorageSecretSQL_HTTPSEndpoint: an https endpoint derives
+// use_ssl=true and is stored WITHOUT the scheme.
+func TestBuildSetStorageSecretSQL_HTTPSEndpoint(t *testing.T) {
+	cfg := &lakekeeperStorageConfig{
+		Provider: "aws",
+		Region:   "eu-west-1",
+		Endpoint: "https://s3.example.com",
+		Credential: map[string]string{
+			"access_key_id":     "AKIA_TEST",
+			"secret_access_key": "SECRET_TEST",
+		},
+	}
+	_, args := buildSetStorageSecretSQL(cfg)
+
+	assert.Equal(t, []any{"AKIA_TEST", "SECRET_TEST", "s3.example.com", "eu-west-1", "path", true}, args)
+}
+
+// TestBuildSetStorageSecretSQL_SchemelessEndpoint: an endpoint with no scheme
+// (e.g. the GCS canonical host) keeps its value and defaults use_ssl=true.
+func TestBuildSetStorageSecretSQL_SchemelessEndpoint(t *testing.T) {
+	cfg := &lakekeeperStorageConfig{
+		Provider: "aws",
+		Region:   "us-east-1",
+		Endpoint: "objects.internal:9000",
+		Credential: map[string]string{
+			"access_key_id":     "AKIA_TEST",
+			"secret_access_key": "SECRET_TEST",
+		},
+	}
+	_, args := buildSetStorageSecretSQL(cfg)
+
+	assert.Equal(t, []any{"AKIA_TEST", "SECRET_TEST", "objects.internal:9000", "us-east-1", "path", true}, args)
+}
+
+// TestBuildSetStorageSecretSQL_MessyEndpoint: a copy-pasted endpoint with mixed
+// scheme case, surrounding whitespace, and a trailing slash still yields a clean
+// host:port with use_ssl derived from the (case-insensitive) scheme.
+func TestBuildSetStorageSecretSQL_MessyEndpoint(t *testing.T) {
+	cfg := &lakekeeperStorageConfig{
+		Provider: "aws",
+		Region:   "us-east-1",
+		Endpoint: "  HTTPS://minio.example.com:9000/  ",
+		Credential: map[string]string{
+			"access_key_id":     "AKIA_TEST",
+			"secret_access_key": "SECRET_TEST",
+		},
+	}
+	_, args := buildSetStorageSecretSQL(cfg)
+
+	assert.Equal(t, []any{"AKIA_TEST", "SECRET_TEST", "minio.example.com:9000", "us-east-1", "path", true}, args)
 }
 
 func TestBuildSetStorageSecretSQL_Azure(t *testing.T) {
