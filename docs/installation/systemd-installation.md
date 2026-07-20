@@ -1,15 +1,4 @@
-# Installing the pgEdge Control Plane via System Packages
-
-!!! warning "Preview Feature"
-
-    System package-based installation is a preview feature that is under active
-    development. The core database management API is fully functional and
-    tested, but some features are not yet supported (see
-    [Limitations](#limitations) below). The installation method and upgrade
-    process between releases may change before this feature is finalized. We'd
-    love your feedback - please share your experience in our
-    [GitHub issues](https://github.com/pgedge/control-plane/issues) or join our
-    [Discord](https://discord.com/invite/pgedge/login).
+# Installing the Control Plane with systemd
 
 This guide covers installing the pgEdge Control Plane on Linux hosts that use
 the RPM Package Manager (RPM) package format (e.g., Red Hat Enterprise Linux
@@ -34,28 +23,11 @@ current release.
 - All hosts in a cluster must use the same orchestrator (either `swarm` or
   `systemd`); the orchestrator must not change after the cluster is initialized.
 
-## Prerequisites
-
-The Control Plane requires specific ports and packages to be configured on each
-host before installation.
-
-### Ports
-
-The Control Plane uses these ports by default; each must be accessible to other
-cluster members on each host.
-
-- Port `3000` uses TCP for HTTP and HTTPS communication.
-- Port `2379` uses TCP for Etcd client communication.
-- Port `2380` uses TCP for Etcd peer communication.
-
-You can configure alternate ports by modifying the [configuration
-file](#configuration) after installing the `pgedge-control-plane` package.
+ We'd love your feedback - please share your experience in our [GitHub issues](https://github.com/pgedge/control-plane/issues) or join our [Discord](https://discord.com/invite/pgedge/login).
 
 ### Packages
 
-The Control Plane depends on the pgEdge Enterprise Postgres packages. The
-Control Plane does not yet automatically install Postgres or its supporting
-packages; install the packages on each host before starting the Control Plane.
+After creating hosts that [meet the prerequisites](../prerequisites/index.md), you are ready to install Postgress and it's supporting packages on each host.
 
 #### RPM Packages
 
@@ -302,75 +274,6 @@ instructions.
 > Unlike with the Swarm orchestrator, `patroni_port` is a required field in
 > systemd clusters. As with other port fields, you can specify `0` to assign a
 > random port.
-
-## Performing Postgres Minor Version Upgrades
-
-Database upgrades are not yet supported via the Control Plane API, but system
-administrators can perform minor Postgres version upgrades by updating the
-packages on each machine. Follow these steps on each host in the cluster:
-
-1. Upgrade Postgres and/or other components using `dnf upgrade` or
-   `apt install --only-upgrade`. For example, to upgrade Postgres 18:
-
-    ```sh
-    # If your system uses dnf, run:
-    sudo dnf upgrade pgedge-postgresql18
-
-    # If your system uses apt, run:
-    sudo apt install --only-upgrade pgedge-postgresql-18
-    ```
-
-1. Find the systemd unit names for your database instances by listing units that
-   have the `patroni-*` prefix:
-
-    ```sh
-    sudo systemctl list-units 'patroni-*'
-    ```
-
-2. Restart each service:
-
-    ```sh
-    sudo systemctl try-restart <service name>
-    ```
-
-To minimize the risk of downtime, we recommend upgrading one host at a time,
-starting with hosts running replica instances.
-
-After completing the upgrade on all hosts, it may take up to 30 seconds for the
-new versions to be reflected in the database spec in the Control Plane API.
-
-## Updating the Control Plane
-
-Updating the Control Plane just involves installing the new package. This will
-automatically restart the Control Plane service after the update is complete.
-
-> [!NOTE]
-> The package upgrade will preserve any modifications to the configuration file
-> at `/etc/pgedge-control-plane/config.json`.
-
-### RPM Package
-
-Use the following commands to download and install the updated RPM:
-
-```sh
-# (Optional) print the current version via the API
-curl http://localhost:3000/v1/version
-
-# Detect architecture
-ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-# Set the new version to install
-VERSION="v0.9.0"
-
-# Download the RPM
-curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm"
-
-# Install the RPM with the 'upgrade' flag
-sudo rpm -U pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
-
-# (Optional) print the updated version via the API
-curl http://localhost:3000/v1/version
-```
 
 ### Deb Package
 

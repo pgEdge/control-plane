@@ -39,7 +39,7 @@ Before starting the recovery process, ensure you have:
   remains, you can recover using that host's existing data; a backup is not
   required.
 
-See [Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file)
+See [Creating the stack definition file](../installation/swarm-installation.md#creating-the-stack-definition-file)
 in the installation documentation.
 
 ## Set Variables
@@ -161,7 +161,7 @@ majority of managers are gone). If your Swarm still has a quorum, go to
     If the container registry or Control Plane image resided on a lost
     host, recreate the registry and image on a surviving host before
     starting the Control Plane; for details, see
-    [Upgrading the Control Plane](../installation/upgrading.md).
+    [Upgrading the Control Plane with Docker Swarm](../installation/swarm-upgrading.md).
 
 ---
 

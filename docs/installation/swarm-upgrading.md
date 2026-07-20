@@ -1,7 +1,6 @@
-# Upgrading the Control Plane
-
+# Upgrading the Control Plane with Swarm
 We publish a new Docker image whenever we release a new version of the Control
-Plane. The Control Plane version is specified in the image property of the [stack definition file](../installation/installation.md#creating-the-stack-definition-file):
+Plane. The Control Plane version is specified in the image property of the [stack definition file](../installation/swarm-installation.md#creating-the-stack-definition-file):
 
 ```yaml
 services:
@@ -24,7 +23,7 @@ To upgrade from a pinned version:
 
 1. Modify the `image` fields in your service specification to reference the new version, such as updating `ghcr.io/pgedge/control-plane:v0.4.0` to `ghcr.io/pgedge/control-plane:v0.5.0`.
    
-2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the [Deploying the stack](installation.md#deploying-the-stack) section.
+2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the [Deploying the stack](swarm-installation.md#deploying-the-stack) section.
 
 ## Upgrading with the `latest` Tag
 
@@ -33,7 +32,7 @@ unless you've specified a different `--resolve-image` option; updating with
 the `latest` tag is a single step:
 
 1. Re-run `docker stack deploy -c control-plane.yaml control-plane` as described in the
-   [Deploying the stack](installation.md#deploying-the-stack) section.
+   [Deploying the stack](swarm-installation.md#deploying-the-stack) section.
 
 ## How to Check the Current Version
 

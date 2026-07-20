@@ -7,6 +7,12 @@ from Postgres 18.0 to 18.1, via the API. The Postgres version is a field in the
 `spec` that you submit in the [create](./create-db.md) and
 [update](./update-db.md) requests.
 
+!!! note "systemd clusters"
+
+    API-driven minor version upgrades are not supported on systemd clusters.
+    See [Performing Postgres Minor Version Upgrades](../installation/systemd-upgrading.md#performing-postgres-minor-version-upgrades)
+    for the manual upgrade procedure.
+
 !!! tip
 
     Before you upgrade, make sure that your desired version is supported by
@@ -187,5 +193,5 @@ Newer versions of the Control Plane server will support newer versions of
 Postgres. If you don't see your desired version in this list, check the
 [releases page](https://github.com/pgEdge/control-plane/releases/latest) to see
 if there is a newer version of the Control Plane. If there is, you can follow
-the [Control Plane cluster upgrade instructions](../installation/upgrading.md) to upgrade
+the [Control Plane cluster upgrade instructions](../installation/swarm-upgrading.md) to upgrade
 your Control Plane cluster to the latest version.
