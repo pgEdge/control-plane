@@ -3,8 +3,10 @@
 This guide covers installing the pgEdge Control Plane on Linux hosts that use
 the RPM Package Manager (RPM) package format (e.g., Red Hat Enterprise Linux
 (RHEL), Rocky Linux, AlmaLinux) or the Debian (deb) package format (e.g.,
-Ubuntu, Debian) using the package files attached to each
-[GitHub release](https://github.com/pgedge/control-plane/releases).
+Ubuntu, Debian). We recommend installing from the pgEdge Enterprise package
+repositories; package files are also attached to each [GitHub
+release](https://github.com/pgedge/control-plane/releases) for hosts without
+repository access.
 
 Unlike the Docker Swarm installation method, the system package installation
 runs the Control Plane directly on the host. The Control Plane uses systemd to
@@ -115,9 +117,8 @@ sudo apt install -y pgedge-control-plane
 
 ### Installing from GitHub Releases
 
-If you don't have access to the pgEdge Enterprise package repositories (for
-example, on an air-gapped host), you can download and install packages
-directly from the [GitHub releases
+If you don't have access to the pgEdge Enterprise package repositories, you can
+download and install packages directly from the [GitHub releases
 page](https://github.com/pgedge/control-plane/releases).
 
 #### RPM Package

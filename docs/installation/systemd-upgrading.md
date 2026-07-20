@@ -11,6 +11,8 @@ repositories you configured in the [Packages](systemd-installation.md#packages)
 section. If you installed the Control Plane manually, see [Updating from
 GitHub Releases](#updating-from-github-releases) below.
 
+## Updating the Control Plane
+
 ### RPM Package
 
 ```sh
