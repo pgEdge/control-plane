@@ -83,9 +83,8 @@ sudo systemctl disable --now postgresql@${POSTGRES_MAJOR_VERSION}-main.service
 
 ## Installing the Control Plane
 
-The pgEdge Control Plane packages are published with each release on the
-[GitHub releases page](https://github.com/pgedge/control-plane/releases) for
-both `amd64` and `arm64` architectures.
+The pgEdge Control Plane packages are published for both `amd64` and `arm64`
+architectures.
 
 Every package will install the following files:
 
@@ -93,7 +92,35 @@ Every package will install the following files:
 - The systemd service unit is installed at `/usr/lib/systemd/system/pgedge-control-plane.service`.
 - The default configuration file is installed at `/etc/pgedge-control-plane/config.json`.
 
+We recommend installing the Control Plane from the pgEdge Enterprise package
+repositories you configured in the [Packages](#packages) section above. If you
+don't have access to those repositories, see [Installing from GitHub
+Releases](#installing-from-github-releases) below.
+
 ### RPM Package
+
+Use the following command to install the Control Plane on RHEL-like hosts:
+
+```sh
+sudo dnf install -y pgedge-control-plane
+```
+
+### Deb Package
+
+Use the following command to install the Control Plane on Debian-based hosts:
+
+```sh
+sudo apt install -y pgedge-control-plane
+```
+
+### Installing from GitHub Releases
+
+If you don't have access to the pgEdge Enterprise package repositories (for
+example, on an air-gapped host), you can download and install packages
+directly from the [GitHub releases
+page](https://github.com/pgedge/control-plane/releases).
+
+#### RPM Package
 
 Use the following commands to download and install the RPM:
 
@@ -111,7 +138,7 @@ curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/p
 sudo rpm -i pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
 ```
 
-### Deb Package
+#### Deb Package
 
 Use the following commands to download and install the deb package:
 
@@ -274,30 +301,6 @@ instructions.
 > Unlike with the Swarm orchestrator, `patroni_port` is a required field in
 > systemd clusters. As with other port fields, you can specify `0` to assign a
 > random port.
-
-### Deb Package
-
-Use the following commands to download and install the deb package:
-
-```sh
-# (Optional) print the current version via the API
-curl http://localhost:3000/v1/version
-
-# Detect architecture
-ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-# Set the new version to install
-VERSION="v0.9.0"
-
-# Download the deb package
-curl -LO --output-dir /tmp "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
-
-# Install the deb package
-sudo apt install /tmp/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
-
-# (Optional) print the updated version via the API
-curl http://localhost:3000/v1/version
-```
 
 ## Uninstalling the Control Plane
 

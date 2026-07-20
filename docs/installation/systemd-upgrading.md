@@ -6,7 +6,43 @@ automatically restart the Control Plane service after the update is complete.
 > The package upgrade will preserve any modifications to the configuration file
 > at `/etc/pgedge-control-plane/config.json`.
 
+We recommend updating the Control Plane using the pgEdge Enterprise package
+repositories you configured in the [Packages](systemd-installation.md#packages)
+section. If you installed the Control Plane manually, see [Updating from
+GitHub Releases](#updating-from-github-releases) below.
+
 ### RPM Package
+
+```sh
+# (Optional) print the current version via the API
+curl http://localhost:3000/v1/version
+
+# Upgrade the package
+sudo dnf upgrade -y pgedge-control-plane
+
+# (Optional) print the updated version via the API
+curl http://localhost:3000/v1/version
+```
+
+### Deb Package
+
+```sh
+# (Optional) print the current version via the API
+curl http://localhost:3000/v1/version
+
+# Upgrade the package
+sudo apt install --only-upgrade -y pgedge-control-plane
+
+# (Optional) print the updated version via the API
+curl http://localhost:3000/v1/version
+```
+
+### Updating from GitHub Releases
+
+If you installed the Control Plane manually from GitHub releases, download and
+install the updated package version.
+
+#### RPM Package
 
 Use the following commands to download and install the updated RPM:
 
@@ -30,8 +66,7 @@ sudo rpm -U pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
 curl http://localhost:3000/v1/version
 ```
 
-
-### Deb Package
+#### Deb Package
 
 Use the following commands to download and install the deb package:
 
