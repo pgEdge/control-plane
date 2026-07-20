@@ -61,10 +61,11 @@ func (r *LakekeeperStorageSecretResource) Executor() resource.Executor {
 }
 
 func (r *LakekeeperStorageSecretResource) Dependencies() []resource.Identifier {
-	// Depend on the database resource so the coldfront extension is available
-	// before we call set_storage_secret.
+	// Depend on the coldfront extension resource so set_storage_secret (a
+	// coldfront function) has the extension available. That resource depends on
+	// the database in turn, so this transitively orders after the database too.
 	return []resource.Identifier{
-		database.PostgresDatabaseResourceIdentifier(r.NodeName, r.DatabaseName),
+		LakekeeperColdfrontExtensionResourceIdentifier(r.ServiceInstanceID),
 	}
 }
 

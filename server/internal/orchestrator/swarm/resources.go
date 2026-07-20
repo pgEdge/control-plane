@@ -25,4 +25,5 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*LakekeeperBootstrapResource](registry, ResourceTypeLakekeeperBootstrap)
 	resource.RegisterResourceType[*LakekeeperStorageSecretResource](registry, ResourceTypeLakekeeperStorageSecret)
 	resource.RegisterResourceType[*LakekeeperCatalogDBResource](registry, ResourceTypeLakekeeperCatalogDB)
+	resource.RegisterResourceType[*LakekeeperColdfrontExtensionResource](registry, ResourceTypeLakekeeperColdfrontExtension)
 }

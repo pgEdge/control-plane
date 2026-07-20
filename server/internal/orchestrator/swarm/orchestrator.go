@@ -1002,9 +1002,21 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		Config:            specForResources.Config,
 	}
 
+	// Coldfront extension resource — creates the coldfront extension (CASCADE
+	// pulls pg_duckdb) in the node's application database. A lakekeeper service
+	// is non-functional without it, so this is unconditional. Runs on the node's
+	// primary after the database is available and before the storage-secret step,
+	// which calls a coldfront function.
+	lakekeeperColdfrontExtRes := &LakekeeperColdfrontExtensionResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		DatabaseID:        spec.DatabaseID,
+		DatabaseName:      spec.DatabaseName,
+		NodeName:          spec.NodeName,
+	}
+
 	// Storage secret resource — stores the object-store credential inside the
 	// database via ColdFront's set_storage_secret. Runs on the node's primary
-	// after the database (and thus the coldfront extension) is available.
+	// after the coldfront extension is available.
 	lakekeeperStorageSecretRes := &LakekeeperStorageSecretResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		DatabaseID:        spec.DatabaseID,
@@ -1026,6 +1038,7 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		serviceInstanceSpec,
 		serviceInstance,
 		lakekeeperBootstrapRes,
+		lakekeeperColdfrontExtRes,
 		lakekeeperStorageSecretRes,
 	)
 
