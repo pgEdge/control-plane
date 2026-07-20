@@ -74,6 +74,12 @@ type PatroniConfigGenerator struct {
 	// SpecParameters are user-specified Postgres parameters that are included
 	// in the database spec.
 	SpecParameters map[string]any `json:"spec_parameters,omitempty"`
+	// ColdFrontEnabled makes the generated config load the coldfront / pg_duckdb
+	// stack: pg_duckdb and coldfront are appended to shared_preload_libraries and
+	// the duckdb.* GUCs are set. Applied after all other parameter sources so it
+	// wins over both the defaults and any user override (correctness-critical),
+	// while preserving the existing libraries (incl. spock).
+	ColdFrontEnabled bool `json:"coldfront_enabled,omitempty"`
 	// TenantID is an optional tenant ID that is associated with this instance.
 	TenantID *string `json:"tenant_id,omitempty"`
 }
@@ -148,6 +154,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		PostgresPort:           opts.PostgresPort,
 		RestoreCommand:         restoreCommand,
 		SpecParameters:         opts.Instance.PostgreSQLConf,
+		ColdFrontEnabled:       opts.Instance.ColdFrontEnabled,
 		PgHbaConf:              opts.Instance.PgHbaConf,
 		PgIdentConf:            opts.Instance.PgIdentConf,
 		TenantID:               opts.Instance.TenantID,
@@ -228,6 +235,17 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 	}
 	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(p.NodeOrdinal))
 	maps.Copy(parameters, p.SpecParameters)
+
+	// ColdFront config is applied last so it wins over the defaults and any user
+	// override. shared_preload_libraries is appended (not replaced) to preserve
+	// the existing libraries — including spock — and the correctness-critical
+	// duckdb.* GUCs cannot be overridden by the user.
+	if p.ColdFrontEnabled {
+		preload, _ := parameters["shared_preload_libraries"].(string)
+		parameters["shared_preload_libraries"] = postgres.AppendSharedPreloadLibraries(
+			preload, "pg_duckdb", "coldfront")
+		maps.Copy(parameters, postgres.ColdFrontDuckDBGUCs())
+	}
 
 	return parameters
 }

@@ -654,3 +654,41 @@ func TestSpec_NodeInstances_PgHbaIdentMerge(t *testing.T) {
 		assert.Nil(t, nodes[0].Instances[0].PgIdentConf)
 	})
 }
+
+func TestSpec_NodeInstances_ColdFrontEnabled(t *testing.T) {
+	baseSpec := func(services []*database.ServiceSpec) *database.Spec {
+		return &database.Spec{
+			DatabaseID:      "test-db",
+			DatabaseName:    "testdb",
+			PostgresVersion: "17.6",
+			SpockVersion:    "5",
+			Nodes: []*database.Node{
+				{Name: "n1", HostIDs: []string{"host-1", "host-2"}},
+			},
+			Services: services,
+		}
+	}
+
+	t.Run("lakekeeper service sets the flag on every instance", func(t *testing.T) {
+		s := baseSpec([]*database.ServiceSpec{{ServiceID: "lk", ServiceType: "lakekeeper"}})
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		for _, inst := range nodes[0].Instances {
+			assert.True(t, inst.ColdFrontEnabled, "instance %s should have ColdFrontEnabled", inst.InstanceID)
+		}
+	})
+
+	t.Run("no lakekeeper service leaves the flag unset", func(t *testing.T) {
+		s := baseSpec([]*database.ServiceSpec{{ServiceID: "m", ServiceType: "mcp"}})
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		assert.False(t, nodes[0].Instances[0].ColdFrontEnabled)
+	})
+
+	t.Run("no services at all leaves the flag unset", func(t *testing.T) {
+		s := baseSpec(nil)
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		assert.False(t, nodes[0].Instances[0].ColdFrontEnabled)
+	})
+}

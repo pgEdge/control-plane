@@ -2,7 +2,53 @@ package postgres
 
 import (
 	"math"
+	"strings"
 )
+
+// coldFrontDuckDBExtensionDir is where the pgedge-coldfront-duckdb-extensions
+// package installs the patched DuckDB iceberg extensions. CP points pg_duckdb at
+// it via a GUC rather than a $PGDATA copy. Hardcoding the package path mirrors
+// how CP hardcodes the /usr/bin path for the tiering binaries (finding #15).
+const coldFrontDuckDBExtensionDir = "/usr/lib/pgedge/coldfront/duckdb-extensions"
+
+// ColdFrontDuckDBGUCs returns the static duckdb.* GUCs a ColdFront data node
+// needs (finding #6a). They are boot-time settings: extension_directory is read
+// at server start. autoinstall_known_extensions MUST be false — if true, DuckDB
+// silently downloads the UNPATCHED upstream iceberg extension, which 409s under
+// concurrent cold writes. These values are correctness-critical and set by CP so
+// no consumer or image can get them wrong.
+func ColdFrontDuckDBGUCs() map[string]any {
+	return map[string]any{
+		"duckdb.extension_directory":          coldFrontDuckDBExtensionDir,
+		"duckdb.allow_unsigned_extensions":    "true",
+		"duckdb.autoinstall_known_extensions": "false",
+	}
+}
+
+// AppendSharedPreloadLibraries appends libraries to a comma-separated
+// shared_preload_libraries value, preserving the existing entries and order and
+// skipping any that are already present. Dedup keeps reconciles stable: the same
+// desired set yields the same string, so an idempotent re-apply does not look
+// like a change and does not trigger a restart. Entry whitespace is trimmed.
+func AppendSharedPreloadLibraries(current string, add ...string) string {
+	var libs []string
+	seen := map[string]bool{}
+	appendLib := func(lib string) {
+		lib = strings.TrimSpace(lib)
+		if lib == "" || seen[lib] {
+			return
+		}
+		seen[lib] = true
+		libs = append(libs, lib)
+	}
+	for lib := range strings.SplitSeq(current, ",") {
+		appendLib(lib)
+	}
+	for _, lib := range add {
+		appendLib(lib)
+	}
+	return strings.Join(libs, ",")
+}
 
 func DefaultGUCs() map[string]any {
 	return map[string]any{

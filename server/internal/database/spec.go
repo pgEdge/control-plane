@@ -586,6 +586,11 @@ type InstanceSpec struct {
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	InPlaceRestore   bool              `json:"in_place_restore,omitempty"`
 	AllHostIDs       []string          `json:"all_host_ids"` // All host IDs in the database
+	// ColdFrontEnabled is set when the database has a lakekeeper (ColdFront)
+	// service. It makes the instance's postgresql.conf load the coldfront /
+	// pg_duckdb stack (shared_preload_libraries + the duckdb.* GUCs), which the
+	// extension requires at server start (findings #6a/#6b).
+	ColdFrontEnabled bool `json:"coldfront_enabled,omitempty"`
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
@@ -641,6 +646,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		NodeSize:         s.NodeSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
 		AllHostIDs:       slices.Clone(s.AllHostIDs),
+		ColdFrontEnabled: s.ColdFrontEnabled,
 	}
 }
 
@@ -689,6 +695,13 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	} else if ownerCount > 1 {
 		return nil, fmt.Errorf("only one user can have db_owner=true, got %d", len(owners))
 	}
+
+	// A lakekeeper (ColdFront) service makes every instance load the coldfront /
+	// pg_duckdb stack at boot. Computed once here where the service list is in
+	// scope; carried on each InstanceSpec down to the Patroni config generator.
+	hasColdFront := slices.ContainsFunc(s.Services, func(svc *ServiceSpec) bool {
+		return svc.ServiceType == "lakekeeper"
+	})
 
 	clusterSize := len(s.Nodes)
 	nodes := make([]*NodeInstances, clusterSize)
@@ -743,6 +756,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				NodeSize:         nodeSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
 				AllHostIDs:       allHostIDs,
+				ColdFrontEnabled: hasColdFront,
 			}
 		}
 
