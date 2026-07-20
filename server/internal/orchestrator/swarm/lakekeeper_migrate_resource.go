@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/docker"
@@ -52,6 +53,10 @@ type LakekeeperMigrateResource struct {
 	Image             string `json:"image"`
 	CatalogDBURL      string `json:"catalog_db_url"`
 	PGEncryptionKey   string `json:"pg_encryption_key"`
+	// DatabaseNetworkName is the per-database overlay the one-shot migrate
+	// container joins so it can resolve the postgres-<instanceID> alias in
+	// CatalogDBURL. The overlay is created attachable for this reason.
+	DatabaseNetworkName string `json:"database_network_name"`
 	// CatalogDBManaged marks the catalog database as control-plane
 	// managed (spec key catalog_db_create): migration must wait for the
 	// LakekeeperCatalogDBResource to create it.
@@ -142,6 +147,20 @@ func (r *LakekeeperMigrateResource) runMigrate(ctx context.Context, rc *resource
 	// creating a new one, so the name does not conflict.
 	_ = client.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true})
 
+	// In managed-catalog mode the catalog Postgres is only reachable via the
+	// per-database overlay (its DSN host is the postgres-<instanceID> alias), so
+	// the one-shot migrate container must join that (attachable) overlay. In
+	// external-catalog mode the container keeps default networking so it can
+	// reach an arbitrary external host.
+	var netCfg *network.NetworkingConfig
+	if r.CatalogDBManaged && r.DatabaseNetworkName != "" {
+		netCfg = &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				r.DatabaseNetworkName: {},
+			},
+		}
+	}
+
 	containerID, err := client.ContainerRun(ctx, docker.ContainerRunOptions{
 		Config: &container.Config{
 			Image: r.Image,
@@ -157,6 +176,7 @@ func (r *LakekeeperMigrateResource) runMigrate(ctx context.Context, rc *resource
 			// failure before the container is cleaned up.
 			AutoRemove: false,
 		},
+		Net:  netCfg,
 		Name: containerName,
 	})
 	if err != nil {

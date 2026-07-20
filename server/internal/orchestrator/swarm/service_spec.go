@@ -250,7 +250,10 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		// so they will be non-empty here during normal operation.
 		catalogDBURL, _ := opts.ServiceSpec.Config["catalog_db_url"].(string)
 		pgEncryptionKey, _ := opts.ServiceSpec.Config["pg_encryption_key"].(string)
-		command = []string{"serve"}
+		// The lakekeeper image ENTRYPOINT is the lakekeeper binary itself, so
+		// "serve" must be an ARG appended to it (Swarm ContainerSpec.Command
+		// would REPLACE the entrypoint → exec "serve" not found).
+		args = []string{"serve"}
 		env = []string{
 			"LAKEKEEPER__PG_DATABASE_URL_READ=" + catalogDBURL,
 			"LAKEKEEPER__PG_DATABASE_URL_WRITE=" + catalogDBURL,
@@ -258,7 +261,10 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 			fmt.Sprintf("LAKEKEEPER__LISTEN_PORT=%d", lakekeeperListenPort),
 		}
 		healthcheck = &container.HealthConfig{
-			Test:        []string{"CMD", "healthcheck"},
+			// "healthcheck" is a SUBCOMMAND of the lakekeeper binary, not a
+			// standalone executable, and the image is distroless (no shell), so
+			// the healthcheck must invoke the binary by its absolute path.
+			Test:        []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"},
 			StartPeriod: serviceHealthCheckStartPeriod,
 			Interval:    serviceHealthCheckInterval,
 			Timeout:     serviceHealthCheckTimeout,

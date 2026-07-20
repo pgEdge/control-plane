@@ -82,6 +82,53 @@ func TestGenerateLakekeeperInstanceResources_TieringSchedules(t *testing.T) {
 	}
 }
 
+// TestGenerateLakekeeperInstanceResources_MigrateAttachesOverlay verifies that
+// the per-database overlay is created attachable and the one-shot migrate
+// resource carries that overlay's name, so the migrate container can join the
+// overlay and resolve the postgres-<instanceID> catalog host in catalog_db_url.
+func TestGenerateLakekeeperInstanceResources_MigrateAttachesOverlay(t *testing.T) {
+	o := newLakekeeperTestOrchestrator(t)
+	spec := makeLakekeeperSpecWithStorage()
+
+	result, err := o.generateLakekeeperInstanceResources(spec)
+	if err != nil {
+		t.Fatalf("generateLakekeeperInstanceResources() unexpected error: %v", err)
+	}
+
+	const wantNet = "db-1-database"
+	var foundNet, foundMigrate bool
+	for _, rd := range result.Resources {
+		switch rd.Identifier.Type {
+		case ResourceTypeNetwork:
+			net, decErr := resource.ToResource[*Network](rd)
+			if decErr != nil {
+				t.Fatalf("decode Network: %v", decErr)
+			}
+			if net.Name == wantNet {
+				foundNet = true
+				if !net.Attachable {
+					t.Errorf("database overlay %q must be attachable for the migrate one-shot", wantNet)
+				}
+			}
+		case ResourceTypeLakekeeperMigrate:
+			mig, decErr := resource.ToResource[*LakekeeperMigrateResource](rd)
+			if decErr != nil {
+				t.Fatalf("decode LakekeeperMigrateResource: %v", decErr)
+			}
+			foundMigrate = true
+			if mig.DatabaseNetworkName != wantNet {
+				t.Errorf("migrate DatabaseNetworkName = %q, want %q", mig.DatabaseNetworkName, wantNet)
+			}
+		}
+	}
+	if !foundNet {
+		t.Error("database network resource not found in generated graph")
+	}
+	if !foundMigrate {
+		t.Error("lakekeeper migrate resource not found in generated graph")
+	}
+}
+
 // TestGenerateLakekeeperInstanceResources_TieringSchedules_NoStorage verifies
 // that when no storage config is present (provider absent), no tiering
 // schedule resources are generated rather than returning an error.

@@ -666,10 +666,12 @@ func TestServiceContainerSpec_Lakekeeper_Command(t *testing.T) {
 	spec, err := ServiceContainerSpec(makeLakekeeperSpecOpts())
 	require.NoError(t, err)
 
+	// The lakekeeper image ENTRYPOINT is the lakekeeper binary, so "serve" must
+	// be an Arg appended to it, NOT a Command — a Swarm ContainerSpec.Command
+	// REPLACES the entrypoint, which would try to exec "serve" (not found).
 	cs := spec.TaskTemplate.ContainerSpec
-	if len(cs.Command) != 1 || cs.Command[0] != "serve" {
-		t.Errorf("Command = %v, want [\"serve\"]", cs.Command)
-	}
+	assert.Empty(t, cs.Command, "Command must be empty so the image entrypoint (lakekeeper binary) is used")
+	assert.Equal(t, []string{"serve"}, cs.Args)
 }
 
 func TestServiceContainerSpec_Lakekeeper_EnvVars(t *testing.T) {
@@ -699,7 +701,9 @@ func TestServiceContainerSpec_Lakekeeper_Healthcheck(t *testing.T) {
 
 	hc := spec.TaskTemplate.ContainerSpec.Healthcheck
 	require.NotNil(t, hc, "healthcheck must be set for lakekeeper")
-	require.Contains(t, hc.Test, "healthcheck")
+	// "healthcheck" is a subcommand of the (distroless) lakekeeper binary, so it
+	// must be invoked by absolute path — not exec'd as a standalone "healthcheck".
+	assert.Equal(t, []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"}, hc.Test)
 }
 
 func TestServiceContainerSpec_Lakekeeper_Port8181(t *testing.T) {

@@ -379,10 +379,11 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 	// instance will output this same network. They'll get deduplicated when we
 	// add them to the state.
 	databaseNetwork := &Network{
-		Scope:     "swarm",
-		Driver:    OverlayDriver,
-		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator: o.dbNetworkAllocator,
+		Scope:      "swarm",
+		Driver:     OverlayDriver,
+		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator:  o.dbNetworkAllocator,
+		Attachable: true,
 	}
 
 	// directory resources
@@ -657,10 +658,11 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 
 	// Database network (shared with postgres instances)
 	databaseNetwork := &Network{
-		Scope:     "swarm",
-		Driver:    OverlayDriver,
-		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator: o.dbNetworkAllocator,
+		Scope:      "swarm",
+		Driver:     OverlayDriver,
+		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator:  o.dbNetworkAllocator,
+		Attachable: true,
 	}
 
 	// Service data directory resource (host-side bind mount directory)
@@ -917,10 +919,11 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 
 	// Database network (shared with Postgres instances).
 	databaseNetwork := &Network{
-		Scope:     "swarm",
-		Driver:    OverlayDriver,
-		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator: o.dbNetworkAllocator,
+		Scope:      "swarm",
+		Driver:     OverlayDriver,
+		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator:  o.dbNetworkAllocator,
+		Attachable: true,
 	}
 
 	// Service data directory (host-side bind mount). Lakekeeper runs as root
@@ -947,12 +950,13 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 	// "serve" container starts (enforced via ServiceInstanceSpecResource
 	// dependencies for lakekeeper).
 	lakekeeperMigrateRes := &LakekeeperMigrateResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		HostID:            spec.HostID,
-		Image:             serviceImage.Tag,
-		CatalogDBURL:      catalogDBURL,
-		PGEncryptionKey:   pgEncryptionKey,
-		CatalogDBManaged:  catalogDBCreate,
+		ServiceInstanceID:   spec.ServiceInstanceID,
+		HostID:              spec.HostID,
+		Image:               serviceImage.Tag,
+		CatalogDBURL:        catalogDBURL,
+		PGEncryptionKey:     pgEncryptionKey,
+		CatalogDBManaged:    catalogDBCreate,
+		DatabaseNetworkName: fmt.Sprintf("%s-database", spec.DatabaseID),
 	}
 
 	// Service instance spec resource — holds the computed Docker Swarm service spec.
@@ -1131,10 +1135,11 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 
 	// Database network (shared with postgres instances).
 	databaseNetwork := &Network{
-		Scope:     "swarm",
-		Driver:    OverlayDriver,
-		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator: o.dbNetworkAllocator,
+		Scope:      "swarm",
+		Driver:     OverlayDriver,
+		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator:  o.dbNetworkAllocator,
+		Attachable: true,
 	}
 
 	orchestratorResources := []resource.Resource{databaseNetwork}

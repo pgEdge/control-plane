@@ -37,6 +37,20 @@ type Network struct {
 	NetworkID string       `json:"network_id"`
 	Subnet    netip.Prefix `json:"subnet"`
 	Gateway   netip.Addr   `json:"gateway"`
+	// Attachable allows standalone (non-service) containers to join this
+	// overlay network. Required for one-shot containers (e.g. the lakekeeper
+	// migrate container) that must resolve the postgres-<instanceID> overlay
+	// alias.
+	//
+	// NOTE: this is applied at CREATE only. Docker cannot toggle Attachable on
+	// an existing network, and Refresh does not read the live value back, so a
+	// network that already exists as non-attachable will NOT be reconciled to
+	// attachable — the lakekeeper migrate step would still fail for a database
+	// whose overlay predates this field (e.g. adding a catalog_db_create
+	// lakekeeper service to a pre-existing database). Handling that case
+	// (recreate-on-mismatch or a loud error) is tracked with the #11
+	// permanent-form decision (attachable overlay vs. migrate-as-swarm-service).
+	Attachable bool `json:"attachable"`
 }
 
 func (n *Network) ResourceVersion() string {
@@ -136,8 +150,9 @@ func (n *Network) Create(ctx context.Context, rc *resource.Context) error {
 	}
 	gateway := subnet.Addr().Next()
 	networkID, err := client.NetworkCreate(ctx, n.Name, network.CreateOptions{
-		Scope:  n.Scope,
-		Driver: n.Driver,
+		Scope:      n.Scope,
+		Driver:     n.Driver,
+		Attachable: n.Attachable,
 		IPAM: &network.IPAM{
 			Config: []network.IPAMConfig{
 				{
