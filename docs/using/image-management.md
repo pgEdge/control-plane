@@ -26,7 +26,7 @@ unreachable. The resolution order for the default and custom URL modes is:
 For air-gapped deployments, `docker_swarm.manifest_path` provides a fourth
 mode: the Control Plane reads a local file and skips all remote fetching.
 See the [Configuration Reference](../installation/configuration.md) and
-[Installing the Control Plane](../installation/installation.md) for details.
+[Installing the Control Plane](../installation/swarm-installation.md) for details.
 
 The Control Plane logs a warning when falling back to the cache or embedded
 manifest. With the default manifest URL, startup always succeeds because the

@@ -178,7 +178,7 @@ As an alternative to using the zero downtime add node approach, you can also [cr
 ## Image Upgrades
 
 The Control Plane tracks available image upgrades - Postgres minor version
-bumps, Spock version bumps, and build number changes - using the
+bumps within the same major and Spock major version bucket - using the
 [version manifest](./image-management.md). You can check for available upgrades
 and apply them without changing the Postgres major version.
 
@@ -208,8 +208,9 @@ The response includes an `available_upgrades` array:
 }
 ```
 
-An empty `available_upgrades` array means your database is already running the
-latest stable image in its version bucket.
+When no upgrades are available, the `available_upgrades` field is omitted from
+the response. This means your database is already running the latest stable
+image in its version bucket.
 
 ### Applying an Image Upgrade
 
