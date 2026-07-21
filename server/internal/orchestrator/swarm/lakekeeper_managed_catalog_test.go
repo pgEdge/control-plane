@@ -72,39 +72,13 @@ func TestGenerateLakekeeperInstanceResources_ManagedCatalog(t *testing.T) {
 		t.Errorf("CatalogDBOwner = %q, want %q", catalogRes.CatalogDBOwner, spec.ConnectAsUsername)
 	}
 
-	// The migrate resource must carry the built URL and CatalogDBManaged=true,
-	// and its Dependencies() must include the catalog resource identifier.
-	migrateRD := findResourceByType(result.Resources, ResourceTypeLakekeeperMigrate)
-	if migrateRD == nil {
-		t.Fatal("resource graph missing LakekeeperMigrateResource")
-	}
-	migrateRes, err := resource.ToResource[*LakekeeperMigrateResource](migrateRD)
-	if err != nil {
-		t.Fatalf("failed to decode LakekeeperMigrateResource: %v", err)
-	}
-	if migrateRes.CatalogDBURL != wantCatalogDBURL {
-		t.Errorf("CatalogDBURL = %q, want %q", migrateRes.CatalogDBURL, wantCatalogDBURL)
-	}
-	if !migrateRes.CatalogDBManaged {
-		t.Error("CatalogDBManaged = false, want true")
-	}
-
-	catalogID := LakekeeperCatalogDBResourceIdentifier(spec.ServiceInstanceID)
-	foundDep := false
-	for _, d := range migrateRes.Dependencies() {
-		if d == catalogID {
-			foundDep = true
-			break
-		}
-	}
-	if !foundDep {
-		t.Errorf("migrate resource Dependencies() missing catalog identifier %v; got: %v",
-			catalogID, migrateRes.Dependencies())
-	}
-
-	// The ServiceInstanceSpecResource's config copy must carry the built
-	// catalog_db_url too, proving the serve container env gets the derived
-	// URL (not the caller-supplied one, since there wasn't one).
+	// serve self-migrates on first start (MIGRATE_BEFORE_SERVE); the standalone
+	// migrate resource has been removed. The serve ServiceInstanceSpecResource
+	// must instead depend on the catalog DB resource so serve's in-process
+	// migration only runs after control-plane has created the catalog database.
+	// Its config copy must also carry the built catalog_db_url, proving the
+	// serve container env gets the derived URL (not the caller-supplied one,
+	// since there wasn't one).
 	specRD := findResourceByType(result.Resources, ResourceTypeServiceInstanceSpec)
 	if specRD == nil {
 		t.Fatal("resource graph missing ServiceInstanceSpecResource")
@@ -113,6 +87,20 @@ func TestGenerateLakekeeperInstanceResources_ManagedCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to decode ServiceInstanceSpecResource: %v", err)
 	}
+
+	catalogID := LakekeeperCatalogDBResourceIdentifier(spec.ServiceInstanceID)
+	foundDep := false
+	for _, d := range specRes.Dependencies() {
+		if d == catalogID {
+			foundDep = true
+			break
+		}
+	}
+	if !foundDep {
+		t.Errorf("serve ServiceInstanceSpecResource.Dependencies() missing catalog identifier %v; got: %v",
+			catalogID, specRes.Dependencies())
+	}
+
 	gotURL, _ := specRes.ServiceSpec.Config["catalog_db_url"].(string)
 	if gotURL != wantCatalogDBURL {
 		t.Errorf("ServiceInstanceSpecResource.ServiceSpec.Config[catalog_db_url] = %q, want %q",
@@ -169,26 +157,6 @@ func TestGenerateLakekeeperInstanceResources_ExternalCatalogRegression(t *testin
 		t.Errorf("resource graph should not contain a LakekeeperCatalogDBResource in external mode; got: %+v", rd)
 	}
 
-	migrateRD := findResourceByType(result.Resources, ResourceTypeLakekeeperMigrate)
-	if migrateRD == nil {
-		t.Fatal("resource graph missing LakekeeperMigrateResource")
-	}
-	migrateRes, err := resource.ToResource[*LakekeeperMigrateResource](migrateRD)
-	if err != nil {
-		t.Fatalf("failed to decode LakekeeperMigrateResource: %v", err)
-	}
-	if migrateRes.CatalogDBManaged {
-		t.Error("CatalogDBManaged = true, want false in external mode")
-	}
-	if deps := migrateRes.Dependencies(); len(deps) != 0 {
-		t.Errorf("migrate resource Dependencies() = %v, want empty in external mode", deps)
-	}
-	// Positive assertion: the caller-supplied URL must pass through unchanged
-	// (control-plane builds nothing in external mode), both to the migrate
-	// resource and to the serve container's config.
-	if migrateRes.CatalogDBURL != externalURL {
-		t.Errorf("migrate CatalogDBURL = %q, want caller URL %q", migrateRes.CatalogDBURL, externalURL)
-	}
 	specRD := findResourceByType(result.Resources, ResourceTypeServiceInstanceSpec)
 	if specRD == nil {
 		t.Fatal("resource graph missing ServiceInstanceSpecResource")
@@ -197,6 +165,21 @@ func TestGenerateLakekeeperInstanceResources_ExternalCatalogRegression(t *testin
 	if err != nil {
 		t.Fatalf("failed to decode ServiceInstanceSpecResource: %v", err)
 	}
+
+	// In external mode there is no control-plane-managed catalog DB resource, so
+	// the serve spec must NOT depend on one (the catalog URL is validated at spec
+	// time). A stray catalog dependency here would be unsatisfiable.
+	catalogID := LakekeeperCatalogDBResourceIdentifier(spec.ServiceInstanceID)
+	for _, d := range specRes.Dependencies() {
+		if d == catalogID {
+			t.Errorf("serve ServiceInstanceSpecResource.Dependencies() must not include catalog identifier %v in external mode; got: %v",
+				catalogID, specRes.Dependencies())
+		}
+	}
+
+	// Positive assertion: the caller-supplied URL must pass through unchanged
+	// (control-plane builds nothing in external mode) to the serve container's
+	// config.
 	if got, _ := specRes.ServiceSpec.Config["catalog_db_url"].(string); got != externalURL {
 		t.Errorf("ServiceInstanceSpecResource config catalog_db_url = %q, want caller URL %q", got, externalURL)
 	}

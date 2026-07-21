@@ -64,8 +64,9 @@ func LakekeeperCatalogDBResourceIdentifier(serviceInstanceID string) resource.Id
 // LakekeeperCatalogDBResource creates the Postgres database that backs
 // the Lakekeeper catalog when the spec sets catalog_db_create. It runs
 // idempotently against the node's primary (PrimaryExecutor) after the
-// main database is available, and before the Lakekeeper migrate step
-// (enforced via LakekeeperMigrateResource.Dependencies).
+// main database is available, and before the Lakekeeper serve container
+// runs its in-process schema migration (enforced via the serve
+// ServiceInstanceSpecResource's dependency on this resource in managed mode).
 //
 // Delete is a deliberate no-op: the catalog maps every Iceberg table's
 // cold data — dropping it makes the cold data unreadable. The database
@@ -188,8 +189,8 @@ func catalogDBExtensions() []string {
 }
 
 // ensureCatalogDBStatements returns the idempotent statement sequence:
-// create-if-absent, then align ownership so the Lakekeeper migrate step
-// (which connects as the owner) can create its schema.
+// create-if-absent, then align ownership so the Lakekeeper serve container's
+// in-process migration (which connects as the owner) can create its schema.
 func ensureCatalogDBStatements(dbName, owner string) []postgres.IStatement {
 	return []postgres.IStatement{
 		postgres.CreateDatabase(dbName),

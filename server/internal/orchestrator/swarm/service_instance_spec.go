@@ -82,13 +82,16 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 			RAGServiceKeysResourceIdentifier(s.ServiceInstanceID),
 		)
 	case "lakekeeper":
-		deps = append(deps,
-			LakekeeperConfigResourceIdentifier(s.ServiceInstanceID),
-			// The migrate resource must complete before the serve container
-			// starts, so that the catalog schema exists before Lakekeeper
-			// attempts to use it.
-			LakekeeperMigrateResourceIdentifier(s.ServiceInstanceID),
-		)
+		deps = append(deps, LakekeeperConfigResourceIdentifier(s.ServiceInstanceID))
+		// serve migrates the catalog schema in-process on first start
+		// (MIGRATE_BEFORE_SERVE), so when control-plane manages the catalog
+		// database the serve container must not start until that database
+		// exists. In external-catalog mode there is no such resource — the URL
+		// is validated at spec time — so no dependency is added (a dependency on
+		// a resource absent from the graph would be unsatisfiable).
+		if managed, _ := s.ServiceSpec.Config["catalog_db_create"].(bool); managed {
+			deps = append(deps, LakekeeperCatalogDBResourceIdentifier(s.ServiceInstanceID))
+		}
 	default:
 		log.Warn().Str("service_type", s.ServiceSpec.ServiceType).Msg("unknown service type in dependencies")
 	}

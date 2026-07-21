@@ -217,9 +217,11 @@ func TestGenerateLakekeeperInstanceResources_MultiNodeRejected(t *testing.T) {
 	})
 }
 
-// TestGenerateLakekeeperInstanceResources_ResourceGraph verifies that the
-// generated resource graph includes a migrate resource and that the
-// ServiceInstanceSpec resource depends on it (ordering guarantee).
+// TestGenerateLakekeeperInstanceResources_ResourceGraph verifies that, in
+// external-catalog mode, the generated graph contains no standalone migrate
+// resource (serve self-migrates via MIGRATE_BEFORE_SERVE) and the serve
+// ServiceInstanceSpec depends only on the database network and the lakekeeper
+// config resource — no migrate, no managed catalog DB.
 func TestGenerateLakekeeperInstanceResources_ResourceGraph(t *testing.T) {
 	o := newLakekeeperTestOrchestrator(t)
 
@@ -233,32 +235,7 @@ func TestGenerateLakekeeperInstanceResources_ResourceGraph(t *testing.T) {
 		t.Fatalf("generateLakekeeperInstanceResources() unexpected error: %v", err)
 	}
 
-	// Collect resource identifiers from the generated graph.
-	var resourceTypes []string
-	for _, rd := range result.Resources {
-		resourceTypes = append(resourceTypes, string(rd.Identifier.Type))
-	}
-
-	// The migrate resource must be present.
-	migrateType := string(ResourceTypeLakekeeperMigrate)
-	found := false
-	for _, rt := range resourceTypes {
-		if rt == migrateType {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("resource graph missing %q; got: %v", migrateType, resourceTypes)
-	}
-
-	// The ServiceInstanceSpec must declare the migrate resource as a dependency
-	// (enforcing migrate-before-serve ordering).
-	migrateID := LakekeeperMigrateResourceIdentifier(spec.ServiceInstanceID)
 	specID := ServiceInstanceSpecResourceIdentifier(spec.ServiceInstanceID)
-
-	// Decode the ServiceInstanceSpecResource from the resource data so we can
-	// inspect its Dependencies().
 	var specRD *resource.ResourceData
 	for _, rd := range result.Resources {
 		if rd.Identifier == specID {
@@ -267,30 +244,24 @@ func TestGenerateLakekeeperInstanceResources_ResourceGraph(t *testing.T) {
 		}
 	}
 	if specRD == nil {
-		t.Fatalf("ServiceInstanceSpecResource not found in resource graph; got: %v", resourceTypes)
+		t.Fatal("ServiceInstanceSpecResource not found in resource graph")
 	}
-
 	specRes, err := resource.ToResource[*ServiceInstanceSpecResource](specRD)
 	if err != nil {
 		t.Fatalf("failed to decode ServiceInstanceSpecResource: %v", err)
 	}
 
+	want := map[resource.Identifier]bool{
+		NetworkResourceIdentifier(specRes.DatabaseNetworkID):       true,
+		LakekeeperConfigResourceIdentifier(spec.ServiceInstanceID): true,
+	}
 	deps := specRes.Dependencies()
-	depIDs := make([]string, len(deps))
-	for i, d := range deps {
-		depIDs[i] = fmt.Sprintf("%s/%s", d.Type, d.ID)
+	if len(deps) != len(want) {
+		t.Errorf("serve Dependencies() = %v, want exactly %v", deps, want)
 	}
-
-	migrateIDStr := fmt.Sprintf("%s/%s", migrateID.Type, migrateID.ID)
-	foundDep := false
-	for _, d := range depIDs {
-		if d == migrateIDStr {
-			foundDep = true
-			break
+	for _, d := range deps {
+		if !want[d] {
+			t.Errorf("serve Dependencies() contains unexpected %v; want only %v", d, want)
 		}
-	}
-	if !foundDep {
-		t.Errorf("ServiceInstanceSpecResource.Dependencies() missing migrate resource %q; got: %v",
-			migrateIDStr, depIDs)
 	}
 }

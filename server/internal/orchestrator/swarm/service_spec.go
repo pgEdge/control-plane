@@ -35,6 +35,16 @@ const (
 	serviceHealthCheckRetries     = 3
 )
 
+// lakekeeperHealthCheckStartPeriod is a longer start grace used only for the
+// Lakekeeper serve container. With LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE=true,
+// serve runs the catalog schema migration in-process before it binds its HTTP
+// listener, so on a first deploy the health check must tolerate that migration
+// time without marking the task unhealthy and triggering a restart loop. This
+// only extends the grace before a failing check counts; serve still becomes
+// healthy the instant its first check passes, and WaitForService's overall
+// 5-minute budget still bounds a genuinely stuck serve.
+const lakekeeperHealthCheckStartPeriod = 2 * time.Minute
+
 func buildPostgRESTEnvVars() []string {
 	// Connection details (hosts, credentials) are embedded in the db-uri inside
 	// postgrest.conf by PostgRESTConfigResource — they must not appear as env vars.
@@ -259,13 +269,21 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 			"LAKEKEEPER__PG_DATABASE_URL_WRITE=" + catalogDBURL,
 			"LAKEKEEPER__PG_ENCRYPTION_KEY=" + pgEncryptionKey,
 			fmt.Sprintf("LAKEKEEPER__LISTEN_PORT=%d", lakekeeperListenPort),
+			// Migrate the Iceberg catalog schema in-process on startup rather than
+			// via a separate one-shot container. serve runs the migration, then
+			// begins serving — so nothing else needs to join the database overlay
+			// and the overlay no longer has to be attachable.
+			"LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE=true",
 		}
 		healthcheck = &container.HealthConfig{
 			// "healthcheck" is a SUBCOMMAND of the lakekeeper binary, not a
 			// standalone executable, and the image is distroless (no shell), so
 			// the healthcheck must invoke the binary by its absolute path.
-			Test:        []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"},
-			StartPeriod: serviceHealthCheckStartPeriod,
+			Test: []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"},
+			// serve runs the catalog migration in-process before it binds its
+			// listener (MIGRATE_BEFORE_SERVE), so it needs a longer start grace
+			// than the other services to avoid being marked unhealthy mid-migration.
+			StartPeriod: lakekeeperHealthCheckStartPeriod,
 			Interval:    serviceHealthCheckInterval,
 			Timeout:     serviceHealthCheckTimeout,
 			Retries:     serviceHealthCheckRetries,

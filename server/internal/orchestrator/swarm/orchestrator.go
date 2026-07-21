@@ -379,11 +379,10 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 	// instance will output this same network. They'll get deduplicated when we
 	// add them to the state.
 	databaseNetwork := &Network{
-		Scope:      "swarm",
-		Driver:     OverlayDriver,
-		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator:  o.dbNetworkAllocator,
-		Attachable: true,
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
 	}
 
 	// directory resources
@@ -658,11 +657,10 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 
 	// Database network (shared with postgres instances)
 	databaseNetwork := &Network{
-		Scope:      "swarm",
-		Driver:     OverlayDriver,
-		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator:  o.dbNetworkAllocator,
-		Attachable: true,
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
 	}
 
 	// Service data directory resource (host-side bind mount directory)
@@ -919,11 +917,10 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 
 	// Database network (shared with Postgres instances).
 	databaseNetwork := &Network{
-		Scope:      "swarm",
-		Driver:     OverlayDriver,
-		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator:  o.dbNetworkAllocator,
-		Attachable: true,
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
 	}
 
 	// Service data directory (host-side bind mount). Lakekeeper runs as root
@@ -944,20 +941,11 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		DirResourceID:     dataDirID,
 	}
 
-	// Migrate resource — runs the Lakekeeper image with the "migrate"
-	// subcommand as a one-shot Docker container to apply the Iceberg catalog
-	// schema to the external catalog Postgres. Must complete before the
-	// "serve" container starts (enforced via ServiceInstanceSpecResource
-	// dependencies for lakekeeper).
-	lakekeeperMigrateRes := &LakekeeperMigrateResource{
-		ServiceInstanceID:   spec.ServiceInstanceID,
-		HostID:              spec.HostID,
-		Image:               serviceImage.Tag,
-		CatalogDBURL:        catalogDBURL,
-		PGEncryptionKey:     pgEncryptionKey,
-		CatalogDBManaged:    catalogDBCreate,
-		DatabaseNetworkName: fmt.Sprintf("%s-database", spec.DatabaseID),
-	}
+	// The Iceberg catalog schema migration runs in-process in the serve
+	// container (LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE, set in
+	// ServiceContainerSpec), so there is no separate migrate resource. In
+	// managed-catalog mode the serve ServiceInstanceSpecResource depends on the
+	// catalog DB resource so serve only starts after the catalog database exists.
 
 	// Service instance spec resource — holds the computed Docker Swarm service spec.
 	serviceName := ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
@@ -1043,7 +1031,6 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		orchestratorResources = append(orchestratorResources, lakekeeperCatalogDBRes)
 	}
 	orchestratorResources = append(orchestratorResources,
-		lakekeeperMigrateRes,
 		serviceInstanceSpec,
 		serviceInstance,
 		lakekeeperBootstrapRes,
@@ -1160,11 +1147,10 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 
 	// Database network (shared with postgres instances).
 	databaseNetwork := &Network{
-		Scope:      "swarm",
-		Driver:     OverlayDriver,
-		Name:       fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator:  o.dbNetworkAllocator,
-		Attachable: true,
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
 	}
 
 	orchestratorResources := []resource.Resource{databaseNetwork}

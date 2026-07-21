@@ -36,9 +36,9 @@ func LakekeeperConfigResourceIdentifier(serviceInstanceID string) resource.Ident
 // Lakekeeper is configured entirely via environment variables (LAKEKEEPER__*),
 // so Create and Update are lightweight — they just write a sentinel file so
 // Refresh can confirm the resource has been applied. Schema migration against
-// the external catalog Postgres is handled by LakekeeperMigrateResource, which
-// runs the Lakekeeper image with the "migrate" subcommand before the "serve"
-// container starts.
+// the catalog Postgres is handled by the serve container itself, which runs it
+// in-process on startup (LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE, set in
+// ServiceContainerSpec) before it begins serving.
 type LakekeeperConfigResource struct {
 	ServiceInstanceID string `json:"service_instance_id"`
 	ServiceID         string `json:"service_id"`

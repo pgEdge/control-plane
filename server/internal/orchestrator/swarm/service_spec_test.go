@@ -693,6 +693,9 @@ func TestServiceContainerSpec_Lakekeeper_EnvVars(t *testing.T) {
 	assert.Equal(t, "postgres://lakekeeper:secret@pg-host1:5432/lakekeeper?sslmode=disable", envMap["LAKEKEEPER__PG_DATABASE_URL_READ"])
 	assert.Equal(t, "postgres://lakekeeper:secret@pg-host1:5432/lakekeeper?sslmode=disable", envMap["LAKEKEEPER__PG_DATABASE_URL_WRITE"])
 	assert.Equal(t, "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==", envMap["LAKEKEEPER__PG_ENCRYPTION_KEY"])
+	// serve migrates the catalog schema in-process on first start
+	// (MIGRATE_BEFORE_SERVE); there is no separate migrate container.
+	assert.Equal(t, "true", envMap["LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE"])
 }
 
 func TestServiceContainerSpec_Lakekeeper_Healthcheck(t *testing.T) {
@@ -704,6 +707,11 @@ func TestServiceContainerSpec_Lakekeeper_Healthcheck(t *testing.T) {
 	// "healthcheck" is a subcommand of the (distroless) lakekeeper binary, so it
 	// must be invoked by absolute path — not exec'd as a standalone "healthcheck".
 	assert.Equal(t, []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"}, hc.Test)
+	// serve runs the catalog migration in-process before it binds its listener
+	// (MIGRATE_BEFORE_SERVE), so it needs a longer start grace than the other
+	// services to avoid being marked unhealthy and restarted mid-migration.
+	assert.Equal(t, lakekeeperHealthCheckStartPeriod, hc.StartPeriod,
+		"lakekeeper serve needs a longer start period to absorb first-start migration")
 }
 
 func TestServiceContainerSpec_Lakekeeper_Port8181(t *testing.T) {
