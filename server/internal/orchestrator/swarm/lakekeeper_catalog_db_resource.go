@@ -176,11 +176,13 @@ func (r *LakekeeperCatalogDBResource) ensure(ctx context.Context, rc *resource.C
 	return nil
 }
 
-// catalogDBExtensions is the exact set of extensions Lakekeeper's v0.9.0
-// migrations require (CREATE EXTENSION IF NOT EXISTS). All four are TRUSTED on
-// stock PG13+, so the owner could install them itself; ensure pre-creates them
-// as the system user (belt-and-braces). This is the single source of truth for
-// both the ensure step and its test.
+// catalogDBExtensions is the set of extensions Lakekeeper's catalog migrations
+// require (CREATE EXTENSION IF NOT EXISTS). All four are TRUSTED on stock PG13+,
+// so the owner could install them itself; ensure pre-creates them as the system
+// user (belt-and-braces). Verified against v0.9.0; re-confirm on major Lakekeeper
+// bumps (0.13.1 only switched migration locking to the built-in
+// pg_advisory_xact_lock, so no new extension is expected — confirm in the
+// re-validation run). Single source of truth for both the ensure step and its test.
 func catalogDBExtensions() []string {
 	return []string{"uuid-ossp", "pgcrypto", "pg_trgm", "btree_gin"}
 }

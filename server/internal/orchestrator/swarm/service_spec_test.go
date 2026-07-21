@@ -656,7 +656,7 @@ func makeLakekeeperSpecOpts() *ServiceContainerSpecOptions {
 		ServiceName:       "db1-lakekeeper-host1",
 		Hostname:          "lakekeeper-host1",
 		CohortMemberID:    "node-123",
-		ServiceImage:      &ServiceImage{Tag: "quay.io/lakekeeper/catalog:v0.9.0"},
+		ServiceImage:      &ServiceImage{Tag: "quay.io/lakekeeper/catalog:v0.13.1"},
 		DatabaseNetworkID: "db1-database",
 		DataPath:          "/var/lib/pgedge/services/db1-lakekeeper-host1",
 	}

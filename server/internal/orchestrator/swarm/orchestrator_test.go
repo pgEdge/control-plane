@@ -131,7 +131,7 @@ func makeLakekeeperSpec(catalogDBURL, pgEncryptionKey string) *database.ServiceI
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "lakekeeper",
 			ServiceType: "lakekeeper",
-			Version:     "0.9.0",
+			Version:     "0.13.1",
 			Config:      cfg,
 		},
 		DatabaseID:   "db-1",

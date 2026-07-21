@@ -25,7 +25,7 @@ func makeLakekeeperSpecWithStorage() *database.ServiceInstanceSpec {
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "lakekeeper-svc",
 			ServiceType: "lakekeeper",
-			Version:     "0.9.0",
+			Version:     "0.13.1",
 			Config:      cfg,
 		},
 		DatabaseID:        "db-1",
