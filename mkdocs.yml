@@ -74,6 +74,7 @@ nav:
       - Connecting to a Database: using/connecting.md
       - Updating a Database: using/update-db.md
       - Upgrading a Database: using/upgrade-db.md
+      - Container Image Management: using/image-management.md
       - Backup & Restore: using/backup-restore.md
       - Tasks & Logs: using/tasks-logs.md
       - Read Replicas: using/read-replicas.md
