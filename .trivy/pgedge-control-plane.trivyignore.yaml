@@ -5,3 +5,11 @@ vulnerabilities:
     statement: "Docker daemon plugin privilege validation — not applicable, no Docker plugins used"
   - id: CVE-2025-54410
     statement: "Docker daemon firewalld bridge isolation — not applicable to Go client SDK"
+  - id: CVE-2026-41567
+    statement: "docker cp archive-decompression PATH hijack (moby/moby) — no fix available in the v27.x line used by github.com/docker/docker (fix requires v29.5.1 / moby/moby v2.0.0-beta.14, a breaking module-path change). Not applicable: this codebase never calls CopyToContainer/CopyFromContainer or any archive-upload API (verified via repo-wide grep for docker cp / archive endpoints) — only ServiceDeploy/ServiceScale/ServiceRemove/NetworkCreate/ContainerInspect are used. Risk accepted; revisit if a v27.x backport or a migration to moby/moby v2 lands."
+  - id: CVE-2026-42306
+    statement: "docker cp mount-redirect TOCTOU (moby/moby) — same unfixed v27.x dependency and same unused code path as CVE-2026-41567 (no CopyToContainer/CopyFromContainer/archive API usage anywhere in the repo). Risk accepted; revisit if a v27.x backport or a migration to moby/moby v2 lands."
+  - id: CVE-2026-41568
+    statement: "docker cp race-condition DoS (moby/moby) — same unfixed v27.x dependency and same unused code path as CVE-2026-41567/CVE-2026-42306 (no CopyToContainer/CopyFromContainer/archive API usage anywhere in the repo). Risk accepted; revisit if a v27.x backport or a migration to moby/moby v2 lands."
+  - id: GO-2026-5932
+    statement: "golang.org/x/crypto/openpgp is unmaintained/unsafe-by-design — not applicable, this codebase never imports x/crypto/openpgp (verified via repo-wide grep); x/crypto is used only for ssh/bcrypt/other subpackages."

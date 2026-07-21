@@ -474,8 +474,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ## github.com/containerd/containerd/pkg/userns
 
 * Name: github.com/containerd/containerd/pkg/userns
-* Version: v1.7.29
-* License: [Apache-2.0](https://github.com/containerd/containerd/blob/v1.7.29/LICENSE)
+* Version: v1.7.34
+* License: [Apache-2.0](https://github.com/containerd/containerd/blob/v1.7.34/LICENSE)
 
 ```
 
@@ -2549,8 +2549,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## github.com/go-chi/chi/v5
 
 * Name: github.com/go-chi/chi/v5
-* Version: v5.2.3
-* License: [MIT](https://github.com/go-chi/chi/blob/v5.2.3/LICENSE)
+* Version: v5.3.1
+* License: [MIT](https://github.com/go-chi/chi/blob/v5.3.1/LICENSE)
 
 ```
 Copyright (c) 2015-present Peter Kieltyka (https://github.com/pkieltyka), Google Inc.
@@ -4230,8 +4230,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ## github.com/jackc/pgx/v5
 
 * Name: github.com/jackc/pgx/v5
-* Version: v5.7.6
-* License: [MIT](https://github.com/jackc/pgx/blob/v5.7.6/LICENSE)
+* Version: v5.10.0
+* License: [MIT](https://github.com/jackc/pgx/blob/v5.10.0/LICENSE)
 
 ```
 Copyright (c) 2013-2021 Jack Christensen
@@ -12831,8 +12831,8 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ## go.opentelemetry.io/otel
 
 * Name: go.opentelemetry.io/otel
-* Version: v1.40.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.40.0/LICENSE)
+* Version: v1.44.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -13071,8 +13071,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel
 
 * Name: go.opentelemetry.io/otel
-* Version: v1.40.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/v1.40.0/LICENSE)
+* Version: v1.44.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -13312,7 +13312,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 * Name: go.opentelemetry.io/otel/exporters/otlp/otlptrace
 * Version: v1.34.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/v1.34.0/exporters/otlp/otlptrace/LICENSE)
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/v1.34.0/LICENSE)
 
 ```
                                  Apache License
@@ -13523,7 +13523,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 * Name: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
 * Version: v1.34.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/otlptracegrpc/v1.34.0/exporters/otlp/otlptrace/otlptracegrpc/LICENSE)
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/exporters/otlp/otlptrace/otlptracegrpc/v1.34.0/LICENSE)
 
 ```
                                  Apache License
@@ -13733,8 +13733,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/metric
 
 * Name: go.opentelemetry.io/otel/metric
-* Version: v1.40.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.40.0/metric/LICENSE)
+* Version: v1.44.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -13973,8 +13973,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/metric
 
 * Name: go.opentelemetry.io/otel/metric
-* Version: v1.40.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.40.0/metric/LICENSE)
+* Version: v1.44.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -14213,8 +14213,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/sdk
 
 * Name: go.opentelemetry.io/otel/sdk
-* Version: v1.40.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.40.0/sdk/LICENSE)
+* Version: v1.44.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -14453,8 +14453,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/sdk
 
 * Name: go.opentelemetry.io/otel/sdk
-* Version: v1.40.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.40.0/sdk/LICENSE)
+* Version: v1.44.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/sdk/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -14693,8 +14693,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/trace
 
 * Name: go.opentelemetry.io/otel/trace
-* Version: v1.40.0
-* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.40.0/trace/LICENSE)
+* Version: v1.44.0
+* License: [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -14933,8 +14933,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## go.opentelemetry.io/otel/trace
 
 * Name: go.opentelemetry.io/otel/trace
-* Version: v1.40.0
-* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.40.0/trace/LICENSE)
+* Version: v1.44.0
+* License: [BSD-3-Clause](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.44.0/LICENSE)
 
 ```
                                  Apache License
@@ -15502,8 +15502,8 @@ THE SOFTWARE.
 ## golang.org/x/crypto
 
 * Name: golang.org/x/crypto
-* Version: v0.46.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.46.0:LICENSE)
+* Version: v0.54.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.54.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15576,8 +15576,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/mod
 
 * Name: golang.org/x/mod
-* Version: v0.31.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.31.0:LICENSE)
+* Version: v0.37.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.37.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15613,8 +15613,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/net
 
 * Name: golang.org/x/net
-* Version: v0.48.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.48.0:LICENSE)
+* Version: v0.57.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.57.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15650,8 +15650,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/sync
 
 * Name: golang.org/x/sync
-* Version: v0.19.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.19.0:LICENSE)
+* Version: v0.22.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.22.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15687,8 +15687,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/sys/unix
 
 * Name: golang.org/x/sys/unix
-* Version: v0.40.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.40.0:LICENSE)
+* Version: v0.47.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.47.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15724,8 +15724,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/text
 
 * Name: golang.org/x/text
-* Version: v0.32.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.32.0:LICENSE)
+* Version: v0.40.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.40.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15798,8 +15798,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/tools
 
 * Name: golang.org/x/tools
-* Version: v0.40.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/tools/+/v0.40.0:LICENSE)
+* Version: v0.47.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/tools/+/v0.47.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
