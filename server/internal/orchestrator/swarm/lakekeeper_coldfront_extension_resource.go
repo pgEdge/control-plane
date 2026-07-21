@@ -33,9 +33,10 @@ func LakekeeperColdfrontExtensionResourceIdentifier(serviceInstanceID string) re
 // nothing created it.
 //
 // pg_duckdb is created explicitly before coldfront (see
-// coldfrontExtensionStatements — the packaged control file no longer declares it
-// as a CASCADE dependency). pg_duckdb must be present in shared_preload_libraries
-// for CREATE EXTENSION to succeed; the lakekeeper node config adds it (#6b),
+// coldfrontExtensionStatements) rather than relying on coldfront.control's
+// `requires`, so the step is robust to how the extension is packaged. pg_duckdb
+// must be present in shared_preload_libraries for CREATE EXTENSION to succeed;
+// the lakekeeper node config adds it (#6b),
 // applied at instance start. On a fresh deploy the instance boots with it
 // loaded; when a lakekeeper service is added to an existing database, the
 // restart that loads it is driven by the standard config-update path
@@ -130,13 +131,12 @@ func (r *LakekeeperColdfrontExtensionResource) ensure(ctx context.Context, rc *r
 
 // coldfrontExtensionStatements returns the idempotent statement sequence that
 // creates the ColdFront extension in the application database. pg_duckdb is
-// created explicitly first: the native-packages build (coldfront PR #44) dropped
-// `requires = 'pg_duckdb'` from coldfront.control, so CREATE EXTENSION coldfront
-// CASCADE no longer pulls pg_duckdb on the packaged image (it still does on main,
-// which is where the trial image came from — hence the trial masked this). The
-// explicit create is robust either way. CASCADE is kept as belt-and-braces for
-// any future control-file requirement. Both are IF NOT EXISTS for idempotency.
-// This is the single source of truth for both the ensure step and its test.
+// created explicitly first so this does not depend on coldfront.control declaring
+// a `requires = 'pg_duckdb'` — the extension needs pg_duckdb present regardless,
+// and creating it here is robust to how the extension is packaged. CASCADE is
+// kept on the coldfront statement as belt-and-braces for any control-file
+// requirement. Both are IF NOT EXISTS for idempotency. This is the single source
+// of truth for both the ensure step and its test.
 func coldfrontExtensionStatements() []postgres.IStatement {
 	return []postgres.IStatement{
 		postgres.Statement{SQL: "CREATE EXTENSION IF NOT EXISTS pg_duckdb;"},
