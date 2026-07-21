@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/samber/do"
+
+	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -26,9 +29,11 @@ func LakekeeperBootstrapResourceIdentifier(serviceInstanceID string) resource.Id
 //
 // It depends on the serve ServiceInstanceResource, so it only runs after the
 // Docker Swarm service is confirmed healthy (WaitForService). It runs on the
-// same host as the serve container (HostExecutor) and reaches Lakekeeper over
-// the bridge network at http://<service-name>:8181, exactly as the migrate
-// resource reaches the same Docker daemon/network context.
+// same host as the serve container (HostExecutor) and reaches Lakekeeper at the
+// serve container's IP on the Docker default bridge network — the same scheme
+// GetInstanceConnectionInfo uses to reach Patroni/Postgres. It does NOT use the
+// swarm service name: that resolves only via overlay DNS from inside the overlay,
+// which the host-networked CP process is not a member of (finding #14).
 //
 // A bootstrap FAILURE blocks: a database with an unbootstrapped warehouse is
 // broken, so the error is returned from Create (surfaced by the resource
@@ -113,15 +118,50 @@ func (r *LakekeeperBootstrapResource) bootstrap(ctx context.Context, rc *resourc
 		return err
 	}
 
-	port := r.Port
-	if port == 0 {
-		port = 8181
+	host, err := r.serveBridgeHost(ctx, rc)
+	if err != nil {
+		return err
 	}
-	baseURL := fmt.Sprintf("http://%s:%d", r.ServiceName, port)
+	baseURL := lakekeeperBaseURL(host, r.Port)
 
 	client := &http.Client{Timeout: lakekeeperBootstrapHTTPTimeout}
 	if err := runLakekeeperBootstrap(ctx, client, baseURL, cfg); err != nil {
 		return err
 	}
 	return nil
+}
+
+// serveBridgeHost returns the serve container's IP on the Docker default bridge
+// network, which the host-networked CP process can reach directly — mirroring how
+// GetInstanceConnectionInfo reaches Patroni/Postgres. The serve container is
+// found by its service instance ID and inspected fresh each run (a rescheduled
+// task gets a new bridge IP).
+func (r *LakekeeperBootstrapResource) serveBridgeHost(ctx context.Context, rc *resource.Context) (string, error) {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return "", fmt.Errorf("lakekeeper bootstrap: failed to get docker client: %w", err)
+	}
+	c, err := GetServiceContainer(ctx, client, r.ServiceInstanceID)
+	if err != nil {
+		return "", fmt.Errorf("lakekeeper bootstrap: failed to find serve container: %w", err)
+	}
+	inspect, err := client.ContainerInspect(ctx, c.ID)
+	if err != nil {
+		return "", fmt.Errorf("lakekeeper bootstrap: failed to inspect serve container: %w", err)
+	}
+	host, err := bridgeIPAddress(inspect)
+	if err != nil {
+		return "", fmt.Errorf("lakekeeper bootstrap: serve container %q: %w", c.ID, err)
+	}
+	return host, nil
+}
+
+// lakekeeperBaseURL builds the Lakekeeper REST base URL. A zero port falls back
+// to the in-container listen port 8181 (reachable on the bridge IP regardless of
+// any host-port publishing).
+func lakekeeperBaseURL(host string, port int) string {
+	if port == 0 {
+		port = 8181
+	}
+	return fmt.Sprintf("http://%s:%d", host, port)
 }

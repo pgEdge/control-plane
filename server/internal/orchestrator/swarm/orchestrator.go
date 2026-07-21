@@ -1271,9 +1271,9 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect postgres container: %w", err)
 	}
-	bridge, ok := inspect.NetworkSettings.Networks["bridge"]
-	if !ok {
-		return nil, fmt.Errorf("no bridge network found for postgres container %q", container.ID)
+	bridgeIP, err := bridgeIPAddress(inspect)
+	if err != nil {
+		return nil, fmt.Errorf("postgres container %q: %w", container.ID, err)
 	}
 	dbPort, err := nat.NewPort("tcp", strconv.Itoa(PostgresContainerPort))
 	if err != nil {
@@ -1293,7 +1293,7 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
 	}
 
 	return &database.ConnectionInfo{
-		AdminHost:        bridge.IPAddress,
+		AdminHost:        bridgeIP,
 		AdminPort:        PostgresContainerPort,
 		PeerHost:         fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
 		PeerPort:         PostgresContainerPort,
