@@ -643,7 +643,7 @@ func makeLakekeeperSpecOpts() *ServiceContainerSpecOptions {
 	return &ServiceContainerSpecOptions{
 		ServiceSpec: &database.ServiceSpec{
 			ServiceID:   "lakekeeper",
-			ServiceType: "lakekeeper",
+			ServiceType: "coldfront",
 			Config: map[string]interface{}{
 				"catalog_db_url":    "postgres://lakekeeper:secret@pg-host1:5432/lakekeeper?sslmode=disable",
 				"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",

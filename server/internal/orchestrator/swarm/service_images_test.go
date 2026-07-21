@@ -38,8 +38,8 @@ func TestGetServiceImage(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "valid lakekeeper 0.13.1",
-			serviceType: "lakekeeper",
+			name:        "valid coldfront 0.13.1",
+			serviceType: "coldfront",
 			version:     "0.13.1",
 			wantTag:     "quay.io/lakekeeper/catalog:v0.13.1",
 			wantErr:     false,

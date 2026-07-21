@@ -696,11 +696,11 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		return nil, fmt.Errorf("only one user can have db_owner=true, got %d", len(owners))
 	}
 
-	// A lakekeeper (ColdFront) service makes every instance load the coldfront /
-	// pg_duckdb stack at boot. Computed once here where the service list is in
-	// scope; carried on each InstanceSpec down to the Patroni config generator.
+	// A coldfront service makes every instance load the coldfront / pg_duckdb
+	// stack at boot. Computed once here where the service list is in scope;
+	// carried on each InstanceSpec down to the Patroni config generator.
 	hasColdFront := slices.ContainsFunc(s.Services, func(svc *ServiceSpec) bool {
-		return svc.ServiceType == "lakekeeper"
+		return svc.ServiceType == "coldfront"
 	})
 
 	clusterSize := len(s.Nodes)

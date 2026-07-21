@@ -1441,7 +1441,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "coldfront",
-						ServiceType: "lakekeeper",
+						ServiceType: "coldfront",
 						Version:     "0.9.0",
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
@@ -1474,7 +1474,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "coldfront",
-						ServiceType: "lakekeeper",
+						ServiceType: "coldfront",
 						Version:     "0.9.0",
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
@@ -1507,7 +1507,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "coldfront",
-						ServiceType: "lakekeeper",
+						ServiceType: "coldfront",
 						Version:     "0.9.0",
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
@@ -1542,7 +1542,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "coldfront",
-						ServiceType: "lakekeeper",
+						ServiceType: "coldfront",
 						Version:     "0.9.0",
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",
@@ -1585,7 +1585,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				Services: []*api.ServiceSpec{
 					{
 						ServiceID:   "coldfront",
-						ServiceType: "lakekeeper",
+						ServiceType: "coldfront",
 						Version:     "0.9.0",
 						HostIds:     []api.Identifier{"host-1"},
 						ConnectAs:   "app",

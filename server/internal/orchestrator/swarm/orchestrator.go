@@ -631,7 +631,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		return o.generateMCPInstanceResources(spec)
 	case "rag":
 		return o.generateRAGInstanceResources(spec)
-	case "lakekeeper":
+	case "coldfront":
 		return o.generateLakekeeperInstanceResources(spec)
 	default:
 		return nil, fmt.Errorf("service type %q instance generation is not yet supported", spec.ServiceSpec.ServiceType)

@@ -199,7 +199,7 @@ func resolveTargetSessionAttrs(serviceSpec *database.ServiceSpec) string {
 	case "rag":
 		// RAG is read-only; always prefer a standby when available.
 		return database.TargetSessionAttrsPreferStandby
-	case "lakekeeper":
+	case "coldfront":
 		// Lakekeeper manages the Iceberg catalog state and writes to Postgres.
 		// Connect to the primary to avoid read-replica rejection of DML.
 		return database.TargetSessionAttrsPrimary

@@ -151,7 +151,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 
 	// Determine target port: most services use 8080, Lakekeeper uses 8181.
 	containerPort := 8080
-	if opts.ServiceSpec.ServiceType == "lakekeeper" {
+	if opts.ServiceSpec.ServiceType == "coldfront" {
 		containerPort = lakekeeperListenPort
 	}
 
@@ -250,7 +250,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		if opts.KeysPath != "" {
 			mounts = append(mounts, docker.BuildMount(opts.KeysPath, "/app/keys", true))
 		}
-	case "lakekeeper":
+	case "coldfront":
 		// Lakekeeper is an Apache Iceberg REST catalog backed by an external
 		// Postgres instance. Connection details are supplied by the caller via
 		// ServiceSpec.Config. The LAKEKEEPER__ env vars are the idiomatic

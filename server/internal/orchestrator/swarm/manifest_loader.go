@@ -415,7 +415,9 @@ func buildServiceVersions(cfg config.Config, mf *versionManifest) (*ServiceVersi
 		{"postgrest", mf.Images.PostgREST},
 		{"mcp", mf.Images.MCP},
 		{"rag", mf.Images.RAG},
-		{"lakekeeper", mf.Images.Lakekeeper},
+		// Customer-facing service type is "coldfront"; the container it resolves
+		// to is the Lakekeeper Iceberg catalog engine (manifest block "lakekeeper").
+		{"coldfront", mf.Images.Lakekeeper},
 	} {
 		var defaultImage, lastImage *ServiceImage
 		for _, e := range s.entries {

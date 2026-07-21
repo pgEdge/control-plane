@@ -363,7 +363,7 @@ func validateServiceSpec(svc *api.ServiceSpec, path validation.Path, isUpdate bo
 	}
 
 	// Validate service_type allowlist
-	supportedServiceTypes := validation.NewPath("mcp", "postgrest", "rag", "lakekeeper")
+	supportedServiceTypes := validation.NewPath("mcp", "postgrest", "rag", "coldfront")
 	if !slices.Contains(supportedServiceTypes, svc.ServiceType) {
 		err := fmt.Errorf("unsupported service type %q (supported: %s)",
 			svc.ServiceType, strings.Join(supportedServiceTypes, ", "))
@@ -400,7 +400,7 @@ func validateServiceSpec(svc *api.ServiceSpec, path validation.Path, isUpdate bo
 		errs = append(errs, validatePostgRESTServiceConfig(svc.Config, path.Append("config"))...)
 	case "rag":
 		errs = append(errs, validateRAGServiceConfig(svc.Config, path.Append("config"), isUpdate)...)
-	case "lakekeeper":
+	case "coldfront":
 		errs = append(errs, validateLakekeeperServiceConfig(svc.Config, path.Append("config"))...)
 	}
 
@@ -540,7 +540,7 @@ const coldFrontMultiNodeError = "coldfront: multi-node ColdFront is not yet supp
 // deployment would silently fail its tiering cron jobs. Fail loudly at
 // validation time until the mesh snowflake.node reconciliation lands.
 func validateColdFrontSingleNode(svc *api.ServiceSpec, nodeCount int, path validation.Path) []error {
-	if svc.ServiceType != "lakekeeper" {
+	if svc.ServiceType != "coldfront" {
 		return nil
 	}
 	if nodeCount <= 1 {

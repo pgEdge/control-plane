@@ -81,7 +81,7 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 			RAGConfigResourceIdentifier(s.ServiceInstanceID),
 			RAGServiceKeysResourceIdentifier(s.ServiceInstanceID),
 		)
-	case "lakekeeper":
+	case "coldfront":
 		deps = append(deps, LakekeeperConfigResourceIdentifier(s.ServiceInstanceID))
 		// serve migrates the catalog schema in-process on first start
 		// (MIGRATE_BEFORE_SERVE), so when control-plane manages the catalog

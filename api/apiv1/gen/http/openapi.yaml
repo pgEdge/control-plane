@@ -3770,7 +3770,7 @@ definitions:
                 image: Incidunt in quas totam.
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: lakekeeper
+            service_type: coldfront
             version: latest
           - config:
               llm_model: gpt-4
@@ -3821,7 +3821,7 @@ definitions:
                 image: Incidunt in quas totam.
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: lakekeeper
+            service_type: coldfront
             version: latest
       spock_version:
         type: string
@@ -4294,7 +4294,7 @@ definitions:
               image: Incidunt in quas totam.
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          service_type: lakekeeper
+          service_type: coldfront
           version: latest
         - config:
             llm_model: gpt-4
@@ -4345,7 +4345,7 @@ definitions:
               image: Incidunt in quas totam.
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          service_type: lakekeeper
+          service_type: coldfront
           version: latest
         - config:
             llm_model: gpt-4
@@ -4396,7 +4396,7 @@ definitions:
               image: Incidunt in quas totam.
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          service_type: lakekeeper
+          service_type: coldfront
           version: latest
       spock_version: "5"
     required:
@@ -6684,12 +6684,12 @@ definitions:
       service_type:
         type: string
         description: The type of service to run.
-        example: lakekeeper
+        example: coldfront
         enum:
           - mcp
           - postgrest
           - rag
-          - lakekeeper
+          - coldfront
       version:
         type: string
         description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
@@ -6746,7 +6746,7 @@ definitions:
           image: Incidunt in quas totam.
       port: 0
       service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-      service_type: lakekeeper
+      service_type: coldfront
       version: latest
     required:
       - service_id

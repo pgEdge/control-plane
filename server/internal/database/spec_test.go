@@ -670,7 +670,7 @@ func TestSpec_NodeInstances_ColdFrontEnabled(t *testing.T) {
 	}
 
 	t.Run("lakekeeper service sets the flag on every instance", func(t *testing.T) {
-		s := baseSpec([]*database.ServiceSpec{{ServiceID: "lk", ServiceType: "lakekeeper"}})
+		s := baseSpec([]*database.ServiceSpec{{ServiceID: "lk", ServiceType: "coldfront"}})
 		nodes, err := s.NodeInstances()
 		assert.NoError(t, err)
 		for _, inst := range nodes[0].Instances {
