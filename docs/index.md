@@ -35,3 +35,4 @@ The pgEdge Control Plane supports:
 - secure API access with certificate-based authentication.
 - performing in-place minor version upgrades of Postgres and supporting components.
 - performing major version upgrades of Postgres using zero downtime node addition.
+- flexible orchestrator support: run Postgres as native Linux services via **systemd** on bare metal or VMs without containers, or as Docker containers via **Docker Swarm**.

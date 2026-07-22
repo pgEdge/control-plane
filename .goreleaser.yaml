@@ -26,17 +26,35 @@ sboms:
     documents:
       - '${artifact}.spdx.json'
 
+# rpm/deb packages — one nfpm entry per target distro. The binary is static
+# (CGO_ENABLED=0), so the SAME cross-compiled amd64/arm64 binaries are packaged
+# for every distro; we only stamp a per-distro tag (rpm Release .el9/.el10; deb
+# codename in the revision, e.g. 1.noble). Common fields live on the el9 anchor
+# and merge into the rest; each entry overrides only id / formats / release.
+# The VERSION comes from the (normalised) tag the CircleCI release job passes to
+# goreleaser, e.g. 1.0.0~rc1 — both formats carry '~' for pre-releases.
 nfpms:
-  - package_name: pgedge-control-plane
+  - &nfpm_defaults
+    id: el9
+    package_name: pgedge-control-plane
     vendor: pgEdge
     homepage: https://www.pgedge.com
     maintainer: pgEdge Support <support@pgedge.com>
     description: pgEdge Control Plane
     license: PostgreSQL License
-    formats:
-      - rpm
-      - deb
+    file_name_template: "{{ .ConventionalFileName }}"
     bindir: /usr/sbin
+    # Force gzip for the .deb members — reprepro can't read zstd; mirrors the
+    # enterprise debhelper convention `dh_builddeb -- -Zgzip`.
+    deb:
+      compression: gzip
+    # Contents are shared at the top level. The SBOM signature is selected per
+    # format via {{ .Format }} (rpm -> sbom.rpm.asc, deb -> sbom.deb.asc) —
+    # goreleaser templates contents.src, so no per-format contents override is
+    # needed. Only the postinstall and preremove scripts genuinely differ per
+    # format (rpm/ vs deb/), and those paths can't be templated, so they stay in
+    # overrides. (preremove is per-format so the service is only stopped on
+    # removal, not on upgrade — the guard condition differs between rpm/deb.)
     overrides:
       rpm:
         scripts:
@@ -53,12 +71,52 @@ nfpms:
       - src: packaging/config.json
         dst: /etc/pgedge-control-plane/config.json
         type: config|noreplace
+      - src: .sbom/sbom.json
+        dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
+      - src: ".sbom/sbom.{{ .Format }}.asc"
+        dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
+    formats: [rpm]
+    release: "1.el9"
+  - <<: *nfpm_defaults
+    id: el10
+    release: "1.el10"
+  # --- DEB (codename in the revision) ---
+  - <<: *nfpm_defaults
+    id: jammy
+    formats: [deb]
+    release: "1.jammy"
+  - <<: *nfpm_defaults
+    id: noble
+    formats: [deb]
+    release: "1.noble"
+  - <<: *nfpm_defaults
+    id: bullseye
+    formats: [deb]
+    release: "1.bullseye"
+  - <<: *nfpm_defaults
+    id: bookworm
+    formats: [deb]
+    release: "1.bookworm"
+  - <<: *nfpm_defaults
+    id: trixie
+    formats: [deb]
+    release: "1.trixie"
+  # Ubuntu 26.04 LTS
+  - <<: *nfpm_defaults
+    id: resolute
+    formats: [deb]
+    release: "1.resolute"
 
 release:
   github:
     owner: pgEdge
     name: control-plane
   prerelease: auto
+  # Create the release as a DRAFT so the 'release: published' event (which
+  # triggers .github/workflows/publish.yml) does NOT fire until the signed
+  # rpm/deb packages are attached. CircleCI flips it to published at the end
+  # (gh release edit --draft=false), after the packages are uploaded.
+  draft: true
   footer: |
     
     Get the Docker image for this release from:

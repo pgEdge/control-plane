@@ -122,6 +122,22 @@ func TestCreateUserRole(t *testing.T) {
 			},
 			expectedErr: `conflicts with a builtin role`,
 		},
+		{
+			name: "rejects SQL injection via attribute",
+			opts: postgres.UserRoleOptions{
+				Name:       "app",
+				Attributes: []string{"SUPERUSER; DROP TABLE foo; --"},
+			},
+			expectedErr: `unsupported role attribute`,
+		},
+		{
+			name: "rejects attribute forms carrying a literal value",
+			opts: postgres.UserRoleOptions{
+				Name:       "app",
+				Attributes: []string{"CONNECTION LIMIT 10"},
+			},
+			expectedErr: `unsupported role attribute`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			actual, err := postgres.CreateUserRole(tc.opts)

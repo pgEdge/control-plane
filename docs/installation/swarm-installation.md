@@ -1,8 +1,13 @@
-# Installing the pgEdge Control Plane
+# Installing the pgEdge Control Plane with Swarm
 
-This guide contains instructions for deploying the Control Plane on a set of Linux hosts, such as virtual machines or bare metal servers. 
+This guide covers deploying the Control Plane using the **Docker Swarm** orchestrator. With this method, the Control Plane and each Postgres instance run as Docker containers, with Docker Swarm handling placement across hosts. This is the default, production-ready installation method.
 
-Control Plane excels at managing Postgres in a highly-available configuration.  To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using-ha/index.md).
+!!! tip "Prefer to run without Docker?"
+
+    If you'd rather manage Postgres as native Linux services without containers, see
+    [Installing via System Packages](systemd-installation.md) for the systemd-based installation.
+
+Control Plane excels at managing Postgres in a highly-available configuration. To review a list of best practices for Control Plane deployment in a high-availability environment, see [High-Availability Best Practices](../using-ha/index.md).
 
 
 ## Initializing Docker Swarm
@@ -233,6 +238,61 @@ Paste the output below and click "Generate Stack." This generator is fully local
 # Once submitted, the generated stack will appear here.
 ```
 
+
+## Version Manifest
+
+The Control Plane uses a version manifest to determine which container images
+to use for Postgres deployments. At startup each Control Plane server fetches
+the manifest from a hosted URL and caches the manifest on disk. If the remote
+URL is unavailable, the server falls back to the disk cache and finally to a
+manifest embedded in the binary.
+
+For most deployments this requires no configuration. For air-gapped or offline
+environments, the Control Plane supports two configuration options.
+
+### Option 1 - Local Manifest File (`manifest_path`)
+
+The local manifest file approach mounts a manifest file directly into the
+container and skips all remote fetching. Copy the manifest to each host, mount
+it into the container, and set the
+`PGEDGE_DOCKER_SWARM__MANIFEST_PATH` environment variable to point to the
+mounted file:
+
+```yaml
+services:
+  control-plane-host-1:
+    image: ghcr.io/pgedge/control-plane:v0.9.0
+    environment:
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=/etc/pgedge/version-manifest.json
+    volumes:
+      - /etc/pgedge/version-manifest.json:/etc/pgedge/version-manifest.json:ro
+```
+
+The manifest file must follow the pgEdge manifest schema. You can obtain the
+current manifest from the embedded binary by inspecting a running server, or
+use the manifest shipped with the Control Plane release as a starting point.
+
+### Option 2 - Internal Manifest URL (`manifest_url`)
+
+The internal manifest URL approach hosts the manifest on an internal HTTP
+server and points the Control Plane at that server. Host the manifest on an
+internal HTTP server and set `PGEDGE_DOCKER_SWARM__MANIFEST_URL` to point to
+the server. The Control Plane fetches and caches from your internal endpoint:
+
+```yaml
+environment:
+  - PGEDGE_DOCKER_SWARM__MANIFEST_URL=https://internal-server/version-manifest.json
+```
+
+!!! tip
+
+    When using either option in an air-gapped environment, ensure that all
+    images referenced in the manifest are pre-pulled on each host, or mirrored
+    to a private registry accessible from your hosts, and update
+    `PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST` accordingly.
+
+For more information on how the Control Plane selects and validates images, see
+[Container Image Management](../using/image-management.md).
 
 ## Deploying the Stack
 

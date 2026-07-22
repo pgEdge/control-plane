@@ -7,6 +7,12 @@ from Postgres 18.0 to 18.1, via the API. The Postgres version is a field in the
 `spec` that you submit in the [create](./create-db.md) and
 [update](./update-db.md) requests.
 
+!!! note "systemd clusters"
+
+    API-driven minor version upgrades are not supported on systemd clusters.
+    See [Performing Postgres Minor Version Upgrades](../installation/systemd-upgrading.md#performing-postgres-minor-version-upgrades)
+    for the manual upgrade procedure.
+
 !!! tip
 
     Before you upgrade, make sure that your desired version is supported by
@@ -169,6 +175,71 @@ As an alternative to using the zero downtime add node approach, you can also [cr
 
 
 
+## Image Upgrades
+
+The Control Plane tracks available image upgrades - Postgres minor version
+bumps within the same major and Spock major version bucket - using the
+[version manifest](./image-management.md). You can check for available upgrades
+and apply them without changing the Postgres major version.
+
+### Checking for Available Image Upgrades
+
+To see whether a newer stable image is available for your database in the same
+Postgres major and Spock major version bucket, include `available_upgrades` in
+the response:
+
+=== "curl"
+
+    ```sh
+    curl 'http://host-3:3000/v1/databases/example?include=available_upgrades'
+    ```
+
+The response includes an `available_upgrades` array:
+
+```json
+{
+  "available_upgrades": [
+    {
+      "image": "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-1",
+      "postgres_version": "17.10",
+      "spock_version": "5"
+    }
+  ]
+}
+```
+
+When no upgrades are available, the `available_upgrades` field is omitted from
+the response. This means your database is already running the latest stable
+image in its version bucket.
+
+### Applying an Image Upgrade
+
+Once you have identified the target image from `available_upgrades`, apply it
+with a `POST` to the upgrade endpoint:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/upgrade \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "image": "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.9-standard-1"
+        }'
+    ```
+
+The response contains a `task` object and the updated `database` object. Use
+`task.task_id` to track progress as described in
+[Tasks and Logs](./tasks-logs.md). Container pull and restart happen
+asynchronously.
+
+!!! note
+
+    The target image must be a stable manifest entry in the same Postgres major
+    and Spock major bucket as the database’s current version, and must be
+    strictly newer than the currently running image. Same-version or downgrade
+    requests are rejected. To upgrade to a different Postgres major version,
+    see [Major Version Upgrades](#major-version-upgrades).
+
 ## Which Versions Are Available
 
 You can see the list of supported Postgres versions for each host by submitting
@@ -184,8 +255,8 @@ inspecting the `supported_pgedge_versions` fields in the output:
 ### If a Version Isn’t Listed
 
 Newer versions of the Control Plane server will support newer versions of
-Postgres. If you don't see your desired version in this list, check the
+Postgres. If you don’t see your desired version in this list, check the
 [releases page](https://github.com/pgEdge/control-plane/releases/latest) to see
 if there is a newer version of the Control Plane. If there is, you can follow
-the [Control Plane cluster upgrade instructions](../installation/upgrading.md) to upgrade
+the [Control Plane cluster upgrade instructions](../installation/swarm-upgrading.md) to upgrade
 your Control Plane cluster to the latest version.

@@ -1,0 +1,414 @@
+# -------------------------------------------------------------------------
+#
+# pgEdge Control Plane — package publishing
+#
+# control-plane builds + signs its rpm/deb packages in CircleCI and attaches
+# them to the GitHub release. This workflow fires when that release is
+# published, downloads the signed packages from the release, and runs the
+# pgEdge publish pipeline (same building blocks as ai-kb / ai-dba-workbench /
+# anonymizer):
+#   determine-repo-type → push-dnf → push-apt → publish-manifest (+ Slack)
+#
+# It does NOT build anything. Differences from the in-repo repos:
+#   * packages come from the published release (gh release download), not a
+#     same-run build artifact;
+#   * no pgedge-detect-build-matrix (that needs a component dir with common.sh)
+#     — the per-distro lists are derived from the downloaded filenames and the
+#     dnf_ts/apt_ts timestamps are generated inline.
+#
+# RPMs are already signed in CircleCI; DEBs are signed at the apt repo here
+# (reprepro, DEB key). pgedge-dnf-repo-builder only runs createrepo_c.
+#
+# -------------------------------------------------------------------------
+
+name: Publish
+
+on:
+    release:
+        types: [published]
+    workflow_dispatch: {}   # manual re-publish — run against the release tag
+
+permissions:
+    contents: read
+
+concurrency:
+    group: publish-${{ github.ref_name }}
+    cancel-in-progress: false
+
+env:
+    TAG: ${{ github.event.release.tag_name || github.ref_name }}
+
+jobs:
+    # =========================================================================
+    # Tag parsing → (repo_type, version, buildnum). parse-release-tag reads
+    # GITHUB_REF_NAME (the release tag) — no simulate_tag, so simulated=false.
+    # =========================================================================
+    determine-repo-type:
+        name: Determine repo routing
+        runs-on: ubuntu-latest
+        outputs:
+            repo-type:          ${{ steps.route.outputs.repo_type }}
+            component-version:  ${{ steps.parse.outputs.version }}
+            component-buildnum: ${{ steps.parse.outputs.buildnum }}
+            effective-tag:      ${{ steps.parse.outputs.effective_tag }}
+            simulated:          ${{ steps.parse.outputs.simulated }}
+        steps:
+            - name: Checkout pgedge-parse-release-tag
+              env:
+                  TOKEN: ${{ secrets.PGEDGE_BUILDER_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p .github/actions
+                  # Pass the token via a transient auth header (kept out of the
+                  # remote URL) and drop .git after clone, so the credential does
+                  # not persist in the workspace for later steps to read.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+                  git -c "http.extraheader=${auth}" clone --depth 1 \
+                      "https://github.com/pgEdge/pgedge-parse-release-tag.git" \
+                      ".github/actions/pgedge-parse-release-tag"
+                  rm -rf ".github/actions/pgedge-parse-release-tag/.git"
+            - name: Parse release tag
+              id: parse
+              uses: ./.github/actions/pgedge-parse-release-tag
+            - name: Route suffix → repo_type
+              id: route
+              env:
+                  SUFFIX:        ${{ steps.parse.outputs.suffix }}
+                  EFFECTIVE_TAG: ${{ steps.parse.outputs.effective_tag }}
+              run: |
+                  set -euo pipefail
+                  # Routing is policy and stays per-repo.
+                  case "$SUFFIX" in
+                      test*|dev*)            repo_type=daily   ;;
+                      rc*|beta*|alpha*|"")   repo_type=staging ;;
+                      *)
+                          echo "::error::Unsupported suffix '$SUFFIX' (effective tag: $EFFECTIVE_TAG)"
+                          exit 1
+                          ;;
+                  esac
+                  echo "repo_type=$repo_type" >> "$GITHUB_OUTPUT"
+                  echo "Routed suffix '$SUFFIX' → repo_type=$repo_type"
+
+    # =========================================================================
+    # Push RPMs → dnf.pgedge.com (createrepo_c + S3 + CloudFront). RPMs are
+    # already signed in CircleCI; this job adds no GPG key.
+    # =========================================================================
+    push-dnf:
+        name: Push DNF (all EL majors × archs, batched)
+        needs: [determine-repo-type]
+        if: needs.determine-repo-type.result == 'success'
+        runs-on: ubuntu-latest
+        concurrency:
+            group: dnf-push-${{ needs.determine-repo-type.outputs.repo-type }}
+            cancel-in-progress: false
+        outputs:
+            timestamp: ${{ steps.ts.outputs.dnf_ts }}
+            cells:     ${{ steps.targets.outputs.cells }}
+            backups:   ${{ steps.targets.outputs.backups }}
+        env:
+            REPO_TYPE:         ${{ needs.determine-repo-type.outputs.repo-type }}
+            COMPONENT_VERSION: ${{ needs.determine-repo-type.outputs.component-version }}
+            COMPONENT_NAME:    ${{ github.event.repository.name }}
+        steps:
+            - name: Timestamp
+              id: ts
+              run: echo "dnf_ts=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+            - name: Download RPMs from the release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p rpm-dl
+                  gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.rpm' --dir rpm-dl
+                  ls -la rpm-dl
+            - name: Organize RPMs by EL major + build targets/cells
+              id: targets
+              env:
+                  DNF_TS: ${{ steps.ts.outputs.dnf_ts }}
+              run: |
+                  set -euo pipefail
+                  push='[]'; backups='[]'; cells='[]'
+                  # Group the downloaded rpms by their .elN. dist tag.
+                  for el in $(ls rpm-dl/*.rpm | grep -oE 'el[0-9]+' | sort -u); do
+                      osv="${el#el}"; dest="rpms-${el}"; mkdir -p "$dest"
+                      mv rpm-dl/*."${el}".*.rpm "$dest"/
+                      echo "EL${osv}: $(ls "$dest" | wc -l) rpms"
+                      push="$(jq -c --arg v "$osv" --arg d "$dest" '. + [{"os-version":$v,"rpm-dir":$d}]' <<<"$push")"
+                      backups="$(jq -c --arg v "$osv" --arg d "$dest" '. + [{"os-version":$v,"output-dir":$d}]' <<<"$backups")"
+                      bp="${REPO_TYPE}/${COMPONENT_NAME}/${COMPONENT_VERSION}/${DNF_TS}/dnf/${osv}/"
+                      for f in "$dest"/*.rpm; do
+                          arch="$(basename "$f" | sed -E 's/.*\.([^.]+)\.rpm$/\1/')"
+                          cells="$(jq -c --arg comp "$COMPONENT_NAME" --arg cv "$COMPONENT_VERSION" --arg img "almalinux:${osv}" --arg arch "$arch" --arg osv "$osv" --arg bp "$bp" --arg ts "$DNF_TS" --arg rt "$REPO_TYPE" \
+                              '. + [{family:"rpm",component:$comp,component_version:$cv,image:$img,arch:$arch,os_version:$osv,backup_path:$bp,timestamp:$ts,repo_type:$rt}]' <<<"$cells")"
+                      done
+                  done
+                  rm -rf rpm-dl
+                  if [ "$(jq 'length' <<<"$push")" -eq 0 ]; then
+                      echo "::error::no RPM publish targets derived from the release assets (no *.rpm attached, or none matched the .elN. naming)"
+                      exit 1
+                  fi
+                  echo "push=$push"       >> "$GITHUB_OUTPUT"
+                  echo "backups=$backups" >> "$GITHUB_OUTPUT"
+                  echo "cells=$cells"     >> "$GITHUB_OUTPUT"
+            - name: Checkout pgEdge action repos @multi-target
+              env:
+                  TOKEN: ${{ secrets.PGEDGE_BUILDER_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p .github/actions
+                  # Token via transient auth header; drop .git after clone so the
+                  # credential does not persist in the workspace.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+                  for repo in pgedge-dnf-repo-builder pgedge-backup-artifacts; do
+                      git -c "http.extraheader=${auth}" clone --depth 1 --branch multi-target \
+                          "https://github.com/pgEdge/${repo}.git" ".github/actions/${repo}"
+                      rm -rf ".github/actions/${repo}/.git"
+                  done
+            - name: Push RPMs to yum repo (all EL majors batched)
+              uses: ./.github/actions/pgedge-dnf-repo-builder
+              with:
+                  s3-bucket: ${{ secrets.S3_BUCKET_NAME }}
+                  cf-distribution: ${{ secrets.CLOUDFRONT_DISTRIBUTION }}
+                  repo-type: ${{ env.REPO_TYPE }}
+                  targets: ${{ steps.targets.outputs.push }}
+                  lock-bucket: ${{ secrets.S3_BACKUP_BUCKET_NAME }}
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            - name: Back up RPMs to S3 (all EL majors batched)
+              uses: ./.github/actions/pgedge-backup-artifacts
+              with:
+                  s3-backup-bucket: ${{ secrets.S3_BACKUP_BUCKET_NAME }}
+                  repo-type: ${{ env.REPO_TYPE }}
+                  component-name: ${{ env.COMPONENT_NAME }}
+                  component-version: ${{ env.COMPONENT_VERSION }}
+                  timestamp: ${{ steps.ts.outputs.dnf_ts }}
+                  targets: ${{ steps.targets.outputs.backups }}
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # =========================================================================
+    # Push DEBs → apt.pgedge.com (reprepro signs the repo with the DEB key).
+    # =========================================================================
+    push-apt:
+        name: Push APT (all distros × archs, batched)
+        needs: [determine-repo-type]
+        if: needs.determine-repo-type.result == 'success'
+        runs-on: ubuntu-latest
+        concurrency:
+            group: apt-push-${{ needs.determine-repo-type.outputs.repo-type }}
+            cancel-in-progress: false
+        outputs:
+            timestamp: ${{ steps.ts.outputs.apt_ts }}
+            cells:     ${{ steps.targets.outputs.cells }}
+            backups:   ${{ steps.targets.outputs.backups }}
+        env:
+            REPO_TYPE:         ${{ needs.determine-repo-type.outputs.repo-type }}
+            COMPONENT_VERSION: ${{ needs.determine-repo-type.outputs.component-version }}
+            COMPONENT_NAME:    ${{ github.event.repository.name }}
+        steps:
+            - name: Timestamp
+              id: ts
+              run: echo "apt_ts=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+            - name: Download DEBs from the release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p deb-dl
+                  gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir deb-dl
+                  ls -la deb-dl
+            - name: Organize DEBs by codename + build targets/cells
+              id: targets
+              env:
+                  APT_TS: ${{ steps.ts.outputs.apt_ts }}
+              run: |
+                  set -euo pipefail
+                  push='[]'; backups='[]'; cells='[]'
+                  # codename lives in the deb revision: ..._<ver>-1.<codename>_<arch>.deb
+                  for code in $(ls deb-dl/*.deb | sed -E 's/.*-1\.([a-z]+)_[a-z0-9]+\.deb$/\1/' | sort -u); do
+                      case "$code" in
+                          jammy|noble|resolute)       image="ubuntu:${code}" ;;
+                          bullseye|bookworm|trixie)   image="debian:${code}" ;;
+                          *) echo "::error::unknown codename '${code}'"; exit 1 ;;
+                      esac
+                      dest="debs-${code}"; mkdir -p "$dest"
+                      mv deb-dl/*-1."${code}"_*.deb "$dest"/
+                      echo "${code}: $(ls "$dest" | wc -l) debs"
+                      push="$(jq -c --arg n "$image" --arg d "$dest" '. + [{"os-name":$n,"deb-dir":$d}]' <<<"$push")"
+                      backups="$(jq -c --arg v "$code" --arg d "$dest" '. + [{"os-version":$v,"output-dir":$d}]' <<<"$backups")"
+                      bp="${REPO_TYPE}/${COMPONENT_NAME}/${COMPONENT_VERSION}/${APT_TS}/apt/${code}/"
+                      for f in "$dest"/*.deb; do
+                          arch="$(basename "$f" | sed -E 's/.*_([a-z0-9]+)\.deb$/\1/')"
+                          cells="$(jq -c --arg comp "$COMPONENT_NAME" --arg cv "$COMPONENT_VERSION" --arg img "$image" --arg arch "$arch" --arg distro "$code" --arg bp "$bp" --arg ts "$APT_TS" --arg rt "$REPO_TYPE" \
+                              '. + [{family:"deb",component:$comp,component_version:$cv,image:$img,arch:$arch,distro:$distro,backup_path:$bp,timestamp:$ts,repo_type:$rt}]' <<<"$cells")"
+                      done
+                  done
+                  rm -rf deb-dl
+                  if [ "$(jq 'length' <<<"$push")" -eq 0 ]; then
+                      echo "::error::no DEB publish targets derived from the release assets (no *.deb attached, or none matched the -1.<codename>_<arch> naming)"
+                      exit 1
+                  fi
+                  echo "push=$push"       >> "$GITHUB_OUTPUT"
+                  echo "backups=$backups" >> "$GITHUB_OUTPUT"
+                  echo "cells=$cells"     >> "$GITHUB_OUTPUT"
+            - name: Checkout pgEdge action repos @multi-target
+              env:
+                  TOKEN: ${{ secrets.PGEDGE_BUILDER_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p .github/actions
+                  # Token via transient auth header; drop .git after clone so the
+                  # credential does not persist in the workspace.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+                  for repo in pgedge-apt-repo-builder pgedge-backup-artifacts; do
+                      git -c "http.extraheader=${auth}" clone --depth 1 --branch multi-target \
+                          "https://github.com/pgEdge/${repo}.git" ".github/actions/${repo}"
+                      rm -rf ".github/actions/${repo}/.git"
+                  done
+            - name: Push DEBs to apt repo (all distros batched)
+              uses: ./.github/actions/pgedge-apt-repo-builder
+              with:
+                  s3-bucket: ${{ secrets.APT_S3_BUCKET_NAME }}
+                  cf-distribution: ${{ secrets.APT_CLOUDFRONT_DISTRIBUTION }}
+                  repo-type: ${{ env.REPO_TYPE }}
+                  targets: ${{ steps.targets.outputs.push }}
+                  lock-bucket: ${{ secrets.S3_BACKUP_BUCKET_NAME }}
+                  gpg-private-key: ${{ secrets.GPG_FIPS_DEB_PRIVATE_KEY }}
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            - name: Back up DEBs to S3 (all distros batched)
+              uses: ./.github/actions/pgedge-backup-artifacts
+              with:
+                  s3-backup-bucket: ${{ secrets.S3_BACKUP_BUCKET_NAME }}
+                  repo-type: ${{ env.REPO_TYPE }}
+                  component-name: ${{ env.COMPONENT_NAME }}
+                  component-version: ${{ env.COMPONENT_VERSION }}
+                  timestamp: ${{ steps.ts.outputs.apt_ts }}
+                  targets: ${{ steps.targets.outputs.backups }}
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # =========================================================================
+    # Aggregated manifest (cells[] for qa-certify/promote) + Slack.
+    # =========================================================================
+    publish-manifest:
+        name: Publish aggregated backup manifest
+        needs: [determine-repo-type, push-dnf, push-apt]
+        if: always() && needs.determine-repo-type.result == 'success'
+        runs-on: ubuntu-latest
+        env:
+            COMPONENT_NAME: ${{ github.event.repository.name }}
+        steps:
+            - name: Install jq + awscli
+              run: |
+                  set -euo pipefail
+                  sudo apt-get update
+                  sudo apt-get install -y python3-pip jq
+                  pip3 install --user awscli
+                  echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+            - name: Build manifest (with cells[] for qa-certify/promote)
+              id: build_manifest
+              env:
+                  REPO_TYPE:       ${{ needs.determine-repo-type.outputs.repo-type }}
+                  CV:              ${{ needs.determine-repo-type.outputs.component-version }}
+                  CBN:             ${{ needs.determine-repo-type.outputs.component-buildnum }}
+                  EFFECTIVE_TAG:   ${{ needs.determine-repo-type.outputs.effective-tag }}
+                  SIMULATED:       ${{ needs.determine-repo-type.outputs.simulated }}
+                  PUSH_DNF_RESULT: ${{ needs.push-dnf.result }}
+                  PUSH_APT_RESULT: ${{ needs.push-apt.result }}
+                  DNF_TS:          ${{ needs.push-dnf.outputs.timestamp }}
+                  APT_TS:          ${{ needs.push-apt.outputs.timestamp }}
+                  DNF_CELLS:       ${{ needs.push-dnf.outputs.cells }}
+                  APT_CELLS:       ${{ needs.push-apt.outputs.cells }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p aggregated
+                  cells='[]'; dnf_backups='[]'; apt_backups='[]'
+                  if [ "${PUSH_DNF_RESULT}" = "success" ] && [ -n "${DNF_CELLS:-}" ]; then
+                      cells="$(jq -c --argjson a "$cells" --argjson b "${DNF_CELLS}" -n '$a + $b')"
+                      dnf_backups="$(jq -c '[.[].backup_path] | unique' <<<"${DNF_CELLS}")"
+                  fi
+                  if [ "${PUSH_APT_RESULT}" = "success" ] && [ -n "${APT_CELLS:-}" ]; then
+                      cells="$(jq -c --argjson a "$cells" --argjson b "${APT_CELLS}" -n '$a + $b')"
+                      apt_backups="$(jq -c '[.[].backup_path] | unique' <<<"${APT_CELLS}")"
+                  fi
+                  jq -n \
+                      --arg run_id "${GITHUB_RUN_ID}" --arg run_attempt "${GITHUB_RUN_ATTEMPT}" \
+                      --arg repo "${GITHUB_REPOSITORY}" --arg tag "${EFFECTIVE_TAG}" \
+                      --argjson simulated "${SIMULATED}" --arg commit_sha "${GITHUB_SHA}" \
+                      --arg component_name "${COMPONENT_NAME}" --arg component_version "${CV}" \
+                      --arg component_buildnum "${CBN}" --arg repo_type "${REPO_TYPE}" \
+                      --arg dnf_timestamp "${DNF_TS}" --arg apt_timestamp "${APT_TS}" \
+                      --arg push_dnf_outcome "${PUSH_DNF_RESULT}" --arg push_apt_outcome "${PUSH_APT_RESULT}" \
+                      --argjson dnf_backups "${dnf_backups}" --argjson apt_backups "${apt_backups}" \
+                      --argjson cells "${cells}" \
+                      '{run_id:$run_id, run_attempt:$run_attempt, repo:$repo, tag:$tag, simulated:$simulated, commit_sha:$commit_sha, component_name:$component_name, component_version:$component_version, component_buildnum:$component_buildnum, repo_type:$repo_type, inputs:{component:$component_name, component_version:$component_version, component_buildnum:$component_buildnum}, timestamps:{dnf:$dnf_timestamp, apt:$apt_timestamp}, push_results:{dnf:$push_dnf_outcome, apt:$push_apt_outcome}, backups:{dnf:$dnf_backups, apt:$apt_backups}, cells:$cells}' \
+                      > aggregated/manifest.json
+                  cat aggregated/manifest.json
+                  { echo "manifest_json<<__EOF__"; jq -c '.' aggregated/manifest.json; echo "__EOF__"; } >> "$GITHUB_OUTPUT"
+            - name: Checkout pgedge-build-publisher
+              env:
+                  TOKEN: ${{ secrets.PGEDGE_BUILDER_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  mkdir -p .github/actions
+                  # Token via transient auth header; drop .git after clone so the
+                  # credential does not persist in the workspace.
+                  auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+                  git -c "http.extraheader=${auth}" clone --depth 1 \
+                      "https://github.com/pgEdge/pgedge-build-publisher.git" \
+                      ".github/actions/pgedge-build-publisher"
+                  rm -rf ".github/actions/pgedge-build-publisher/.git"
+            - name: Compose Slack fields
+              id: compose_slack
+              env:
+                  CV:              ${{ needs.determine-repo-type.outputs.component-version }}
+                  CBN:             ${{ needs.determine-repo-type.outputs.component-buildnum }}
+                  EFFECTIVE_TAG:   ${{ needs.determine-repo-type.outputs.effective-tag }}
+                  REPO_TYPE:       ${{ needs.determine-repo-type.outputs.repo-type }}
+                  PUSH_DNF_RESULT: ${{ needs.push-dnf.result }}
+                  PUSH_APT_RESULT: ${{ needs.push-apt.result }}
+                  ACTOR:           ${{ github.actor }}
+                  REPO_URL:        ${{ github.server_url }}/${{ github.repository }}
+              run: |
+                  set -euo pipefail
+                  unix_ts="$(date -u +%s)"; fallback_ts="$(date -u +'%Y-%m-%d %H:%M UTC')"
+                  subject="${COMPONENT_NAME} <${REPO_URL}/releases/tag/${EFFECTIVE_TAG}|${EFFECTIVE_TAG}>"
+                  s=0; f=0; k=0
+                  for r in "${PUSH_DNF_RESULT}" "${PUSH_APT_RESULT}"; do
+                      case "$r" in success) s=$((s+1));; skipped) k=$((k+1));; *) f=$((f+1));; esac
+                  done
+                  total=$((s+f+k))
+                  if [ "$f" -eq 0 ] && [ "$k" -eq 0 ]; then status="Success"; elif [ "$s" -gt 0 ]; then status="Partial"; elif [ "$k" -eq "$total" ]; then status="Skipped"; else status="Failed"; fi
+                  archs="—"
+                  if [ -f aggregated/manifest.json ]; then a=$(jq -r '(.cells // []) | map(.arch) | unique | join(", ")' aggregated/manifest.json); [ -n "$a" ] && archs="$a"; fi
+                  fields=$(jq -nc --arg channel "${REPO_TYPE}" --arg version "${CV}" --arg buildnum "${CBN}" --arg archs "${archs}" --arg actor "${ACTOR}" --arg unix_ts "${unix_ts}" --arg fallback_ts "${fallback_ts}" '[{title:"Channel",value:("`"+$channel+"`")},{title:"Version",value:("`"+$version+"`")},{title:"Build #",value:("`"+$buildnum+"`")},{title:"Archs",value:("`"+$archs+"`")},{title:"Triggered by",value:$actor},{title:"When",value:("<!date^"+$unix_ts+"^{date_short_pretty} at {time}|"+$fallback_ts+">")}]')
+                  result_fields=$(jq -nc --arg dnf "${PUSH_DNF_RESULT}" --arg apt "${PUSH_APT_RESULT}" '[{title:"Push DNF",value:("`"+$dnf+"`")},{title:"Push APT",value:("`"+$apt+"`")}]')
+                  dnf_paths=$(jq -c '.backups.dnf // []' aggregated/manifest.json); apt_paths=$(jq -c '.backups.apt // []' aggregated/manifest.json)
+                  code_sections=$(jq -nc --argjson dnf "${dnf_paths}" --argjson apt "${apt_paths}" '[{title:"DNF backup paths",lines:$dnf},{title:"APT backup paths",lines:$apt}]')
+                  { echo "status=${status}"; echo "subject<<__S__"; echo "${subject}"; echo "__S__"; echo "fields<<__F__"; echo "${fields}"; echo "__F__"; echo "result_fields<<__RF__"; echo "${result_fields}"; echo "__RF__"; echo "code_sections<<__CS__"; echo "${code_sections}"; echo "__CS__"; } >> "$GITHUB_OUTPUT"
+            - name: Publish manifest + Slack notification
+              uses: ./.github/actions/pgedge-build-publisher
+              with:
+                  manifest_json:    ${{ steps.build_manifest.outputs.manifest_json }}
+                  s3_backup_bucket: ${{ secrets.S3_BACKUP_BUCKET_NAME }}
+                  repo_type:        ${{ needs.determine-repo-type.outputs.repo-type }}
+                  component_name:   ${{ env.COMPONENT_NAME }}
+                  skip_publish: ${{ needs.push-dnf.result != 'success' && needs.push-apt.result != 'success' }}
+                  status: ${{ steps.compose_slack.outputs.status }}
+                  push_dnf_result: ${{ needs.push-dnf.result }}
+                  push_apt_result: ${{ needs.push-apt.result }}
+                  slack_webhook:   ${{ secrets.SLACK_CHANNEL_URL }}
+                  subject:            ${{ steps.compose_slack.outputs.subject }}
+                  fields_json:        ${{ steps.compose_slack.outputs.fields }}
+                  result_fields_json: ${{ steps.compose_slack.outputs.result_fields }}
+                  code_sections_json: ${{ steps.compose_slack.outputs.code_sections }}
+                  tagline: "pgEdge release pipeline"
+                  aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            - name: Upload aggregated manifest as workflow artifact
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+              with:
+                  name: aggregated-manifest
+                  path: aggregated/manifest.json
+                  retention-days: 90

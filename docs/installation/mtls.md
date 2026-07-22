@@ -22,13 +22,43 @@ You'll need to place the following files in a directory on the host machine for 
 
     If your organization allows it, you can use the same certificate for both the client and server certificates, provided that the certificate includes both 'Server Authentication' and 'Client Authentication' in the Extended Key Usage (EKU). We demonstrate this in our tutorial.
 
-Then you can use the certificates by adding the directory to the `volumes` section for each `service` in the [Control Plane stack definition file](./installation.md#creating-the-stack-definition-file) and setting these variables in the `environment` sections:
+Place the certificate files on the host filesystem, then configure the Control Plane to use them using one of the methods below.
+
+**Docker Swarm:** add the directory to the `volumes` section for each `service` in the [Control Plane stack definition file](./swarm-installation.md#creating-the-stack-definition-file) and set these variables in the `environment` section:
 
 - `PGEDGE_HTTP__CA_CERT`: the path to the CA certificate
 - `PGEDGE_HTTP__SERVER_CERT`: the path to the server certificate
 - `PGEDGE_HTTP__SERVER_KEY`: the path to the server key
 - `PGEDGE_HTTP__CLIENT_CERT`: the path to the client certificate
 - `PGEDGE_HTTP__CLIENT_KEY`: the path to the client key
+
+Then redeploy the stack for the changes to take effect:
+
+```sh
+docker stack deploy -c control-plane.yaml control-plane
+```
+
+**systemd:** place the certificate files on the host, then configure the paths in `/etc/pgedge-control-plane/config.json`:
+
+```json
+{
+  "orchestrator": "systemd",
+  "data_dir": "/var/lib/pgedge-control-plane",
+  "http": {
+    "ca_cert": "/opt/pgedge/control-plane/ca.crt",
+    "server_cert": "/opt/pgedge/control-plane/server.crt",
+    "server_key": "/opt/pgedge/control-plane/server.key",
+    "client_cert": "/opt/pgedge/control-plane/client.crt",
+    "client_key": "/opt/pgedge/control-plane/client.key"
+  }
+}
+```
+
+Restart the service after making changes to the configuration file:
+
+```sh
+sudo systemctl restart pgedge-control-plane.service
+```
 
 For example, if you've placed the certificates in a `/opt/pgedge/control-plane` on each host machine your stack definition might look like:
 

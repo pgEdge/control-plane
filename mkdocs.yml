@@ -59,11 +59,12 @@ nav:
       - Guided Walkthrough: walkthrough.md
   - Installing Control Plane:
       - Deployment Options: installation/index.md
-      - Installing Control Plane on Your Host: installation/installation.md
+      - Installing the pgEdge Control Plane with Swarm: installation/swarm-installation.md
       - Configuration Options: installation/configuration.md
-      - Upgrading a Control Plane Installation: installation/upgrading.md
+      - Upgrading the Control Plane with Swarm: installation/swarm-upgrading.md
+      - Upgrading the Control Plane with systemd: installation/systemd-upgrading.md
       - Configuring mTLS: installation/mtls.md
-      - Installing the pgEdge Control Plane via System Packages: installation/systemd.md
+      - Installing the Control Plane with systemd: installation/systemd-installation.md
   - Managing a High-Availability Environment:
       - Best Practices for Deploying a High-Availability Cluster: using-ha/index.md
       - Connecting to a High-Availability Cluster: using-ha/ha-connections.md
@@ -73,6 +74,7 @@ nav:
       - Connecting to a Database: using/connecting.md
       - Updating a Database: using/update-db.md
       - Upgrading a Database: using/upgrade-db.md
+      - Container Image Management: using/image-management.md
       - Backup & Restore: using/backup-restore.md
       - Tasks & Logs: using/tasks-logs.md
       - Read Replicas: using/read-replicas.md
