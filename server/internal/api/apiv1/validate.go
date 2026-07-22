@@ -533,12 +533,15 @@ func validateRAGServiceConfig(config map[string]any, path validation.Path, isUpd
 const coldFrontMultiNodeError = "coldfront: multi-node ColdFront is not yet supported " +
 	"(mesh snowflake.node alignment pending); enable ColdFront only on a single-node database"
 
-// validateColdFrontSingleNode rejects a lakekeeper service on a multi-node
-// database. ColdFront's tiering bakery requires
-// snowflake.node = hashtext(spock_node_name)&1023, but control-plane currently
-// assigns node ordinals rather than reconciling that mesh GUC, so a multi-node
-// deployment would silently fail its tiering cron jobs. Fail loudly at
-// validation time until the mesh snowflake.node reconciliation lands.
+// validateColdFrontSingleNode rejects a lakekeeper (ColdFront) service on a
+// multi-node database. This is a deliberate single-node gate: the ColdFront
+// resource set is keyed to a single node — one managed catalog on one node's
+// primary, plus per-node extension, GUCs, storage secret, and tiering cron
+// jobs. Lifting it before multi-master support lands ships silent data
+// corruption: N divergent per-node catalogs, and duplicate archiving / Iceberg
+// write races from tiering jobs running on every active writer. (The old
+// snowflake.node = hashtext(spock_node_name)&1023 mesh coupling that first
+// motivated this guard was dropped upstream and is no longer the reason.)
 func validateColdFrontSingleNode(svc *api.ServiceSpec, nodeCount int, path validation.Path) []error {
 	if svc.ServiceType != "coldfront" {
 		return nil

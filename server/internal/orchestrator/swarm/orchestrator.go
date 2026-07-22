@@ -823,15 +823,17 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 // generateLakekeeperInstanceResources returns the resources needed for one
 // Lakekeeper service instance (Apache Iceberg REST catalog).
 func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	// Reject ColdFront on a multi-node database. ColdFront's tiering bakery
-	// requires snowflake.node = hashtext(spock_node_name)&1023, but
-	// control-plane currently assigns node ordinals rather than reconciling
-	// that mesh GUC, so a multi-node deployment would silently fail its tiering
-	// cron jobs (a clean failure — tiering errors only, no corruption). The API
+	// Reject ColdFront on a multi-node database. Deliberate single-node gate:
+	// the ColdFront resources below are keyed to a single node (one managed
+	// catalog, per-node extension/GUCs/storage secret, per-node tiering jobs),
+	// so a multi-node deployment would ship silent data corruption — divergent
+	// per-node catalogs and duplicate archiving / Iceberg write races. The API
 	// validation layer (validateColdFrontSingleNode) rejects this earlier; this
 	// is a defence-in-depth guard for callers that bypass it. The message is
 	// duplicated verbatim from apiv1.coldFrontMultiNodeError to avoid an import
-	// cycle. Remove once mesh snowflake.node reconciliation lands.
+	// cycle. (The old snowflake.node = hashtext(spock_node_name)&1023 coupling
+	// that first motivated this guard was dropped upstream; it is no longer the
+	// reason.)
 	if len(spec.DatabaseNodes) > 1 {
 		return nil, fmt.Errorf("coldfront: multi-node ColdFront is not yet supported " +
 			"(mesh snowflake.node alignment pending); enable ColdFront only on a single-node database")
