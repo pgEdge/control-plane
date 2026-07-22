@@ -836,7 +836,7 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 	// reason.)
 	if len(spec.DatabaseNodes) > 1 {
 		return nil, fmt.Errorf("coldfront: multi-node ColdFront is not yet supported " +
-			"(mesh snowflake.node alignment pending); enable ColdFront only on a single-node database")
+			"(shared catalog and cross-node tiering coordination pending); enable ColdFront only on a single-node database")
 	}
 
 	// Get service image.

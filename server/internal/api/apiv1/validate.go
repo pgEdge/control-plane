@@ -531,7 +531,7 @@ func validateRAGServiceConfig(config map[string]any, path validation.Path, isUpd
 // package-level value so the orchestrator-side guard can return an identical
 // message.
 const coldFrontMultiNodeError = "coldfront: multi-node ColdFront is not yet supported " +
-	"(mesh snowflake.node alignment pending); enable ColdFront only on a single-node database"
+	"(shared catalog and cross-node tiering coordination pending); enable ColdFront only on a single-node database"
 
 // validateColdFrontSingleNode rejects a lakekeeper (ColdFront) service on a
 // multi-node database. This is a deliberate single-node gate: the ColdFront

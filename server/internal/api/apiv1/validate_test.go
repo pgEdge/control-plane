@@ -1602,7 +1602,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 			},
 			expected: []string{
 				"multi-node ColdFront is not yet supported",
-				"mesh snowflake.node alignment pending",
+				"shared catalog and cross-node tiering coordination pending",
 			},
 		},
 	} {
