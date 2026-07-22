@@ -191,13 +191,14 @@ jobs:
             # which is absent on Ubuntu — point it at the real gpg.
             for r in dist/*.rpm; do
               rpmsign --define "__gpg $(command -v gpg)" \
-                      --define "_gpg_name ${RPM_KEY_ID}" --addsign "$r"
+                      --define "_gpg_name ${RPM_KEY_ID}" \
+                      --define "_gpg_digest_algo sha256" --addsign "$r"
             done
             # Verify the rpm signatures when the public key is provided.
             if [[ -n "${GPG_FIPS_RPM_PUBLIC_KEY:-}" ]]; then
               echo "${GPG_FIPS_RPM_PUBLIC_KEY}" | base64 -d > /tmp/rpm-pub.asc
               sudo rpm --import /tmp/rpm-pub.asc
-              for r in dist/*.rpm; do rpm --checksig "$r"; done
+              for r in dist/*.rpm; do sudo rpm --checksig "$r"; done
             fi
 
             # Attach the signed rpms + debs to the (draft) release, then publish
