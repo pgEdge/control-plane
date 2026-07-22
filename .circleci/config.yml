@@ -136,8 +136,9 @@ jobs:
               echo "GPG_FIPS_RPM_PRIVATE_KEY and GPG_FIPS_DEB_PRIVATE_KEY must be set (control-plane-release context)"
               exit 1
             fi
-            # rpm provides rpmsign (used to sign the rpms below)
-            sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+            # rpm provides rpmsign (used to sign the rpms below); gh is the
+            # GitHub CLI used to upload release assets and un-draft the release.
+            sudo apt-get update -qq && sudo apt-get install -y -qq rpm gh
             # Install syft from the pinned release tarball and verify it against
             # the published checksums file before installing (avoids piping a
             # remote installer script straight into a shell).
