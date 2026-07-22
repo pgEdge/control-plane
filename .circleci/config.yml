@@ -169,9 +169,86 @@ jobs:
             # initialize the ci buildx builder
             make buildx-init
 
-            # create the github release
+            # --- Generate + per-format-sign the SBOM embedded in every package.
+            # Signed once with the RPM key and once with the APT/DEB key;
+            # goreleaser embeds the matching .asc per format (see nfpms overrides
+            # in .goreleaser.yaml).
+            if [[ -z "${GPG_FIPS_RPM_PRIVATE_KEY:-}" || -z "${GPG_FIPS_DEB_PRIVATE_KEY:-}" ]]; then
+              echo "GPG_FIPS_RPM_PRIVATE_KEY and GPG_FIPS_DEB_PRIVATE_KEY must be set (control-plane-release context)"
+              exit 1
+            fi
+            # rpm provides rpmsign (used to sign the rpms below); gh is the
+            # GitHub CLI used to upload release assets and un-draft the release.
+            sudo apt-get update -qq && sudo apt-get install -y -qq rpm gh
+            # Install syft from the pinned release tarball and verify it against
+            # the published checksums file before installing (avoids piping a
+            # remote installer script straight into a shell).
+            SYFT_VERSION=1.45.1
+            SYFT_TGZ="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+            SYFT_BASE="https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}"
+            syft_tmp="$(mktemp -d)"
+            curl -sSfL "${SYFT_BASE}/${SYFT_TGZ}" -o "${syft_tmp}/${SYFT_TGZ}"
+            curl -sSfL "${SYFT_BASE}/syft_${SYFT_VERSION}_checksums.txt" -o "${syft_tmp}/checksums.txt"
+            ( cd "${syft_tmp}" && grep " ${SYFT_TGZ}\$" checksums.txt | sha256sum -c - )
+            tar -xzf "${syft_tmp}/${SYFT_TGZ}" -C "${syft_tmp}" syft
+            sudo install -m 0755 "${syft_tmp}/syft" /usr/local/bin/syft
+            rm -rf "${syft_tmp}"
+            syft version
+            # The two secrets hold the base64 of the armored private keys
+            # (single line — CircleCI mangles multi-line values), so decode them.
+            keyid() {  # fingerprint of a base64 key blob, read in an isolated keyring
+              local d; d=$(mktemp -d)
+              echo "$1" | base64 -d | GNUPGHOME="$d" gpg --batch --import >/dev/null 2>&1
+              GNUPGHOME="$d" gpg --batch --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec/{print $5; exit}'
+              rm -rf "$d"
+            }
+            RPM_KEY_ID=$(keyid "${GPG_FIPS_RPM_PRIVATE_KEY}")
+            DEB_KEY_ID=$(keyid "${GPG_FIPS_DEB_PRIVATE_KEY}")
+            echo "${GPG_FIPS_RPM_PRIVATE_KEY}" | base64 -d | gpg --batch --import
+            echo "${GPG_FIPS_DEB_PRIVATE_KEY}" | base64 -d | gpg --batch --import
+            mkdir -p .sbom
+            syft dir:. -o cyclonedx-json > /tmp/cp-sbom.json
+            mv /tmp/cp-sbom.json .sbom/sbom.json
+            gpg --batch --yes --armor --detach-sign --local-user "${RPM_KEY_ID}" -o .sbom/sbom.rpm.asc .sbom/sbom.json
+            gpg --batch --yes --armor --detach-sign --local-user "${DEB_KEY_ID}" -o .sbom/sbom.deb.asc .sbom/sbom.json
+
+            # pgEdge packages use the rcN/betaN convention (no dot), matching
+            # pgedge-parse-release-tag. goreleaser renders the tag's pre-release
+            # verbatim (v1.0.0-rc.1 -> 1.0.0~rc.1), so normalise it for the
+            # PACKAGES while keeping the GitHub release, binaries and docker
+            # image on the canonical (dotted) tag.
+            PKG_TAG=$(echo "${CIRCLE_TAG}" | sed -E 's/-(rc|beta|alpha|test|dev)\.([0-9]+)/-\1\2/')
+
+            # Publish the release on the canonical tag WITHOUT packages (binaries,
+            # archives, SBOM); then build the rpm/deb with the normalised version
+            # (PKG_TAG == CIRCLE_TAG for GA). Packages are built --skip=publish so
+            # the rpms can be signed before they are attached to the release.
             GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
-              --release-notes=${release_notes}
+              --release-notes=${release_notes} --skip=nfpm
+            GORELEASER_CURRENT_TAG=${PKG_TAG} goreleaser release \
+              --clean --skip=publish,announce,validate,sbom
+
+            # Sign the rpms with the RPM key (debs are signed later at the apt
+            # repo by reprepro, not per-file). rpm's default %__gpg is gpg2,
+            # which is absent on Ubuntu — point it at the real gpg.
+            for r in dist/*.rpm; do
+              rpmsign --define "__gpg $(command -v gpg)" \
+                      --define "_gpg_name ${RPM_KEY_ID}" \
+                      --define "_gpg_digest_algo sha256" --addsign "$r"
+            done
+            # Verify the rpm signatures when the public key is provided.
+            if [[ -n "${GPG_FIPS_RPM_PUBLIC_KEY:-}" ]]; then
+              echo "${GPG_FIPS_RPM_PUBLIC_KEY}" | base64 -d > /tmp/rpm-pub.asc
+              sudo rpm --import /tmp/rpm-pub.asc
+              for r in dist/*.rpm; do sudo rpm --checksig "$r"; done
+            fi
+
+            # Attach the signed rpms + debs to the (draft) release, then publish
+            # it. Flipping draft -> published fires the 'release: published'
+            # event, which triggers .github/workflows/publish.yml with all the
+            # signed packages already present (no race).
+            gh release upload "${CIRCLE_TAG}" dist/*.rpm dist/*.deb --clobber
+            gh release edit "${CIRCLE_TAG}" --draft=false
 
             # log into control plane ECR repo
             echo "${IMAGE_PUBLISH_TOKEN}" \
