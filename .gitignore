@@ -21,6 +21,7 @@ docs/plans
 # build artifacts
 *-results.xml
 dist
+.sbom
 control-plane
 pgedge-control-plane
 !docker/control-plane
