@@ -11,9 +11,8 @@ Before installing the Control Plane, you must:
       run on this host.
 - Open protocols and ports between hosts. By default, these are:
     - Port `3000` TCP for HTTP communication
-    - Port `2379` TCP for Etcd peer communication
-    - Port `2380` TCP for Etcd client communication
-    - The following additional ports are required for the Docker Swarm orchestrator only:
-        - Port `2377` TCP for communication between manager nodes in Docker Swarm
-        - Port `7946` TCP/UDP for overlay network node discovery in Docker Swarm
-        - Port `4789` UDP for overlay network traffic in Docker Swarm
+    - Port `2379` TCP for Etcd client communication
+    - Port `2380` TCP for Etcd peer communication
+    - Port `2377` TCP for communication between manager nodes in Docker Swarm
+    - Port `7946` TCP/UDP for overlay network node discovery in Docker Swarm
+    - Port `4789` UDP for overlay network traffic in Docker Swarm
