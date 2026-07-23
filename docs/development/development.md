@@ -145,16 +145,28 @@ Once you accept the prompt, the make recipe will:
 The new `v1.0.0-rc.1` tag will trigger a release build in CircleCI. The release
 build will:
 
-- create a new GitHub release with:
-  -  platform-specific binaries
-  -  an SBOM
-  -  checksums for the artifacts
-  -  the release Changelog
+- create a new GitHub **draft** release with:
+  - platform-specific binaries
+  - an SBOM
+  - checksums for the artifacts
+  - the release changelog
 - build and publish Docker images to `ghcr.io/pgedge/control-plane`.
+- build signed RPM and DEB packages for all supported distributions and
+  attach them to the draft release.
+- publish the draft release, making it visible and triggering the
+  GitHub Actions `publish.yml` workflow.
 
-Since the tag includes a pre-release marker, `-rc.1`, the GitHub release will be
-marked as a pre-release. At this point, it's ready for quality assurance and
-testing.
+The `publish.yml` workflow runs after the release is published and:
+
+- downloads the signed RPM and DEB packages from the GitHub release.
+- pushes RPMs to the pgEdge dnf repository.
+- pushes DEBs to the pgEdge apt repository (reprepro signs the repo).
+- backs up all packages to S3.
+- posts a Slack notification with the publish results.
+
+Since the tag includes a pre-release marker, `-rc.1`, GitHub marks the
+release as a pre-release and GitHub routes packages to the `staging`
+repository. The release is ready for quality assurance and testing.
 
 If we find bugs in the release, the fixes should be PR'd or pushed into the
 release branch. Then, we must create a new release candidate by creating and
@@ -165,4 +177,4 @@ release PR, and then we can merge it.
 
 Merging the release PR will trigger a GitHub workflow to create the release tag,
 for example, `v1.0.0`. This new tag will trigger the same build process
-described above for the completed release.
+described above; GitHub routes GA releases to the `staging` channel.
