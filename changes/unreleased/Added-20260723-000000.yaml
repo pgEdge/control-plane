@@ -1,0 +1,3 @@
+kind: Added
+body: RPM and DEB packages are now published to the pgEdge dnf and apt repositories on every release, enabling installation via `dnf` and `apt-get` in addition to the existing Docker and binary distribution methods.
+time: 2026-07-23T00:00:00.00000+00:00

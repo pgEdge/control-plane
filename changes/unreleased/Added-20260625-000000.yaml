@@ -1,0 +1,3 @@
+kind: Added
+body: The Control Plane now rejects database specs that remove `spock` from `postgresql_conf.shared_preload_libraries`, preventing accidental disabling of the replication extension.
+time: 2026-06-25T00:00:00.000000+00:00

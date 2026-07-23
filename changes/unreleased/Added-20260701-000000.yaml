@@ -1,0 +1,3 @@
+kind: Added
+body: Added image upgrade support. Use `GET /v1/databases/{id}?include=available_upgrades` to list newer stable images within the same Postgres major and Spock major version bucket, and `POST /v1/databases/{id}/upgrade` to apply an upgrade without changing the Postgres major version.
+time: 2026-07-01T00:00:00.000000+00:00

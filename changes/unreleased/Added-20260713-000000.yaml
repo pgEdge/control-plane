@@ -1,0 +1,3 @@
+kind: Added
+body: Cancelling a task now propagates to any in-progress activities, interrupting long-running operations rather than waiting for them to complete.
+time: 2026-07-13T00:00:00.000000+00:00
