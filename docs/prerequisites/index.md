@@ -4,6 +4,7 @@ Before installing the Control Plane, you must:
 
 - Create a set of Linux hosts where you want to deploy Postgres instances; if you are deploying Control Plane on your localhost, see the [Quickstart Guide](../installation/quickstart.md):
     - Hosts should have a stable IP address or hostname from which they can access each other.
+    - IPv6 addresses are only supported with the [systemd orchestrator](../installation/systemd-installation.md); the Docker Swarm orchestrator does not currently support IPv6.
     - If using the [Docker Swarm orchestrator](../installation/swarm-installation.md), hosts should have Docker installed by following the [Docker installation guide](https://docs.docker.com/engine/install/) for your operating system. Docker is not required for the [systemd orchestrator](../installation/systemd-installation.md).
 - Create a volume on each host with enough space for your databases:
     - This volume will be used to store configuration and data files for the
