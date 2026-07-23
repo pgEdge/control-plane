@@ -165,7 +165,7 @@ The `publish.yml` workflow runs after the release is published and:
 - posts a Slack notification with the publish results.
 
 Since the tag includes a pre-release marker, `-rc.1`, GitHub marks the
-release as a pre-release and CircleCI routes packages to the `staging`
+release as a pre-release and GitHub routes packages to the `staging`
 repository. The release is ready for quality assurance and testing.
 
 If we find bugs in the release, the fixes should be PR'd or pushed into the
@@ -177,4 +177,4 @@ release PR, and then we can merge it.
 
 Merging the release PR will trigger a GitHub workflow to create the release tag,
 for example, `v1.0.0`. This new tag will trigger the same build process
-described above; CircleCI routes GA releases to the `staging` channel.
+described above; GitHub routes GA releases to the `staging` channel.
