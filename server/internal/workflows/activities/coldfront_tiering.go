@@ -19,9 +19,20 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
-// coldFrontArchiverBinary is the name of the archiver binary. The benign-empty
-// classification is scoped to this binary only (see runColdFrontBinary).
-const coldFrontArchiverBinary = "archiver"
+// coldFrontArchiverBinary and coldFrontPartitionerBinary are the two binaries
+// whose empty-partition_config exit is benign (see runColdFrontBinary). Both
+// read coldfront.partition_config (filtered by mode) and both log.Fatalf the
+// same "no tables in coldfront.partition_config" message when it is empty.
+const (
+	coldFrontArchiverBinary    = "archiver"
+	coldFrontPartitionerBinary = "partitioner"
+)
+
+// coldFrontEmptyPartitionConfigMarker is the substring the archiver and the
+// partitioner emit (via log.Fatalf, exit 1) when coldfront.partition_config has
+// no rows for their mode. Matched lower-cased. It MUST track the upstream
+// wording in cmd/{archiver,partitioner}/main.go.
+const coldFrontEmptyPartitionConfigMarker = "no tables in coldfront.partition_config"
 
 // coldFrontBinDir is where the tiering binaries (archiver/partitioner/compactor)
 // live in the data-node image. The pgedge-coldfront package installs them to
@@ -146,26 +157,35 @@ func buildColdFrontConfigYAML(cfg coldFrontStorageConfig, dbName, lakekeeperEndp
 	return yaml.Marshal(m)
 }
 
-// isBenignArchiverEmpty reports whether the given binary's output indicates
+// isBenignEmptyPartitionConfig reports whether the given binary's output indicates
 // that no tables have been registered yet. This is a normal, non-error
 // condition when a database has just been created and nothing has been marked
-// for tiering.
+// for tiering (or when a database uses only the OTHER binary's mode — a
+// tiered-only database has no partition-only tables for the partitioner, and
+// vice versa, so each binary legitimately finds its side of
+// coldfront.partition_config empty).
 //
-// This classification is deliberately scoped to the ARCHIVER only: the
-// partitioner and compactor must NEVER have failures masked this way.
+// The classification covers the ARCHIVER and the PARTITIONER: both log.Fatalf
+// the same "no tables in coldfront.partition_config" message on an empty
+// config. The COMPACTOR is deliberately excluded — it takes an explicit
+// --table, never emits this message, and masking its failures would hide real
+// problems.
 //
-// FRAGILE INTERIM: the archiver logs "no tables configured" via log.Fatalf,
-// which exits with code 1 — the SAME exit code as a genuine fatal error. There
-// is therefore no distinct exit code to key on today, so a substring match on
-// the binary's log text is the only available signal. A robust fix needs a
-// ColdFront upstream change to emit a dedicated benign exit code (tracked as a
-// cross-team follow-up); until then, changes to the archiver's log wording will
-// silently break this detection.
-func isBenignArchiverEmpty(binary, output string) bool {
-	if binary != coldFrontArchiverBinary {
+// FRAGILE INTERIM: both binaries emit this via log.Fatalf, which exits with
+// code 1 — the SAME exit code as a genuine fatal error. There is therefore no
+// distinct exit code to key on today, so a substring match on the binary's log
+// text is the only available signal. A robust fix needs a ColdFront upstream
+// change to emit a dedicated benign exit code (tracked as a cross-team
+// follow-up); until then, changes to the upstream log wording will silently
+// break this detection (kept in coldFrontEmptyPartitionConfigMarker to make
+// that coupling explicit).
+func isBenignEmptyPartitionConfig(binary, output string) bool {
+	switch binary {
+	case coldFrontArchiverBinary, coldFrontPartitionerBinary:
+	default:
 		return false
 	}
-	return strings.Contains(strings.ToLower(output), "no tables configured")
+	return strings.Contains(strings.ToLower(output), coldFrontEmptyPartitionConfigMarker)
 }
 
 // tieringExecer is the minimal exec surface the tiering activity needs: run a
@@ -211,7 +231,7 @@ func runColdFrontBinary(ctx context.Context, execer tieringExecer, containerID, 
 	if exitCode == 0 && execErr == nil {
 		return nil
 	}
-	if isBenignArchiverEmpty(binary, output) {
+	if isBenignEmptyPartitionConfig(binary, output) {
 		// No tables registered yet: nothing to tier. Recorded as success.
 		return nil
 	}
@@ -253,8 +273,8 @@ func (a *Activities) ExecuteRunColdFrontBinary(
 // (archiver, partitioner, or compactor) inside the primary node's Postgres
 // container via docker exec. The binary's config is written to a temporary
 // file inside the container using base64 to avoid shell injection. Exit codes
-// are captured: a "no tables configured" non-zero exit from the archiver is
-// treated as benign (nothing to tier yet).
+// are captured: a "no tables in coldfront.partition_config" non-zero exit from
+// the archiver or partitioner is treated as benign (nothing to tier yet).
 func (a *Activities) RunColdFrontBinary(ctx context.Context, input *RunColdFrontBinaryInput) (*RunColdFrontBinaryOutput, error) {
 	logger := activity.Logger(ctx).With(
 		"database_id", input.DatabaseID,

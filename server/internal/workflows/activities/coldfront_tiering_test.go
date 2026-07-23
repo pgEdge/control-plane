@@ -130,28 +130,46 @@ func TestBuildTieringCommand_UsesUsrBin(t *testing.T) {
 	}
 }
 
-// TestIsBenignArchiverEmpty verifies the benign-empty detection logic. The
-// classification is scoped to the archiver only: the partitioner and compactor
-// must never have the "no tables configured" text treated as benign.
-func TestIsBenignArchiverEmpty(t *testing.T) {
+// realArchiverEmptyOutput is the archiver's verbatim log line (with its real
+// timestamp prefix) when coldfront.partition_config has no rows for its mode
+// (cmd/archiver/main.go, via log.Fatalf, exit 1). The partitioner emits the
+// same leading clause, differing only in the register/import verb
+// (`partitioner register` vs `archiver register`); both share the marker
+// substring the classifier keys on, so this one string pins the real contract
+// for both — not a paraphrase.
+const realArchiverEmptyOutput = "2026/07/23 15:20:26 no tables in coldfront.partition_config; " +
+	"add one with `archiver register` or seed a YAML with `archiver import --config /tmp/x.yaml`"
+
+// TestIsBenignEmptyPartitionConfig verifies the benign-empty detection logic. An empty
+// coldfront.partition_config is a normal, non-error state for a freshly-created
+// database, so a "no tables in coldfront.partition_config" exit from the
+// archiver OR the partitioner (both emit it, both benign) is treated as success.
+// The compactor is deliberately excluded: it takes an explicit --table and never
+// emits this message, so masking its failures would hide real problems.
+func TestIsBenignEmptyPartitionConfig(t *testing.T) {
 	cases := []struct {
 		binary string
 		output string
 		want   bool
 	}{
-		{"archiver", "no tables configured", true},
-		{"archiver", "No Tables Configured", true},
-		{"archiver", "NO TABLES CONFIGURED\n", true},
+		// The REAL upstream message is benign for the archiver and partitioner.
+		{"archiver", realArchiverEmptyOutput, true},
+		{"partitioner", realArchiverEmptyOutput, true},
+		{"archiver", "no tables in coldfront.partition_config", true},
+		{"archiver", "NO TABLES IN COLDFRONT.PARTITION_CONFIG\n", true},
+		// The compactor is never benign, even for this message.
+		{"compactor", realArchiverEmptyOutput, false},
+		// The stale phantom wording must NOT be what we key on.
+		{"archiver", "no tables configured", false},
+		// Genuine failures and unrelated output are never benign.
 		{"archiver", "error: connection refused", false},
 		{"archiver", "archiver completed successfully", false},
 		{"archiver", "", false},
-		// The same text must NOT be treated as benign for the other binaries.
-		{"partitioner", "no tables configured", false},
-		{"compactor", "no tables configured", false},
+		{"partitioner", "error: connection refused", false},
 	}
 	for _, tc := range cases {
-		if got := isBenignArchiverEmpty(tc.binary, tc.output); got != tc.want {
-			t.Errorf("isBenignArchiverEmpty(%q, %q) = %v, want %v", tc.binary, tc.output, got, tc.want)
+		if got := isBenignEmptyPartitionConfig(tc.binary, tc.output); got != tc.want {
+			t.Errorf("isBenignEmptyPartitionConfig(%q, %q) = %v, want %v", tc.binary, tc.output, got, tc.want)
 		}
 	}
 }
@@ -206,23 +224,23 @@ func TestRunColdFrontBinaryExitCodeToTaskStatus(t *testing.T) {
 			want:    task.StatusFailed,
 		},
 		{
-			name:    "archiver no-tables-configured is benign (success)",
+			name:    "archiver empty partition_config is benign (success)",
 			binary:  "archiver",
-			execer:  fakeExecer{exitCode: 1, output: "FATAL: no tables configured", err: errors.New("command failed with exit code 1")},
+			execer:  fakeExecer{exitCode: 1, output: realArchiverEmptyOutput, err: errors.New("command failed with exit code 1")},
 			wantErr: false,
 			want:    task.StatusCompleted,
 		},
 		{
-			name:    "partitioner no-tables-configured is NOT benign (failure)",
+			name:    "partitioner empty partition_config is benign (success)",
 			binary:  "partitioner",
-			execer:  fakeExecer{exitCode: 1, output: "no tables configured", err: errors.New("command failed with exit code 1")},
-			wantErr: true,
-			want:    task.StatusFailed,
+			execer:  fakeExecer{exitCode: 1, output: realArchiverEmptyOutput, err: errors.New("command failed with exit code 1")},
+			wantErr: false,
+			want:    task.StatusCompleted,
 		},
 		{
-			name:    "compactor no-tables-configured is NOT benign (failure)",
+			name:    "compactor empty partition_config is NOT benign (failure)",
 			binary:  "compactor",
-			execer:  fakeExecer{exitCode: 1, output: "no tables configured", err: errors.New("command failed with exit code 1")},
+			execer:  fakeExecer{exitCode: 1, output: realArchiverEmptyOutput, err: errors.New("command failed with exit code 1")},
 			wantErr: true,
 			want:    task.StatusFailed,
 		},
