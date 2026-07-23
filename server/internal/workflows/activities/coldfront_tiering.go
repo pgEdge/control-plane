@@ -135,17 +135,20 @@ func buildColdFrontConfigYAML(cfg coldFrontStorageConfig, dbName, lakekeeperEndp
 			keyID = cfg.Credential["hmac_access_id"]
 			secret = cfg.Credential["hmac_secret"]
 		}
+		// Emit exactly the keys the ColdFront binaries parse (coldfront
+		// internal/config.S3Config + cmd/compactor/config): access_key /
+		// secret_key / region / endpoint. access_key_id / secret_access_key /
+		// bucket are NOT parsed — the credential VALUES carry AWS's standard
+		// field names, but the YAML keys must be access_key / secret_key or the
+		// binaries see no static creds. The bucket comes from the Lakekeeper
+		// warehouse, never the binary's own s3 config.
 		s3cfg := map[string]any{
-			"access_key_id":     keyID,
-			"secret_access_key": secret,
-			"bucket":            cfg.Bucket,
-			"region":            cfg.Region,
+			"access_key": keyID,
+			"secret_key": secret,
+			"region":     cfg.Region,
 		}
 		if cfg.Endpoint != "" {
 			s3cfg["endpoint"] = cfg.Endpoint
-		}
-		if cfg.PathPrefix != "" {
-			s3cfg["path_prefix"] = cfg.PathPrefix
 		}
 		m["s3"] = s3cfg
 	case "azure":

@@ -15,11 +15,9 @@ import (
 // credential check is that the field exists with the expected value).
 func TestBuildColdFrontConfig(t *testing.T) {
 	cases := []struct {
-		name     string
-		cfg      coldFrontStorageConfig
-		dbName   string
-		endpoint string
-		wantKey  string
+		name   string
+		cfg    coldFrontStorageConfig
+		dbName string
 	}{
 		{
 			name: "aws",
@@ -33,8 +31,7 @@ func TestBuildColdFrontConfig(t *testing.T) {
 					"secret_access_key": "SECRET",
 				},
 			},
-			dbName:  "mydb",
-			wantKey: "access_key_id",
+			dbName: "mydb",
 		},
 		{
 			name: "azure",
@@ -46,8 +43,7 @@ func TestBuildColdFrontConfig(t *testing.T) {
 					"connection_string": "DefaultEndpointsProtocol=https;...",
 				},
 			},
-			dbName:  "mydb",
-			wantKey: "connection_string",
+			dbName: "mydb",
 		},
 	}
 
@@ -71,6 +67,51 @@ func TestBuildColdFrontConfig(t *testing.T) {
 				t.Error("config must NOT contain archiver.tables — tables come from DB registry")
 			}
 		})
+	}
+}
+
+// TestBuildColdFrontConfigS3ContractKeys pins the s3 block to the exact YAML
+// keys the ColdFront binaries parse (coldfront internal/config.S3Config and
+// cmd/compactor/config): access_key / secret_key / region / endpoint. The
+// binaries do NOT parse access_key_id / secret_access_key / bucket, so emitting
+// those leaves cfg.S3.AccessKey/SecretKey EMPTY — the archiver then treats the
+// run as having no static creds and fatals ("no static s3/azure credentials
+// configured and coldfront.storage_secret is not vended") before any S3 write.
+// The credential VALUES still come from the store's credential JSON, whose
+// standard AWS field names are access_key_id / secret_access_key.
+func TestBuildColdFrontConfigS3ContractKeys(t *testing.T) {
+	cfg := coldFrontStorageConfig{
+		Provider:  "aws",
+		Warehouse: "cfsaas1",
+		Bucket:    "my-bucket",
+		Region:    "us-east-2",
+		Credential: map[string]string{
+			"access_key_id":     "AKID",
+			"secret_access_key": "SECRET",
+		},
+	}
+	yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "http://lk:8181/catalog", "admin")
+	if err != nil {
+		t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
+	}
+	content := string(yaml)
+
+	// Must emit coldfront's contract keys carrying the credential values.
+	if !strings.Contains(content, "access_key: AKID") {
+		t.Errorf("expected s3.access_key with the credential value, got:\n%s", content)
+	}
+	if !strings.Contains(content, "secret_key: SECRET") {
+		t.Errorf("expected s3.secret_key with the credential value, got:\n%s", content)
+	}
+	// Must NOT emit keys the binaries silently ignore.
+	if strings.Contains(content, "access_key_id") {
+		t.Errorf("s3.access_key_id is not parsed by the coldfront binaries, got:\n%s", content)
+	}
+	if strings.Contains(content, "secret_access_key") {
+		t.Errorf("s3.secret_access_key is not parsed by the coldfront binaries, got:\n%s", content)
+	}
+	if strings.Contains(content, "bucket:") {
+		t.Errorf("s3.bucket is not a coldfront s3 key (bucket comes from the Lakekeeper warehouse), got:\n%s", content)
 	}
 }
 
