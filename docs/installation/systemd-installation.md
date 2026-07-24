@@ -130,7 +130,7 @@ Use the following commands to download and install the RPM:
 ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
 # Set the version to install
-VERSION="v0.9.0"
+VERSION="v0.10.0"
 
 # Download the RPM
 curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm"
@@ -148,7 +148,7 @@ Use the following commands to download and install the deb package:
 ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
 # Set the version to install
-VERSION="v0.9.0"
+VERSION="v0.10.0"
 
 # Download the deb package
 curl -LO --output-dir /tmp "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
