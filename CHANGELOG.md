@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.10.0 - 2026-07-24
+
+### Added
+
+- The Control Plane now rejects database specs that remove `spock` from `postgresql_conf.shared_preload_libraries`, preventing accidental disabling of the replication extension.
+- Added image upgrade support. Use `GET /v1/databases/{id}?include=available_upgrades` to list newer stable images within the same Postgres major and Spock major version bucket, and `POST /v1/databases/{id}/upgrade` to apply an upgrade without changing the Postgres major version.
+- Added support for custom container image pinning per database or node via `orchestrator_opts.swarm.image`. pgEdge-formatted image tags are validated against the spec's declared versions; unrecognized tags are accepted without version checks. The Control Plane also persists the resolved image at creation time, preventing silent image changes during Control Plane upgrades.
+- Version resolution is now fully manifest-driven. Supported versions update with manifest refreshes without requiring a Control Plane upgrade.
+- The Control Plane now falls back to the first available IPv6 address when no IPv4 address is found during IP autodetection.
+- Cancelling a task now propagates to any in-progress activities, interrupting long-running operations rather than waiting for them to complete.
+- RPM and DEB packages are now published to the pgEdge dnf and apt repositories on every release, enabling installation via `dnf` and `apt-get` in addition to the existing Docker and binary distribution methods.
+- Added support for Spock 5.0.10 on Postgres 16.14, 17.10, and 18.4.
+
+### Changed
+
+- **Breaking:** Changed the default `password_encryption` from `md5` to `scram-sha-256`. If you're using the default password encryption, every role in a database's `database_users` will be automatically updated to `scram-sha-256` the next time you update that database. Roles created outside of `database_users` will need their passwords updated manually. To keep using `md5`, set `postgresql_conf.password_encryption` to `md5` in your database spec.
+
+### Fixed
+
+- Fixed an issue where resources pending recreation were not correctly planned for creation in the right reconciliation phase, causing reconciliation errors.
+- Fixed Patroni rejecting connections from IPv4 addresses presented as IPv4-mapped IPv6 addresses (e.g. `::ffff:192.168.1.1`) on dual-stack hosts.
+- Fixed rolling updates failing on multi-node databases with replica instances due to replication slot timing during instance initialization.
+- Fixed an issue where services configured with `"version": "latest"` failed at runtime because `"latest"` was not registered in the version map.
+
+### Security
+
+- Update vulnerable dependencies (pgx v5.10.0, OpenTelemetry v1.44.0, golang.org/x/crypto v0.54.0, golang.org/x/net v0.57.0) and bump the Go toolchain to 1.26.5 to remediate Trivy-flagged CVEs in the control-plane image (PLAT-686). github.com/docker/docker CVE-2026-41567/CVE-2026-42306 have no fix in the v27.x line in use; risk-accepted in .trivy/pgedge-control-plane.trivyignore.yaml since the vulnerable docker-cp/archive-copy code paths are never invoked by this codebase.
+- Fixed a SQL injection vulnerability in role attribute handling during database creation and updates.
+
 ## v0.9.0 - 2026-06-16
 
 ### Added

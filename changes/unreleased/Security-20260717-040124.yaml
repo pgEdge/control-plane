@@ -1,3 +1,0 @@
-kind: Security
-body: Update vulnerable dependencies (pgx v5.10.0, OpenTelemetry v1.44.0, golang.org/x/crypto v0.54.0, golang.org/x/net v0.57.0) and bump the Go toolchain to 1.26.5 to remediate Trivy-flagged CVEs in the control-plane image (PLAT-686). github.com/docker/docker CVE-2026-41567/CVE-2026-42306 have no fix in the v27.x line in use; risk-accepted in .trivy/pgedge-control-plane.trivyignore.yaml since the vulnerable docker-cp/archive-copy code paths are never invoked by this codebase.
-time: 2026-07-17T04:01:24.289511+05:00

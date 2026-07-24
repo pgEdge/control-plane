@@ -225,6 +225,19 @@ jobs:
             # the rpms can be signed before they are attached to the release.
             GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
               --release-notes=${release_notes} --skip=nfpm
+
+            # Build and publish the control plane image now, while the archives
+            # from the first goreleaser run (named with CIRCLE_TAG) are still in
+            # dist/. The second goreleaser run below uses --clean, which wipes
+            # dist/ and recreates archives with PKG_TAG — if the image build ran
+            # after that, docker buildx would look for the CIRCLE_TAG archive and
+            # fail because only the PKG_TAG archive exists.
+            echo "${IMAGE_PUBLISH_TOKEN}" \
+              | docker login ghcr.io --username "${IMAGE_PUBLISH_USER}" --password-stdin
+            CONTROL_PLANE_IMAGE_REPO='ghcr.io/pgedge/control-plane' \
+            CONTROL_PLANE_VERSION="${CIRCLE_TAG}" \
+            make control-plane-images
+
             GORELEASER_CURRENT_TAG=${PKG_TAG} goreleaser release \
               --clean --skip=publish,announce,validate,sbom
 
@@ -249,15 +262,6 @@ jobs:
             # signed packages already present (no race).
             gh release upload "${CIRCLE_TAG}" dist/*.rpm dist/*.deb --clobber
             gh release edit "${CIRCLE_TAG}" --draft=false
-
-            # log into control plane ECR repo
-            echo "${IMAGE_PUBLISH_TOKEN}" \
-              | docker login ghcr.io --username "${IMAGE_PUBLISH_USER}" --password-stdin
-
-            # build and publish control plane image
-            CONTROL_PLANE_IMAGE_REPO='ghcr.io/pgedge/control-plane' \
-            CONTROL_PLANE_VERSION="${CIRCLE_TAG}" \
-            make control-plane-images
 
   build_image:
     executor: common
