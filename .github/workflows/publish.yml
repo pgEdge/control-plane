@@ -236,6 +236,14 @@ jobs:
                       ver="${ver##*:}"   # drop any epoch, matching reprepro's pool naming
                       canonical="deb-dl/${pkg}_${ver}_${arch}.deb"
                       if [ "$f" != "$canonical" ]; then
+                          # Refuse to clobber: if a distinct asset already
+                          # occupies the canonical name, two debs share the same
+                          # Package/Version/Architecture. Fail loudly rather than
+                          # silently discard one package's bytes.
+                          if [ -e "$canonical" ]; then
+                              echo "::error::canonical filename collision: '$(basename "$f")' and an existing asset both map to '$(basename "$canonical")'"
+                              exit 1
+                          fi
                           mv -- "$f" "$canonical"
                           echo "Restored canonical name: $(basename "$f") -> $(basename "$canonical")"
                       fi
