@@ -6144,8 +6144,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 		}
 	}
 	if body.ServiceType != nil {
-		if !(*body.ServiceType == "mcp" || *body.ServiceType == "postgrest" || *body.ServiceType == "rag") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp", "postgrest", "rag"}))
+		if !(*body.ServiceType == "mcp" || *body.ServiceType == "postgrest" || *body.ServiceType == "rag" || *body.ServiceType == "coldfront") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp", "postgrest", "rag", "coldfront"}))
 		}
 	}
 	if body.Version != nil {
@@ -6925,8 +6925,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 		}
 	}
 	if body.ServiceType != nil {
-		if !(*body.ServiceType == "mcp" || *body.ServiceType == "postgrest" || *body.ServiceType == "rag") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp", "postgrest", "rag"}))
+		if !(*body.ServiceType == "mcp" || *body.ServiceType == "postgrest" || *body.ServiceType == "rag" || *body.ServiceType == "coldfront") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp", "postgrest", "rag", "coldfront"}))
 		}
 	}
 	if body.Version != nil {

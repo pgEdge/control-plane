@@ -178,3 +178,38 @@ func TestDefaultTunableGUCs(t *testing.T) {
 		})
 	}
 }
+
+func TestColdFrontDuckDBGUCs(t *testing.T) {
+	g := postgres.ColdFrontDuckDBGUCs()
+	assert.Equal(t, "/usr/lib/pgedge/coldfront/duckdb-extensions", g["duckdb.extension_directory"])
+	// allow_unsigned_extensions must be true (the patched iceberg build is
+	// unsigned); autoinstall_known_extensions MUST be false or DuckDB silently
+	// downloads the UNPATCHED upstream iceberg (409s under concurrent writes).
+	assert.Equal(t, "true", g["duckdb.allow_unsigned_extensions"])
+	assert.Equal(t, "false", g["duckdb.autoinstall_known_extensions"])
+	assert.Len(t, g, 3)
+}
+
+func TestAppendSharedPreloadLibraries(t *testing.T) {
+	// Appends to the default, preserving order incl. spock.
+	assert.Equal(t,
+		"pg_stat_statements,snowflake,spock,pg_duckdb,coldfront",
+		postgres.AppendSharedPreloadLibraries("pg_stat_statements,snowflake,spock", "pg_duckdb", "coldfront"),
+	)
+	// Dedup: already-present libs are not doubled (keeps reconciles stable so a
+	// restart isn't triggered every update).
+	assert.Equal(t,
+		"spock,pg_duckdb,coldfront",
+		postgres.AppendSharedPreloadLibraries("spock,pg_duckdb", "pg_duckdb", "coldfront"),
+	)
+	// Whitespace around entries is trimmed.
+	assert.Equal(t,
+		"spock,pg_duckdb,coldfront",
+		postgres.AppendSharedPreloadLibraries(" spock , pg_duckdb ", "coldfront"),
+	)
+	// Empty current value.
+	assert.Equal(t,
+		"pg_duckdb,coldfront",
+		postgres.AppendSharedPreloadLibraries("", "pg_duckdb", "coldfront"),
+	)
+}

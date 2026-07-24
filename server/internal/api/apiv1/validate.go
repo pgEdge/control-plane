@@ -191,6 +191,9 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 			}
 			seenServiceIDs.Add(string(svc.ServiceID))
 
+			// ColdFront (a lakekeeper service) is single-node only for now.
+			errs = append(errs, validateColdFrontSingleNode(svc, len(spec.Nodes), svcPath)...)
+
 			errs = append(errs, validateServiceSpec(svc, svcPath, false, databaseID, spec.DatabaseUsers, seenNodeNames)...)
 		}
 	}
@@ -253,6 +256,9 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	for i, svc := range new.Services {
 		svcPath := validation.NewPath("services", validation.ArrayIndexElement(i))
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+
+		// ColdFront (a lakekeeper service) is single-node only for now.
+		errs = append(errs, validateColdFrontSingleNode(svc, len(new.Nodes), svcPath)...)
 
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
 	}
@@ -357,7 +363,7 @@ func validateServiceSpec(svc *api.ServiceSpec, path validation.Path, isUpdate bo
 	}
 
 	// Validate service_type allowlist
-	supportedServiceTypes := validation.NewPath("mcp", "postgrest", "rag")
+	supportedServiceTypes := validation.NewPath("mcp", "postgrest", "rag", "coldfront")
 	if !slices.Contains(supportedServiceTypes, svc.ServiceType) {
 		err := fmt.Errorf("unsupported service type %q (supported: %s)",
 			svc.ServiceType, strings.Join(supportedServiceTypes, ", "))
@@ -394,6 +400,8 @@ func validateServiceSpec(svc *api.ServiceSpec, path validation.Path, isUpdate bo
 		errs = append(errs, validatePostgRESTServiceConfig(svc.Config, path.Append("config"))...)
 	case "rag":
 		errs = append(errs, validateRAGServiceConfig(svc.Config, path.Append("config"), isUpdate)...)
+	case "coldfront":
+		errs = append(errs, validateLakekeeperServiceConfig(svc.Config, path.Append("config"))...)
 	}
 
 	// Validate database_connection if provided
@@ -516,6 +524,107 @@ func validateRAGServiceConfig(config map[string]any, path validation.Path, isUpd
 		result = append(result, validation.NewError(err, path))
 	}
 	return result
+}
+
+// coldFrontMultiNodeError is the message returned when a lakekeeper (ColdFront)
+// service is requested on a database that spans more than one node. Kept as a
+// package-level value so the orchestrator-side guard can return an identical
+// message.
+const coldFrontMultiNodeError = "coldfront: multi-node ColdFront is not yet supported " +
+	"(shared catalog and cross-node tiering coordination pending); enable ColdFront only on a single-node database"
+
+// validateColdFrontSingleNode rejects a lakekeeper (ColdFront) service on a
+// multi-node database. This is a deliberate single-node gate: the ColdFront
+// resource set is keyed to a single node — one managed catalog on one node's
+// primary, plus per-node extension, GUCs, storage secret, and tiering cron
+// jobs. Lifting it before multi-master support lands ships silent data
+// corruption: N divergent per-node catalogs, and duplicate archiving / Iceberg
+// write races from tiering jobs running on every active writer. (The old
+// snowflake.node = hashtext(spock_node_name)&1023 mesh coupling that first
+// motivated this guard was dropped upstream and is no longer the reason.)
+func validateColdFrontSingleNode(svc *api.ServiceSpec, nodeCount int, path validation.Path) []error {
+	if svc.ServiceType != "coldfront" {
+		return nil
+	}
+	if nodeCount <= 1 {
+		return nil
+	}
+	return []error{validation.NewError(errors.New(coldFrontMultiNodeError), path.Append("service_type"))}
+}
+
+// validateLakekeeperServiceConfig checks that the required catalog
+// configuration keys are present and non-empty. catalog_db_url is required
+// unless catalog_db_create is set, in which case the control plane
+// provisions and connects to a managed catalog database itself. An absent
+// or empty catalog_db_url in external mode would cause Lakekeeper to start
+// with a blank connection string and crash-loop silently; pg_encryption_key
+// is always required regardless of mode. We surface these errors at
+// spec-validation time instead.
+func validateLakekeeperServiceConfig(config map[string]any, path validation.Path) []error {
+	var errs []error
+
+	catalogDBCreate, _ := config["catalog_db_create"].(bool)
+	catalogDBURL, _ := config["catalog_db_url"].(string)
+	if catalogDBURL == "" && !catalogDBCreate {
+		errs = append(errs, validation.NewError(
+			errors.New("catalog_db_url is required unless catalog_db_create is set: "+
+				"provide the connection URL for an external catalog Postgres, or set "+
+				"catalog_db_create for a control-plane-managed catalog"),
+			path.Append("catalog_db_url"),
+		))
+	}
+
+	pgEncryptionKey, _ := config["pg_encryption_key"].(string)
+	if pgEncryptionKey == "" {
+		errs = append(errs, validation.NewError(
+			errors.New("pg_encryption_key is required: provide the encryption key for Lakekeeper's catalog Postgres"),
+			path.Append("pg_encryption_key"),
+		))
+	}
+
+	// The warehouse bootstrap and coldfront.set_storage_secret both need the
+	// object-store coordinates and a provider-specific credential. Fail loud
+	// here so a database is never left with an unbootstrapped (broken)
+	// warehouse. Some of these keys are supplied by a consumer-side follow-up.
+	provider, _ := config["provider"].(string)
+	switch provider {
+	case "aws", "azure", "gcs":
+	case "":
+		errs = append(errs, validation.NewError(
+			errors.New("provider is required: one of aws, azure, gcs"),
+			path.Append("provider"),
+		))
+	default:
+		errs = append(errs, validation.NewError(
+			fmt.Errorf("unsupported provider %q: expected one of aws, azure, gcs", provider),
+			path.Append("provider"),
+		))
+	}
+
+	if warehouse, _ := config["warehouse"].(string); warehouse == "" {
+		errs = append(errs, validation.NewError(
+			errors.New("warehouse is required: the warehouse name to create in Lakekeeper"),
+			path.Append("warehouse"),
+		))
+	}
+
+	if credential, _ := config["credential"].(string); credential == "" {
+		errs = append(errs, validation.NewError(
+			errors.New("credential is required: a provider-specific credential JSON string"),
+			path.Append("credential"),
+		))
+	}
+
+	if provider == "aws" || provider == "gcs" {
+		if bucket, _ := config["bucket"].(string); bucket == "" {
+			errs = append(errs, validation.NewError(
+				errors.New("bucket is required for aws and gcs providers"),
+				path.Append("bucket"),
+			))
+		}
+	}
+
+	return errs
 }
 
 func validateCPUs(value *string, path validation.Path) []error {

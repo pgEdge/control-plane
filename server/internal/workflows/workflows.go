@@ -35,6 +35,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterWorkflow(w.Switchover),
 		work.RegisterWorkflow(w.UpdateDatabase),
 		work.RegisterWorkflow(w.ValidateSpec),
+		work.RegisterWorkflow(w.ColdFrontTiering),
 	}
 	return errors.Join(errs...)
 }

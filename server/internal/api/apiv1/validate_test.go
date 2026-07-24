@@ -1424,6 +1424,187 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				`"spock" must be included in shared_preload_libraries`,
 			},
 		},
+		{
+			name: "valid single-node ColdFront (lakekeeper)",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "coldfront",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_url":    "postgres://lk:secret@catalog:5432/lakekeeper?sslmode=disable",
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "valid single-node ColdFront (lakekeeper) managed catalog",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "coldfront",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_create": true,
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single-node ColdFront (lakekeeper) missing catalog_db_url is rejected",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "coldfront",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"catalog_db_url is required unless catalog_db_create is set",
+			},
+		},
+		{
+			name: "single-node ColdFront (lakekeeper) missing pg_encryption_key is rejected",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "coldfront",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							// pg_encryption_key is required in both external and
+							// managed catalog modes; omit it here (managed mode, so
+							// catalog_db_url is legitimately absent) to prove that
+							// requirement is independent of the catalog_db_url gate.
+							"catalog_db_create": true,
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"pg_encryption_key is required",
+			},
+		},
+		{
+			name: "invalid multi-node ColdFront (lakekeeper) is rejected",
+			spec: &api.DatabaseSpec{
+				DatabaseName:    "testdb",
+				PostgresVersion: utils.PointerTo("17.6"),
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+					{
+						Name:    "n2",
+						HostIds: []api.Identifier{api.Identifier("host-2")},
+					},
+				},
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{Username: "app", DbOwner: utils.PointerTo(true)},
+				},
+				Services: []*api.ServiceSpec{
+					{
+						ServiceID:   "coldfront",
+						ServiceType: "coldfront",
+						Version:     "0.9.0",
+						HostIds:     []api.Identifier{"host-1"},
+						ConnectAs:   "app",
+						Config: map[string]any{
+							"catalog_db_url":    "postgres://lk:secret@catalog:5432/lakekeeper?sslmode=disable",
+							"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+							"provider":          "aws",
+							"warehouse":         "analytics",
+							"credential":        `{"aws_access_key_id":"AKIA...","aws_secret_access_key":"..."}`,
+							"bucket":            "coldfront-warehouse",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"multi-node ColdFront is not yet supported",
+				"shared catalog and cross-node tiering coordination pending",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)

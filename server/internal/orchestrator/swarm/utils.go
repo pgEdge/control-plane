@@ -39,6 +39,24 @@ func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, inst
 	return matches[0], nil
 }
 
+// bridgeIPAddress returns a container's IP on the Docker default `bridge`
+// network. This is the address a host-networked Control Plane process uses to
+// reach services running inside database containers (Postgres/Patroni, and the
+// lakekeeper serve API). The swarm service NAME is deliberately not used: it
+// resolves only via overlay DNS from inside the overlay, which CP is not a
+// member of. Every database container is attached to the bridge for exactly
+// this reason.
+func bridgeIPAddress(inspect types.ContainerJSON) (string, error) {
+	if inspect.NetworkSettings == nil {
+		return "", fmt.Errorf("container has no network settings")
+	}
+	bridge, ok := inspect.NetworkSettings.Networks["bridge"]
+	if !ok || bridge == nil || bridge.IPAddress == "" {
+		return "", fmt.Errorf("no bridge network IP found for container")
+	}
+	return bridge.IPAddress, nil
+}
+
 func GetServiceContainer(ctx context.Context, dockerClient *docker.Docker, serviceInstanceID string) (types.Container, error) {
 	matches, err := dockerClient.ContainerList(ctx, container.ListOptions{
 		Filters: filters.NewArgs(

@@ -35,10 +35,10 @@ type ServiceInstanceSpecResource struct {
 	CohortMemberID     string                      `json:"cohort_member_id"`
 	ServiceImage       *ServiceImage               `json:"service_image"`
 	DatabaseNetworkID  string                      `json:"database_network_id"`
-	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`       // Ordered Postgres host:port entries
-	TargetSessionAttrs string                      `json:"target_session_attrs"` // libpq target_session_attrs
-	Port               *int                        `json:"port"`                 // Service published port (optional, 0 = random)
-	DataDirID          string                      `json:"data_dir_id"`          // DirResource ID for the service data directory
+	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`        // Ordered Postgres host:port entries
+	TargetSessionAttrs string                      `json:"target_session_attrs"`  // libpq target_session_attrs
+	Port               *int                        `json:"port"`                  // Service published port (optional, 0 = random)
+	DataDirID          string                      `json:"data_dir_id"`           // DirResource ID for the service data directory
 	KBDirPath          string                      `json:"kb_dir_path,omitempty"` // Host-side KB directory for bind mount (MCP only, KB enabled)
 	Spec               swarm.ServiceSpec           `json:"spec"`
 }
@@ -81,6 +81,17 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 			RAGConfigResourceIdentifier(s.ServiceInstanceID),
 			RAGServiceKeysResourceIdentifier(s.ServiceInstanceID),
 		)
+	case "coldfront":
+		deps = append(deps, LakekeeperConfigResourceIdentifier(s.ServiceInstanceID))
+		// serve migrates the catalog schema in-process on first start
+		// (MIGRATE_BEFORE_SERVE), so when control-plane manages the catalog
+		// database the serve container must not start until that database
+		// exists. In external-catalog mode there is no such resource — the URL
+		// is validated at spec time — so no dependency is added (a dependency on
+		// a resource absent from the graph would be unsatisfiable).
+		if managed, _ := s.ServiceSpec.Config["catalog_db_create"].(bool); managed {
+			deps = append(deps, LakekeeperCatalogDBResourceIdentifier(s.ServiceInstanceID))
+		}
 	default:
 		log.Warn().Str("service_type", s.ServiceSpec.ServiceType).Msg("unknown service type in dependencies")
 	}

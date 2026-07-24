@@ -589,22 +589,64 @@ func (d *Docker) Shutdown() error {
 	return nil
 }
 
-// CheckImageExists verifies that img is accessible in its registry by fetching
-// its distribution manifest. This is a lightweight registry API call — no image
-// layers are downloaded. Returns nil if the image exists, a non-nil error if it
-// does not exist or cannot be reached.
-func (d *Docker) CheckImageExists(ctx context.Context, img string) error {
-	encodedAuth := resolveRegistryAuth(img)
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	_, err := d.client.DistributionInspect(ctx, img, encodedAuth)
-	if err != nil {
-		return fmt.Errorf("image %q not found or inaccessible: %w", img, err)
-	}
-	return nil
+// imageInspector is the minimal image-lookup surface CheckImageExists needs:
+// a registry distribution-manifest fetch and a local-daemon inspect. It is
+// satisfied by *client.Client and lets the registry-then-local fallback logic
+// be unit-tested without a live daemon or registry.
+type imageInspector interface {
+	DistributionInspect(ctx context.Context, image, encodedRegistryAuth string) (registry.DistributionInspect, error)
+	ImageInspectWithRaw(ctx context.Context, imageID string) (types.ImageInspect, []byte, error)
 }
+
+// Timeout budgets for the two image-existence lookups. They are separate so a
+// slow-failing registry lookup can never consume the whole budget and leave the
+// local-daemon fallback with a dead context (which would report a locally-built
+// image as missing — the exact case the fallback exists for).
+const (
+	registryInspectTimeout = 30 * time.Second
+	localInspectTimeout    = 10 * time.Second
+)
+
+// CheckImageExists verifies that img is a usable deployment target. It first
+// tries a lightweight registry distribution-manifest fetch (no layers are
+// downloaded); if that fails — as it does for a private registry without
+// resolvable auth, or an image built locally and never pushed — it falls back
+// to inspecting the local Docker daemon's image cache. Returns nil if the image
+// is found by either path, a non-nil error only if both fail.
+func (d *Docker) CheckImageExists(ctx context.Context, img string) error {
+	return checkImageExists(ctx, d.client, resolveRegistryAuth(img), img,
+		registryInspectTimeout, localInspectTimeout)
+}
+
+// checkImageExists implements the registry-then-local-daemon lookup against the
+// given inspector. Split out from CheckImageExists so the fallback logic is
+// unit-testable via a fake inspector; the two timeouts are parameters so the
+// starvation-resistance behaviour can be exercised deterministically.
+func checkImageExists(ctx context.Context, inspector imageInspector, encodedAuth, img string, registryTimeout, localTimeout time.Duration) error {
+	regCtx, cancelReg := context.WithTimeout(ctx, registryTimeout)
+	defer cancelReg()
+	_, regErr := inspector.DistributionInspect(regCtx, img, encodedAuth)
+	if regErr == nil {
+		return nil
+	}
+
+	// Registry lookup failed — a private registry without resolvable auth, an
+	// unreachable registry, or an image built locally and never pushed. Fall
+	// back to the local Docker daemon's image cache with its own timeout budget,
+	// independent of however long the registry lookup took.
+	localCtx, cancelLocal := context.WithTimeout(ctx, localTimeout)
+	defer cancelLocal()
+	if _, _, localErr := inspector.ImageInspectWithRaw(localCtx, img); localErr == nil {
+		return nil
+	}
+
+	// Surface the registry error: it is the primary lookup path and its message
+	// is the more actionable of the two for a pushed image.
+	return fmt.Errorf("image %q not found or inaccessible: %w", img, regErr)
+}
+
+// ensure *client.Client satisfies imageInspector at compile time.
+var _ imageInspector = (*client.Client)(nil)
 
 // resolveRegistryAuth returns a base64-encoded JSON registry.AuthConfig for the
 // registry that hosts img, loading credentials from the Docker config file.

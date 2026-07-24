@@ -117,6 +117,14 @@
         "stability": "stable",
         "default": true
       }
+    ],
+    "lakekeeper": [
+      {
+        "version": "0.13.1",
+        "image": "quay.io/lakekeeper/catalog:v0.13.1",
+        "stability": "stable",
+        "default": true
+      }
     ]
   }
 }
