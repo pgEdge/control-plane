@@ -216,6 +216,38 @@ jobs:
                   set -euo pipefail
                   mkdir -p deb-dl
                   gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir deb-dl
+                  # GitHub Releases sanitizes '~' to '.' in asset filenames on
+                  # upload, so a pre-release deb built as '...~rc1-1...' comes
+                  # back from the release as '...\.rc1-1...'. reprepro pools
+                  # debs under the canonical '<Package>_<Version>_<Arch>.deb'
+                  # name, and Version keeps the '~', so the sanitized download
+                  # name no longer matches the pooled name. On a re-push the
+                  # apt-repo-builder then holds the pooled '~' copy AND the '.'
+                  # download as two different files for the same version, and
+                  # reprepro rejects the second. Rebuild the canonical filename
+                  # from each deb's own control metadata (the same fields
+                  # reprepro uses), so the download name matches the pool name
+                  # again. This reads metadata and renames only — package bytes
+                  # are never touched — and is a no-op for GA releases (no '~').
+                  for f in deb-dl/*.deb; do
+                      pkg="$(dpkg-deb -f "$f" Package)"
+                      ver="$(dpkg-deb -f "$f" Version)"
+                      arch="$(dpkg-deb -f "$f" Architecture)"
+                      ver="${ver##*:}"   # drop any epoch, matching reprepro's pool naming
+                      canonical="deb-dl/${pkg}_${ver}_${arch}.deb"
+                      if [ "$f" != "$canonical" ]; then
+                          # Refuse to clobber: if a distinct asset already
+                          # occupies the canonical name, two debs share the same
+                          # Package/Version/Architecture. Fail loudly rather than
+                          # silently discard one package's bytes.
+                          if [ -e "$canonical" ]; then
+                              echo "::error::canonical filename collision: '$(basename "$f")' and an existing asset both map to '$(basename "$canonical")'"
+                              exit 1
+                          fi
+                          mv -- "$f" "$canonical"
+                          echo "Restored canonical name: $(basename "$f") -> $(basename "$canonical")"
+                      fi
+                  done
                   ls -la deb-dl
             - name: Organize DEBs by codename + build targets/cells
               id: targets
