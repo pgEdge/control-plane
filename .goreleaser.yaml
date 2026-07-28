@@ -75,6 +75,25 @@ nfpms:
         dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
       - src: ".sbom/sbom.{{ .Format }}.asc"
         dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
+      # Docs and license, at the same paths for both formats. The 'doc' and
+      # 'license' types add the %doc/%license markers to the rpm spec, but nfpm
+      # drops content of those types from non-rpm packages, so the deb needs its
+      # own plain-file entries (scoped with `packager` so each format gets
+      # exactly one entry per path).
+      - src: README.md
+        dst: /usr/share/doc/pgedge-control-plane/README.md
+        type: doc
+        packager: rpm
+      - src: README.md
+        dst: /usr/share/doc/pgedge-control-plane/README.md
+        packager: deb
+      - src: LICENSE.md
+        dst: /usr/share/licenses/pgedge-control-plane/LICENSE.md
+        type: license
+        packager: rpm
+      - src: LICENSE.md
+        dst: /usr/share/licenses/pgedge-control-plane/LICENSE.md
+        packager: deb
     formats: [rpm]
     release: "1.el9"
   - <<: *nfpm_defaults
