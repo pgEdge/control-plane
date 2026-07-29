@@ -88,7 +88,8 @@ nfpms:
         dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
         file_info:
           mode: 0644
-      # Docs and license, at the same paths for both formats. The 'doc' and
+      # README shares the same path in both formats; LICENSE does not, since
+      # rpm and deb have different conventional license paths. The 'doc' and
       # 'license' types add the %doc/%license markers to the rpm spec, but nfpm
       # drops content of those types from non-rpm packages, so the deb needs its
       # own plain-file entries (scoped with `packager` so each format gets
