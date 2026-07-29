@@ -64,17 +64,30 @@ nfpms:
         scripts:
           postinstall: packaging/deb/postinstall.sh
           preremove: packaging/deb/preremove.sh
+    # Every entry sets file_info.mode explicitly. Without it nfpm packages the
+    # mode of the file as checked out on the builder, which is umask-dependent
+    # (CI runs with umask 002, so git creates 0664 and that mode shipped in the
+    # packages). config.json is 0640 because it may hold credentials; the unit
+    # runs as root, so root-only read access is sufficient.
     contents:
       - src: packaging/pgedge-control-plane.service
         dst: /usr/lib/systemd/system/pgedge-control-plane.service
         type: config
+        file_info:
+          mode: 0644
       - src: packaging/config.json
         dst: /etc/pgedge-control-plane/config.json
         type: config|noreplace
+        file_info:
+          mode: 0640
       - src: .sbom/sbom.json
         dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json
+        file_info:
+          mode: 0644
       - src: ".sbom/sbom.{{ .Format }}.asc"
         dst: /usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc
+        file_info:
+          mode: 0644
       # Docs and license, at the same paths for both formats. The 'doc' and
       # 'license' types add the %doc/%license markers to the rpm spec, but nfpm
       # drops content of those types from non-rpm packages, so the deb needs its
@@ -84,16 +97,24 @@ nfpms:
         dst: /usr/share/doc/pgedge-control-plane/README.md
         type: doc
         packager: rpm
+        file_info:
+          mode: 0644
       - src: README.md
         dst: /usr/share/doc/pgedge-control-plane/README.md
         packager: deb
+        file_info:
+          mode: 0644
       - src: LICENSE.md
         dst: /usr/share/licenses/pgedge-control-plane/LICENSE.md
         type: license
         packager: rpm
+        file_info:
+          mode: 0644
       - src: LICENSE.md
         dst: /usr/share/licenses/pgedge-control-plane/LICENSE.md
         packager: deb
+        file_info:
+          mode: 0644
     formats: [rpm]
     release: "1.el9"
   - <<: *nfpm_defaults
