@@ -37,7 +37,7 @@ Run the following commands on each RHEL-like host:
 
 ```sh
 # Install prerequisites for the pgEdge Enterprise Postgres packages
-sudo dnf install -y epel-release dnf
+sudo dnf install -y epel-release
 sudo dnf config-manager --set-enabled crb
 
 # Install the pgEdge Enterprise Postgres repository
