@@ -1047,19 +1047,20 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 	// Cron defaults: archiver hourly, partitioner every 6h, compactor daily.
 	// Override via service_config keys archiver_cron / partitioner_cron / compactor_cron.
 	if _, hasProvider := serviceConfig["provider"]; hasProvider {
-		// Bare endpoint (no /catalog path): the tiering binaries build their own
-		// REST paths. This differs from the coldfront.lakekeeper_endpoint GUC,
-		// which needs the /catalog catalog root.
-		lakekeeperEndpoint := fmt.Sprintf(
-			"http://%s:%d", serviceName, lakekeeperListenPort,
-		)
-
 		// Build the args that the scheduled-job executor will decode. The
 		// connect-as user is carried alongside the derived endpoint so the tiering
 		// binaries authenticate to the node's local Postgres as the database's
 		// owner rather than a hardcoded "coldfront" role.
+		//
+		// The endpoint is the catalog root — the same value as the
+		// coldfront.lakekeeper_endpoint GUC, matching ColdFront's documented
+		// contract ("e.g. http://lakekeeper:8181/catalog"). The compactor passes it
+		// straight to iceberg-go's REST catalog and Lakekeeper serves the Iceberg
+		// REST API under /catalog, so a bare endpoint 404s there. The archiver only
+		// checks the field is non-empty, reaching Iceberg through pg_duckdb and the
+		// GUC instead, which is why a bare value went unnoticed.
 		serviceConfigCopy := maps.Clone(serviceConfig)
-		serviceConfigCopy["lakekeeper_endpoint"] = lakekeeperEndpoint
+		serviceConfigCopy["lakekeeper_endpoint"] = lakekeeperGUCEndpoint
 		serviceConfigCopy["local_pg_dsn_user"] = spec.ConnectAsUsername
 
 		tieringArgs := map[string]interface{}{

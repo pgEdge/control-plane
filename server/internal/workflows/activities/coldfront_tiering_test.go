@@ -49,7 +49,8 @@ func TestBuildColdFrontConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			yaml, err := buildColdFrontConfigYAML(tc.cfg, tc.dbName, "lakekeeper-svc:8181", "coldfront")
+			yaml, err := buildColdFrontConfigYAML(tc.cfg, tc.dbName, "lakekeeper-svc:8181", "coldfront",
+				coldFrontArchiverBinary)
 			if err != nil {
 				t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
 			}
@@ -90,7 +91,8 @@ func TestBuildColdFrontConfigS3ContractKeys(t *testing.T) {
 			"secret_access_key": "SECRET",
 		},
 	}
-	yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "http://lk:8181/catalog", "admin")
+	yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "http://lk:8181/catalog", "admin",
+		coldFrontArchiverBinary)
 	if err != nil {
 		t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
 	}
@@ -130,7 +132,8 @@ func TestBuildColdFrontConfigDSNUser(t *testing.T) {
 	}
 
 	t.Run("explicit user", func(t *testing.T) {
-		yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "lakekeeper-svc:8181", "app_owner")
+		yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "lakekeeper-svc:8181", "app_owner",
+			coldFrontArchiverBinary)
 		if err != nil {
 			t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
 		}
@@ -140,7 +143,8 @@ func TestBuildColdFrontConfigDSNUser(t *testing.T) {
 	})
 
 	t.Run("empty user falls back to coldfront", func(t *testing.T) {
-		yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "lakekeeper-svc:8181", "")
+		yaml, err := buildColdFrontConfigYAML(cfg, "mydb", "lakekeeper-svc:8181", "",
+			coldFrontArchiverBinary)
 		if err != nil {
 			t.Fatalf("buildColdFrontConfigYAML returned error: %v", err)
 		}
@@ -150,24 +154,36 @@ func TestBuildColdFrontConfigDSNUser(t *testing.T) {
 	})
 }
 
-// TestBuildTieringCommand_UsesUsrBin verifies the tiering binary is invoked from
+// TestBuildTieringArgv_UsesUsrBin verifies the tiering binary is invoked from
 // /usr/bin (where the pgedge-coldfront package installs it), not the legacy
-// /usr/local/bin, and that the config file is written and passed via --config.
-func TestBuildTieringCommand_UsesUsrBin(t *testing.T) {
-	cmd := buildTieringCommand("QkFTRTY0", "/tmp/coldfront-config.yaml", "archiver")
+// /usr/local/bin, and that the config is passed via --config.
+func TestBuildTieringArgv_UsesUsrBin(t *testing.T) {
+	argv := buildTieringArgv("/tmp/coldfront-config.yaml", "archiver")
+
+	joined := strings.Join(argv, " ")
+	if joined != "/usr/bin/archiver --config /tmp/coldfront-config.yaml" {
+		t.Errorf("expected binary invoked from /usr/bin with --config, got:\n%s", joined)
+	}
+	if strings.Contains(joined, "/usr/local/bin/") {
+		t.Errorf("binary must not be invoked from /usr/local/bin, got:\n%s", joined)
+	}
+}
+
+// TestBuildConfigWriteCommand_CarriesBase64Payload verifies the config reaches
+// the container as a base64 payload, so its contents — which include live
+// object-store credentials — never have to be shell-quoted.
+func TestBuildConfigWriteCommand_CarriesBase64Payload(t *testing.T) {
+	cmd := buildConfigWriteCommand("QkFTRTY0", "/tmp/coldfront-config.yaml")
 
 	if len(cmd) != 3 || cmd[0] != "sh" || cmd[1] != "-c" {
 		t.Fatalf("expected [sh -c <script>], got %#v", cmd)
 	}
 	script := cmd[2]
-	if !strings.Contains(script, "/usr/bin/archiver --config /tmp/coldfront-config.yaml") {
-		t.Errorf("expected binary invoked from /usr/bin with --config, got:\n%s", script)
-	}
-	if strings.Contains(script, "/usr/local/bin/") {
-		t.Errorf("binary must not be invoked from /usr/local/bin, got:\n%s", script)
-	}
 	if !strings.Contains(script, "QkFTRTY0") {
 		t.Errorf("expected base64 config payload in the script, got:\n%s", script)
+	}
+	if !strings.Contains(script, "base64 -d > /tmp/coldfront-config.yaml") {
+		t.Errorf("expected decode into the config path, got:\n%s", script)
 	}
 }
 

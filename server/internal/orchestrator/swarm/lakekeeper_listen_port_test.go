@@ -101,8 +101,10 @@ func TestLakekeeperTieringEndpointUsesListenPortNotPublishedPort(t *testing.T) {
 		t.Fatalf("generateLakekeeperInstanceResources() unexpected error: %v", err)
 	}
 
-	// Bare endpoint, no /catalog path: the binaries build their own REST paths.
-	wantEndpoint := fmt.Sprintf("http://%s:%d",
+	// The catalog root, matching ColdFront's documented lakekeeper_endpoint
+	// contract: the compactor hands this value straight to iceberg-go's REST
+	// catalog, and Lakekeeper serves the Iceberg REST API under /catalog.
+	wantEndpoint := fmt.Sprintf("http://%s:%d/catalog",
 		ServiceInstanceName(spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID),
 		lakekeeperListenPort)
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/google/uuid"
 	"github.com/samber/do"
 	"gopkg.in/yaml.v3"
 
@@ -26,7 +28,22 @@ import (
 const (
 	coldFrontArchiverBinary    = "archiver"
 	coldFrontPartitionerBinary = "partitioner"
+	coldFrontCompactorBinary   = "compactor"
 )
+
+// coldFrontConfigPath returns the in-container path for one activity run's
+// config. It is unique per run, not merely per binary: the three tiering jobs
+// are independent activities on the same host whose default crons collide (the
+// hourly archiver and 6-hourly partitioner both fire on the hour, the archiver
+// and compactor both at 02:00), and since the partitioner's config deliberately
+// omits the cold-tier blocks the per-binary configs now DIFFER. A shared path
+// would let one binary read another's config — silently reinstating the
+// partitioner's tiered-mode rejection — or read a half-written file. A run can
+// also overlap the next fire of its own schedule, so per-binary alone is not
+// enough.
+func coldFrontConfigPath(binary string) string {
+	return fmt.Sprintf("/tmp/coldfront-%s-%s.yaml", binary, uuid.NewString())
+}
 
 // coldFrontEmptyPartitionConfigMarker is the substring the archiver and the
 // partitioner emit (via log.Fatalf, exit 1) when coldfront.partition_config has
@@ -40,17 +57,157 @@ const coldFrontEmptyPartitionConfigMarker = "no tables in coldfront.partition_co
 // (pgbackrest/patroni default to /usr/bin too).
 const coldFrontBinDir = "/usr/bin"
 
-// buildTieringCommand builds the `sh -c` argv that writes the base64-encoded
-// config to a temp file inside the container and runs the tiering binary against
-// it. base64 is used so the config never has to be shell-quoted. The binary is
-// resolved under coldFrontBinDir.
-func buildTieringCommand(encodedConfig, configPath, binary string) []string {
-	binaryPath := coldFrontBinDir + "/" + binary
+// buildConfigWriteCommand writes the base64-encoded config to configPath inside
+// the container. This is the only step that needs a shell, for the decode
+// pipeline; base64 keeps the config itself out of the shell string entirely.
+func buildConfigWriteCommand(encodedConfig, configPath string) []string {
 	return []string{
 		"sh", "-c",
-		fmt.Sprintf("printf '%%s' '%s' | base64 -d > %s && %s --config %s",
-			encodedConfig, configPath, binaryPath, configPath),
+		fmt.Sprintf("printf '%%s' '%s' | base64 -d > %s", encodedConfig, configPath),
 	}
+}
+
+// buildConfigRemoveCommand deletes the rendered config, which holds live
+// object-store credentials.
+func buildConfigRemoveCommand(configPath string) []string {
+	return []string{"rm", "-f", configPath}
+}
+
+// buildTieringArgv builds the argv for a single-pass binary run. No shell: the
+// execer hands argv straight to docker exec, so nothing here needs quoting.
+func buildTieringArgv(configPath, binary string) []string {
+	return []string{coldFrontBinDir + "/" + binary, "--config", configPath}
+}
+
+// buildCompactorArgv builds the argv for one compactor run. The compactor is
+// per-table: it requires --table alongside --config and exits 2 with a usage
+// message without it, so there is no config-only invocation that can succeed.
+// Passing the table as its own argv element rather than through a shell is what
+// makes any identifier PostgreSQL accepts safe to compact.
+func buildCompactorArgv(configPath, table string) []string {
+	return []string{
+		coldFrontBinDir + "/" + coldFrontCompactorBinary,
+		"--config", configPath,
+		"--table", table,
+	}
+}
+
+// buildTieredTableListCommand builds the argv that lists the Iceberg-backed
+// tables to compact. coldfront.tiered_views is the right source rather than
+// coldfront.partition_config: a row appears in tiered_views only once a table
+// actually has an Iceberg table (at first cutover, or via
+// coldfront.create_iceberg_table). A table registered in partition_config but
+// not yet archived has no Iceberg table at all, and asking the catalog for it
+// would fail the daily job.
+//
+// DISTINCT because tiered_views is keyed (schema_name, relname) while the
+// Iceberg name flattens to the relname, so two same-named tables in different
+// schemas would otherwise be compacted twice.
+//
+// pager=off because docker exec attaches a TTY, which makes psql's stdout a
+// terminal and turns its pager on; with stdin attached and never fed, a paged
+// list would block until the activity context expired.
+func buildTieredTableListCommand(dbName, dsnUser string) []string {
+	if dsnUser == "" {
+		dsnUser = "coldfront"
+	}
+	const query = "SELECT DISTINCT relname FROM coldfront.tiered_views ORDER BY relname"
+	return []string{
+		"psql", "-tAX", "-P", "pager=off", "-v", "ON_ERROR_STOP=1",
+		"-d", fmt.Sprintf("host=localhost port=5432 user=%s dbname=%s sslmode=disable", dsnUser, dbName),
+		"-c", query,
+	}
+}
+
+// parseTieredTableList extracts table names from the enumeration query output.
+func parseTieredTableList(output string) []string {
+	var tables []string
+	for _, line := range strings.Split(output, "\n") {
+		if name := strings.TrimSpace(line); name != "" {
+			tables = append(tables, name)
+		}
+	}
+	return tables
+}
+
+// runColdFrontCompactor writes the config once, enumerates the Iceberg-backed
+// tables, and runs the compactor once per table. A database with no such tables
+// is the normal state of a freshly created ColdFront database, so an empty list
+// is success and no compactor runs at all — mirroring how an empty
+// partition_config is benign for the archiver and partitioner.
+//
+// Per-table failures are collected rather than aborting the pass: one unusable
+// table would otherwise permanently block compaction of every table after it,
+// with no partial progress. The joined error still fails the task.
+func runColdFrontCompactor(
+	ctx context.Context,
+	execer tieringExecer,
+	containerID, encodedConfig, configPath, dbName, dsnUser string,
+) error {
+	if err := runColdFrontStep(
+		ctx, execer, containerID, "write config",
+		buildConfigWriteCommand(encodedConfig, configPath),
+	); err != nil {
+		return err
+	}
+	defer removeColdFrontConfig(ctx, execer, containerID, configPath)
+
+	output, err := runColdFrontStepOutput(
+		ctx, execer, containerID, "list tiered tables",
+		buildTieredTableListCommand(dbName, dsnUser),
+	)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, table := range parseTieredTableList(output) {
+		if runErr := runColdFrontBinary(
+			ctx, execer, containerID, coldFrontCompactorBinary,
+			buildCompactorArgv(configPath, table),
+		); runErr != nil {
+			errs = append(errs, fmt.Errorf("table %s: %w", table, runErr))
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("coldfront %s: %w",
+			coldFrontCompactorBinary, errors.Join(errs...))
+	}
+	return nil
+}
+
+// runColdFrontStep runs a supporting command and discards its output.
+func runColdFrontStep(
+	ctx context.Context, execer tieringExecer, containerID, step string, cmd []string,
+) error {
+	_, err := runColdFrontStepOutput(ctx, execer, containerID, step, cmd)
+	return err
+}
+
+// runColdFrontStepOutput runs a supporting command and returns its output. These
+// are the compactor's scaffolding steps, not a tiering binary, so the
+// benign-empty classification does not apply.
+func runColdFrontStepOutput(
+	ctx context.Context, execer tieringExecer, containerID, step string, cmd []string,
+) (string, error) {
+	exitCode, output, err := execer.Exec(ctx, containerID, cmd)
+	if err != nil {
+		return output, fmt.Errorf("coldfront %s: failed to %s: %w\noutput:\n%s",
+			coldFrontCompactorBinary, step, err, output)
+	}
+	if exitCode != 0 {
+		return output, fmt.Errorf("coldfront %s: failed to %s (exit %d)\noutput:\n%s",
+			coldFrontCompactorBinary, step, exitCode, output)
+	}
+	return output, nil
+}
+
+// removeColdFrontConfig deletes the rendered config on a best-effort basis; a
+// failure to clean up must not fail an otherwise successful pass.
+func removeColdFrontConfig(
+	ctx context.Context, execer tieringExecer, containerID, configPath string,
+) {
+	_, _, _ = execer.Exec(ctx, containerID, buildConfigRemoveCommand(configPath))
 }
 
 // coldFrontStorageConfig holds the parsed object-store coordinates extracted
@@ -112,7 +269,10 @@ func parseColdFrontStorageConfig(config map[string]any) (*coldFrontStorageConfig
 // dsnUser is the connect-as user the binary should authenticate as against the
 // node's local Postgres; it falls back to "coldfront" when empty so the DSN is
 // always well-formed.
-func buildColdFrontConfigYAML(cfg coldFrontStorageConfig, dbName, lakekeeperEndpoint, dsnUser string) ([]byte, error) {
+func buildColdFrontConfigYAML(
+	cfg coldFrontStorageConfig,
+	dbName, lakekeeperEndpoint, dsnUser, binary string,
+) ([]byte, error) {
 	if dsnUser == "" {
 		dsnUser = "coldfront"
 	}
@@ -120,11 +280,22 @@ func buildColdFrontConfigYAML(cfg coldFrontStorageConfig, dbName, lakekeeperEndp
 		"postgres": map[string]any{
 			"dsn": fmt.Sprintf("host=localhost port=5432 user=%s dbname=%s sslmode=disable", dsnUser, dbName),
 		},
-		"iceberg": map[string]any{
-			"warehouse":           cfg.Warehouse,
-			"lakekeeper_endpoint": lakekeeperEndpoint,
-			"namespace":           "default",
-		},
+	}
+
+	// ColdFront selects tiered-vs-partition-only mode from the CONFIG, not per
+	// table: any iceberg/s3 block makes it validate every table loaded from
+	// coldfront.partition_config in tiered mode and demand a hot_period. The
+	// partitioner is the no-Iceberg tool and only ever loads PartitionOnly rows,
+	// which have no hot_period, so handing it a cold-tier config makes it reject
+	// exactly the tables it exists to process.
+	if binary == coldFrontPartitionerBinary {
+		return yaml.Marshal(m)
+	}
+
+	m["iceberg"] = map[string]any{
+		"warehouse":           cfg.Warehouse,
+		"lakekeeper_endpoint": lakekeeperEndpoint,
+		"namespace":           "default",
 	}
 
 	switch cfg.Provider {
@@ -322,7 +493,9 @@ func (a *Activities) RunColdFrontBinary(ctx context.Context, input *RunColdFront
 		logger.Warn("no connect-as user in tiering config; falling back to coldfront DSN user")
 	}
 
-	configYAML, err := buildColdFrontConfigYAML(*storageCfg, input.DatabaseName, lakekeeperEndpoint, dsnUser)
+	configYAML, err := buildColdFrontConfigYAML(
+		*storageCfg, input.DatabaseName, lakekeeperEndpoint, dsnUser, input.Binary,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("coldfront %s: failed to render config: %w", input.Binary, err)
 	}
@@ -345,11 +518,37 @@ func (a *Activities) RunColdFrontBinary(ctx context.Context, input *RunColdFront
 	pgContainer := pgContainers[0]
 
 	// Write the config file into the container using base64 to avoid any shell
-	// quoting or injection issues, then run the binary.
+	// quoting or injection issues, then run the binary. The path is unique per
+	// run because the per-binary configs differ and the jobs can overlap.
 	encoded := base64.StdEncoding.EncodeToString(configYAML)
-	cmd := buildTieringCommand(encoded, "/tmp/coldfront-config.yaml", input.Binary)
+	configPath := coldFrontConfigPath(input.Binary)
+	execer := dockerTieringExecer{docker: dockerClient}
 
-	if err := runColdFrontBinary(ctx, dockerTieringExecer{docker: dockerClient}, pgContainer.ID, input.Binary, cmd); err != nil {
+	// The compactor is per-table, so it needs the table list resolved first and
+	// one invocation per table. The archiver and partitioner resolve their own
+	// tables from coldfront.partition_config and run in a single pass.
+	if input.Binary == coldFrontCompactorBinary {
+		if err := runColdFrontCompactor(
+			ctx, execer, pgContainer.ID, encoded, configPath, input.DatabaseName, dsnUser,
+		); err != nil {
+			return nil, err
+		}
+		logger.Info("coldfront tiering binary completed successfully")
+		return &RunColdFrontBinaryOutput{}, nil
+	}
+
+	if err := runColdFrontStep(
+		ctx, execer, pgContainer.ID, "write config",
+		buildConfigWriteCommand(encoded, configPath),
+	); err != nil {
+		return nil, err
+	}
+	defer removeColdFrontConfig(ctx, execer, pgContainer.ID, configPath)
+
+	if err := runColdFrontBinary(
+		ctx, execer, pgContainer.ID, input.Binary,
+		buildTieringArgv(configPath, input.Binary),
+	); err != nil {
 		return nil, err
 	}
 
