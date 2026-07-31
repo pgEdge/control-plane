@@ -3,10 +3,7 @@
 This guide covers installing the pgEdge Control Plane on Linux hosts that use
 the RPM Package Manager (RPM) package format (e.g., Red Hat Enterprise Linux
 (RHEL), Rocky Linux, AlmaLinux) or the Debian (deb) package format (e.g.,
-Ubuntu, Debian). We recommend installing from the pgEdge Enterprise package
-repositories; package files are also attached to each [GitHub
-release](https://github.com/pgedge/control-plane/releases) for hosts without
-repository access.
+Ubuntu, Debian).
 
 Unlike the Docker Swarm installation method, the system package installation
 runs the Control Plane directly on the host. The Control Plane uses systemd to
@@ -25,24 +22,28 @@ current release.
 - All hosts in a cluster must use the same orchestrator (either `swarm` or
   `systemd`); the orchestrator must not change after the cluster is initialized.
 
- We'd love your feedback - please share your experience in our [GitHub issues](https://github.com/pgedge/control-plane/issues) or join our [Discord](https://discord.com/invite/pgedge/login).
+We'd love your feedback - please share your experience in our [GitHub issues](https://github.com/pgedge/control-plane/issues)
+or join our [Discord](https://discord.com/invite/pgedge/login).
 
-### Packages
+## Installing the Control Plane
 
-After creating hosts that [meet the prerequisites](../prerequisites/index.md), you are ready to install Postgress and it's supporting packages on each host.
+After creating hosts that [meet the prerequisites](../prerequisites/index.md),
+you are ready to install the Control Plane and its dependencies on each host.
 
-#### RPM Packages
+The pgEdge Control Plane packages are published for both `amd64` and `arm64`
+architectures and distributed through the pgEdge Enterprise Postgres package
+repositories.
 
-Run the following commands on each RHEL-like host:
+### RPM Packages
+
+Follow the instructions from the ["Configuring the Repository" page](https://docs.pgedge.com/enterprise/el/configure-repo/)
+of the pgEdge Enterprise Postgres package repository documentation to install
+the repository.
+
+Then, use the following commands to install the Control Plane and its
+dependencies:
 
 ```sh
-# Install prerequisites for the pgEdge Enterprise Postgres packages
-sudo dnf install -y epel-release dnf
-sudo dnf config-manager --set-enabled crb
-
-# Install the pgEdge Enterprise Postgres repository
-sudo dnf install -y https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
-
 # Install the required packages for your Postgres version. We currently support
 # versions 16, 17, and 18. Set POSTGRES_MAJOR_VERSION to your desired version.
 POSTGRES_MAJOR_VERSION='<16|17|18>'
@@ -51,21 +52,31 @@ sudo dnf install -y \
       pgedge-spock50_${POSTGRES_MAJOR_VERSION} \
       pgedge-postgresql${POSTGRES_MAJOR_VERSION}-contrib \
       pgedge-pgbackrest \
-      pgedge-patroni
+      pgedge-patroni \
+      pgedge-control-plane
 ```
 
-#### Deb Packages
+The `pgedge-control-plane` package will install the following files:
 
-Run the following commands on each Debian-based host:
+- `/etc/pgedge-control-plane/config.json`
+- `/usr/lib/systemd/system/pgedge-control-plane.service`
+- `/usr/sbin/pgedge-control-plane`
+- `/usr/share/doc/pgedge-control-plane/README.md`
+- `/usr/share/licenses/pgedge-control-plane/LICENSE.md`
+- `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json`
+- `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc`
+
+### Deb Packages
+
+Follow the instructions from the ["Configuring the Repository" page](https://docs.pgedge.com/enterprise/debian/configure-repo/)
+of the pgEdge Enterprise Postgres package repository documentation to install
+the repository.
+
+Then, use the following commands to install the Control Plane and its
+dependencies:
 
 ```sh
-# Install prerequisites for the pgEdge Enterprise Postgres packages
-sudo apt update
-sudo apt install -y curl gnupg2 lsb-release
-
-# Install the pgEdge Enterprise Postgres repository
-curl -O --output-dir /tmp https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
-sudo apt install -y /tmp/pgedge-release_latest_all.deb
+# Update the local list of available packages
 sudo apt update
 
 # Install the required packages for your Postgres version. We currently support
@@ -75,7 +86,8 @@ sudo apt install -y \
       pgedge-postgresql-${POSTGRES_MAJOR_VERSION} \
       pgedge-postgresql-${POSTGRES_MAJOR_VERSION}-spock50 \
       pgedge-pgbackrest \
-      pgedge-patroni
+      pgedge-patroni \
+      pgedge-control-plane
 
 # The postgresql package will create and start a default database. We recommend
 # stopping and disabling that database to avoid confusion or port conflicts.
@@ -83,79 +95,15 @@ sudo systemctl disable --now postgresql.service
 sudo systemctl disable --now postgresql@${POSTGRES_MAJOR_VERSION}-main.service
 ```
 
-## Installing the Control Plane
+The `pgedge-control-plane` package will install the following files:
 
-The pgEdge Control Plane packages are published for both `amd64` and `arm64`
-architectures.
-
-Every package will install the following files:
-
-- The Control Plane binary is installed at `/usr/sbin/pgedge-control-plane`.
-- The systemd service unit is installed at `/usr/lib/systemd/system/pgedge-control-plane.service`.
-- The default configuration file is installed at `/etc/pgedge-control-plane/config.json`.
-
-We recommend installing the Control Plane from the pgEdge Enterprise package
-repositories you configured in the [Packages](#packages) section above. If you
-don't have access to those repositories, see [Installing from GitHub
-Releases](#installing-from-github-releases) below.
-
-### RPM Package
-
-Use the following command to install the Control Plane on RHEL-like hosts:
-
-```sh
-sudo dnf install -y pgedge-control-plane
-```
-
-### Deb Package
-
-Use the following command to install the Control Plane on Debian-based hosts:
-
-```sh
-sudo apt install -y pgedge-control-plane
-```
-
-### Installing from GitHub Releases
-
-If you don't have access to the pgEdge Enterprise package repositories, you can
-download and install packages directly from the [GitHub releases
-page](https://github.com/pgedge/control-plane/releases).
-
-#### RPM Package
-
-Use the following commands to download and install the RPM:
-
-```sh
-# Detect architecture
-ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-# Set the version to install
-VERSION="v0.10.0"
-
-# Download the RPM
-curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm"
-
-# Install the RPM
-sudo rpm -i pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
-```
-
-#### Deb Package
-
-Use the following commands to download and install the deb package:
-
-```sh
-# Detect architecture
-ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-# Set the version to install
-VERSION="v0.10.0"
-
-# Download the deb package
-curl -LO --output-dir /tmp "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
-
-# Install the deb package
-sudo apt install /tmp/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
-```
+- `/etc/pgedge-control-plane/config.json`
+- `/usr/lib/systemd/system/pgedge-control-plane.service`
+- `/usr/sbin/pgedge-control-plane`
+- `/usr/share/doc/pgedge-control-plane/README.md`
+- `/usr/share/doc/pgedge-control-plane/copyright`
+- `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json`
+- `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc`
 
 ## Configuration
 
