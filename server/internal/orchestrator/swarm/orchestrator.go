@@ -984,11 +984,13 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 	// namespace via Lakekeeper's REST API. Depends on serviceInstance so it
 	// only runs once the Docker service is confirmed healthy. A failure blocks:
 	// an unbootstrapped warehouse is a broken database.
+	// spec.Port is the published HOST port, which the serve container's bridge
+	// IP does not expose; the bootstrap must use the in-container listen port.
 	lakekeeperBootstrapRes := &LakekeeperBootstrapResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		HostID:            spec.HostID,
 		ServiceName:       serviceName,
-		Port:              utils.FromPointer(spec.Port),
+		Port:              lakekeeperListenPort,
 		Config:            specForResources.Config,
 	}
 
@@ -1008,12 +1010,12 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 	// the object-store credential via ColdFront's set_storage_secret. Runs on the
 	// node's primary after the coldfront extension is available. The GUC endpoint
 	// is the catalog root: the generated service name plus the /catalog path the
-	// extension's Iceberg ATTACH requires.
-	lakekeeperPort := utils.FromPointer(spec.Port)
-	if lakekeeperPort == 0 {
-		lakekeeperPort = 8181
-	}
-	lakekeeperGUCEndpoint := fmt.Sprintf("http://%s:%d/catalog", serviceName, lakekeeperPort)
+	// extension's Iceberg ATTACH requires. The service name resolves on the
+	// database overlay, where only the in-container listen port exists — never
+	// the published host port in spec.Port.
+	lakekeeperGUCEndpoint := fmt.Sprintf(
+		"http://%s:%d/catalog", serviceName, lakekeeperListenPort,
+	)
 	lakekeeperStorageSecretRes := &LakekeeperStorageSecretResource{
 		ServiceInstanceID:  spec.ServiceInstanceID,
 		DatabaseID:         spec.DatabaseID,
@@ -1048,7 +1050,9 @@ func (o *Orchestrator) generateLakekeeperInstanceResources(spec *database.Servic
 		// Bare endpoint (no /catalog path): the tiering binaries build their own
 		// REST paths. This differs from the coldfront.lakekeeper_endpoint GUC,
 		// which needs the /catalog catalog root.
-		lakekeeperEndpoint := fmt.Sprintf("http://%s:%d", serviceName, lakekeeperPort)
+		lakekeeperEndpoint := fmt.Sprintf(
+			"http://%s:%d", serviceName, lakekeeperListenPort,
+		)
 
 		// Build the args that the scheduled-job executor will decode. The
 		// connect-as user is carried alongside the derived endpoint so the tiering

@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -10,8 +11,10 @@ import (
 )
 
 func TestLakekeeperBaseURL(t *testing.T) {
-	// Default port when unset (0) is the in-container listen port 8181.
-	assert.Equal(t, "http://172.18.0.5:8181", lakekeeperBaseURL("172.18.0.5", 0))
+	// Default port when unset (0) is the in-container listen port.
+	assert.Equal(t,
+		fmt.Sprintf("http://172.18.0.5:%d", lakekeeperListenPort),
+		lakekeeperBaseURL("172.18.0.5", 0))
 	// Explicit port is honored.
 	assert.Equal(t, "http://172.18.0.5:9000", lakekeeperBaseURL("172.18.0.5", 9000))
 }

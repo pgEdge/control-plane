@@ -161,7 +161,7 @@ func (r *LakekeeperBootstrapResource) serveBridgeHost(ctx context.Context, rc *r
 // any host-port publishing).
 func lakekeeperBaseURL(host string, port int) string {
 	if port == 0 {
-		port = 8181
+		port = lakekeeperListenPort
 	}
 	return fmt.Sprintf("http://%s:%d", host, port)
 }
