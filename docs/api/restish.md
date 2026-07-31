@@ -5,7 +5,7 @@ The pgEdge Control Plane makes use of a tool called [Restish](https://rest.sh) t
 Jump to what you're trying to do:
 
 - **[Quickstart](#quickstart)** — install Restish and run your first command against a cluster.
-- **[Managing Multiple Environments](#managing-multiple-environments)** — one cluster isn't enough, or you want a persistent setup you (and your team, if you have one) can reuse instead of reconnecting by hand every time.
+- **[Managing Multiple Environments](#managing-multiple-environments)** — one cluster isn't enough, or you want a persistent setup.
 - **[Managing Database Configuration as Files](#managing-database-configuration-as-files)** — commit database specs to source control instead of typing JSON inline.
 
 ## Quickstart
@@ -161,22 +161,24 @@ writes to your own local Restish config:
 restish api connect pgedge-sandbox http://192.168.64.3:3000
 ```
 
-If a cluster uses TLS with a private CA, or discovery fails for a
-connection set up this way, pass `--spec` with an explicit URL or local
-file:
+If a cluster uses TLS with a private CA, pass `--rsh-ca-cert` with the CA
+file so Restish trusts it; if discovery also fails for a connection set up
+this way, add `--spec` with an explicit URL or local file:
 
 ```sh
-restish api connect pgedge-sandbox https://192.168.64.3:3000 --spec https://192.168.64.3:3000/v1/openapi.json
+restish api connect pgedge-sandbox https://192.168.64.3:3000 \
+    --rsh-ca-cert ./ca.crt \
+    --spec https://192.168.64.3:3000/v1/openapi.json
 ```
 
 Either way you connect something, the same commands work afterward:
 
 ```sh
-restish api list                     # every connection you've configured
-restish api inspect pgedge           # the URL, profiles, and spec Restish resolved
-restish api remove pgedge-sandbox    # disconnect (personal connections only)
-restish pgedge --help                # every generated command
-restish pgedge list-databases --help # options for one command
+restish api list                             # every connection you've configured
+restish api inspect pgedge-sandbox           # the URL, profiles, and spec Restish resolved
+restish api remove pgedge-sandbox            # disconnect (personal connections only)
+restish pgedge-sandbox --help                # every generated command
+restish pgedge-sandbox list-databases --help # options for one command
 ```
 
 ## Managing Database Configuration as Files
@@ -194,7 +196,6 @@ cat > databases/example.json <<'EOF'
         "database_users": [
             {
                 "username": "admin",
-                "password": "password",
                 "db_owner": true,
                 "attributes": ["SUPERUSER", "LOGIN"]
             }
@@ -210,15 +211,41 @@ cat > databases/example.json <<'EOF'
 EOF
 ```
 
-Apply it by piping the file into the generated command, rather than typing
-the JSON body inline:
+`databases/example.json` never contains a password, so it's safe to commit
+right away. Creating a database still needs a real password the first
+time, though, so pass that from a separate file you don't commit instead
+of adding it to `databases/example.json`:
 
 ```sh
-restish pgedge create-database < databases/example.json
+cat > /tmp/example.create.json <<'EOF'
+{
+    "id": "example",
+    "spec": {
+        "database_name": "example",
+        "database_users": [
+            {
+                "username": "admin",
+                "password": "changeme",
+                "db_owner": true,
+                "attributes": ["SUPERUSER", "LOGIN"]
+            }
+        ],
+        "port": 5432,
+        "nodes": [
+            { "name": "n1", "host_ids": ["host-1"] },
+            { "name": "n2", "host_ids": ["host-2"] },
+            { "name": "n3", "host_ids": ["host-3"] }
+        ]
+    }
+}
+EOF
+restish pgedge create-database < /tmp/example.create.json
+rm /tmp/example.create.json
 ```
 
-Update the same database by editing the file and re-applying it against the
-`update-database` command:
+Update the same database by editing `databases/example.json` and
+re-applying it against the `update-database` command. No password is
+needed, since it's omitted from the request entirely:
 
 ```sh
 restish pgedge update-database example < databases/example.json
@@ -229,7 +256,7 @@ cluster, add the profile you set up in
 [Managing Multiple Environments](#managing-multiple-environments):
 
 ```sh
-restish -p staging pgedge create-database < databases/example.json
+restish -p staging pgedge update-database example < databases/example.json
 restish -p production pgedge update-database example < databases/example.json
 ```
 
@@ -248,15 +275,15 @@ leave them out entirely** — the Control Plane keeps whatever value is
 already stored unless you explicitly send a new one. See
 [Updating a Database](../using/update-db.md) for the full behavior.
 
-In practice, that means the default workflow is:
+In practice, that means the default workflow is the one shown above: keep
+`databases/example.json` secret-free from the start, and pass real secret
+values only from a separate, uncommitted file for the one `create-database`
+call that needs them — deleting that file immediately afterward rather than
+editing secrets out of the committed file after the fact. From then on,
+`update-database` runs against the secret-free file as-is. If you need to
+rotate a password, apply it the same way: a temporary file with the new
+value, passed once, then removed.
 
-1. Run `create-database` once, with real secret values, from a copy of the
-   file that never gets committed.
-2. Immediately delete the secret fields from `databases/example.json` before
-   committing it.
-3. From then on, `update-database` runs against the secret-free file. If you
-   need to rotate a password, set it in the file for that one apply, then
-   remove it again before committing.
-
-The committed file is always safe to read, diff, and share — it never holds
-a credential past the moment it was first used.
+This keeps `databases/example.json` safe to read, diff, and share at any
+point — it's never the file that held the credential, so there's no window
+where committing it (or `git add -A`, or a stray backup) could leak one.
