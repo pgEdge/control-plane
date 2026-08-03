@@ -41,6 +41,7 @@ const (
 	TypeFailover        Type = "failover"
 	TypeRemoveHost      Type = "remove_host"
 	TypeUpgrade         Type = "upgrade"
+	TypeTiering         Type = "tiering"
 )
 
 type Status string

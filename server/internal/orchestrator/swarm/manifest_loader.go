@@ -41,10 +41,11 @@ func manifestCachePath(dir, url string) string {
 
 // versionManifestImages is the typed images block inside version-manifest.json.
 type versionManifestImages struct {
-	Postgres  []manifestPostgresEntry `json:"postgres"`
-	PostgREST []manifestServiceEntry  `json:"postgrest"`
-	MCP       []manifestServiceEntry  `json:"mcp"`
-	RAG       []manifestServiceEntry  `json:"rag"`
+	Postgres   []manifestPostgresEntry `json:"postgres"`
+	PostgREST  []manifestServiceEntry  `json:"postgrest"`
+	MCP        []manifestServiceEntry  `json:"mcp"`
+	RAG        []manifestServiceEntry  `json:"rag"`
+	Lakekeeper []manifestServiceEntry  `json:"lakekeeper"`
 }
 
 // versionManifest is the top-level structure of version-manifest.json.
@@ -109,12 +110,12 @@ func withEmbeddedFallback() manifestLoaderOption {
 //     (always succeeds; panics only if the embedded JSON is corrupt, which
 //     indicates a broken build).
 type ManifestLoader struct {
-	cfg             config.Config
-	logger          zerolog.Logger
-	cachePath       string
-	httpClient      *http.Client
-	tickerC         <-chan time.Time // nil → use default hourly ticker; injectable for tests
-	embeddedFallback bool           // set when using the default URL; injectable for tests
+	cfg              config.Config
+	logger           zerolog.Logger
+	cachePath        string
+	httpClient       *http.Client
+	tickerC          <-chan time.Time // nil → use default hourly ticker; injectable for tests
+	embeddedFallback bool             // set when using the default URL; injectable for tests
 
 	mu          sync.RWMutex
 	versions    *Versions
@@ -414,6 +415,9 @@ func buildServiceVersions(cfg config.Config, mf *versionManifest) (*ServiceVersi
 		{"postgrest", mf.Images.PostgREST},
 		{"mcp", mf.Images.MCP},
 		{"rag", mf.Images.RAG},
+		// Customer-facing service type is "coldfront"; the container it resolves
+		// to is the Lakekeeper Iceberg catalog engine (manifest block "lakekeeper").
+		{"coldfront", mf.Images.Lakekeeper},
 	} {
 		var defaultImage, lastImage *ServiceImage
 		for _, e := range s.entries {

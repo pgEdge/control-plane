@@ -24,6 +24,9 @@ const ragContainerUID = 1001
 // See: https://github.com/PostgREST/postgrest/blob/main/Dockerfile (USER 1000)
 const postgrestContainerUID = 1000
 
+// lakekeeperListenPort is the port Lakekeeper listens on inside the container.
+const lakekeeperListenPort = 8181
+
 // Shared health check timing for all service container types.
 const (
 	serviceHealthCheckStartPeriod = 30 * time.Second
@@ -31,6 +34,16 @@ const (
 	serviceHealthCheckTimeout     = 5 * time.Second
 	serviceHealthCheckRetries     = 3
 )
+
+// lakekeeperHealthCheckStartPeriod is a longer start grace used only for the
+// Lakekeeper serve container. With LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE=true,
+// serve runs the catalog schema migration in-process before it binds its HTTP
+// listener, so on a first deploy the health check must tolerate that migration
+// time without marking the task unhealthy and triggering a restart loop. This
+// only extends the grace before a failing check counts; serve still becomes
+// healthy the instant its first check passes, and WaitForService's overall
+// 5-minute budget still bounds a genuinely stuck serve.
+const lakekeeperHealthCheckStartPeriod = 2 * time.Minute
 
 func buildPostgRESTEnvVars() []string {
 	// Connection details (hosts, credentials) are embedded in the db-uri inside
@@ -136,8 +149,14 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 	// Get container image (already resolved in ServiceImage)
 	image := opts.ServiceImage.Tag
 
-	// Build port configuration (expose 8080 for HTTP API)
-	ports := buildServicePortConfig(opts.Port)
+	// Determine target port: most services use 8080, Lakekeeper uses 8181.
+	containerPort := 8080
+	if opts.ServiceSpec.ServiceType == "coldfront" {
+		containerPort = lakekeeperListenPort
+	}
+
+	// Build port configuration
+	ports := buildServicePortConfig(opts.Port, containerPort)
 
 	// Build resource limits
 	var resources *swarm.ResourceRequirements
@@ -231,6 +250,49 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		if opts.KeysPath != "" {
 			mounts = append(mounts, docker.BuildMount(opts.KeysPath, "/app/keys", true))
 		}
+	case "coldfront":
+		// Lakekeeper is an Apache Iceberg REST catalog backed by an external
+		// Postgres instance. Connection details are supplied by the caller via
+		// ServiceSpec.Config. The LAKEKEEPER__ env vars are the idiomatic
+		// configuration mechanism for this service.
+		// Both catalog_db_url and pg_encryption_key are validated at spec time
+		// (validateLakekeeperServiceConfig / generateLakekeeperInstanceResources),
+		// so they will be non-empty here during normal operation.
+		catalogDBURL, _ := opts.ServiceSpec.Config["catalog_db_url"].(string)
+		pgEncryptionKey, _ := opts.ServiceSpec.Config["pg_encryption_key"].(string)
+		// The lakekeeper image ENTRYPOINT is the lakekeeper binary itself, so
+		// "serve" must be an ARG appended to it (Swarm ContainerSpec.Command
+		// would REPLACE the entrypoint → exec "serve" not found).
+		args = []string{"serve"}
+		env = []string{
+			"LAKEKEEPER__PG_DATABASE_URL_READ=" + catalogDBURL,
+			"LAKEKEEPER__PG_DATABASE_URL_WRITE=" + catalogDBURL,
+			"LAKEKEEPER__PG_ENCRYPTION_KEY=" + pgEncryptionKey,
+			fmt.Sprintf("LAKEKEEPER__LISTEN_PORT=%d", lakekeeperListenPort),
+			// Migrate the Iceberg catalog schema in-process on startup rather than
+			// via a separate one-shot container. serve runs the migration, then
+			// begins serving — so nothing else needs to join the database overlay
+			// and the overlay no longer has to be attachable.
+			"LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE=true",
+		}
+		healthcheck = &container.HealthConfig{
+			// "healthcheck" is a SUBCOMMAND of the lakekeeper binary, not a
+			// standalone executable, and the image is distroless (no shell), so
+			// the healthcheck must invoke the binary by its absolute path.
+			Test: []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"},
+			// serve runs the catalog migration in-process before it binds its
+			// listener (MIGRATE_BEFORE_SERVE), so it needs a longer start grace
+			// than the other services to avoid being marked unhealthy mid-migration.
+			StartPeriod: lakekeeperHealthCheckStartPeriod,
+			Interval:    serviceHealthCheckInterval,
+			Timeout:     serviceHealthCheckTimeout,
+			Retries:     serviceHealthCheckRetries,
+		}
+		if opts.DataPath != "" {
+			mounts = []mount.Mount{
+				docker.BuildMount(opts.DataPath, "/app/data", false),
+			}
+		}
 	default:
 		return swarm.ServiceSpec{}, fmt.Errorf("unsupported service type: %q", opts.ServiceSpec.ServiceType)
 	}
@@ -268,11 +330,12 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 }
 
 // buildServicePortConfig builds port configuration for service containers.
-// Exposes port 8080 for the HTTP API.
+// targetPort is the port the service listens on inside the container (typically 8080,
+// but 8181 for Lakekeeper).
 // If port is nil, no port is published.
-// If port is non-nil and > 0, publish on that specific port.
+// If port is non-nil and > 0, publish on that specific host port.
 // If port is non-nil and == 0, let Docker assign a random port.
-func buildServicePortConfig(port *int) []swarm.PortConfig {
+func buildServicePortConfig(port *int, targetPort int) []swarm.PortConfig {
 	if port == nil {
 		// Do not expose any port if not specified
 		return nil
@@ -280,7 +343,7 @@ func buildServicePortConfig(port *int) []swarm.PortConfig {
 
 	config := swarm.PortConfig{
 		PublishMode: swarm.PortConfigPublishModeHost,
-		TargetPort:  8080,
+		TargetPort:  uint32(targetPort),
 		Name:        "http",
 		Protocol:    swarm.PortConfigProtocolTCP,
 	}

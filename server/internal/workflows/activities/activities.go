@@ -47,6 +47,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.UpdatePlannedInstanceStates),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
+		work.RegisterActivity(a.RunColdFrontBinary),
 	}
 	return errors.Join(errs...)
 }

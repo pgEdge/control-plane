@@ -65,6 +65,13 @@ func (e *DefaultWorkflowExecutor) Execute(ctx context.Context, workflowName stri
 		)
 		return err
 
+	case WorkflowColdFrontArchive:
+		return e.runColdFrontTiering(ctx, "archiver", args)
+	case WorkflowColdFrontPartition:
+		return e.runColdFrontTiering(ctx, "partitioner", args)
+	case WorkflowColdFrontCompact:
+		return e.runColdFrontTiering(ctx, "compactor", args)
+
 	default:
 		return fmt.Errorf("unknown workflow: %s", workflowName)
 	}
@@ -86,4 +93,52 @@ type CreatePgBackRestBackupScheduleInput struct {
 	DatabaseID string `json:"database_id"`
 	NodeName   string `json:"node_name"`
 	Type       string `json:"type"`
+}
+
+// RunColdFrontTieringScheduleInput carries the arguments stored in
+// ScheduledJobResource.Args for the three ColdFront tiering jobs.
+type RunColdFrontTieringScheduleInput struct {
+	DatabaseID    string         `json:"database_id"`
+	NodeName      string         `json:"node_name"`
+	ServiceID     string         `json:"service_id"`
+	ServiceConfig map[string]any `json:"service_config"`
+	DatabaseName  string         `json:"database_name"`
+}
+
+func (e *DefaultWorkflowExecutor) runColdFrontTiering(ctx context.Context, binary string, args map[string]interface{}) error {
+	var input RunColdFrontTieringScheduleInput
+	if err := decodeArgs(args, &input); err != nil {
+		return err
+	}
+
+	db, err := e.dbSvc.GetDatabase(ctx, input.DatabaseID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch database: %w", err)
+	}
+	if !database.DatabaseStateModifiable(db.State) {
+		return fmt.Errorf("database is not in a modifiable state: %s", db.State)
+	}
+
+	node, err := db.Spec.Node(input.NodeName)
+	if err != nil {
+		return fmt.Errorf("invalid node name %q: %w", input.NodeName, err)
+	}
+
+	instances := make([]*workflows.InstanceHost, 0, len(node.HostIDs))
+	for _, hostID := range node.HostIDs {
+		instances = append(instances, &workflows.InstanceHost{
+			InstanceID: database.InstanceIDFor(hostID, input.DatabaseID, input.NodeName),
+			HostID:     hostID,
+		})
+	}
+
+	_, err = e.workflowSvc.RunColdFrontTiering(ctx, binary, &workflows.ColdFrontTieringInput{
+		DatabaseID:    input.DatabaseID,
+		NodeName:      input.NodeName,
+		ServiceID:     input.ServiceID,
+		ServiceConfig: input.ServiceConfig,
+		DatabaseName:  input.DatabaseName,
+		Instances:     instances,
+	})
+	return err
 }

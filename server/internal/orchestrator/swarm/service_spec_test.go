@@ -274,7 +274,8 @@ func TestBuildServicePortConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ports := buildServicePortConfig(tt.port)
+			// Pass the standard target port (8080) for these generic tests.
+			ports := buildServicePortConfig(tt.port, 8080)
 
 			if len(ports) != tt.wantPortCount {
 				t.Fatalf("got %d ports, want %d", len(ports), tt.wantPortCount)
@@ -634,6 +635,97 @@ func TestServiceContainerSpec_MCP_KBMount(t *testing.T) {
 	if !mounts[1].ReadOnly {
 		t.Error("KB mount must be read-only")
 	}
+}
+
+// --- Lakekeeper container spec tests ---
+
+func makeLakekeeperSpecOpts() *ServiceContainerSpecOptions {
+	return &ServiceContainerSpecOptions{
+		ServiceSpec: &database.ServiceSpec{
+			ServiceID:   "lakekeeper",
+			ServiceType: "coldfront",
+			Config: map[string]interface{}{
+				"catalog_db_url":    "postgres://lakekeeper:secret@pg-host1:5432/lakekeeper?sslmode=disable",
+				"pg_encryption_key": "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==",
+			},
+		},
+		ServiceInstanceID: "db1-lakekeeper-host1",
+		DatabaseID:        "db1",
+		DatabaseName:      "testdb",
+		HostID:            "host1",
+		ServiceName:       "db1-lakekeeper-host1",
+		Hostname:          "lakekeeper-host1",
+		CohortMemberID:    "node-123",
+		ServiceImage:      &ServiceImage{Tag: "quay.io/lakekeeper/catalog:v0.13.1"},
+		DatabaseNetworkID: "db1-database",
+		DataPath:          "/var/lib/pgedge/services/db1-lakekeeper-host1",
+	}
+}
+
+func TestServiceContainerSpec_Lakekeeper_Command(t *testing.T) {
+	spec, err := ServiceContainerSpec(makeLakekeeperSpecOpts())
+	require.NoError(t, err)
+
+	// The lakekeeper image ENTRYPOINT is the lakekeeper binary, so "serve" must
+	// be an Arg appended to it, NOT a Command — a Swarm ContainerSpec.Command
+	// REPLACES the entrypoint, which would try to exec "serve" (not found).
+	cs := spec.TaskTemplate.ContainerSpec
+	assert.Empty(t, cs.Command, "Command must be empty so the image entrypoint (lakekeeper binary) is used")
+	assert.Equal(t, []string{"serve"}, cs.Args)
+}
+
+func TestServiceContainerSpec_Lakekeeper_EnvVars(t *testing.T) {
+	spec, err := ServiceContainerSpec(makeLakekeeperSpecOpts())
+	require.NoError(t, err)
+
+	envMap := make(map[string]string)
+	for _, e := range spec.TaskTemplate.ContainerSpec.Env {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+
+	require.Contains(t, envMap, "LAKEKEEPER__PG_DATABASE_URL_READ")
+	require.Contains(t, envMap, "LAKEKEEPER__PG_DATABASE_URL_WRITE")
+	require.Contains(t, envMap, "LAKEKEEPER__PG_ENCRYPTION_KEY")
+	assert.Equal(t, "8181", envMap["LAKEKEEPER__LISTEN_PORT"])
+	assert.Equal(t, "postgres://lakekeeper:secret@pg-host1:5432/lakekeeper?sslmode=disable", envMap["LAKEKEEPER__PG_DATABASE_URL_READ"])
+	assert.Equal(t, "postgres://lakekeeper:secret@pg-host1:5432/lakekeeper?sslmode=disable", envMap["LAKEKEEPER__PG_DATABASE_URL_WRITE"])
+	assert.Equal(t, "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdA==", envMap["LAKEKEEPER__PG_ENCRYPTION_KEY"])
+	// serve migrates the catalog schema in-process on first start
+	// (MIGRATE_BEFORE_SERVE); there is no separate migrate container.
+	assert.Equal(t, "true", envMap["LAKEKEEPER__DEBUG__MIGRATE_BEFORE_SERVE"])
+}
+
+func TestServiceContainerSpec_Lakekeeper_Healthcheck(t *testing.T) {
+	spec, err := ServiceContainerSpec(makeLakekeeperSpecOpts())
+	require.NoError(t, err)
+
+	hc := spec.TaskTemplate.ContainerSpec.Healthcheck
+	require.NotNil(t, hc, "healthcheck must be set for lakekeeper")
+	// "healthcheck" is a subcommand of the (distroless) lakekeeper binary, so it
+	// must be invoked by absolute path — not exec'd as a standalone "healthcheck".
+	assert.Equal(t, []string{"CMD", "/home/nonroot/lakekeeper", "healthcheck"}, hc.Test)
+	// serve runs the catalog migration in-process before it binds its listener
+	// (MIGRATE_BEFORE_SERVE), so it needs a longer start grace than the other
+	// services to avoid being marked unhealthy and restarted mid-migration.
+	assert.Equal(t, lakekeeperHealthCheckStartPeriod, hc.StartPeriod,
+		"lakekeeper serve needs a longer start period to absorb first-start migration")
+}
+
+func TestServiceContainerSpec_Lakekeeper_Port8181(t *testing.T) {
+	opts := makeLakekeeperSpecOpts()
+	port := 8181
+	opts.Port = &port
+
+	spec, err := ServiceContainerSpec(opts)
+	require.NoError(t, err)
+
+	ports := spec.EndpointSpec.Ports
+	require.Len(t, ports, 1)
+	assert.Equal(t, uint32(8181), ports[0].TargetPort, "Lakekeeper target port must be 8181")
+	assert.Equal(t, uint32(8181), ports[0].PublishedPort)
 }
 
 func TestServiceContainerSpec_MCPHasConfigVersionEnv(t *testing.T) {
