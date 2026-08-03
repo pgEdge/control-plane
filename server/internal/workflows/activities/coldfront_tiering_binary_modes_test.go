@@ -185,7 +185,7 @@ type execResponse struct {
 	err      error
 }
 
-func (r *recordingExecer) Exec(_ context.Context, _ string, cmd []string) (int, string, error) {
+func (r *recordingExecer) RunInContainer(_ context.Context, _ string, cmd []string) (int, string, error) {
 	r.calls = append(r.calls, cmd)
 	if len(r.calls) <= len(r.responses) {
 		resp := r.responses[len(r.calls)-1]

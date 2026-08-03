@@ -151,6 +151,9 @@ func (r *LakekeeperCatalogDBResource) ensure(ctx context.Context, rc *resource.C
 	}
 	defer conn.Close(ctx)
 
+	// CREATE DATABASE and ALTER DATABASE ... OWNER TO are DDL and cannot take
+	// bound parameters, so the database name and owner are interpolated after
+	// postgres.QuoteIdentifier. See ensureCatalogDBStatements.
 	for _, stmt := range ensureCatalogDBStatements(r.CatalogDBName, r.CatalogDBOwner) {
 		if err := stmt.Exec(ctx, conn); err != nil {
 			return fmt.Errorf("lakekeeper catalog db %q: %w", r.CatalogDBName, err)
@@ -165,6 +168,8 @@ func (r *LakekeeperCatalogDBResource) ensure(ctx context.Context, rc *resource.C
 			r.CatalogDBName, err)
 	}
 	defer catConn.Close(ctx)
+	// CREATE EXTENSION is DDL and takes no bound parameters. The names come
+	// from catalogDBExtensions, a fixed in-code list, and are quoted anyway.
 	for _, ext := range catalogDBExtensions() {
 		stmt := postgres.Statement{
 			SQL: fmt.Sprintf("CREATE EXTENSION IF NOT EXISTS %s;", postgres.QuoteIdentifier(ext)),

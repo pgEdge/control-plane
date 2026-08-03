@@ -239,7 +239,7 @@ type fakeExecer struct {
 	err      error
 }
 
-func (f fakeExecer) Exec(_ context.Context, _ string, _ []string) (int, string, error) {
+func (f fakeExecer) RunInContainer(_ context.Context, _ string, _ []string) (int, string, error) {
 	return f.exitCode, f.output, f.err
 }
 

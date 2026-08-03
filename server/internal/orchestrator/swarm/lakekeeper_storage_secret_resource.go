@@ -177,6 +177,10 @@ func buildColdfrontGUCStatements(dbName, warehouse, lakekeeperEndpoint, localPGD
 
 // quoteColdfrontGUCLiteral wraps a value as a SQL string literal, doubling any
 // embedded single quotes. Safe with standard_conforming_strings=on.
+// The doubled single quote is the whole escape, which is correct while
+// standard_conforming_strings is on - PostgreSQL's default since 9.1, and CP
+// never turns it off. A backslash is an ordinary character under that setting,
+// so it needs no handling here.
 func quoteColdfrontGUCLiteral(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
