@@ -6,11 +6,6 @@ automatically restart the Control Plane service after the update is complete.
 > The package upgrade will preserve any modifications to the configuration file
 > at `/etc/pgedge-control-plane/config.json`.
 
-We recommend updating the Control Plane using the pgEdge Enterprise package
-repositories you configured in the [Packages](systemd-installation.md#packages)
-section. If you installed the Control Plane manually, see [Updating from
-GitHub Releases](#updating-from-github-releases) below.
-
 ## Updating the Control Plane
 
 ### RPM Package
@@ -34,59 +29,6 @@ curl http://localhost:3000/v1/version
 
 # Upgrade the package
 sudo apt install --only-upgrade -y pgedge-control-plane
-
-# (Optional) print the updated version via the API
-curl http://localhost:3000/v1/version
-```
-
-### Updating from GitHub Releases
-
-If you installed the Control Plane manually from GitHub releases, download and
-install the updated package version.
-
-#### RPM Package
-
-Use the following commands to download and install the updated RPM:
-
-```sh
-# (Optional) print the current version via the API
-curl http://localhost:3000/v1/version
-
-# Detect architecture
-ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-# Set the new version to install
-VERSION="v0.9.0"
-
-# Download the RPM
-curl -LO "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm"
-
-# Install the RPM with the 'upgrade' flag
-sudo rpm -U pgedge-control-plane_${VERSION#v}_linux_${ARCH}.rpm
-
-# (Optional) print the updated version via the API
-curl http://localhost:3000/v1/version
-```
-
-#### Deb Package
-
-Use the following commands to download and install the deb package:
-
-```sh
-# (Optional) print the current version via the API
-curl http://localhost:3000/v1/version
-
-# Detect architecture
-ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-# Set the new version to install
-VERSION="v0.9.0"
-
-# Download the deb package
-curl -LO --output-dir /tmp "https://github.com/pgedge/control-plane/releases/download/${VERSION}/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb"
-
-# Install the deb package
-sudo apt install /tmp/pgedge-control-plane_${VERSION#v}_linux_${ARCH}.deb
 
 # (Optional) print the updated version via the API
 curl http://localhost:3000/v1/version

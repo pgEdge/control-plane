@@ -103,7 +103,7 @@ Given that output, the following stack definition file will deploy a single Cont
 ```yaml
 services:
   host-1:
-    image: ghcr.io/pgedge/control-plane:v0.9.0
+    image: ghcr.io/pgedge/control-plane:v0.10.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-1
@@ -118,7 +118,7 @@ services:
         constraints:
           - node.id==vzou89zyd4n3xz6p6jvoohqxx
   host-2:
-    image: ghcr.io/pgedge/control-plane:v0.9.0
+    image: ghcr.io/pgedge/control-plane:v0.10.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-2
@@ -133,7 +133,7 @@ services:
         constraints:
           - node.id==5sa7m11ub62t1n22feuhg0mbp
   host-3:
-    image: ghcr.io/pgedge/control-plane:v0.9.0
+    image: ghcr.io/pgedge/control-plane:v0.10.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-3
@@ -196,7 +196,7 @@ For example:
 
 ```yaml
   host-4:
-    image: ghcr.io/pgedge/control-plane:v0.9.0
+    image: ghcr.io/pgedge/control-plane:v0.10.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-4
@@ -232,7 +232,7 @@ Paste the output below and click "Generate Stack." This generator is fully local
 
 <textarea id="nodes" rows="8" style="width:100%; font-family:monospace;"></textarea>
 
-<button id="generateBtn" data-input="nodes" data-output="global-output" data-version="v0.9.0" class="md-button yaml-generate">Generate Stack Definition</button>
+<button id="generateBtn" data-input="nodes" data-output="global-output" data-version="v0.10.0" class="md-button yaml-generate">Generate Stack Definition</button>
 
 ``` yaml {#global-output}
 # Once submitted, the generated stack will appear here.
@@ -261,7 +261,7 @@ mounted file:
 ```yaml
 services:
   control-plane-host-1:
-    image: ghcr.io/pgedge/control-plane:v0.9.0
+    image: ghcr.io/pgedge/control-plane:v0.10.0
     environment:
       - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=/etc/pgedge/version-manifest.json
     volumes:

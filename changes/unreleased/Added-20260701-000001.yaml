@@ -1,3 +1,0 @@
-kind: Added
-body: Added support for custom container image pinning per database or node via `orchestrator_opts.swarm.image`. pgEdge-formatted image tags are validated against the spec's declared versions; unrecognized tags are accepted without version checks. The Control Plane also persists the resolved image at creation time, preventing silent image changes during Control Plane upgrades.
-time: 2026-07-01T00:00:01.000000+00:00
