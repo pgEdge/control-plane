@@ -147,6 +147,20 @@ func SubscriptionNeedsEnable(providerName, subscriberName string, disabled bool)
 	}
 }
 
+// IsSubscriptionEnabled reports the subscription's actual sub_enabled value
+// in the catalog, independent of what Control Plane's own resource graph
+// currently declares it should be. Returns false if the subscription row
+// doesn't exist yet.
+func IsSubscriptionEnabled(providerName, subscriberName string) Query[bool] {
+	sub := subName(providerName, subscriberName)
+	return Query[bool]{
+		SQL: "SELECT EXISTS (SELECT 1 FROM spock.subscription WHERE sub_name = @sub_name AND sub_enabled = 't');",
+		Args: pgx.NamedArgs{
+			"sub_name": sub,
+		},
+	}
+}
+
 func CreateSubscription(providerName, subscriberName string, providerDSN *DSN, disabled bool, syncStructure bool, syncData bool) ConditionalStatement {
 	sub := subName(providerName, subscriberName)
 	dsn := providerDSN.String()
@@ -251,19 +265,24 @@ func subName(providerName, subscriberName string) string {
 	return fmt.Sprintf("sub_%s_%s", providerName, subscriberName)
 }
 
+// SyncEvent fires a transactional sync event. Transactional (as opposed to
+// the plain form) ensures the returned LSN is anchored no earlier than any
+// slot created just before this call in the same add-node flow — the plain
+// form could otherwise anchor an LSN below the slot's position.
 func SyncEvent() Query[string] {
 	return Query[string]{
-		SQL: "SELECT spock.sync_event();",
+		SQL: "SELECT spock.sync_event(true);",
 	}
 }
 
 func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Query[bool] {
 	return Query[bool]{
-		SQL: "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout);",
+		SQL: "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout, @wait_if_disabled);",
 		Args: pgx.NamedArgs{
-			"origin_node": originNode,
-			"lsn":         lsn,
-			"timeout":     timeoutSeconds,
+			"origin_node":      originNode,
+			"lsn":              lsn,
+			"timeout":          timeoutSeconds,
+			"wait_if_disabled": true,
 		},
 	}
 }
@@ -439,24 +458,31 @@ func AdvanceReplicationOrigin(slotName, lsn string) Statement {
 }
 
 // SpockProgressReachedLSN reports whether the local node's apply progress
-// from the named peer has reached targetLSN. Uses remote_lsn (the LSN of the
-// last applied commit in Spock 5.x) rather than received_lsn, which can
-// advance on keepalive messages before any commits have been applied.
-func SpockProgressReachedLSN(peerNodeName, targetLSN string) Query[bool] {
+// from the named peer has reached targetLSN. Uses the LSN of the last
+// applied commit (rather than received_lsn, which can advance on keepalive
+// messages before any commits have been applied). The column is named
+// remote_lsn on Spock 5.x and remote_commit_lsn on Spock 6+ (spock.progress
+// became a view over apply_group_progress() with the column renamed);
+// spockMajor selects which one to query.
+func SpockProgressReachedLSN(spockMajor uint64, peerNodeName, targetLSN string) Query[bool] {
+	lsnColumn := "remote_lsn"
+	if spockMajor >= 6 {
+		lsnColumn = "remote_commit_lsn"
+	}
 	return Query[bool]{
-		SQL: `
+		SQL: fmt.Sprintf(`
 			SELECT COALESCE(
-				(SELECT p.remote_lsn >= @target_lsn::pg_lsn
+				(SELECT p.%s >= @target_lsn::pg_lsn
 				 FROM spock.progress p
 				 JOIN spock.node n ON n.node_id = p.remote_node_id
 				 WHERE p.node_id = (SELECT node_id FROM spock.node_info())
 				   AND n.node_name = @peer_node_name),
 				false
 			)
-		`,
+		`, lsnColumn),
 		Args: pgx.NamedArgs{
 			"peer_node_name": peerNodeName,
-			"target_lsn":    targetLSN,
+			"target_lsn":     targetLSN,
 		},
 	}
 }

@@ -92,6 +92,12 @@
         "image": "pgedge-postgres:18.4-spock5.0.10-standard-1",
         "stability": "stable",
         "default": true
+      },
+      {
+        "postgres_version": "18.4",
+        "spock_version": "6",
+        "image": "pgedge-postgres:18-spock6-standard",
+        "stability": "dev"
       }
     ],
     "postgrest": [

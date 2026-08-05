@@ -25,6 +25,7 @@ services:
       - ./config.json:/config.json
       - ./data:${WORKSPACE_DIR}/docker/control-plane-dev/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - ../../server/internal/orchestrator/swarm/version-manifest.json:/version-manifest.json
     network_mode: host
   host-2:
     extends:

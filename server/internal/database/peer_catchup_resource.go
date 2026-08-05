@@ -77,6 +77,15 @@ func (r *PeerCatchupResource) Refresh(ctx context.Context, rc *resource.Context)
 	}
 	defer conn.Close(ctx)
 
+	// Default to the Spock 5.x column shape if the source's Spock major is
+	// unknown, matching pre-existing behavior for that case.
+	var spockMajor uint64
+	if source.Spec != nil && source.Spec.PgEdgeVersion != nil && source.Spec.PgEdgeVersion.SpockVersion != nil {
+		if major, ok := source.Spec.PgEdgeVersion.SpockVersion.Major(); ok {
+			spockMajor = major
+		}
+	}
+
 	const pollInterval = 500 * time.Millisecond
 
 	for {
@@ -84,7 +93,7 @@ func (r *PeerCatchupResource) Refresh(ctx context.Context, rc *resource.Context)
 			return ctx.Err()
 		}
 
-		reached, err := postgres.SpockProgressReachedLSN(r.PeerNode, syncEvent.SyncEventLsn).
+		reached, err := postgres.SpockProgressReachedLSN(spockMajor, r.PeerNode, syncEvent.SyncEventLsn).
 			Scalar(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("failed to query spock progress for peer %q: %w", r.PeerNode, err)

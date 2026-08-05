@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
@@ -96,20 +97,61 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 	}
 	defer conn.Close(ctx)
 
-	// Check if the slot is actively being used by a subscription. If so, the
-	// subscription is already replicating and we don't need to advance the slot.
-	isActive, err := postgres.
-		IsReplicationSlotActive(
-			r.DatabaseName,
-			r.ProviderNode,
-			r.SubscriberNode).
-		Scalar(ctx, conn)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("failed to check if replication slot is active: %w", err)
+	// If the subscription is already enabled and its slot is active, it's
+	// genuinely, permanently replicating on its own — nothing to advance,
+	// same as the original intent here.
+	enabled, err := postgres.IsSubscriptionEnabled(r.ProviderNode, r.SubscriberNode).Scalar(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to check if subscription is enabled: %w", err)
 	}
-	if err == nil && isActive {
-		// Slot is in use by an active subscription, skip advancing
-		return nil
+	if enabled {
+		isActive, err := postgres.
+			IsReplicationSlotActive(r.DatabaseName, r.ProviderNode, r.SubscriberNode).
+			Scalar(ctx, conn)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("failed to check if replication slot is active: %w", err)
+		}
+		if err == nil && isActive {
+			return nil
+		}
+	}
+
+	// The subscription is still disabled (the normal case for this resource,
+	// which only runs as part of add-node peer catchup). Its slot shouldn't
+	// have anything consuming it yet — but spock's internal sub_create setup
+	// (and, on Spock 6+, the C-side pause/snapshot dance sub_create now owns)
+	// can hold it transiently active around creation time. A single "active"
+	// snapshot here would previously be treated as permanent ("already
+	// replicating, nothing to do"), which is wrong for a disabled
+	// subscription — it's a race: if this runs during that transient window,
+	// AdvancedToLSN never gets set, and nothing ever re-checks. Poll until
+	// the slot goes idle instead, the same pattern PeerCatchupResource
+	// already uses for its own wait.
+	const (
+		activePollInterval = 500 * time.Millisecond
+		activeWaitTimeout  = 2 * time.Minute
+	)
+	waitCtx, cancel := context.WithTimeout(ctx, activeWaitTimeout)
+	defer cancel()
+	for {
+		isActive, err := postgres.
+			IsReplicationSlotActive(
+				r.DatabaseName,
+				r.ProviderNode,
+				r.SubscriberNode).
+			Scalar(waitCtx, conn)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("failed to check if replication slot is active: %w", err)
+		}
+		if err == nil && !isActive {
+			break
+		}
+		select {
+		case <-waitCtx.Done():
+			return fmt.Errorf("timed out waiting for replication slot %q->%q to go idle before advancing it",
+				r.ProviderNode, r.SubscriberNode)
+		case <-time.After(activePollInterval):
+		}
 	}
 
 	currentLSN, err := postgres.
@@ -122,14 +164,36 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 		return fmt.Errorf("failed to query current replication slot lsn: %w", err)
 	}
 
+	// spock.get_lsn_from_commit_ts() scans WAL forward from the slot's
+	// restart_lsn looking for a locally-originated commit (origin node_id
+	// 0) past the target timestamp. On Spock 6 this has been observed to
+	// hang indefinitely (confirmed live: 11+ minutes, sleeping in
+	// hrtimer_nanosleep between retries) on a slot that's only a few
+	// hundred bytes behind the current WAL position, when the node has had
+	// no local write traffic since — the local-origin condition it's
+	// waiting for may simply never occur, and read_local_xlog_page retries
+	// forever rather than stopping once it reaches the current insert
+	// position. Bound the wait: if it doesn't resolve quickly, the slot is
+	// almost certainly already caught up to (or past) any LSN this call
+	// would have produced, so treat a timeout the same as "nothing to
+	// advance" rather than failing the whole resource. This is safe even
+	// if that assumption is ever wrong, since spock's own origin-based
+	// conflict resolution makes re-replicating a few already-applied rows
+	// a no-op rather than data-corrupting.
+	const getLsnFromCommitTSTimeout = 3 * time.Minute
+	lsnCtx, lsnCancel := context.WithTimeout(ctx, getLsnFromCommitTSTimeout)
 	targetLSN, err := postgres.
 		GetReplicationSlotLSNFromCommitTS(
 			r.DatabaseName,
 			r.ProviderNode,
 			r.SubscriberNode,
 			commitTS).
-		Scalar(ctx, conn)
+		Scalar(lsnCtx, conn)
+	lsnCancel()
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || postgres.IsQueryCanceled(err) {
+			return nil
+		}
 		return fmt.Errorf("failed to query target replication slot lsn: %w", err)
 	}
 

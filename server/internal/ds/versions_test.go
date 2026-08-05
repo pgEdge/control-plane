@@ -61,9 +61,25 @@ func TestParseVersion(t *testing.T) {
 			expectedErr: "invalid version format",
 		},
 		{
-			// Intentionally not supporting pre-release identifiers because they
-			// are not comparable.
-			input:       "5.0.0-beta",
+			// Pre-release identifiers are accepted so we can tolerate a
+			// live-observed beta version (e.g. from spock_version()) without
+			// silently dropping the instance from reconciliation. This is not
+			// full SemVer precedence — see Version.Compare.
+			input:    "5.0.0-beta",
+			expected: &ds.Version{Components: []uint64{5, 0, 0}, PreRelease: "beta"},
+		},
+		{
+			input:    "6.0.0-beta.1",
+			expected: &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+		},
+		{
+			// Still rejected: empty pre-release suffix.
+			input:       "5.0.0-",
+			expectedErr: "invalid version format",
+		},
+		{
+			// Still rejected: SemVer build metadata is out of scope.
+			input:       "5.0.0-beta+build1",
 			expectedErr: "invalid version format",
 		},
 	} {
@@ -86,6 +102,7 @@ func TestVersion(t *testing.T) {
 			"17",
 			"17.6",
 			"5.0.0",
+			"6.0.0-beta.1",
 		} {
 			t.Run(tc, func(t *testing.T) {
 				out, err := ds.ParseVersion(tc)
@@ -94,6 +111,14 @@ func TestVersion(t *testing.T) {
 				assert.Equal(t, tc, out.String())
 			})
 		}
+	})
+
+	t.Run("MajorVersion and MajorMinorVersion drop PreRelease", func(t *testing.T) {
+		v, err := ds.ParseVersion("6.0.0-beta.1")
+		require.NoError(t, err)
+
+		assert.Equal(t, &ds.Version{Components: []uint64{6}}, v.MajorVersion())
+		assert.Equal(t, &ds.Version{Components: []uint64{6, 0}}, v.MajorMinorVersion())
 	})
 
 	t.Run("Compare", func(t *testing.T) {
@@ -166,6 +191,30 @@ func TestVersion(t *testing.T) {
 				b:        &ds.Version{Components: []uint64{1, 0, 0}},
 				expected: -1,
 			},
+			{
+				// A pre-release must never compare equal to its release
+				// counterpart, even though the numeric Components match.
+				a:        &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+				b:        &ds.Version{Components: []uint64{6, 0, 0}},
+				expected: -1,
+			},
+			{
+				a:        &ds.Version{Components: []uint64{6, 0, 0}},
+				b:        &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+				expected: 1,
+			},
+			{
+				a:        &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+				b:        &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+				expected: 0,
+			},
+			{
+				// Two different pre-releases of the same numeric version: not
+				// full SemVer precedence, just guaranteed non-equal.
+				a:        &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+				b:        &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.2"},
+				expected: -1,
+			},
 		} {
 			t.Run(fmt.Sprintf("%s and %s", tc.a.String(), tc.b.String()), func(t *testing.T) {
 				result := tc.a.Compare(tc.b)
@@ -227,6 +276,14 @@ func TestNewPgEdgeVersion(t *testing.T) {
 			postgresVersion: "17.6",
 			spockVersion:    "invalid",
 			expectedErr:     "invalid spock version",
+		},
+		{
+			postgresVersion: "17.6",
+			spockVersion:    "6.0.0-beta.1",
+			expected: &ds.PgEdgeVersion{
+				PostgresVersion: &ds.Version{Components: []uint64{17, 6}},
+				SpockVersion:    &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
+			},
 		},
 	} {
 		t.Run(tc.postgresVersion+"_"+tc.spockVersion, func(t *testing.T) {

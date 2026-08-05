@@ -5,5 +5,8 @@
     "component_levels": {
       "api_server": "error"
     }
+  },
+  "docker_swarm": {
+    "manifest_path": "/version-manifest.json"
   }
 }
