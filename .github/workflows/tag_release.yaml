@@ -1,10 +1,11 @@
 name: tag_release
 
-# Temporarily disabled: v0.10.0 was tagged manually, so this must not
-# fire again when the release/v0.10.0 PR is merged. Revert this in a
-# follow-up PR against main once that PR is merged.
 on:
-  workflow_dispatch: {}
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
 
 jobs:
   tag_release:
