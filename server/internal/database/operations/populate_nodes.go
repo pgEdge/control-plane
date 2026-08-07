@@ -116,15 +116,28 @@ func EnablePeerSubscriptions(existing, new []*NodeResources) (*resource.State, e
 			if peer == node.NodeName || peer == node.SourceNode {
 				continue
 			}
-			err := enable.AddResource(&database.SubscriptionResource{
-				DatabaseName:   dbName,
-				SubscriberNode: node.NodeName,
-				ProviderNode:   peer,
-				Disabled:       false,
-				ExtraDependencies: []resource.Identifier{
-					database.ReplicationOriginAdvanceResourceIdentifier(peer, node.NodeName, dbName),
+			err := enable.AddResource(
+				&database.SubscriptionResource{
+					DatabaseName:   dbName,
+					SubscriberNode: node.NodeName,
+					ProviderNode:   peer,
+					Disabled:       false,
+					ExtraDependencies: []resource.Identifier{
+						database.ReplicationOriginAdvanceResourceIdentifier(peer, node.NodeName, dbName),
+					},
 				},
-			})
+				// Verify the enable actually took effect. Same phase, not a
+				// separate one: this is a new resource type/identifier, not
+				// a re-declaration of an existing one, so it can safely
+				// depend on the SubscriptionResource declared just above
+				// within this same state and run after it in the same
+				// apply pass.
+				&database.VerifySubscriptionReplicatingResource{
+					DatabaseName:   dbName,
+					SubscriberNode: node.NodeName,
+					ProviderNode:   peer,
+				},
+			)
 			if err != nil {
 				return nil, fmt.Errorf("failed to add peer-enable resource to 'enable' state: %w", err)
 			}

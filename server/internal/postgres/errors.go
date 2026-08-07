@@ -24,13 +24,3 @@ func IsDatabaseNotExists(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.InvalidCatalogName
 }
-
-// IsQueryCanceled reports whether err is a PostgreSQL error indicating the
-// query was canceled (SQLSTATE 57014), which is what a caller sees when a
-// context deadline fires while a query is in flight: pgx sends a cancel
-// request and the server can return this error before the client observes
-// ctx.Err() itself.
-func IsQueryCanceled(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.QueryCanceled
-}

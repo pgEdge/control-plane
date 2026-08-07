@@ -13,6 +13,7 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*LagTrackerCommitTimestampResource](registry, ResourceTypeLagTrackerCommitTS)
 	resource.RegisterResourceType[*ReplicationSlotAdvanceFromCTSResource](registry, ResourceTypeReplicationSlotAdvanceFromCTS)
 	resource.RegisterResourceType[*ReplicationOriginAdvanceResource](registry, ResourceTypeReplicationOriginAdvance)
+	resource.RegisterResourceType[*VerifySubscriptionReplicatingResource](registry, ResourceTypeVerifySubscriptionReplicating)
 	resource.RegisterResourceType[*PeerCatchupResource](registry, ResourceTypePeerCatchup)
 	resource.RegisterResourceType[*SwitchoverResource](registry, ResourceTypeSwitchover)
 	resource.RegisterResourceType[*PostgresDatabaseResource](registry, ResourceTypePostgresDatabase)

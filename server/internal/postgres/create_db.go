@@ -464,6 +464,35 @@ func AdvanceReplicationOrigin(slotName, lsn string) Statement {
 // remote_lsn on Spock 5.x and remote_commit_lsn on Spock 6+ (spock.progress
 // became a view over apply_group_progress() with the column renamed);
 // spockMajor selects which one to query.
+// GetSpockProgressLSN reads the current apply-progress LSN this node has
+// recorded for a given peer in spock.progress. Unlike
+// SpockProgressReachedLSN (a boolean "have we passed X" check), this
+// returns the actual LSN value so a caller can use it directly as a resume
+// point — the same value Spock's own v6 zodan.sql reads instead of
+// computing one via spock.get_lsn_from_commit_ts(). Returns nil if no
+// progress entry exists yet for that peer (e.g. before spock's internal
+// seeding during sub_create has run).
+func GetSpockProgressLSN(spockMajor uint64, peerNodeName string) Query[*string] {
+	lsnColumn := "remote_lsn"
+	if spockMajor >= 6 {
+		lsnColumn = "remote_commit_lsn"
+	}
+	return Query[*string]{
+		SQL: fmt.Sprintf(`
+			SELECT (
+				SELECT p.%s::text
+				FROM spock.progress p
+				JOIN spock.node n ON n.node_id = p.remote_node_id
+				WHERE p.node_id = (SELECT node_id FROM spock.node_info())
+				  AND n.node_name = @peer_node_name
+			)
+		`, lsnColumn),
+		Args: pgx.NamedArgs{
+			"peer_node_name": peerNodeName,
+		},
+	}
+}
+
 func SpockProgressReachedLSN(spockMajor uint64, peerNodeName, targetLSN string) Query[bool] {
 	lsnColumn := "remote_lsn"
 	if spockMajor >= 6 {

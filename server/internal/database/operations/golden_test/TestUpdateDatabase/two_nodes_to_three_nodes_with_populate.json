@@ -183,6 +183,14 @@
           }
         ]
       }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.verify_subscription_replicating::n2:n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
     ]
   ],
   [
@@ -253,6 +261,11 @@
         "type": "delete",
         "resource_id": "database.roles_source::n3",
         "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.verify_subscription_replicating::n2:n3:test",
+        "diff": null
       }
     ],
     [
@@ -260,7 +273,9 @@
         "type": "delete",
         "resource_id": "database.dump_roles::n1",
         "diff": null
-      },
+      }
+    ],
+    [
       {
         "type": "delete",
         "resource_id": "database.replication_origin_advance::n2:n3:test",
