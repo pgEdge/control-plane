@@ -16,6 +16,9 @@ var dynamicGUCs = ds.NewSet(
 	"max_replication_slots",
 	"wal_keep_segments",
 	"wal_keep_size",
+	// Reload-safe, but kept identical cluster-wide alongside
+	// spock.use_native_failover_slots -- see postgres.NativeFailoverSlotGUCs.
+	"sync_replication_slots",
 )
 
 // ExtractPatroniControlledGUCs extracts the GUCs that Patroni controls into a

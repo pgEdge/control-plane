@@ -41,6 +41,30 @@ func SpockDefaultGUCs() map[string]any {
 	}
 }
 
+// NativeFailoverSlotGUCs returns the GUCs needed for PG17+'s native logical
+// replication slot failover mechanism (slots synced to physical standbys via
+// sync_replication_slots), gated on the cluster's Spock and Postgres major
+// versions. Returns an empty map for any combination that doesn't support
+// it, including an unresolved (zero) Spock major -- defensive default,
+// matching how the rest of the codebase treats an unknown version.
+//
+// Deliberately gated on spockMajor >= 6 only, never on Spock 5.x (which has
+// its own opt-in, PGC_POSTMASTER spock.use_native_failover_slots GUC,
+// default off): the design doc's own recorded decision is not to build
+// dedicated 5.0.11 support alongside the Spock 6 implementation, precisely
+// so behavior for existing 5.x users doesn't change out from under them as
+// a side effect of this. On Spock 6 the mechanism is unconditional on
+// PG17+ (the opt-in GUC was removed entirely there), so nothing else needs
+// checking once the major/version gate passes.
+func NativeFailoverSlotGUCs(spockMajor, pgMajor uint64) map[string]any {
+	if spockMajor < 6 || pgMajor < 17 {
+		return map[string]any{}
+	}
+	return map[string]any{
+		"sync_replication_slots": "on",
+	}
+}
+
 func SnowflakeLolorGUCs(nodeOrdinal int) map[string]any {
 	return map[string]any{
 		"snowflake.node": nodeOrdinal,

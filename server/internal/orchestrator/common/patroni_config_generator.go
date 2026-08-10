@@ -74,6 +74,14 @@ type PatroniConfigGenerator struct {
 	// SpecParameters are user-specified Postgres parameters that are included
 	// in the database spec.
 	SpecParameters map[string]any `json:"spec_parameters,omitempty"`
+	// SpockMajor is this instance's reported Spock major version, or 0 if
+	// unresolved. Used to gate version-specific GUCs (e.g. native failover
+	// slots) -- see postgres.NativeFailoverSlotGUCs.
+	SpockMajor uint64 `json:"spock_major,omitempty"`
+	// PgMajor is this instance's reported Postgres major version, or 0 if
+	// unresolved. Used to gate version-specific GUCs (e.g. native failover
+	// slots) -- see postgres.NativeFailoverSlotGUCs.
+	PgMajor uint64 `json:"pg_major,omitempty"`
 	// TenantID is an optional tenant ID that is associated with this instance.
 	TenantID *string `json:"tenant_id,omitempty"`
 }
@@ -128,6 +136,15 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 			restoreCommand = opts.Paths.PgBackRestRestoreCmd("restore", restoreOptions...).String()
 		}
 	}
+	var spockMajor, pgMajor uint64
+	if opts.Instance.PgEdgeVersion != nil {
+		if opts.Instance.PgEdgeVersion.SpockVersion != nil {
+			spockMajor, _ = opts.Instance.PgEdgeVersion.SpockVersion.Major()
+		}
+		if opts.Instance.PgEdgeVersion.PostgresVersion != nil {
+			pgMajor, _ = opts.Instance.PgEdgeVersion.PostgresVersion.Major()
+		}
+	}
 	return &PatroniConfigGenerator{
 		ArchiveCommand:         archiveCommand,
 		ClusterSize:            opts.Instance.ClusterSize,
@@ -148,6 +165,8 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		PostgresPort:           opts.PostgresPort,
 		RestoreCommand:         restoreCommand,
 		SpecParameters:         opts.Instance.PostgreSQLConf,
+		SpockMajor:             spockMajor,
+		PgMajor:                pgMajor,
 		PgHbaConf:              opts.Instance.PgHbaConf,
 		PgIdentConf:            opts.Instance.PgIdentConf,
 		TenantID:               opts.Instance.TenantID,
@@ -227,6 +246,7 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 		})
 	}
 	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(p.NodeOrdinal))
+	maps.Copy(parameters, postgres.NativeFailoverSlotGUCs(p.SpockMajor, p.PgMajor))
 	maps.Copy(parameters, p.SpecParameters)
 
 	return parameters
