@@ -88,7 +88,15 @@ func (r *ReplicationSlotCreateResource) Create(ctx context.Context, rc *resource
 	}
 	defer conn.Close(ctx)
 
-	stmt := postgres.CreateReplicationSlot(r.DatabaseName, r.ProviderNode, r.SubscriberNode)
+	// Failover slots are only meaningful on Spock 6 + PG17+: PG17 added the
+	// failover parameter to pg_create_logical_replication_slot, and Spock 6
+	// is the line this is being validated against. A version that fails to
+	// report a major defaults to no failover, matching today's behavior.
+	spockMajor, _ := instance.Spec.PgEdgeVersion.SpockVersion.Major()
+	pgMajor, _ := instance.Spec.PgEdgeVersion.PostgresVersion.Major()
+	failover := spockMajor >= 6 && pgMajor >= 17
+
+	stmt := postgres.CreateReplicationSlot(r.DatabaseName, r.ProviderNode, r.SubscriberNode, pgMajor, failover)
 	if err := stmt.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create replication slot: %w", err)
 	}

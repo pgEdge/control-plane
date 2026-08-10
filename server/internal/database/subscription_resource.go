@@ -121,6 +121,17 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	}
 	defer conn.Close(ctx)
 
+	// Drop any stale replication origin left over from a previous
+	// incarnation of this provider/subscriber pair (e.g. a node removed
+	// and later re-added under the same name) before creating the
+	// subscription fresh — otherwise the new subscription's origin could
+	// start from a leftover LSN instead of 0/0. See
+	// postgres.DropStaleReplicationOrigin.
+	err = postgres.DropStaleReplicationOrigin(s.DatabaseName, s.ProviderNode, s.SubscriberNode).Exec(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to drop stale replication origin on node %s: %w", s.SubscriberNode, err)
+	}
+
 	err = postgres.
 		CreateSubscription(
 			s.ProviderNode,
