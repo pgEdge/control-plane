@@ -2,10 +2,43 @@ package postgres
 
 import (
 	"math"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
-func DefaultGUCs() map[string]any {
-	return map[string]any{
+// minOutputPluginLibrariesVersions are the earliest Postgres minor version per
+// major version that gates output plugins behind the output_plugin_libraries
+// allowlist GUC. Any major version newer than the last entry here is assumed
+// to require it as well. See SPOC-651 / PLAT-721.
+var minOutputPluginLibrariesVersions = map[uint64]*ds.Version{
+	16: ds.MustParseVersion("16.15"),
+	17: ds.MustParseVersion("17.11"),
+	18: ds.MustParseVersion("18.5"),
+}
+
+// needsOutputPluginLibraries reports whether the given Postgres version
+// requires output_plugin_libraries to be set in order to allow spock_output
+// to create replication slots.
+func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
+	if version == nil || version.PostgresVersion == nil {
+		return false
+	}
+	pgVersion := version.PostgresVersion.MajorMinorVersion()
+	major, ok := pgVersion.Major()
+	if !ok {
+		return false
+	}
+	minVersion, ok := minOutputPluginLibrariesVersions[major]
+	if !ok {
+		// Newer majors than we know about are assumed to need it; older
+		// majors than we know about never had the gate.
+		return major > 18
+	}
+	return pgVersion.Compare(minVersion) >= 0
+}
+
+func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
+	gucs := map[string]any{
 		"archive_command":              "/bin/true",
 		"archive_mode":                 "on",
 		"checkpoint_completion_target": "0.9",
@@ -28,6 +61,10 @@ func DefaultGUCs() map[string]any {
 		"wal_log_hints":                "on",
 		"wal_sender_timeout":           "5s",
 	}
+	if needsOutputPluginLibraries(version) {
+		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
+	}
+	return gucs
 }
 
 func SpockDefaultGUCs() map[string]any {

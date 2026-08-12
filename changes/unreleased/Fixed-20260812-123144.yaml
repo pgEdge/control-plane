@@ -1,0 +1,3 @@
+kind: Fixed
+body: Enable spock_output for Postgres 16.15+, 17.11+, and 18.5+ to restore replication slot creation.
+time: 2026-08-12T12:31:44.954828+05:30
