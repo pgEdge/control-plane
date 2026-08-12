@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.10.1 - 2026-08-12
+
+### Fixed
+
+- Fixed replication slot creation failing on Postgres 16.15, 17.11, 18.6, and newer minor versions by automatically setting `output_plugin_libraries` to allow `spock_output`.
+
 ## v0.10.0 - 2026-07-24
 
 ### Added
