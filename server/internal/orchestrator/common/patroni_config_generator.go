@@ -12,6 +12,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/postgres/hba"
@@ -59,6 +60,9 @@ type PatroniConfigGenerator struct {
 	PatroniAllowlist []string `json:"patroni_allowlist"`
 	// PatroniPort is the port that Patroni will listen on.
 	PatroniPort int `json:"patroni_port"`
+	// PgEdgeVersion is the Postgres/Spock version for this instance. This is
+	// used to gate version-specific default Postgres parameters.
+	PgEdgeVersion *ds.PgEdgeVersion `json:"pg_edge_version,omitempty"`
 	// PgHbaConf are user-supplied pg_hba.conf entries (one rule per element),
 	// inserted in the user zone after the CP rules and before the catch-all.
 	PgHbaConf []string `json:"pg_hba_conf,omitempty"`
@@ -144,6 +148,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		NodeSize:               opts.Instance.NodeSize,
 		OrchestratorParameters: opts.OrchestratorParameters,
 		PatroniPort:            opts.PatroniPort,
+		PgEdgeVersion:          opts.Instance.PgEdgeVersion,
 		PostgresCertsDir:       opts.Paths.Instance.PostgresCertificates(),
 		PostgresPort:           opts.PostgresPort,
 		RestoreCommand:         restoreCommand,
@@ -207,7 +212,7 @@ func (p *PatroniConfigGenerator) AuthMethod() hba.AuthMethod {
 }
 
 func (p *PatroniConfigGenerator) parameters() map[string]any {
-	parameters := postgres.DefaultGUCs()
+	parameters := postgres.DefaultGUCs(p.PgEdgeVersion)
 	maps.Copy(parameters, postgres.SpockDefaultGUCs())
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{
