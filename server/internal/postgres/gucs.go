@@ -13,7 +13,7 @@ import (
 var minOutputPluginLibrariesVersions = map[uint64]*ds.Version{
 	16: ds.MustParseVersion("16.15"),
 	17: ds.MustParseVersion("17.11"),
-	18: ds.MustParseVersion("18.5"),
+	18: ds.MustParseVersion("18.6"),
 }
 
 // needsOutputPluginLibraries reports whether the given Postgres version

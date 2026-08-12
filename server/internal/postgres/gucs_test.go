@@ -25,8 +25,8 @@ func TestDefaultGUCsOutputPluginLibraries(t *testing.T) {
 		{name: "pg16 above gate", version: ds.MustParsePgEdgeVersion("16.16", "4"), expectedPresent: true},
 		{name: "pg17 below gate", version: ds.MustParsePgEdgeVersion("17.10", "4"), expectedPresent: false},
 		{name: "pg17 at gate", version: ds.MustParsePgEdgeVersion("17.11", "4"), expectedPresent: true},
-		{name: "pg18 below gate", version: ds.MustParsePgEdgeVersion("18.4", "4"), expectedPresent: false},
-		{name: "pg18 at gate", version: ds.MustParsePgEdgeVersion("18.5", "4"), expectedPresent: true},
+		{name: "pg18 below gate", version: ds.MustParsePgEdgeVersion("18.5", "4"), expectedPresent: false},
+		{name: "pg18 at gate", version: ds.MustParsePgEdgeVersion("18.6", "4"), expectedPresent: true},
 		{name: "future major", version: ds.MustParsePgEdgeVersion("19.0", "4"), expectedPresent: true},
 		{name: "older major", version: ds.MustParsePgEdgeVersion("15.10", "4"), expectedPresent: false},
 	} {

@@ -233,13 +233,13 @@ After creating the database, you can enable extensions in your database using `C
 
 ### output_plugin_libraries and Postgres Minor Versions
 
-Postgres 16.15, 17.11, 18.5, and later minor versions add a new `output_plugin_libraries` allow-list that restricts which logical decoding output plugins the server accepts. Its built-in default is `pgoutput, test_decoding`, which does not include `spock_output`. Without it on the list, Spock cannot create its replication slot and replication stops on the provider node.
+Postgres 16.15, 17.11, 18.6, and later minor versions add a new `output_plugin_libraries` allow-list that restricts which logical decoding output plugins the server accepts. Its built-in default is `pgoutput, test_decoding`, which does not include `spock_output`. Without it on the list, Spock cannot create its replication slot and replication stops on the provider node.
 
 The Control Plane automatically sets `output_plugin_libraries` to `pgoutput, test_decoding, spock_output` on any instance running one of these patched minor versions or newer, so Spock keeps working once an instance is upgraded to a patched version. No action is required to benefit from this.
 
 !!! warning
 
-    `output_plugin_libraries` is a core Postgres setting, not an extension GUC. A minor version older than 16.15 / 17.11 / 18.5 does not recognize it at all, and refuses to start with `unrecognized configuration parameter "output_plugin_libraries"` if it is set to any value, including an empty one. The Control Plane only sets this parameter for instances already running a patched minor version, so pinning an older `postgres_version` (see [Upgrading a Database](./upgrade-db.md#minor-version-upgrades)) requires no action on your part — just don't set `output_plugin_libraries` in `postgresql_conf` yourself unless every node in the database is already on a patched minor version.
+    `output_plugin_libraries` is a core Postgres setting, not an extension GUC. A minor version older than 16.15 / 17.11 / 18.6 does not recognize it at all, and refuses to start with `unrecognized configuration parameter "output_plugin_libraries"` if it is set to any value, including an empty one. The Control Plane only sets this parameter for instances already running a patched minor version, so pinning an older `postgres_version` (see [Upgrading a Database](./upgrade-db.md#minor-version-upgrades)) requires no action on your part — just don't set `output_plugin_libraries` in `postgresql_conf` yourself unless every node in the database is already on a patched minor version.
 
 If you need to allow additional output plugins beyond `spock_output`, set `postgresql_conf.output_plugin_libraries` explicitly with the full list you need; this overrides the Control Plane's default for that database or node.
 
