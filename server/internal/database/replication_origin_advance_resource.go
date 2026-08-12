@@ -79,7 +79,10 @@ func (r *ReplicationOriginAdvanceResource) Create(ctx context.Context, rc *resou
 	}
 	defer conn.Close(ctx)
 
-	slotName := postgres.ReplicationSlotName(r.DatabaseName, r.ProviderNode, r.SubscriberNode)
+	slotName, err := postgres.ResolveSlotName(r.DatabaseName, r.ProviderNode, r.SubscriberNode).Scalar(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to resolve replication slot name: %w", err)
+	}
 
 	if err := postgres.EnsureReplicationOriginExists(slotName).Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to ensure replication origin on subscriber %q: %w", r.SubscriberNode, err)

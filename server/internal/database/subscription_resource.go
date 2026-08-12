@@ -121,6 +121,10 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	}
 	defer conn.Close(ctx)
 
+	if err := postgres.DropStaleReplicationOrigin(s.DatabaseName, s.ProviderNode, s.SubscriberNode).Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to drop stale replication origin on node %s: %w", s.SubscriberNode, err)
+	}
+
 	err = postgres.
 		CreateSubscription(
 			s.ProviderNode,

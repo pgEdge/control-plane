@@ -78,6 +78,11 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		return resource.ErrNotFound
 	}
 
+	waitIfDisabled, err := spockSupportsSyncEventArgs(ctx, subscriberConn)
+	if err != nil {
+		return fmt.Errorf("failed to check spock version on subscriber: %w", err)
+	}
+
 	const pollInterval = 10 * time.Second
 
 	for {
@@ -116,7 +121,7 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 
 		// Try short wait for sync event with poll interval as timeout
 		synced, err := postgres.WaitForSyncEvent(
-			r.ProviderNode, syncEvent.SyncEventLsn, int(pollInterval.Seconds()),
+			r.ProviderNode, syncEvent.SyncEventLsn, int(pollInterval.Seconds()), waitIfDisabled,
 		).Scalar(ctx, subscriberConn)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return resource.ErrNotFound
