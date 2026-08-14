@@ -85,6 +85,68 @@ func PopulateNodes(existing, new []*NodeResources) (*resource.State, error) {
 	return merged, nil
 }
 
+// EnablePeerSubscriptions returns a diff that enables the peer subscriptions
+// addPeerResources creates disabled. It must be applied as a separate, later
+// phase than PopulateNodes' own state.
+//
+// addPeerResources creates each peer->new-node subscription disabled so the
+// peer-catchup chain (SyncEvent -> WaitForSyncEvent -> PeerCatchup ->
+// LagTracker -> ReplicationSlotAdvanceFromCTS -> ReplicationOriginAdvance)
+// can run without a live subscriber racing that setup. But a single
+// resource.State can only express one desired value per identifier, so that
+// same state can never also declare "now enable it" — nothing else in the
+// codebase ever does, which left these subscriptions permanently disabled.
+// This returns a second state that re-declares the same SubscriptionResource
+// identifiers with Disabled: false; applied after the populate phase is
+// fully persisted, its diff sees disabled->enabled and calls Update, which
+// is what actually flips sub_enabled in spock.subscription.
+func EnablePeerSubscriptions(existing, new []*NodeResources) (*resource.State, error) {
+	existingNodeNames := make([]string, len(existing))
+	for i, n := range existing {
+		existingNodeNames[i] = n.NodeName
+	}
+
+	enable := resource.NewState()
+	for _, node := range new {
+		if node.SourceNode == "" {
+			continue
+		}
+		dbName := node.DatabaseName
+		for _, peer := range existingNodeNames {
+			if peer == node.NodeName || peer == node.SourceNode {
+				continue
+			}
+			err := enable.AddResource(
+				&database.SubscriptionResource{
+					DatabaseName:   dbName,
+					SubscriberNode: node.NodeName,
+					ProviderNode:   peer,
+					Disabled:       false,
+					ExtraDependencies: []resource.Identifier{
+						database.ReplicationOriginAdvanceResourceIdentifier(peer, node.NodeName, dbName),
+					},
+				},
+				// Verify the enable actually took effect. Same phase, not a
+				// separate one: this is a new resource type/identifier, not
+				// a re-declaration of an existing one, so it can safely
+				// depend on the SubscriptionResource declared just above
+				// within this same state and run after it in the same
+				// apply pass.
+				&database.VerifySubscriptionReplicatingResource{
+					DatabaseName:   dbName,
+					SubscriberNode: node.NodeName,
+					ProviderNode:   peer,
+				},
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to add peer-enable resource to 'enable' state: %w", err)
+			}
+		}
+	}
+
+	return enable, nil
+}
+
 func addPeerResources(
 	state *resource.State,
 	dbName string,

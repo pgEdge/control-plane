@@ -77,6 +77,12 @@ func (r *PeerCatchupResource) Refresh(ctx context.Context, rc *resource.Context)
 	}
 	defer conn.Close(ctx)
 
+	spockVersion, err := getLiveSpockVersion(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to check spock version on source node %q: %w", r.SourceNode, err)
+	}
+	spockMajor, _ := spockVersion.Major()
+
 	const pollInterval = 500 * time.Millisecond
 
 	for {
@@ -84,7 +90,7 @@ func (r *PeerCatchupResource) Refresh(ctx context.Context, rc *resource.Context)
 			return ctx.Err()
 		}
 
-		reached, err := postgres.SpockProgressReachedLSN(r.PeerNode, syncEvent.SyncEventLsn).
+		reached, err := postgres.SpockProgressReachedLSN(spockMajor, r.PeerNode, syncEvent.SyncEventLsn).
 			Scalar(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("failed to query spock progress for peer %q: %w", r.PeerNode, err)

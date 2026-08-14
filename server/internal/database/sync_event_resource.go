@@ -13,18 +13,31 @@ import (
 
 var minSpockVersionForSyncEventArgs = ds.MustParseVersion(postgres.MinSpockVersionForSyncEventArgs)
 
+// getLiveSpockVersion queries conn directly for the Spock version actually
+// running on this connection, rather than trusting spec/stored state — spec
+// state can lag behind what's really deployed (e.g. mid add-node, mid
+// upgrade), and every SQL-shape decision gated on Spock version needs to
+// match what's really there.
+func getLiveSpockVersion(ctx context.Context, conn *pgx.Conn) (*ds.Version, error) {
+	versionStr, err := postgres.GetSpockVersion().Scalar(ctx, conn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get spock version: %w", err)
+	}
+	version, err := ds.ParseVersion(versionStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse spock version %q: %w", versionStr, err)
+	}
+	return version, nil
+}
+
 // spockSupportsSyncEventArgs reports whether conn's Spock version is new
 // enough for spock.sync_event(boolean) and the 5-arg
 // spock.wait_for_sync_event(..., wait_if_disabled) — see
 // postgres.MinSpockVersionForSyncEventArgs.
 func spockSupportsSyncEventArgs(ctx context.Context, conn *pgx.Conn) (bool, error) {
-	versionStr, err := postgres.GetSpockVersion().Scalar(ctx, conn)
+	version, err := getLiveSpockVersion(ctx, conn)
 	if err != nil {
-		return false, fmt.Errorf("failed to get spock version: %w", err)
-	}
-	version, err := ds.ParseVersion(versionStr)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse spock version %q: %w", versionStr, err)
+		return false, err
 	}
 	return version.Compare(minSpockVersionForSyncEventArgs) >= 0, nil
 }

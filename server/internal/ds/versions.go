@@ -47,6 +47,11 @@ var _ encoding.TextUnmarshaler = (*Version)(nil)
 
 type Version struct {
 	Components []uint64 `json:"components"`
+	// PreRelease is the optional suffix after a "-" (e.g. "beta.1" in
+	// "6.0.0-beta.1"). It is an opaque string, not decomposed into SemVer
+	// precedence rules, and is intentionally dropped by MajorVersion and
+	// MajorMinorVersion since a major/major-minor bucket never carries one.
+	PreRelease string `json:"pre_release,omitempty"`
 }
 
 func (v *Version) Major() (uint64, bool) {
@@ -64,6 +69,8 @@ func (v *Version) MajorString() (string, bool) {
 	return strconv.FormatUint(major, 10), true
 }
 
+// MajorVersion returns just the major component. PreRelease is intentionally
+// dropped: a major-version bucket never carries a pre-release suffix.
 func (v *Version) MajorVersion() *Version {
 	if len(v.Components) == 0 {
 		return &Version{}
@@ -73,6 +80,9 @@ func (v *Version) MajorVersion() *Version {
 	}
 }
 
+// MajorMinorVersion returns the major.minor components. PreRelease is
+// intentionally dropped: a major.minor bucket never carries a pre-release
+// suffix.
 func (v *Version) MajorMinorVersion() *Version {
 	components := slices.Clone(v.Components)
 	if len(components) > 2 {
@@ -88,12 +98,17 @@ func (v *Version) String() string {
 	for i, c := range v.Components {
 		components[i] = strconv.FormatUint(c, 10)
 	}
-	return strings.Join(components, ".")
+	s := strings.Join(components, ".")
+	if v.PreRelease != "" {
+		s += "-" + v.PreRelease
+	}
+	return s
 }
 
 func (v *Version) Clone() *Version {
 	return &Version{
 		Components: slices.Clone(v.Components),
+		PreRelease: v.PreRelease,
 	}
 }
 
@@ -107,6 +122,7 @@ func (v *Version) UnmarshalText(data []byte) error {
 		return err
 	}
 	v.Components = parsed.Components
+	v.PreRelease = parsed.PreRelease
 	return nil
 }
 
@@ -138,11 +154,32 @@ func (v *Version) UnmarshalJSON(data []byte) error {
 	}
 }
 
+// Compare orders by numeric components first. If those are equal, a
+// pre-release never compares equal to its release counterpart (a release
+// sorts after any pre-release of the same numeric version), and two
+// different pre-releases of the same numeric version fall back to a plain
+// string comparison. This is NOT full SemVer pre-release precedence — it's
+// just enough to avoid falsely claiming two different versions are equal.
 func (v *Version) Compare(other *Version) int {
-	return slices.Compare(v.Components, other.Components)
+	if c := slices.Compare(v.Components, other.Components); c != 0 {
+		return c
+	}
+	switch {
+	case v.PreRelease == other.PreRelease:
+		return 0
+	case v.PreRelease == "":
+		return 1
+	case other.PreRelease == "":
+		return -1
+	default:
+		return strings.Compare(v.PreRelease, other.PreRelease)
+	}
 }
 
-var semverRegexp = regexp.MustCompile(`^\d+(\.\d+){0,2}$`)
+// semverRegexp matches "<major>[.<minor>[.<patch>]][-<prerelease>]". The
+// pre-release group accepts dot/hyphen-separated alphanumeric identifiers
+// (e.g. "beta", "beta.1", "rc.2") but not SemVer build metadata ("+...").
+var semverRegexp = regexp.MustCompile(`^(\d+(?:\.\d+){0,2})(?:-([0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*))?$`)
 
 func MustParseVersion(s string) *Version {
 	v, err := ParseVersion(s)
@@ -153,10 +190,11 @@ func MustParseVersion(s string) *Version {
 }
 
 func ParseVersion(s string) (*Version, error) {
-	if !semverRegexp.MatchString(s) {
+	m := semverRegexp.FindStringSubmatch(s)
+	if m == nil {
 		return nil, fmt.Errorf("invalid version format: %q", s)
 	}
-	parts := strings.Split(s, ".")
+	parts := strings.Split(m[1], ".")
 	components := make([]uint64, len(parts))
 	for i, p := range parts {
 		c, err := strconv.ParseUint(p, 10, 64)
@@ -165,7 +203,7 @@ func ParseVersion(s string) (*Version, error) {
 		}
 		components[i] = c
 	}
-	return &Version{Components: components}, nil
+	return &Version{Components: components, PreRelease: m[2]}, nil
 }
 
 type PgEdgeVersion struct {

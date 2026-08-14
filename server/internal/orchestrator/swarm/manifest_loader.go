@@ -382,16 +382,36 @@ func buildVersions(cfg config.Config, mf *versionManifest) (*Versions, error) {
 		}
 		img := &Images{
 			PgEdgeImage: serviceImageTag(cfg, e.Image),
+			Stability:   e.Stability,
 		}
 		versions.addImage(pv, img)
 		if e.Default {
+			if e.Stability != "" && e.Stability != "stable" {
+				return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: a %q-stability entry cannot be marked default",
+					e.PostgresVersion, e.SpockVersion, e.Stability)
+			}
 			defaultVer = pv
 		}
 	}
 
 	if defaultVer == nil {
-		// Fall back to the last entry if no default is marked.
-		defaultVer = versions.supportedVersions[len(versions.supportedVersions)-1]
+		// Fall back to the last stable entry if no default is marked. A
+		// non-stable (e.g. "dev") entry must never become the default just
+		// because it happens to be last in the manifest.
+		for i := len(entries) - 1; i >= 0 && defaultVer == nil; i-- {
+			if entries[i].Stability != "" && entries[i].Stability != "stable" {
+				continue
+			}
+			pv, err := ds.ParsePgEdgeVersion(entries[i].PostgresVersion, entries[i].SpockVersion)
+			if err != nil {
+				return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: %w",
+					entries[i].PostgresVersion, entries[i].SpockVersion, err)
+			}
+			defaultVer = pv
+		}
+		if defaultVer == nil {
+			return nil, fmt.Errorf("manifest has no stable entry to use as a default")
+		}
 	}
 	versions.defaultVersion = defaultVer
 
