@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.10.1 - 2026-08-12
+
+### Fixed
+
+- Fixed replication slot creation failing on Postgres 16.15, 17.11, 18.6, and newer minor versions by automatically setting `output_plugin_libraries` to allow `spock_output`.
+
 ## v0.10.0 - 2026-07-24
 
 ### Added
@@ -23,6 +29,8 @@
 - Fixed Patroni rejecting connections from IPv4 addresses presented as IPv4-mapped IPv6 addresses (e.g. `::ffff:192.168.1.1`) on dual-stack hosts.
 - Fixed rolling updates failing on multi-node databases with replica instances due to replication slot timing during instance initialization.
 - Fixed an issue where services configured with `"version": "latest"` failed at runtime because `"latest"` was not registered in the version map.
+- The RPM and DEB packages now bundle the project documentation and license, installing `README.md` to `/usr/share/doc/pgedge-control-plane/` and `LICENSE.md` to `/usr/share/licenses/pgedge-control-plane/`.
+- RPM and DEB packages now install files with explicit, deterministic permissions rather than inheriting the build machine's umask, which produced group-writable `0664` files. `/usr/lib/systemd/system/pgedge-control-plane.service` is now `0644` and `/etc/pgedge-control-plane/config.json` is now `0640`.
 
 ### Security
 
