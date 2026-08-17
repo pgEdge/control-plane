@@ -238,7 +238,88 @@ asynchronously.
     and Spock major bucket as the database’s current version, and must be
     strictly newer than the currently running image. Same-version or downgrade
     requests are rejected. To upgrade to a different Postgres major version,
-    see [Major Version Upgrades](#major-version-upgrades).
+    see [Major Version Upgrades](#major-version-upgrades). To upgrade to a
+    different Spock major version, see
+    [Spock Major-Version Upgrades](#spock-major-version-upgrades).
+
+## Spock Major-Version Upgrades
+
+The Control Plane supports upgrading a database's Spock extension across a
+major version boundary (for example, Spock 5.x to 6.x) through a dedicated
+action, separate from both the minor/patch upgrade path above and the
+Postgres major-version approach. A Spock major-version change affects the
+replication protocol itself, so it's rolled out one node at a time rather
+than applied uniformly the way a build-number bump is.
+
+!!! note "systemd clusters"
+
+    API-driven Spock major-version upgrades are not supported on systemd
+    clusters.
+
+To start the upgrade, submit a `POST` request to the
+`/v1/databases/{database_id}/upgrade-major` endpoint with the target Spock
+version and the image to upgrade to:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/upgrade-major \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "target_spock_version": "6",
+            "image": "ghcr.io/pgedge/pgedge-postgres:18.4-spock6.0.0-standard-1"
+        }'
+    ```
+
+The response contains a `task` object (type `major_upgrade`) and the updated
+`database` object. Use `task.task_id` to track progress as described in
+[Tasks and Logs](./tasks-logs.md).
+
+By default, nodes are upgraded in the order they appear in the database
+spec. To control the order explicitly, include `node_order`, naming every
+node in the database exactly once:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/upgrade-major \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "target_spock_version": "6",
+            "image": "ghcr.io/pgedge/pgedge-postgres:18.4-spock6.0.0-standard-1",
+            "node_order": ["n3", "n1", "n2"]
+        }'
+    ```
+
+### How the Upgrade Works
+
+The Control Plane upgrades one node at a time: it swaps that node's image,
+waits for Spock's own extension-update mechanism to bring it onto the new
+major version, and confirms the node has actually resumed replicating with
+its peers before moving on to the next node. Every node except the one
+currently being upgraded remains fully readable and writable throughout —
+Spock supports replication between mixed major versions during this
+transition window.
+
+Once every node is on the target version, the database's spec is normalized
+back to a single `spock_version` field at the database level.
+
+!!! note
+
+    The target image must be present in the version manifest at the
+    requested Spock major version and the same Postgres version as the
+    database's current version — a Spock major-version upgrade changes
+    Spock only, not Postgres. Requests to move to the same major version or
+    to an older one are rejected: Spock cannot be downgraded in place. To
+    apply a Postgres version change instead, see
+    [Minor Version Upgrades](#minor-version-upgrades) or
+    [Major Version Upgrades](#major-version-upgrades) above.
+
+!!! warning
+
+    As with any major-version upgrade, test this against a non-production
+    database first, and take a fresh backup before upgrading your production
+    database. See [Backup and Restore](./backup-restore.md).
 
 ## Which Versions Are Available
 
