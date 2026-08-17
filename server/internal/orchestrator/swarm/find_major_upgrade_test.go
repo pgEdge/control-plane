@@ -81,4 +81,12 @@ func TestOrchestrator_FindMajorUpgrade(t *testing.T) {
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, database.ErrUpgradeNotAvailable))
 	})
+
+	t.Run("rejects a downgrade to an older spock major", func(t *testing.T) {
+		currentAtSpock6 := ds.MustParsePgEdgeVersion("18.4", "6")
+		_, err := o.FindMajorUpgrade(currentAtSpock6, "5", spock5Image)
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, database.ErrUpgradeNotAvailable))
+		assert.ErrorContains(t, err, "older than current")
+	})
 }

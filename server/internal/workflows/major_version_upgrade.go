@@ -96,11 +96,15 @@ func (w *Workflows) MajorVersionUpgrade(ctx workflow.Context, input *MajorVersio
 		return nil, handleError(err)
 	}
 
+	if len(input.NodeOrder) == 0 {
+		return nil, handleError(errors.New("node_order must not be empty"))
+	}
+
 	spec := input.Spec
 	var lastState *resource.State
 
 	for i, nodeName := range input.NodeOrder {
-		logEvent(fmt.Sprintf("upgrading node %q to spock %s (%d/%d)", nodeName, input.TargetSpockVersion, i+1, len(input.NodeOrder)))
+		logEvent(fmt.Sprintf("upgrading node %q to spock %s via image %s (%d/%d)", nodeName, input.TargetSpockVersion, input.Image, i+1, len(input.NodeOrder)))
 
 		nodeSpec := spec.Clone()
 		found := false
@@ -108,14 +112,14 @@ func (w *Workflows) MajorVersionUpgrade(ctx workflow.Context, input *MajorVersio
 			if node.Name != nodeName {
 				continue
 			}
+			// Only the Spock version needs to change here. SwarmOpts.Image is a
+			// user-only field the CP must never write; SwarmOpts.ResolvedImage is
+			// the CP-managed one, and ReconcileInstanceSpec already clears it and
+			// re-derives the correct image from the manifest whenever
+			// PgEdgeVersion changes — the same mechanism ApplyUpgrade relies on
+			// for Postgres minor bumps. Setting Image here would silently
+			// clobber a real per-node pin.
 			node.SpockVersion = input.TargetSpockVersion
-			if node.OrchestratorOpts == nil {
-				node.OrchestratorOpts = &database.OrchestratorOpts{}
-			}
-			if node.OrchestratorOpts.Swarm == nil {
-				node.OrchestratorOpts.Swarm = &database.SwarmOpts{}
-			}
-			node.OrchestratorOpts.Swarm.Image = input.Image
 			found = true
 			break
 		}
@@ -168,8 +172,9 @@ func (w *Workflows) MajorVersionUpgrade(ctx workflow.Context, input *MajorVersio
 		// leave a future add-node/other operation to silently discover this
 		// later — until this node's replication has actually resumed.
 		verifyInput := &activities.VerifyNodeReplicatingInput{
-			DatabaseID: input.Spec.DatabaseID,
-			NodeName:   nodeName,
+			DatabaseID:            input.Spec.DatabaseID,
+			NodeName:              nodeName,
+			ExpectedSubscriptions: len(nodeSpec.Nodes) - 1,
 		}
 		if _, err := w.Activities.ExecuteVerifyNodeReplicating(ctx, verifyInput).Get(ctx); err != nil {
 			return nil, handleError(err)
@@ -189,9 +194,6 @@ func (w *Workflows) MajorVersionUpgrade(ctx workflow.Context, input *MajorVersio
 	finalSpec.SpockVersion = input.TargetSpockVersion
 	for _, node := range finalSpec.Nodes {
 		node.SpockVersion = ""
-		if node.OrchestratorOpts != nil && node.OrchestratorOpts.Swarm != nil && node.OrchestratorOpts.Swarm.Image == input.Image {
-			node.OrchestratorOpts.Swarm.Image = ""
-		}
 	}
 
 	finalizeInput := &activities.UpdateSpecInput{

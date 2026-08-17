@@ -400,6 +400,9 @@ func (o *Orchestrator) FindMajorUpgrade(current *ds.PgEdgeVersion, targetSpockVe
 	if targetSpockMajorRequested == currentSpockMajor {
 		return nil, fmt.Errorf("%w: requested spock major %d is the same as current %d; use apply-upgrade for a same-major bump", database.ErrUpgradeNotAvailable, targetSpockMajorRequested, currentSpockMajor)
 	}
+	if targetSpockMajorRequested < currentSpockMajor {
+		return nil, fmt.Errorf("%w: requested spock major %d is older than current %d; Spock cannot be downgraded in place", database.ErrUpgradeNotAvailable, targetSpockMajorRequested, currentSpockMajor)
+	}
 	targetSpockMajor, ok2 := ver.SpockVersion.Major()
 	if !ok2 || targetSpockMajor != targetSpockMajorRequested {
 		return nil, fmt.Errorf("%w: target image spock major %d does not match requested target_spock_version %d", database.ErrUpgradeNotAvailable, targetSpockMajor, targetSpockMajorRequested)
