@@ -45,6 +45,13 @@ type Node struct {
 	Name             string            `json:"name"`
 	HostIDs          []string          `json:"host_ids"`
 	PostgresVersion  string            `json:"postgres_version"`
+	// SpockVersion is a per-node override of the database's Spock major
+	// version. Never set through create-database/update-database (rejected by
+	// validateNode in the api layer) — the only writer is the dedicated
+	// major-version-upgrade workflow, which sets it on exactly one node at a
+	// time as it rolls a database from one Spock major to another. Empty for
+	// every node outside of an in-progress major-version upgrade.
+	SpockVersion     string            `json:"spock_version,omitempty"`
 	Port             *int              `json:"port"`
 	PatroniPort      *int              `json:"patroni_port"`
 	CPUs             float64           `json:"cpus"`
@@ -66,6 +73,7 @@ func (n *Node) Clone() *Node {
 		Name:             n.Name,
 		HostIDs:          slices.Clone(n.HostIDs),
 		PostgresVersion:  n.PostgresVersion,
+		SpockVersion:     n.SpockVersion,
 		Port:             n.Port,
 		PatroniPort:      n.PatroniPort,
 		CPUs:             n.CPUs,
@@ -85,6 +93,9 @@ func (n *Node) Clone() *Node {
 func (n *Node) DefaultOptionalFieldsFrom(other *Node) {
 	if n.PostgresVersion == "" && other.PostgresVersion != "" {
 		n.PostgresVersion = other.PostgresVersion
+	}
+	if n.SpockVersion == "" && other.SpockVersion != "" {
+		n.SpockVersion = other.SpockVersion
 	}
 
 	if n.BackupConfig != nil && other.BackupConfig != nil {
@@ -699,10 +710,22 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 			return nil, fmt.Errorf("failed to extract ordinal from node name: %w", err)
 		}
 
-		// Respect node-level overrides
-		nodeVersion := specVersion
+		// Respect node-level overrides. postgres_version and spock_version are
+		// overridden independently of each other — a node mid major-version
+		// upgrade may have a spock_version override with no postgres_version
+		// override at all, or vice versa, so this can't just re-parse both
+		// together only when one of them is set.
+		pgVersion := s.PostgresVersion
 		if node.PostgresVersion != "" {
-			nodeVersion, err = ds.ParsePgEdgeVersion(node.PostgresVersion, s.SpockVersion)
+			pgVersion = node.PostgresVersion
+		}
+		spockVersion := s.SpockVersion
+		if node.SpockVersion != "" {
+			spockVersion = node.SpockVersion
+		}
+		nodeVersion := specVersion
+		if pgVersion != s.PostgresVersion || spockVersion != s.SpockVersion {
+			nodeVersion, err = ds.ParsePgEdgeVersion(pgVersion, spockVersion)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse version from node spec: %w", err)
 			}

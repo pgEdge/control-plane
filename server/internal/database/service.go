@@ -870,6 +870,145 @@ func (s *Service) RollbackApplyUpgrade(ctx context.Context, result *ApplyUpgrade
 	return nil
 }
 
+// ApplyMajorUpgradeResult carries what ApplyMajorUpgrade validated, for the
+// caller to pass into the MajorVersionUpgrade workflow, plus enough state to
+// roll back if the workflow fails to even start.
+type ApplyMajorUpgradeResult struct {
+	Database           *Database
+	PrevState          DatabaseState
+	TargetSpockVersion string
+	Image              string
+	NodeOrder          []string
+}
+
+// ApplyMajorUpgrade validates a dedicated Spock major-version upgrade request
+// and marks the database as modifying, but — unlike ApplyUpgrade — does not
+// touch the spec at all. A major-version upgrade is rolled one node at a
+// time by the MajorVersionUpgrade workflow, which owns mutating each node's
+// spock_version override itself as it goes; mutating the whole spec upfront
+// here would claim every node is upgrading at once when only the first one
+// actually is yet.
+func (s *Service) ApplyMajorUpgrade(ctx context.Context, databaseID, targetSpockVersion, targetImage string, nodeOrder []string) (*ApplyMajorUpgradeResult, error) {
+	currentSpec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database spec: %w", err)
+	}
+
+	currentDB, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+	if !DatabaseStateModifiable(currentDB.State) {
+		return nil, ErrDatabaseNotModifiable
+	}
+
+	currentVersion, err := ds.ParsePgEdgeVersion(currentSpec.PostgresVersion, currentSpec.SpockVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse current version: %w", err)
+	}
+
+	upgrade, err := s.orchestrator.FindMajorUpgrade(currentVersion, targetSpockVersion, targetImage)
+	if err != nil {
+		return nil, err
+	}
+
+	order, err := resolveMajorUpgradeNodeOrder(currentSpec.Nodes, nodeOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	prevState := currentDB.State
+	if err := s.UpdateDatabaseState(ctx, databaseID, prevState, DatabaseStateModifying); err != nil {
+		return nil, fmt.Errorf("failed to mark database as modifying: %w", err)
+	}
+
+	db, err := s.GetDatabase(ctx, databaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database after marking modifying: %w", err)
+	}
+
+	return &ApplyMajorUpgradeResult{
+		Database:           db,
+		PrevState:          prevState,
+		TargetSpockVersion: upgrade.SpockVersion,
+		Image:              upgrade.Image,
+		NodeOrder:          order,
+	}, nil
+}
+
+// resolveMajorUpgradeNodeOrder defaults to the spec's own node order when
+// nodeOrder is empty, otherwise validates that nodeOrder is a permutation of
+// exactly the database's current node names — every node must be upgraded,
+// none can be named twice, and no unknown node can sneak in.
+func resolveMajorUpgradeNodeOrder(nodes []*Node, nodeOrder []string) ([]string, error) {
+	specNodeNames := ds.NewSet[string]()
+	for _, n := range nodes {
+		specNodeNames.Add(n.Name)
+	}
+
+	if len(nodeOrder) == 0 {
+		order := make([]string, len(nodes))
+		for i, n := range nodes {
+			order[i] = n.Name
+		}
+		return order, nil
+	}
+
+	seen := ds.NewSet[string]()
+	for _, name := range nodeOrder {
+		if !specNodeNames.Has(name) {
+			return nil, fmt.Errorf("%w: node_order references node %q, which does not exist in this database", ErrInvalidDatabaseUpdate, name)
+		}
+		if seen.Has(name) {
+			return nil, fmt.Errorf("%w: node_order lists node %q more than once", ErrInvalidDatabaseUpdate, name)
+		}
+		seen.Add(name)
+	}
+	if len(seen) != len(specNodeNames) {
+		return nil, fmt.Errorf("%w: node_order must include every node in the database exactly once (got %d of %d)", ErrInvalidDatabaseUpdate, len(seen), len(specNodeNames))
+	}
+	return nodeOrder, nil
+}
+
+// RollbackApplyMajorUpgrade restores the database's state to what it was
+// before ApplyMajorUpgrade marked it modifying. It is intended to be called
+// when the MajorVersionUpgrade workflow fails to even start — unlike
+// RollbackApplyUpgrade there is no spec to restore, since ApplyMajorUpgrade
+// never touched the spec.
+func (s *Service) RollbackApplyMajorUpgrade(ctx context.Context, result *ApplyMajorUpgradeResult) error {
+	return s.UpdateDatabaseState(ctx, result.Database.DatabaseID, DatabaseStateModifying, result.PrevState)
+}
+
+// ApplyMajorUpgradeSpecChange persists newSpec directly, deliberately
+// bypassing ValidateChangedSpec (and so its spockMajorVersionChanged guard).
+// It exists solely for the MajorVersionUpgrade workflow to call, once per
+// node as it rolls a Spock major-version upgrade forward and once more at
+// the end to normalize the spec — the one place in the system allowed to
+// change an instance's Spock major, by design, the same way ApplyUpgrade is
+// the one place allowed to change a Postgres minor/patch version outside
+// the ordinary update-database validation path.
+func (s *Service) ApplyMajorUpgradeSpecChange(ctx context.Context, newSpec *Spec, newState DatabaseState) (*Database, error) {
+	currentSpec, err := s.store.Spec.GetByKey(newSpec.DatabaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database spec: %w", err)
+	}
+
+	currentDB, err := s.store.Database.GetByKey(newSpec.DatabaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	return s.applySpecUpdate(ctx, currentSpec, currentDB, newSpec, newState)
+}
+
 func (s *Service) ReconcileServiceInstanceSpec(ctx context.Context, spec *ServiceInstanceSpec) (*ServiceInstanceSpec, error) {
 	if s.cfg.HostID != spec.HostID {
 		return nil, fmt.Errorf("this service instance belongs to another host - this host='%s', service instance host='%s'", s.cfg.HostID, spec.HostID)
@@ -1049,6 +1188,10 @@ func ValidateChangedSpec(current, updated *Spec) error {
 		if err != nil {
 			errs = append(errs, fmt.Errorf("invalid change for instance %s: %w", id, err))
 		}
+		err = spockMajorVersionChanged(oldInstance.PgEdgeVersion, newInstance.PgEdgeVersion)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid change for instance %s: %w", id, err))
+		}
 	}
 
 	if len(errs) != 0 {
@@ -1086,6 +1229,30 @@ func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 	}
 	if oldPgMajor != newPgMajor {
 		return fmt.Errorf("major version changed from %d to %d", oldPgMajor, newPgMajor)
+	}
+	return nil
+}
+
+// spockMajorVersionChanged rejects any ordinary spec update that would
+// change an instance's Spock major version. Only the dedicated
+// MajorVersionUpgrade workflow is allowed to do this — and it does, one node
+// at a time, by calling applySpecUpdate directly rather than going through
+// UpdateDatabase/ValidateChangedSpec, exactly the way ApplyUpgrade already
+// bypasses this same validation for its own privileged, controlled mutation.
+func spockMajorVersionChanged(old, new *ds.PgEdgeVersion) error {
+	if old == nil || new == nil {
+		return errors.New("expected both current and updated versions to be defined")
+	}
+	oldSpockMajor, ok := old.SpockVersion.Major()
+	if !ok {
+		return errors.New("current spock version is missing its major component")
+	}
+	newSpockMajor, ok := new.SpockVersion.Major()
+	if !ok {
+		return errors.New("updated spock version is missing its major component")
+	}
+	if oldSpockMajor != newSpockMajor {
+		return fmt.Errorf("spock major version changed from %d to %d; use the dedicated major-version upgrade action instead", oldSpockMajor, newSpockMajor)
 	}
 	return nil
 }

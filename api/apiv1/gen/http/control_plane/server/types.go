@@ -65,6 +65,24 @@ type ApplyUpgradeRequestBody struct {
 	Image *string `json:"image"`
 }
 
+// ApplyMajorUpgradeRequestBody is the type of the "control-plane" service
+// "apply-major-upgrade" endpoint HTTP request body.
+type ApplyMajorUpgradeRequestBody struct {
+	// The Spock major version to upgrade to.
+	TargetSpockVersion *string `json:"target_spock_version"`
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a manifest entry whose spock_version is target_spock_version and
+	// whose postgres_version matches the database's current postgres_version.
+	// Unlike ApplyUpgradeRequest, the target entry is not required to have
+	// stability "stable" — a Spock major version is expected to still be in a
+	// "dev" stability window while this action is in use for it.
+	Image *string `json:"image"`
+	// Explicit order (by node name) in which nodes are upgraded, one at a time.
+	// Defaults to the order nodes appear in the database spec if omitted. Every
+	// node in the database must appear exactly once.
+	NodeOrder []string `json:"node_order,omitempty"`
+}
+
 // BackupDatabaseNodeRequestBody is the type of the "control-plane" service
 // "backup-database-node" endpoint HTTP request body.
 type BackupDatabaseNodeRequestBody struct {
@@ -242,6 +260,15 @@ type UpdateDatabaseResponseBody struct {
 // "apply-upgrade" endpoint HTTP response body.
 type ApplyUpgradeResponseBody struct {
 	// The task tracking the upgrade operation.
+	Task *TaskResponseBody `json:"task"`
+	// The database being upgraded.
+	Database *DatabaseResponseBody `json:"database"`
+}
+
+// ApplyMajorUpgradeResponseBody is the type of the "control-plane" service
+// "apply-major-upgrade" endpoint HTTP response body.
+type ApplyMajorUpgradeResponseBody struct {
+	// The task tracking the major-version upgrade operation.
 	Task *TaskResponseBody `json:"task"`
 	// The database being upgraded.
 	Database *DatabaseResponseBody `json:"database"`
@@ -937,6 +964,66 @@ type ApplyUpgradeNotFoundResponseBody struct {
 // service "apply-upgrade" endpoint HTTP response body for the "server_error"
 // error.
 type ApplyUpgradeServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "apply-major-upgrade" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type ApplyMajorUpgradeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "apply-major-upgrade" endpoint HTTP response body
+// for the "database_not_modifiable" error.
+type ApplyMajorUpgradeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradeOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "apply-major-upgrade" endpoint HTTP response body
+// for the "operation_already_in_progress" error.
+type ApplyMajorUpgradeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradeInvalidInputResponseBody is the type of the "control-plane"
+// service "apply-major-upgrade" endpoint HTTP response body for the
+// "invalid_input" error.
+type ApplyMajorUpgradeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradeNotFoundResponseBody is the type of the "control-plane"
+// service "apply-major-upgrade" endpoint HTTP response body for the
+// "not_found" error.
+type ApplyMajorUpgradeNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `json:"name"`
+	// The error message.
+	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradeServerErrorResponseBody is the type of the "control-plane"
+// service "apply-major-upgrade" endpoint HTTP response body for the
+// "server_error" error.
+type ApplyMajorUpgradeServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `json:"name"`
 	// The error message.
@@ -2047,6 +2134,13 @@ type DatabaseNodeSpecResponseBody struct {
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `json:"postgres_version,omitempty"`
+	// The major version of the Spock extension for this node. Overrides the Spock
+	// version set in the DatabaseSpec. Only settable through the dedicated
+	// major-version upgrade action — rejected on create-database and on the
+	// general update-database path, since a per-node major mismatch is only ever a
+	// deliberate, transient state during a rolling major-version upgrade, never a
+	// steady-state topology choice.
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
@@ -2426,6 +2520,13 @@ type DatabaseNodeSpecRequestBody struct {
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `json:"postgres_version,omitempty"`
+	// The major version of the Spock extension for this node. Overrides the Spock
+	// version set in the DatabaseSpec. Only settable through the dedicated
+	// major-version upgrade action — rejected on create-database and on the
+	// general update-database path, since a per-node major mismatch is only ever a
+	// deliberate, transient state during a rolling major-version upgrade, never a
+	// steady-state topology choice.
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
@@ -2794,6 +2895,13 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `json:"postgres_version,omitempty"`
+	// The major version of the Spock extension for this node. Overrides the Spock
+	// version set in the DatabaseSpec. Only settable through the dedicated
+	// major-version upgrade action — rejected on create-database and on the
+	// general update-database path, since a per-node major mismatch is only ever a
+	// deliberate, transient state during a rolling major-version upgrade, never a
+	// steady-state topology choice.
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
@@ -3363,6 +3471,19 @@ func NewUpdateDatabaseResponseBody(res *controlplane.UpdateDatabaseResponse) *Up
 // the "apply-upgrade" endpoint of the "control-plane" service.
 func NewApplyUpgradeResponseBody(res *controlplane.ApplyUpgradeResponse) *ApplyUpgradeResponseBody {
 	body := &ApplyUpgradeResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
+	}
+	if res.Database != nil {
+		body.Database = marshalControlplaneDatabaseToDatabaseResponseBody(res.Database)
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeResponseBody builds the HTTP response body from the
+// result of the "apply-major-upgrade" endpoint of the "control-plane" service.
+func NewApplyMajorUpgradeResponseBody(res *controlplane.ApplyMajorUpgradeResponse) *ApplyMajorUpgradeResponseBody {
+	body := &ApplyMajorUpgradeResponseBody{}
 	if res.Task != nil {
 		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
 	}
@@ -4146,6 +4267,72 @@ func NewApplyUpgradeNotFoundResponseBody(res *controlplane.APIError) *ApplyUpgra
 // the result of the "apply-upgrade" endpoint of the "control-plane" service.
 func NewApplyUpgradeServerErrorResponseBody(res *controlplane.APIError) *ApplyUpgradeServerErrorResponseBody {
 	body := &ApplyUpgradeServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "apply-major-upgrade" endpoint of the
+// "control-plane" service.
+func NewApplyMajorUpgradeClusterNotInitializedResponseBody(res *controlplane.APIError) *ApplyMajorUpgradeClusterNotInitializedResponseBody {
+	body := &ApplyMajorUpgradeClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeDatabaseNotModifiableResponseBody builds the HTTP
+// response body from the result of the "apply-major-upgrade" endpoint of the
+// "control-plane" service.
+func NewApplyMajorUpgradeDatabaseNotModifiableResponseBody(res *controlplane.APIError) *ApplyMajorUpgradeDatabaseNotModifiableResponseBody {
+	body := &ApplyMajorUpgradeDatabaseNotModifiableResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeOperationAlreadyInProgressResponseBody builds the HTTP
+// response body from the result of the "apply-major-upgrade" endpoint of the
+// "control-plane" service.
+func NewApplyMajorUpgradeOperationAlreadyInProgressResponseBody(res *controlplane.APIError) *ApplyMajorUpgradeOperationAlreadyInProgressResponseBody {
+	body := &ApplyMajorUpgradeOperationAlreadyInProgressResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeInvalidInputResponseBody builds the HTTP response body
+// from the result of the "apply-major-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyMajorUpgradeInvalidInputResponseBody(res *controlplane.APIError) *ApplyMajorUpgradeInvalidInputResponseBody {
+	body := &ApplyMajorUpgradeInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeNotFoundResponseBody builds the HTTP response body from
+// the result of the "apply-major-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyMajorUpgradeNotFoundResponseBody(res *controlplane.APIError) *ApplyMajorUpgradeNotFoundResponseBody {
+	body := &ApplyMajorUpgradeNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewApplyMajorUpgradeServerErrorResponseBody builds the HTTP response body
+// from the result of the "apply-major-upgrade" endpoint of the "control-plane"
+// service.
+func NewApplyMajorUpgradeServerErrorResponseBody(res *controlplane.APIError) *ApplyMajorUpgradeServerErrorResponseBody {
+	body := &ApplyMajorUpgradeServerErrorResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
@@ -5060,6 +5247,27 @@ func NewApplyUpgradePayload(body *ApplyUpgradeRequestBody, databaseID string) *c
 	return res
 }
 
+// NewApplyMajorUpgradePayload builds a control-plane service
+// apply-major-upgrade endpoint payload.
+func NewApplyMajorUpgradePayload(body *ApplyMajorUpgradeRequestBody, databaseID string) *controlplane.ApplyMajorUpgradePayload {
+	v := &controlplane.ApplyMajorUpgradeRequest{
+		TargetSpockVersion: *body.TargetSpockVersion,
+		Image:              *body.Image,
+	}
+	if body.NodeOrder != nil {
+		v.NodeOrder = make([]string, len(body.NodeOrder))
+		for i, val := range body.NodeOrder {
+			v.NodeOrder[i] = val
+		}
+	}
+	res := &controlplane.ApplyMajorUpgradePayload{
+		Request: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
+
+	return res
+}
+
 // NewDeleteDatabasePayload builds a control-plane service delete-database
 // endpoint payload.
 func NewDeleteDatabasePayload(databaseID string, force bool) *controlplane.DeleteDatabasePayload {
@@ -5407,6 +5615,26 @@ func ValidateApplyUpgradeRequestBody(body *ApplyUpgradeRequestBody) (err error) 
 	return
 }
 
+// ValidateApplyMajorUpgradeRequestBody runs the validations defined on
+// Apply-Major-UpgradeRequestBody
+func ValidateApplyMajorUpgradeRequestBody(body *ApplyMajorUpgradeRequestBody) (err error) {
+	if body.TargetSpockVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("target_spock_version", "body"))
+	}
+	if body.Image == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("image", "body"))
+	}
+	if body.TargetSpockVersion != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.target_spock_version", *body.TargetSpockVersion, "^\\d{1}$"))
+	}
+	if body.Image != nil {
+		if utf8.RuneCountInString(*body.Image) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.image", *body.Image, utf8.RuneCountInString(*body.Image), 1, true))
+		}
+	}
+	return
+}
+
 // ValidateBackupDatabaseNodeRequestBody runs the validations defined on
 // Backup-Database-NodeRequestBody
 func ValidateBackupDatabaseNodeRequestBody(body *BackupDatabaseNodeRequestBody) (err error) {
@@ -5591,6 +5819,9 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 	}
 	if body.PostgresVersion != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
+	}
+	if body.SpockVersion != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.spock_version", *body.SpockVersion, "^\\d{1}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
@@ -6372,6 +6603,9 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 	}
 	if body.PostgresVersion != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
+	}
+	if body.SpockVersion != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.spock_version", *body.SpockVersion, "^\\d{1}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {

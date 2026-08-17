@@ -336,6 +336,33 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
+	g.Method("apply-major-upgrade", func() {
+		g.Description("Applies a dedicated Spock major-version upgrade (e.g. 5.x to 6.x) to a database, rolling through each node one at a time rather than redeploying uniformly. Independent of apply-upgrade, which is restricted to same-major minor/patch bumps and cannot reach a different Spock major.")
+		g.Meta("openapi:summary", "Apply Spock major-version upgrade")
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("ID of the database to upgrade.")
+				g.Example("my-app")
+			})
+			g.Attribute("request", ApplyMajorUpgradeRequest)
+
+			g.Required("database_id", "request")
+		})
+		g.Result(ApplyMajorUpgradeResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/upgrade-major")
+			g.Body("request")
+
+			g.Meta("openapi:tag:Database")
+		})
+	})
+
 	g.Method("delete-database", func() {
 		g.Description("Deletes a database from the cluster.")
 		g.Meta("openapi:summary", "Delete database")

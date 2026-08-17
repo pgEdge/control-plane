@@ -36,6 +36,12 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Example("17.6")
 		g.Meta("struct:tag:json", "postgres_version,omitempty")
 	})
+	g.Attribute("spock_version", g.String, func() {
+		g.Description("The major version of the Spock extension for this node. Overrides the Spock version set in the DatabaseSpec. Only settable through the dedicated major-version upgrade action — rejected on create-database and on the general update-database path, since a per-node major mismatch is only ever a deliberate, transient state during a rolling major-version upgrade, never a steady-state topology choice.")
+		g.Pattern(spockVersionPattern)
+		g.Example("6")
+		g.Meta("struct:tag:json", "spock_version,omitempty")
+	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.")
 		g.Minimum(0)
@@ -1364,6 +1370,42 @@ var ApplyUpgradeResponse = g.Type("ApplyUpgradeResponse", func() {
 			"type":        "upgrade",
 		},
 	})
+})
+
+var ApplyMajorUpgradeRequest = g.Type("ApplyMajorUpgradeRequest", func() {
+	g.Description("Request to upgrade a database across a Spock major version boundary (e.g. 5.x to 6.x). Deliberately separate from ApplyUpgradeRequest: a major-version bump changes replication protocol behavior and is executed one node at a time (rolling), not redeployed uniformly like a minor/patch bump.")
+	g.Attribute("target_spock_version", g.String, func() {
+		g.Description("The Spock major version to upgrade to.")
+		g.Pattern(spockVersionPattern)
+		g.Example("6")
+		g.Meta("struct:tag:json", "target_spock_version")
+	})
+	g.Attribute("image", g.String, func() {
+		g.Description("Full container image reference of the upgrade target. Must match the image field of a manifest entry whose spock_version is target_spock_version and whose postgres_version matches the database's current postgres_version. Unlike ApplyUpgradeRequest, the target entry is not required to have stability \"stable\" — a Spock major version is expected to still be in a \"dev\" stability window while this action is in use for it.")
+		g.Example("ghcr.io/pgedge/pgedge-postgres:18.4-spock6.0.0-standard-1")
+		g.MinLength(1)
+		g.Meta("struct:tag:json", "image")
+	})
+	g.Attribute("node_order", g.ArrayOf(g.String), func() {
+		g.Description("Explicit order (by node name) in which nodes are upgraded, one at a time. Defaults to the order nodes appear in the database spec if omitted. Every node in the database must appear exactly once.")
+		g.Example([]string{"n2", "n1", "n3"})
+		g.Meta("struct:tag:json", "node_order,omitempty")
+	})
+
+	g.Required("target_spock_version", "image")
+})
+
+var ApplyMajorUpgradeResponse = g.Type("ApplyMajorUpgradeResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task tracking the major-version upgrade operation.")
+		g.Meta("struct:tag:json", "task")
+	})
+	g.Attribute("database", Database, func() {
+		g.Description("The database being upgraded.")
+		g.Meta("struct:tag:json", "database")
+	})
+
+	g.Required("task", "database")
 })
 
 var BackupDatabaseNodeResponse = g.Type("BackupDatabaseNodeResponse", func() {

@@ -45,8 +45,10 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.StopInstance),
 		work.RegisterActivity(a.UpdateDbState),
 		work.RegisterActivity(a.UpdatePlannedInstanceStates),
+		work.RegisterActivity(a.UpdateSpec),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
+		work.RegisterActivity(a.VerifyNodeReplicating),
 	}
 	return errors.Join(errs...)
 }

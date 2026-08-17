@@ -282,6 +282,14 @@ func validateNode(
 	memPath := path.Append("memory")
 	errs = append(errs, validateMemory(node.Memory, memPath)...)
 
+	if utils.FromPointer(node.SpockVersion) != "" {
+		errs = append(errs, validation.NewError(
+			errors.New("spock_version cannot be set per-node through create-database or update-database; "+
+				"it is only ever set internally, one node at a time, by the dedicated major-version upgrade action"),
+			path.Append("spock_version"),
+		))
+	}
+
 	seenHostIDs := make(ds.Set[string], len(node.HostIds))
 	for i, h := range node.HostIds {
 		hostID := string(h)

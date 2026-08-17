@@ -414,6 +414,55 @@ func BuildApplyUpgradePayload(controlPlaneApplyUpgradeBody string, controlPlaneA
 	return res, nil
 }
 
+// BuildApplyMajorUpgradePayload builds the payload for the control-plane
+// apply-major-upgrade endpoint from CLI flags.
+func BuildApplyMajorUpgradePayload(controlPlaneApplyMajorUpgradeBody string, controlPlaneApplyMajorUpgradeDatabaseID string) (*controlplane.ApplyMajorUpgradePayload, error) {
+	var err error
+	var body ApplyMajorUpgradeRequestBody
+	{
+		err = json.Unmarshal([]byte(controlPlaneApplyMajorUpgradeBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"image\": \"ghcr.io/pgedge/pgedge-postgres:18.4-spock6.0.0-standard-1\",\n      \"node_order\": [\n         \"n2\",\n         \"n1\",\n         \"n3\"\n      ],\n      \"target_spock_version\": \"6\"\n   }'")
+		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.target_spock_version", body.TargetSpockVersion, "^\\d{1}$"))
+		if utf8.RuneCountInString(body.Image) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.image", body.Image, utf8.RuneCountInString(body.Image), 1, true))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var databaseID string
+	{
+		databaseID = controlPlaneApplyMajorUpgradeDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &controlplane.ApplyMajorUpgradeRequest{
+		TargetSpockVersion: body.TargetSpockVersion,
+		Image:              body.Image,
+	}
+	if body.NodeOrder != nil {
+		v.NodeOrder = make([]string, len(body.NodeOrder))
+		for i, val := range body.NodeOrder {
+			v.NodeOrder[i] = val
+		}
+	}
+	res := &controlplane.ApplyMajorUpgradePayload{
+		Request: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
+
+	return res, nil
+}
+
 // BuildDeleteDatabasePayload builds the payload for the control-plane
 // delete-database endpoint from CLI flags.
 func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string, controlPlaneDeleteDatabaseForce string) (*controlplane.DeleteDatabasePayload, error) {

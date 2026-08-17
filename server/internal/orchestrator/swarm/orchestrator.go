@@ -366,6 +366,52 @@ func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string
 	}, nil
 }
 
+func (o *Orchestrator) FindMajorUpgrade(current *ds.PgEdgeVersion, targetSpockVersion, targetImage string) (*database.AvailableUpgrade, error) {
+	ver, img, ok := o.getVersions().FindByImage(targetImage)
+	if !ok {
+		return nil, fmt.Errorf("%w: image not found in manifest: %s", database.ErrUpgradeNotAvailable, targetImage)
+	}
+	// Unlike FindUpgrade, any stability level is accepted here — a Spock
+	// major is expected to still be behind a "dev" manifest entry (see
+	// item 2 of the Spock 6 support design doc) for as long as this action
+	// is what's used to reach it.
+
+	currentPGMajor, ok := current.PostgresVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine current postgres major version", database.ErrUpgradeNotAvailable)
+	}
+	targetPGMajor, ok2 := ver.PostgresVersion.Major()
+	if !ok2 || targetPGMajor != currentPGMajor {
+		return nil, fmt.Errorf("%w: target postgres major %d differs from current %d; a major-version upgrade changes Spock only, not Postgres", database.ErrUpgradeNotAvailable, targetPGMajor, currentPGMajor)
+	}
+
+	currentSpockMajor, ok := current.SpockVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine current spock major version", database.ErrUpgradeNotAvailable)
+	}
+	targetVersion, err := ds.ParseVersion(targetSpockVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%w: invalid target spock version %q: %w", database.ErrUpgradeNotAvailable, targetSpockVersion, err)
+	}
+	targetSpockMajorRequested, ok := targetVersion.Major()
+	if !ok {
+		return nil, fmt.Errorf("%w: cannot determine requested spock major version", database.ErrUpgradeNotAvailable)
+	}
+	if targetSpockMajorRequested == currentSpockMajor {
+		return nil, fmt.Errorf("%w: requested spock major %d is the same as current %d; use apply-upgrade for a same-major bump", database.ErrUpgradeNotAvailable, targetSpockMajorRequested, currentSpockMajor)
+	}
+	targetSpockMajor, ok2 := ver.SpockVersion.Major()
+	if !ok2 || targetSpockMajor != targetSpockMajorRequested {
+		return nil, fmt.Errorf("%w: target image spock major %d does not match requested target_spock_version %d", database.ErrUpgradeNotAvailable, targetSpockMajor, targetSpockMajorRequested)
+	}
+
+	return &database.AvailableUpgrade{
+		PostgresVersion: ver.PostgresVersion.String(),
+		SpockVersion:    ver.SpockVersion.String(),
+		Image:           img.PgEdgeImage,
+	}, nil
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
 	images, err := o.resolveInstanceImages(spec)
 	if err != nil {

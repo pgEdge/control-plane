@@ -44,6 +44,11 @@ type Service interface {
 	// current version and strictly newer. Container pull and restart happen
 	// asynchronously; this endpoint returns once redeployment is triggered.
 	ApplyUpgrade(context.Context, *ApplyUpgradePayload) (res *ApplyUpgradeResponse, err error)
+	// Applies a dedicated Spock major-version upgrade (e.g. 5.x to 6.x) to a
+	// database, rolling through each node one at a time rather than redeploying
+	// uniformly. Independent of apply-upgrade, which is restricted to same-major
+	// minor/patch bumps and cannot reach a different Spock major.
+	ApplyMajorUpgrade(context.Context, *ApplyMajorUpgradePayload) (res *ApplyMajorUpgradeResponse, err error)
 	// Deletes a database from the cluster.
 	DeleteDatabase(context.Context, *DeleteDatabasePayload) (res *DeleteDatabaseResponse, err error)
 	// Initiates a backup for a database node.
@@ -96,7 +101,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [30]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "apply-upgrade", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
+var MethodNames = [31]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "apply-upgrade", "apply-major-upgrade", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -104,6 +109,43 @@ type APIError struct {
 	Name string `json:"name"`
 	// The error message.
 	Message string `json:"message"`
+}
+
+// ApplyMajorUpgradePayload is the payload type of the control-plane service
+// apply-major-upgrade method.
+type ApplyMajorUpgradePayload struct {
+	// ID of the database to upgrade.
+	DatabaseID Identifier
+	Request    *ApplyMajorUpgradeRequest
+}
+
+// Request to upgrade a database across a Spock major version boundary (e.g.
+// 5.x to 6.x). Deliberately separate from ApplyUpgradeRequest: a major-version
+// bump changes replication protocol behavior and is executed one node at a
+// time (rolling), not redeployed uniformly like a minor/patch bump.
+type ApplyMajorUpgradeRequest struct {
+	// The Spock major version to upgrade to.
+	TargetSpockVersion string `json:"target_spock_version"`
+	// Full container image reference of the upgrade target. Must match the image
+	// field of a manifest entry whose spock_version is target_spock_version and
+	// whose postgres_version matches the database's current postgres_version.
+	// Unlike ApplyUpgradeRequest, the target entry is not required to have
+	// stability "stable" — a Spock major version is expected to still be in a
+	// "dev" stability window while this action is in use for it.
+	Image string `json:"image"`
+	// Explicit order (by node name) in which nodes are upgraded, one at a time.
+	// Defaults to the order nodes appear in the database spec if omitted. Every
+	// node in the database must appear exactly once.
+	NodeOrder []string `json:"node_order,omitempty"`
+}
+
+// ApplyMajorUpgradeResponse is the result type of the control-plane service
+// apply-major-upgrade method.
+type ApplyMajorUpgradeResponse struct {
+	// The task tracking the major-version upgrade operation.
+	Task *Task `json:"task"`
+	// The database being upgraded.
+	Database *Database `json:"database"`
 }
 
 // ApplyUpgradePayload is the payload type of the control-plane service
@@ -386,6 +428,13 @@ type DatabaseNodeSpec struct {
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `json:"postgres_version,omitempty"`
+	// The major version of the Spock extension for this node. Overrides the Spock
+	// version set in the DatabaseSpec. Only settable through the dedicated
+	// major-version upgrade action — rejected on create-database and on the
+	// general update-database path, since a per-node major mismatch is only ever a
+	// deliberate, transient state during a rolling major-version upgrade, never a
+	// steady-state topology choice.
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
