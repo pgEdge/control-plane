@@ -5,8 +5,8 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"log"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -98,7 +98,7 @@ func TestCreateDbWithVersions(t *testing.T) {
 					Password: password,
 				}
 
-				verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, t)
+				verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, version.SpockVersion, t)
 				verifyPrimaryNodes(ctx, db, primaryOpts, t)
 			}
 
@@ -110,7 +110,7 @@ func TestCreateDbWithVersions(t *testing.T) {
 					Username: username,
 					Password: password,
 				}
-				verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, t)
+				verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, version.SpockVersion, t)
 				verifyReplicasNodes(ctx, db, connOpts, t)
 			}
 
@@ -206,19 +206,30 @@ func verifyReplicasNodes(ctx context.Context, db *DatabaseFixture,
 	})
 }
 
-// Validate postgresql version
+// Validate postgresql version. Spock 6 manifest entries point at a
+// floating/mutable dev image tag (see version-manifest.json), so their
+// resolved Postgres minor can drift past the declared version at any
+// time - only the major version is checked for those. Pinned versions
+// (Spock <= 5) are still checked for an exact match.
 func verifyPgVersion(ctx context.Context, db *DatabaseFixture,
-	primaryOpts ConnectionOptions, expectedVersion string, t testing.TB) {
+	primaryOpts ConnectionOptions, expectedVersion string, spockVersion string, t testing.TB) {
 	db.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
 		var versionStr string
 		err := conn.QueryRow(ctx, "SELECT version()").Scan(&versionStr)
 		if err != nil {
-			log.Fatalf("Failed to fetch PostgreSQL version: %v", err)
+			t.Fatalf("Failed to fetch PostgreSQL version: %v", err)
 		}
-		if !strings.Contains(versionStr, expectedVersion) {
-			log.Fatalf("Expected PostgreSQL version %s, but got: %s", expectedVersion, versionStr)
+
+		versionToMatch := expectedVersion
+		spockMajorStr, _, _ := strings.Cut(spockVersion, ".")
+		if spockMajor, err := strconv.Atoi(spockMajorStr); err == nil && spockMajor >= 6 {
+			versionToMatch, _, _ = strings.Cut(expectedVersion, ".")
 		}
-		tLogf(t, "PostgreSQL version validation passed (found %s)\n", expectedVersion)
+
+		if !strings.Contains(versionStr, versionToMatch) {
+			t.Fatalf("Expected PostgreSQL version %s, but got: %s", versionToMatch, versionStr)
+		}
+		tLogf(t, "PostgreSQL version validation passed (found %s)\n", versionStr)
 	})
 }
 

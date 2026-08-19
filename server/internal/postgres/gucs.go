@@ -33,12 +33,14 @@ var minOutputPluginLibrariesVersions = map[uint64]*ds.Version{
 // major >= 6 is treated as an unconditional yes here. This is a deliberate
 // trade-off, not a fully general fix: every Spock 6 build seen in practice
 // so far ships on a Postgres minor at or past the relevant gate, so this
-// resolves the real failure above; it has not been verified whether setting
-// this GUC against a hypothetical Postgres minor that predates the gate
-// (and so may not recognize the parameter at all) is itself harmless or
-// would fail Postgres startup. If Spock 6 is ever built against such a
-// minor, this assumption needs revisiting. Spock 5.x behavior is unchanged
-// — it still depends solely on the exact Postgres minor check below.
+// resolves the real failure above. Confirmed directly (via `SHOW
+// output_plugin_libraries` against a Postgres minor below the gate) that
+// setting this GUC on a minor that predates it is NOT harmless — Postgres
+// rejects it outright with "unrecognized configuration parameter", which
+// would fail startup, not just no-op. If Spock 6 is ever built against
+// such a minor, this unconditional-yes needs revisiting. Spock 5.x
+// behavior is unchanged — it still depends solely on the exact Postgres
+// minor check below, which is exactly why it never hits this failure mode.
 func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
 	if version == nil || version.PostgresVersion == nil {
 		return false
