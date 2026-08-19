@@ -238,36 +238,15 @@ func DropSpockAndCleanupSlots(dbName string) Statements {
 	}
 }
 
-// ReplicationSlotName is Control Plane's own bookkeeping identifier for a
-// provider/subscriber pair (e.g. ReplicationSlotCreateResource's resource
-// ID) — it is NOT necessarily the actual Postgres slot name. The real slot
-// name is resolved in SQL via spock.spock_gen_slot_name() (see slotNameExpr
-// below), the same function Spock's own internal code (sub_create, apply
-// workers, etc.) uses. The two produce identical output for every name CP
-// has exercised so far (short, already-lowercase-alphanumeric names), but
-// Spock's function additionally hashes/truncates components over 16 bytes
-// and sanitizes invalid characters, behavior this plain concatenation does
-// not replicate. This stays a pure Go string (no DB round trip) because
-// resource identifiers must be computable during planning, before any
-// connection exists.
-func ReplicationSlotName(databaseName, providerName, subscriberName string) string {
-	return fmt.Sprintf(
-		"spk_%s_%s_%s",
-		databaseName,
-		providerName,
-		subName(providerName, subscriberName),
-	)
-}
-
 func subName(providerName, subscriberName string) string {
 	return fmt.Sprintf("sub_%s_%s", providerName, subscriberName)
 }
 
 // slotNameExpr is the SQL expression that resolves the actual replication
-// slot name via Spock's own spock.spock_gen_slot_name(), instead of the
-// hand-built ReplicationSlotName string above. Embedding it as an
-// expression — rather than resolving it in Go first — keeps every
-// slot-related statement below a single round trip.
+// slot name via Spock's own spock.spock_gen_slot_name(), instead of a
+// hand-built Go string. Embedding it as an expression — rather than
+// resolving it in Go first — keeps every slot-related statement below a
+// single round trip.
 const slotNameExpr = "spock.spock_gen_slot_name(@slot_dbname, @slot_provider_node, @slot_sub_name)"
 
 func slotNameArgs(databaseName, providerNode, subscriberNode string) pgx.NamedArgs {
