@@ -14,7 +14,7 @@ const ResourceTypeReplicationSlotCreate resource.Type = "database.replication_sl
 
 func ReplicationSlotCreateResourceIdentifier(databaseName, providerNode, subscriberNode string) resource.Identifier {
 	return resource.Identifier{
-		ID:   postgres.ReplicationSlotName(databaseName, providerNode, subscriberNode),
+		ID:   fmt.Sprintf("spk_%s_%s_sub_%s_%s", databaseName, providerNode, providerNode, subscriberNode),
 		Type: ResourceTypeReplicationSlotCreate,
 	}
 }

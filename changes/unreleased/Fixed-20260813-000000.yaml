@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed add-node correctness issues to match Spock's reference behavior.
+time: 2026-08-13T00:00:00.000000+00:00

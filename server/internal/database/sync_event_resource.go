@@ -4,9 +4,30 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
+
+var minSpockVersionForSyncEventArgs = ds.MustParseVersion(postgres.MinSpockVersionForSyncEventArgs)
+
+// spockSupportsSyncEventArgs reports whether conn's Spock version is new
+// enough for spock.sync_event(boolean) and the 5-arg
+// spock.wait_for_sync_event(..., wait_if_disabled) — see
+// postgres.MinSpockVersionForSyncEventArgs.
+func spockSupportsSyncEventArgs(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	versionStr, err := postgres.GetSpockVersion().Scalar(ctx, conn)
+	if err != nil {
+		return false, fmt.Errorf("failed to get spock version: %w", err)
+	}
+	version, err := ds.ParseVersion(versionStr)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse spock version %q: %w", versionStr, err)
+	}
+	return version.Compare(minSpockVersionForSyncEventArgs) >= 0, nil
+}
 
 var _ resource.Resource = (*SyncEventResource)(nil)
 
@@ -69,8 +90,13 @@ func (r *SyncEventResource) Refresh(ctx context.Context, rc *resource.Context) e
 	}
 	defer providerConn.Close(ctx)
 
+	transactional, err := spockSupportsSyncEventArgs(ctx, providerConn)
+	if err != nil {
+		return fmt.Errorf("failed to check spock version on provider: %w", err)
+	}
+
 	// Send sync event from provider
-	lsn, err := postgres.SyncEvent().Scalar(ctx, providerConn)
+	lsn, err := postgres.SyncEvent(transactional).Scalar(ctx, providerConn)
 	if err != nil {
 		if postgres.IsSpockNodeNotConfigured(err) {
 			return resource.ErrNotFound

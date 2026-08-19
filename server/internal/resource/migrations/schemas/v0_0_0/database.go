@@ -2,8 +2,9 @@
 package v0_0_0
 
 import (
+	"fmt"
+
 	"github.com/pgEdge/control-plane/server/internal/ds"
-	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"time"
 )
@@ -182,7 +183,7 @@ const ResourceTypeReplicationSlotCreate resource.Type = "database.replication_sl
 
 func ReplicationSlotCreateResourceIdentifier(databaseName, providerNode, subscriberNode string) resource.Identifier {
 	return resource.Identifier{
-		ID:   postgres.ReplicationSlotName(databaseName, providerNode, subscriberNode),
+		ID:   fmt.Sprintf("spk_%s_%s_sub_%s_%s", databaseName, providerNode, providerNode, subscriberNode),
 		Type: ResourceTypeReplicationSlotCreate,
 	}
 }

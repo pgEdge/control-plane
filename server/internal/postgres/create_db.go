@@ -238,28 +238,76 @@ func DropSpockAndCleanupSlots(dbName string) Statements {
 	}
 }
 
-func ReplicationSlotName(databaseName, providerName, subscriberName string) string {
-	return fmt.Sprintf(
-		"spk_%s_%s_%s",
-		databaseName,
-		providerName,
-		subName(providerName, subscriberName),
-	)
-}
-
 func subName(providerName, subscriberName string) string {
 	return fmt.Sprintf("sub_%s_%s", providerName, subscriberName)
 }
 
-func SyncEvent() Query[string] {
+// slotNameExpr is the SQL expression that resolves the actual replication
+// slot name via Spock's own spock.spock_gen_slot_name(), instead of a
+// hand-built Go string. Embedding it as an expression — rather than
+// resolving it in Go first — keeps every slot-related statement below a
+// single round trip.
+const slotNameExpr = "spock.spock_gen_slot_name(@slot_dbname, @slot_provider_node, @slot_sub_name)"
+
+func slotNameArgs(databaseName, providerNode, subscriberNode string) pgx.NamedArgs {
+	return pgx.NamedArgs{
+		"slot_dbname":        databaseName,
+		"slot_provider_node": providerNode,
+		"slot_sub_name":      subName(providerNode, subscriberNode),
+	}
+}
+
+// ResolveSlotName looks up the actual slot name for a provider/subscriber
+// pair. Used by call sites that need the resolved string itself — because
+// they reuse it across more than one statement — rather than embedding
+// slotNameExpr inline.
+func ResolveSlotName(databaseName, providerNode, subscriberNode string) Query[string] {
+	return Query[string]{
+		SQL:  fmt.Sprintf("SELECT %s;", slotNameExpr),
+		Args: slotNameArgs(databaseName, providerNode, subscriberNode),
+	}
+}
+
+// MinSpockVersionForSyncEventArgs is the first Spock version where
+// spock.sync_event(boolean) and the 5-arg spock.wait_for_sync_event(...,
+// wait_if_disabled) exist — both were introduced together in the
+// 5.0.6->5.0.7 upgrade script. Callers must compare the live cluster's Spock
+// version against this before passing transactional=true / waitIfDisabled=true
+// to SyncEvent/WaitForSyncEvent below; older clusters only have the original
+// call shapes.
+const MinSpockVersionForSyncEventArgs = "5.0.7"
+
+// SyncEvent sends a sync event marker from the provider. transactional ties
+// the marker to the surrounding transaction so it's ordered with any
+// preceding DML in that transaction, per Spock's spock.sync_event reference
+// behavior. spock.sync_event(boolean) was only introduced in Spock 5.0.7 (see
+// MinSpockVersionForSyncEventArgs) — pass transactional=false against older
+// clusters to fall back to the original zero-arg call.
+func SyncEvent(transactional bool) Query[string] {
+	if transactional {
+		return Query[string]{
+			SQL: "SELECT spock.sync_event(true);",
+		}
+	}
 	return Query[string]{
 		SQL: "SELECT spock.sync_event();",
 	}
 }
 
-func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Query[bool] {
+// WaitForSyncEvent waits for a peer to apply the sync event at lsn.
+// waitIfDisabled=true tells Spock to tolerate the subscription not existing
+// yet or being temporarily disabled — both expected during add-node — rather
+// than raising immediately, matching Spock's reference wait_for_sync_event
+// usage. The 5-arg form (with wait_if_disabled) was only introduced in Spock
+// 5.0.7 (see MinSpockVersionForSyncEventArgs) — older clusters only accept
+// the 4-arg form.
+func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int, waitIfDisabled bool) Query[bool] {
+	sql := "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout);"
+	if waitIfDisabled {
+		sql = "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout, true);"
+	}
 	return Query[bool]{
-		SQL: "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout);",
+		SQL: sql,
 		Args: pgx.NamedArgs{
 			"origin_node": originNode,
 			"lsn":         lsn,
@@ -269,26 +317,18 @@ func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Query[bool] {
 }
 
 func ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode string) Query[bool] {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
-
 	return Query[bool]{
-		SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
-		Args: pgx.NamedArgs{
-			"slot_name": slotName,
-		},
+		SQL:  fmt.Sprintf("SELECT NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s);", slotNameExpr),
+		Args: slotNameArgs(databaseName, providerNode, subscriberNode),
 	}
 }
 
 func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
-
 	return ConditionalStatement{
 		If: ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode),
 		Then: Statement{
-			SQL: "SELECT pg_create_logical_replication_slot(@slot_name, 'spock_output');",
-			Args: pgx.NamedArgs{
-				"slot_name": slotName,
-			},
+			SQL:  fmt.Sprintf("SELECT pg_create_logical_replication_slot(%s, 'spock_output');", slotNameExpr),
+			Args: slotNameArgs(databaseName, providerNode, subscriberNode),
 		},
 	}
 }
@@ -298,31 +338,31 @@ func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Co
 // slot whose subscriber has gone down, since pg_drop_replication_slot fails
 // on active slots.
 func TerminateReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+	args := slotNameArgs(databaseName, providerNode, subscriberNode)
 
 	return ConditionalStatement{
 		If: Query[bool]{
-			SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND active);",
-			Args: pgx.NamedArgs{"slot_name": slotName},
+			SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s AND active);", slotNameExpr),
+			Args: args,
 		},
 		Then: Statement{
-			SQL:  "SELECT pg_terminate_backend(active_pid) FROM pg_replication_slots WHERE slot_name = @slot_name AND active;",
-			Args: pgx.NamedArgs{"slot_name": slotName},
+			SQL:  fmt.Sprintf("SELECT pg_terminate_backend(active_pid) FROM pg_replication_slots WHERE slot_name = %s AND active;", slotNameExpr),
+			Args: args,
 		},
 	}
 }
 
 func DropReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+	args := slotNameArgs(databaseName, providerNode, subscriberNode)
 
 	return ConditionalStatement{
 		If: Query[bool]{
-			SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
-			Args: pgx.NamedArgs{"slot_name": slotName},
+			SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s);", slotNameExpr),
+			Args: args,
 		},
 		Then: Statement{
-			SQL:  "SELECT pg_drop_replication_slot(@slot_name);",
-			Args: pgx.NamedArgs{"slot_name": slotName},
+			SQL:  fmt.Sprintf("SELECT pg_drop_replication_slot(%s);", slotNameExpr),
+			Args: args,
 		},
 	}
 }
@@ -343,26 +383,18 @@ func LagTrackerCommitTimestamp(originNode, receiverNode string) Query[time.Time]
 }
 
 func CurrentReplicationSlotLSN(databaseName, providerNode, subscriberNode string) Query[string] {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
-
 	return Query[string]{
-		SQL: "SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = @slot_name;",
-		Args: pgx.NamedArgs{
-			"slot_name": slotName,
-		},
+		SQL:  fmt.Sprintf("SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = %s;", slotNameExpr),
+		Args: slotNameArgs(databaseName, providerNode, subscriberNode),
 	}
 }
 
 // IsReplicationSlotActive checks if a replication slot is currently being used
 // by an active walsender process. Uses EXISTS to always return exactly one row.
 func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) Query[bool] {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
-
 	return Query[bool]{
-		SQL: "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND active_pid IS NOT NULL);",
-		Args: pgx.NamedArgs{
-			"slot_name": slotName,
-		},
+		SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s AND active_pid IS NOT NULL);", slotNameExpr),
+		Args: slotNameArgs(databaseName, providerNode, subscriberNode),
 	}
 }
 
@@ -370,47 +402,66 @@ func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) 
 // subscription exists. Used to poll for Spock 5.x failover slot creation after
 // a switchover, which can take up to 60 seconds.
 func ReplicationSlotExists(databaseName, providerNode, subscriberNode string) Query[bool] {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 	return Query[bool]{
-		SQL: "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
-		Args: pgx.NamedArgs{
-			"slot_name": slotName,
-		},
+		SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s);", slotNameExpr),
+		Args: slotNameArgs(databaseName, providerNode, subscriberNode),
 	}
 }
 
 func GetReplicationSlotLSNFromCommitTS(databaseName, providerNode, subscriberNode string, commitTS time.Time) Query[string] {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+	args := slotNameArgs(databaseName, providerNode, subscriberNode)
+	args["commit_ts"] = commitTS
 
 	return Query[string]{
-		SQL: "SELECT spock.get_lsn_from_commit_ts(@slot_name, @commit_ts::timestamp);",
-		Args: pgx.NamedArgs{
-			"slot_name": slotName,
-			"commit_ts": commitTS,
-		},
+		SQL:  fmt.Sprintf("SELECT spock.get_lsn_from_commit_ts(%s, @commit_ts::timestamp);", slotNameExpr),
+		Args: args,
 	}
 }
 
 func AdvanceReplicationSlotToLSN(databaseName, providerNode, subscriberNode string, targetLSN string) Statement {
-	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+	args := slotNameArgs(databaseName, providerNode, subscriberNode)
+	args["lsn"] = targetLSN
 
 	return Statement{
-		SQL: `
+		SQL: fmt.Sprintf(`
 			WITH current AS (
 				SELECT confirmed_flush_lsn
 				FROM pg_replication_slots
-				WHERE slot_name = @slot_name
+				WHERE slot_name = %[1]s
 			)
 			SELECT CASE
 				WHEN @lsn > confirmed_flush_lsn
-				THEN (pg_replication_slot_advance(@slot_name, @lsn)).end_lsn
+				THEN (pg_replication_slot_advance(%[1]s, @lsn)).end_lsn
 				ELSE confirmed_flush_lsn
 			END AS new_lsn
 			FROM current;
-		`,
-		Args: pgx.NamedArgs{
-			"slot_name": slotName,
-			"lsn":       targetLSN,
+		`, slotNameExpr),
+		Args: args,
+	}
+}
+
+// DropStaleReplicationOrigin drops any pre-existing replication origin for a
+// provider/subscriber pair before a fresh subscription is created for it.
+// Mirrors zodan.sql's create_disable_subscriptions_and_slots step, which
+// explicitly does this "so create_sub starts fresh at 0/0 (avoids stale-LSN
+// data loss)": if a node is removed and later re-added under the same name,
+// CP's slot/origin naming (spock.spock_gen_slot_name(), same as Spock's own)
+// is deterministic on (database, provider, subscriber), so the new
+// subscription would otherwise inherit whatever LSN the old incarnation's
+// origin was left at. Safe to call unconditionally before create — an origin
+// can only exist here if it's stale, since Create() only runs when
+// spock.subscription has no row for this pair yet, and an origin never
+// outlives its subscription's removal on its own.
+func DropStaleReplicationOrigin(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+	args := slotNameArgs(databaseName, providerNode, subscriberNode)
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_origin WHERE roname = %s);", slotNameExpr),
+			Args: args,
+		},
+		Then: Statement{
+			SQL:  fmt.Sprintf("SELECT pg_replication_origin_drop(%s);", slotNameExpr),
+			Args: args,
 		},
 	}
 }
