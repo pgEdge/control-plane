@@ -137,6 +137,31 @@ jobs:
           when: always
       - store_test_results:
           path: .
+  test_e2e_spock6:
+    executor: common
+    steps:
+      - common_setup
+      - run:
+          name: Run Spock 6 add-node e2e test against the latest dev image
+          command: |
+            make ci-compose-detached
+            make test-e2e E2E_FIXTURE=ci E2E_RUN='^TestSpock6AddNode$$' TEST_RERUN_FAILS=2
+      - run:
+          name: Archive debug output
+          command: |
+            if [[ -d ./e2e/debug ]]; then
+              sudo journalctl -u docker.service > ./e2e/debug/docker-service.log
+              tar -czf e2e-debug.tar.gz -C e2e debug
+            fi
+          when: on_fail
+      - store_artifacts:
+          path: e2e-debug.tar.gz
+      - run:
+          name: Ensure Docker Compose is stopped
+          command: make ci-compose-down
+          when: always
+      - store_test_results:
+          path: .
   release:
     executor: common
     steps:
@@ -313,3 +338,19 @@ workflows:
     jobs:
       - build_image:
           context: control-plane-release
+
+  nightly_spock6:
+    # Runs independent of any commit activity, so drift introduced by an
+    # upstream Spock 6 nightly build gets caught even if nobody touches
+    # this repo that day. The e2e test itself points at the floating
+    # spock6DevImage tag (see e2e/spock6_add_node_test.go), so this job
+    # needs no extra plumbing to track "latest" - only the schedule.
+    triggers:
+      - schedule:
+          cron: "0 6 * * *"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - test_e2e_spock6
