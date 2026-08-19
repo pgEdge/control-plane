@@ -145,7 +145,7 @@ jobs:
           name: Run Spock 6 add-node e2e test against the latest dev image
           command: |
             make ci-compose-detached
-            make test-e2e E2E_FIXTURE=ci E2E_RUN='^TestSpock6AddNode$$' TEST_RERUN_FAILS=2
+            make test-e2e E2E_DEBUG=1 E2E_FIXTURE=ci E2E_RUN='^TestSpock6AddNode$$' TEST_RERUN_FAILS=2
       - run:
           name: Archive debug output
           command: |
