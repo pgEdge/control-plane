@@ -55,7 +55,7 @@ func TestSpock6AddNode(t *testing.T) {
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
 			DatabaseName:    dbName,
-			PostgresVersion: pointerTo("18.4"),
+			PostgresVersion: pointerTo("18.6"),
 			SpockVersion:    pointerTo("6"),
 			Port:            pointerTo(0),
 			PatroniPort:     pointerTo(0),

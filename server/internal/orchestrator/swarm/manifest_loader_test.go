@@ -688,7 +688,7 @@ func TestEmbeddedManifestValid_Spock6DevEntryNotDefault(t *testing.T) {
 		t.Fatalf("embedded manifest cannot be parsed: %v", err)
 	}
 
-	spock6 := ds.MustParsePgEdgeVersion("18.4", "6")
+	spock6 := ds.MustParsePgEdgeVersion("18.6", "6")
 	imgs, err := v.GetImages(spock6)
 	if err != nil {
 		t.Fatalf("expected embedded manifest to have a spock6 entry: %v", err)

@@ -85,21 +85,27 @@ func PopulateNodes(existing, new []*NodeResources) (*resource.State, error) {
 	return merged, nil
 }
 
-// EnablePeerSubscriptions returns a diff that enables the peer subscriptions
-// addPeerResources creates disabled. It must be applied as a separate, later
-// phase than PopulateNodes' own state.
+// EnablePeerSubscriptions returns a diff that re-enables the peer
+// subscriptions addPeerResources creates disabled, and verifies each one
+// actually starts replicating. It must be applied as a separate, later phase
+// than PopulateNodes' own state.
 //
-// addPeerResources creates each peer->new-node subscription disabled so the
-// peer-catchup chain (SyncEvent -> WaitForSyncEvent -> PeerCatchup ->
-// LagTracker -> ReplicationSlotAdvanceFromCTS -> ReplicationOriginAdvance)
-// can run without a live subscriber racing that setup. But a single
-// resource.State can only express one desired value per identifier, so that
-// same state can never also declare "now enable it" — nothing else in the
-// codebase ever does, which left these subscriptions permanently disabled.
-// This returns a second state that re-declares the same SubscriptionResource
-// identifiers with Disabled: false; applied after the populate phase is
-// fully persisted, its diff sees disabled->enabled and calls Update, which
-// is what actually flips sub_enabled in spock.subscription.
+// The re-enable here is not the only thing that flips these subscriptions
+// back on: end.go's EndState() unconditionally redeclares every peer-pair
+// SubscriptionResource as part of the final desired state of every
+// create/update-database operation, which enables them regardless of what
+// this phase does. So functionally this phase's enable is redundant with
+// that later one — a no-op Update by the time end.go's phase runs.
+//
+// It's kept anyway because it's the anchor for
+// VerifySubscriptionReplicatingResource below: that check needs a
+// SubscriptionResource in the graph that is actually enabled by the time it
+// runs, so we can fail loudly, right here, if a peer subscription never
+// starts replicating — instead of only finding out much later (or not at
+// all, since end.go's phase has no equivalent verification). Dropping the
+// enable without relocating the verify step would leave the verify checking
+// a subscription that's still deliberately disabled from the populate
+// phase, so it would fail every time.
 func EnablePeerSubscriptions(existing, new []*NodeResources) (*resource.State, error) {
 	existingNodeNames := make([]string, len(existing))
 	for i, n := range existing {

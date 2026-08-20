@@ -29,9 +29,6 @@ func TestDefaultGUCsOutputPluginLibraries(t *testing.T) {
 		{name: "pg18 at gate", version: ds.MustParsePgEdgeVersion("18.6", "4"), expectedPresent: true},
 		{name: "future major", version: ds.MustParsePgEdgeVersion("19.0", "4"), expectedPresent: true},
 		{name: "older major", version: ds.MustParsePgEdgeVersion("15.10", "4"), expectedPresent: false},
-		{name: "spock 6 on pg18 below gate", version: ds.MustParsePgEdgeVersion("18.4", "6"), expectedPresent: true},
-		{name: "spock 6 on pg16 below gate", version: ds.MustParsePgEdgeVersion("16.10", "6"), expectedPresent: true},
-		{name: "spock 5 on pg18 below gate stays ungated", version: ds.MustParsePgEdgeVersion("18.4", "5"), expectedPresent: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gucs := postgres.DefaultGUCs(tc.version)

@@ -94,7 +94,7 @@
         "default": true
       },
       {
-        "postgres_version": "18.4",
+        "postgres_version": "18.6",
         "spock_version": "6",
         "image": "pgedge-postgres:18-spock6-standard",
         "stability": "dev"

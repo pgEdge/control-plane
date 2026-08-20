@@ -19,36 +19,9 @@ var minOutputPluginLibrariesVersions = map[uint64]*ds.Version{
 // needsOutputPluginLibraries reports whether the given Postgres version
 // requires output_plugin_libraries to be set in order to allow spock_output
 // to create replication slots.
-//
-// Spock 6 manifest entries deliberately point at a floating/mutable image
-// tag (see version-manifest.json) rather than a pinned build number, so its
-// declared postgres_version can drift out of sync with whatever Postgres
-// minor the tag actually resolves to at any given moment. That drift caused
-// a real, live-reproduced failure ("library spock_output may not be used as
-// an output plugin") when the floating tag moved past the gate threshold for
-// a minor this function had no way to know about ahead of time, since it
-// only ever sees the declared version, not what's actually running.
-//
-// Rather than track the floating tag's exact current resolution, Spock
-// major >= 6 is treated as an unconditional yes here. This is a deliberate
-// trade-off, not a fully general fix: every Spock 6 build seen in practice
-// so far ships on a Postgres minor at or past the relevant gate, so this
-// resolves the real failure above. Confirmed directly (via `SHOW
-// output_plugin_libraries` against a Postgres minor below the gate) that
-// setting this GUC on a minor that predates it is NOT harmless — Postgres
-// rejects it outright with "unrecognized configuration parameter", which
-// would fail startup, not just no-op. If Spock 6 is ever built against
-// such a minor, this unconditional-yes needs revisiting. Spock 5.x
-// behavior is unchanged — it still depends solely on the exact Postgres
-// minor check below, which is exactly why it never hits this failure mode.
 func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
 	if version == nil || version.PostgresVersion == nil {
 		return false
-	}
-	if version.SpockVersion != nil {
-		if spockMajor, ok := version.SpockVersion.Major(); ok && spockMajor >= 6 {
-			return true
-		}
 	}
 	pgVersion := version.PostgresVersion.MajorMinorVersion()
 	major, ok := pgVersion.Major()

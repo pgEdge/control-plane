@@ -339,15 +339,18 @@ workflows:
       - build_image:
           context: control-plane-release
 
-  nightly_spock6:
+  weekly_spock6:
     # Runs independent of any commit activity, so drift introduced by an
-    # upstream Spock 6 nightly build gets caught even if nobody touches
-    # this repo that day. The e2e test itself points at the floating
-    # spock6DevImage tag (see e2e/spock6_add_node_test.go), so this job
-    # needs no extra plumbing to track "latest" - only the schedule.
+    # upstream Spock 6 build gets caught even if nobody touches this repo
+    # that week. Weekly rather than nightly: the upstream dev image only
+    # gets a new build every few weeks in practice, so nightly would just
+    # be ~20+ no-op runs for every one that actually catches something.
+    # The e2e test itself points at the floating spock6DevImage tag (see
+    # e2e/spock6_add_node_test.go), so this job needs no extra plumbing
+    # to track "latest" - only the schedule.
     triggers:
       - schedule:
-          cron: "0 6 * * *"
+          cron: "0 6 * * 1"
           filters:
             branches:
               only:
