@@ -18,6 +18,15 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+// patroniRequestTimeout bounds the Patroni REST calls
+// reconcileSynchronizedStandbySlots makes. patroni.NewClient's default
+// http.Client has no request timeout of its own, and this reconciliation
+// tends to have work to do right after a failover -- exactly when
+// Patroni's REST API is most likely to be transiently unresponsive
+// (mid-election) -- so an explicit bound here keeps a stalled connection
+// from blocking this instance's status collection indefinitely.
+const patroniRequestTimeout = 10 * time.Second
+
 type InstanceMonitor struct {
 	statusMonitor *Monitor
 	databaseID    string
@@ -25,6 +34,7 @@ type InstanceMonitor struct {
 	dbName        string
 	dbSvc         *database.Service
 	certSvc       *certificates.Service
+	logger        zerolog.Logger
 }
 
 func NewInstanceMonitor(
@@ -41,6 +51,7 @@ func NewInstanceMonitor(
 		dbName:     dbName,
 		dbSvc:      dbSvc,
 		certSvc:    certSvc,
+		logger:     logger,
 	}
 	m.statusMonitor = NewMonitor(
 		logger,
@@ -178,8 +189,20 @@ func (m *InstanceMonitor) populateFromDbConn(
 			})
 		}
 
+		// Logged and swallowed rather than propagated: this is a
+		// best-effort background reconciliation, not a health signal.
+		// Letting it fail the whole status collection here would report
+		// an otherwise-healthy primary as errored (discarding the
+		// version/subscription data this same pass already collected)
+		// over what's usually a transient Patroni REST hiccup -- and
+		// since the reconciliation is self-correcting on every poll (see
+		// its own doc comment), nothing is lost by retrying next tick
+		// instead of surfacing this as an instance-level error now.
 		if err := m.reconcileSynchronizedStandbySlots(ctx, conn, info, pgVersion, spockVersion); err != nil {
-			return fmt.Errorf("failed to reconcile synchronized_standby_slots: %w", err)
+			m.logger.Err(err).
+				Str("database_id", m.databaseID).
+				Str("instance_id", m.instanceID).
+				Msg("failed to reconcile synchronized_standby_slots")
 		}
 	}
 
@@ -216,21 +239,29 @@ func (m *InstanceMonitor) reconcileSynchronizedStandbySlots(
 	info *database.ConnectionInfo,
 	pgVersionStr, spockVersionStr string,
 ) error {
+	// A malformed version string here isn't treated as an error condition
+	// -- it fails open to "not eligible," the same way
+	// needsOutputPluginLibraries and nativeFailoverSlotMajors (see
+	// postgres/gucs.go) treat an unresolvable version as "doesn't need
+	// this" rather than an error. In practice this path is unreachable:
+	// pgVersionStr/spockVersionStr come from GetPostgresVersion()/
+	// GetSpockVersion(), which only ever produce clean, well-formed
+	// version strings for a live connection.
 	pgVersion, err := ds.ParseVersion(pgVersionStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse postgres version %q: %w", pgVersionStr, err)
+		return nil
 	}
 	spockVersion, err := ds.ParseVersion(spockVersionStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse spock version %q: %w", spockVersionStr, err)
+		return nil
 	}
 	pgMajor, ok := pgVersion.Major()
 	if !ok {
-		return fmt.Errorf("failed to determine postgres major version from %q", pgVersionStr)
+		return nil
 	}
 	spockMajor, ok := spockVersion.Major()
 	if !ok {
-		return fmt.Errorf("failed to determine spock major version from %q", spockVersionStr)
+		return nil
 	}
 	if !postgres.NeedsNativeFailoverSlots(spockMajor, pgMajor) {
 		// Not a native-failover-slot cluster (e.g. Spock 5.x, or PG < 17)
@@ -254,8 +285,18 @@ func (m *InstanceMonitor) reconcileSynchronizedStandbySlots(
 		return nil
 	}
 
+	// Bounded independently of the caller's context: this reconciliation
+	// is most likely to have work to do right after a failover, which is
+	// exactly when Patroni's own REST API is most likely to be
+	// transiently unresponsive (mid-election). http.DefaultClient (what
+	// patroni.NewClient falls back to) has no request timeout of its
+	// own, so without this a stalled connection here could block this
+	// instance's status collection well past its usual 5s cadence.
+	patchCtx, cancel := context.WithTimeout(ctx, patroniRequestTimeout)
+	defer cancel()
+
 	client := patroni.NewClient(info.PatroniURL(), nil)
-	_, err = client.PatchDynamicConfig(ctx, &patroni.DynamicConfig{
+	_, err = client.PatchDynamicConfig(patchCtx, &patroni.DynamicConfig{
 		PostgreSQL: &patroni.DynamicPostgreSQLConfig{
 			Parameters: utils.PointerTo(map[string]any{
 				"synchronized_standby_slots": desired,
@@ -265,7 +306,7 @@ func (m *InstanceMonitor) reconcileSynchronizedStandbySlots(
 	if err != nil {
 		return fmt.Errorf("failed to patch synchronized_standby_slots to %q: %w", desired, err)
 	}
-	if err := client.Reload(ctx); err != nil {
+	if err := client.Reload(patchCtx); err != nil {
 		return fmt.Errorf("failed to reload after patching synchronized_standby_slots: %w", err)
 	}
 
