@@ -41,6 +41,73 @@ func TestDefaultGUCsOutputPluginLibraries(t *testing.T) {
 	}
 }
 
+func TestNeedsNativeFailoverSlots(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		spockMajor uint64
+		pgMajor    uint64
+		expected   bool
+	}{
+		{name: "spock 5 pg16", spockMajor: 5, pgMajor: 16, expected: false},
+		{name: "spock 5 pg17", spockMajor: 5, pgMajor: 17, expected: false},
+		{name: "spock 5 pg18", spockMajor: 5, pgMajor: 18, expected: false},
+		{name: "spock 6 pg16", spockMajor: 6, pgMajor: 16, expected: false},
+		{name: "spock 6 pg17", spockMajor: 6, pgMajor: 17, expected: true},
+		{name: "spock 6 pg18", spockMajor: 6, pgMajor: 18, expected: true},
+		{name: "spock 7 pg17", spockMajor: 7, pgMajor: 17, expected: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, postgres.NeedsNativeFailoverSlots(tc.spockMajor, tc.pgMajor))
+		})
+	}
+}
+
+func TestNeedsNativeFailoverSlotsForVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		version  *ds.PgEdgeVersion
+		expected bool
+	}{
+		{name: "nil version", version: nil, expected: false},
+		{name: "spock 5 pg18", version: ds.MustParsePgEdgeVersion("18.4", "5"), expected: false},
+		{name: "spock 6 pg16", version: ds.MustParsePgEdgeVersion("16.10", "6"), expected: false},
+		{name: "spock 6 pg17", version: ds.MustParsePgEdgeVersion("17.0", "6"), expected: true},
+		{name: "spock 6 pg18", version: ds.MustParsePgEdgeVersion("18.4", "6"), expected: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, postgres.NeedsNativeFailoverSlotsForVersion(tc.version))
+		})
+	}
+}
+
+func TestNativeFailoverSlotGUCs(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		version         *ds.PgEdgeVersion
+		expectedPresent bool
+	}{
+		{name: "nil version", version: nil, expectedPresent: false},
+		{name: "spock 5 pg18", version: ds.MustParsePgEdgeVersion("18.4", "5"), expectedPresent: false},
+		{name: "spock 6 pg16", version: ds.MustParsePgEdgeVersion("16.10", "6"), expectedPresent: false},
+		{name: "spock 6 pg17", version: ds.MustParsePgEdgeVersion("17.0", "6"), expectedPresent: true},
+		{name: "spock 6 pg18", version: ds.MustParsePgEdgeVersion("18.4", "6"), expectedPresent: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gucs := postgres.NativeFailoverSlotGUCs(tc.version)
+			value, ok := gucs["sync_replication_slots"]
+			assert.Equal(t, tc.expectedPresent, ok)
+			if tc.expectedPresent {
+				assert.Equal(t, "on", value)
+			}
+			// synchronized_standby_slots is never a static default -- its
+			// value depends on live topology, computed at runtime instead
+			// (see InstanceMonitor.reconcileSynchronizedStandbySlots).
+			_, hasSyncSlots := gucs["synchronized_standby_slots"]
+			assert.False(t, hasSyncSlots)
+		})
+	}
+}
+
 func TestDefaultTunableGUCs(t *testing.T) {
 	for _, tc := range []struct {
 		name        string

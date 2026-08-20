@@ -5,12 +5,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -175,6 +177,96 @@ func (m *InstanceMonitor) populateFromDbConn(
 				Status:       sub.Status,
 			})
 		}
+
+		if err := m.reconcileSynchronizedStandbySlots(ctx, conn, info, pgVersion, spockVersion); err != nil {
+			return fmt.Errorf("failed to reconcile synchronized_standby_slots: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// reconcileSynchronizedStandbySlots keeps Postgres 17+'s
+// synchronized_standby_slots GUC in sync with this node's actual current
+// physical standby topology, on the current primary only. This is what
+// makes native failover slots (see postgres.NeedsNativeFailoverSlots)
+// safe to fail over onto: without it, a promoted replica's logical slots
+// have no guarantee the outgoing primary's not-yet-decoded WAL was ever
+// received by the physical standby that just became primary.
+//
+// This runs here, in the same 5s poll that already detects a role change
+// (rather than e.g. a Patroni on_role_change callback), because it's the
+// one thing in this codebase that already knows a role change happened
+// -- Control Plane's own spec-driven reconciliation never runs on its
+// own initiative when Patroni autonomously promotes a replica, and
+// wiring a callback into the Postgres/Patroni container image would be
+// new plumbing (script delivery, auth back to Control Plane) with no
+// existing precedent anywhere in this codebase. See the design doc for
+// the fuller comparison.
+//
+// Deliberately idempotent and self-correcting rather than cached: it
+// re-derives the desired value and compares against the GUC's own live
+// setting on every call, so a prior partial failure (e.g. the DCS patch
+// below succeeds but the reload doesn't) is retried on the very next
+// tick rather than silently stuck behind an in-memory "already handled"
+// flag.
+func (m *InstanceMonitor) reconcileSynchronizedStandbySlots(
+	ctx context.Context,
+	conn postgres.Executor,
+	info *database.ConnectionInfo,
+	pgVersionStr, spockVersionStr string,
+) error {
+	pgVersion, err := ds.ParseVersion(pgVersionStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse postgres version %q: %w", pgVersionStr, err)
+	}
+	spockVersion, err := ds.ParseVersion(spockVersionStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse spock version %q: %w", spockVersionStr, err)
+	}
+	pgMajor, ok := pgVersion.Major()
+	if !ok {
+		return fmt.Errorf("failed to determine postgres major version from %q", pgVersionStr)
+	}
+	spockMajor, ok := spockVersion.Major()
+	if !ok {
+		return fmt.Errorf("failed to determine spock major version from %q", spockVersionStr)
+	}
+	if !postgres.NeedsNativeFailoverSlots(spockMajor, pgMajor) {
+		// Not a native-failover-slot cluster (e.g. Spock 5.x, or PG < 17)
+		// -- leave synchronized_standby_slots alone entirely. Its
+		// Postgres default is an empty string (no synchronization
+		// requirement), so there's nothing to reconcile toward.
+		return nil
+	}
+
+	slotNames, err := postgres.PhysicalReplicationSlotNames().Scalars(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to list physical replication slots: %w", err)
+	}
+	desired := strings.Join(slotNames, ",")
+
+	current, err := postgres.CurrentSynchronizedStandbySlots().Scalar(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to read current synchronized_standby_slots: %w", err)
+	}
+	if current == desired {
+		return nil
+	}
+
+	client := patroni.NewClient(info.PatroniURL(), nil)
+	_, err = client.PatchDynamicConfig(ctx, &patroni.DynamicConfig{
+		PostgreSQL: &patroni.DynamicPostgreSQLConfig{
+			Parameters: utils.PointerTo(map[string]any{
+				"synchronized_standby_slots": desired,
+			}),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to patch synchronized_standby_slots to %q: %w", desired, err)
+	}
+	if err := client.Reload(ctx); err != nil {
+		return fmt.Errorf("failed to reload after patching synchronized_standby_slots: %w", err)
 	}
 
 	return nil

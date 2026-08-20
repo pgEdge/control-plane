@@ -67,6 +67,70 @@ func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
 	return gucs
 }
 
+// NeedsNativeFailoverSlots reports whether the given Spock and Postgres
+// major versions require PG17+'s native logical-slot-failover mechanism:
+// replication slots created with failover => true, plus
+// sync_replication_slots and synchronized_standby_slots kept in sync via
+// Patroni (see NativeFailoverSlotGUCs and
+// server/internal/monitor/instance_monitor.go respectively).
+//
+// The FAILOVER-flag history this needs to account for is more specific
+// than "5.x doesn't have it, 6.0 does": 5.0.7 had it on unconditionally,
+// 5.0.8-5.0.10 removed it entirely, 5.0.11 brought it back opt-in behind
+// spock.use_native_failover_slots (default off), and 6.0.0 made it
+// unconditional again with that GUC removed. Deliberately gated on Spock
+// major >= 6 only, never on any 5.x minor (including 5.0.11's opt-in
+// GUC) — existing 5.x deployments must see zero behavior change from
+// this, and Control Plane doesn't manage that opt-in GUC either way.
+func NeedsNativeFailoverSlots(spockMajor, pgMajor uint64) bool {
+	return spockMajor >= 6 && pgMajor >= 17
+}
+
+// NeedsNativeFailoverSlotsForVersion is NeedsNativeFailoverSlots for
+// callers that have a declared *ds.PgEdgeVersion on hand (e.g. an
+// instance's spec) rather than already-extracted major versions. Returns
+// false for a nil version or either major being unresolvable, matching
+// how the rest of this file treats an unknown/unparseable version.
+func NeedsNativeFailoverSlotsForVersion(version *ds.PgEdgeVersion) bool {
+	spockMajor, pgMajor, ok := nativeFailoverSlotMajors(version)
+	return ok && NeedsNativeFailoverSlots(spockMajor, pgMajor)
+}
+
+func nativeFailoverSlotMajors(version *ds.PgEdgeVersion) (spockMajor, pgMajor uint64, ok bool) {
+	if version == nil || version.SpockVersion == nil || version.PostgresVersion == nil {
+		return 0, 0, false
+	}
+	spockMajor, ok = version.SpockVersion.Major()
+	if !ok {
+		return 0, 0, false
+	}
+	pgMajor, ok = version.PostgresVersion.MajorMinorVersion().Major()
+	if !ok {
+		return 0, 0, false
+	}
+	return spockMajor, pgMajor, true
+}
+
+// NativeFailoverSlotGUCs returns the static, spec-known GUCs needed once a
+// database's declared version crosses the NeedsNativeFailoverSlots gate.
+//
+// synchronized_standby_slots is deliberately NOT set here even when the
+// gate passes: its correct value is the current set of physical standby
+// slot names, which isn't knowable at config-generation/bootstrap time
+// (no instances exist yet, let alone standbys) and changes over the
+// node's lifetime as replicas are added/removed or a failover promotes a
+// different primary. That value is instead computed from live replication
+// state and kept in sync at runtime — see
+// server/internal/monitor/instance_monitor.go.
+func NativeFailoverSlotGUCs(version *ds.PgEdgeVersion) map[string]any {
+	if !NeedsNativeFailoverSlotsForVersion(version) {
+		return map[string]any{}
+	}
+	return map[string]any{
+		"sync_replication_slots": "on",
+	}
+}
+
 func SpockDefaultGUCs() map[string]any {
 	return map[string]any{
 		"spock.enable_ddl_replication":   "on",

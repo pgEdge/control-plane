@@ -94,3 +94,42 @@ func TestWaitForSyncEvent(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateReplicationSlot(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		failover    bool
+		expectedSQL string
+	}{
+		{
+			name:     "failover",
+			failover: true,
+			expectedSQL: "SELECT pg_create_logical_replication_slot(" +
+				"spock.spock_gen_slot_name(@slot_dbname, @slot_provider_node, @slot_sub_name), " +
+				"'spock_output', false, false, true);",
+		},
+		{
+			name:     "no failover",
+			failover: false,
+			expectedSQL: "SELECT pg_create_logical_replication_slot(" +
+				"spock.spock_gen_slot_name(@slot_dbname, @slot_provider_node, @slot_sub_name), " +
+				"'spock_output');",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			slot := postgres.CreateReplicationSlot("db", "n1", "n2", tc.failover)
+			then, ok := slot.Then.(postgres.Statement)
+			if !ok {
+				t.Fatalf("expected slot.Then to be a postgres.Statement, got %T", slot.Then)
+			}
+			assert.Equal(t, tc.expectedSQL, then.SQL)
+		})
+	}
+}
+
+func TestPhysicalReplicationSlotNames(t *testing.T) {
+	query := postgres.PhysicalReplicationSlotNames()
+	assert.Contains(t, query.SQL, "slot_type = 'physical'")
+	assert.Contains(t, query.SQL, "NOT temporary",
+		"must exclude temporary slots -- they vanish with their creating session and shouldn't be depended on")
+}

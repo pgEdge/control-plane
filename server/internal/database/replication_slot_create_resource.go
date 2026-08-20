@@ -88,7 +88,9 @@ func (r *ReplicationSlotCreateResource) Create(ctx context.Context, rc *resource
 	}
 	defer conn.Close(ctx)
 
-	stmt := postgres.CreateReplicationSlot(r.DatabaseName, r.ProviderNode, r.SubscriberNode)
+	failover := postgres.NeedsNativeFailoverSlotsForVersion(instance.Spec.PgEdgeVersion)
+
+	stmt := postgres.CreateReplicationSlot(r.DatabaseName, r.ProviderNode, r.SubscriberNode, failover)
 	if err := stmt.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create replication slot: %w", err)
 	}
