@@ -64,15 +64,26 @@ func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
 	if needsOutputPluginLibraries(version) {
 		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
 	}
+	if NeedsNativeFailoverSlotsForVersion(version) {
+		// synchronized_standby_slots is deliberately NOT set here even
+		// though the gate passed: its correct value is the current set of
+		// physical standby slot names, which isn't knowable at
+		// config-generation/bootstrap time (no instances exist yet, let
+		// alone standbys) and changes over the node's lifetime as replicas
+		// are added/removed or a failover promotes a different primary.
+		// That value is instead computed from live replication state and
+		// kept in sync at runtime — see
+		// server/internal/monitor/instance_monitor.go.
+		gucs["sync_replication_slots"] = "on"
+	}
 	return gucs
 }
 
 // NeedsNativeFailoverSlots reports whether the given Spock and Postgres
 // major versions require PG17+'s native logical-slot-failover mechanism:
 // replication slots created with failover => true, plus
-// sync_replication_slots and synchronized_standby_slots kept in sync via
-// Patroni (see NativeFailoverSlotGUCs and
-// server/internal/monitor/instance_monitor.go respectively).
+// sync_replication_slots (see DefaultGUCs) and synchronized_standby_slots
+// (see server/internal/monitor/instance_monitor.go) kept in sync.
 //
 // The FAILOVER-flag history this needs to account for is more specific
 // than "5.x doesn't have it, 6.0 does": 5.0.7 had it on unconditionally,
@@ -109,26 +120,6 @@ func nativeFailoverSlotMajors(version *ds.PgEdgeVersion) (spockMajor, pgMajor ui
 		return 0, 0, false
 	}
 	return spockMajor, pgMajor, true
-}
-
-// NativeFailoverSlotGUCs returns the static, spec-known GUCs needed once a
-// database's declared version crosses the NeedsNativeFailoverSlots gate.
-//
-// synchronized_standby_slots is deliberately NOT set here even when the
-// gate passes: its correct value is the current set of physical standby
-// slot names, which isn't knowable at config-generation/bootstrap time
-// (no instances exist yet, let alone standbys) and changes over the
-// node's lifetime as replicas are added/removed or a failover promotes a
-// different primary. That value is instead computed from live replication
-// state and kept in sync at runtime — see
-// server/internal/monitor/instance_monitor.go.
-func NativeFailoverSlotGUCs(version *ds.PgEdgeVersion) map[string]any {
-	if !NeedsNativeFailoverSlotsForVersion(version) {
-		return map[string]any{}
-	}
-	return map[string]any{
-		"sync_replication_slots": "on",
-	}
 }
 
 func SpockDefaultGUCs() map[string]any {

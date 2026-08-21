@@ -80,7 +80,7 @@ func TestNeedsNativeFailoverSlotsForVersion(t *testing.T) {
 	}
 }
 
-func TestNativeFailoverSlotGUCs(t *testing.T) {
+func TestDefaultGUCsSyncReplicationSlots(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		version         *ds.PgEdgeVersion
@@ -93,7 +93,7 @@ func TestNativeFailoverSlotGUCs(t *testing.T) {
 		{name: "spock 6 pg18", version: ds.MustParsePgEdgeVersion("18.4", "6"), expectedPresent: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gucs := postgres.NativeFailoverSlotGUCs(tc.version)
+			gucs := postgres.DefaultGUCs(tc.version)
 			value, ok := gucs["sync_replication_slots"]
 			assert.Equal(t, tc.expectedPresent, ok)
 			if tc.expectedPresent {

@@ -16,19 +16,13 @@ var dynamicGUCs = ds.NewSet(
 	"max_replication_slots",
 	"wal_keep_segments",
 	"wal_keep_size",
-	// Reload-safe, kept identical across every instance in the node via
-	// DCS rather than each instance's own static config -- see
-	// postgres.NativeFailoverSlotGUCs. Set once at config-generation time
-	// for every instance regardless of current role, since Patroni can
-	// promote any of them to primary later.
-	"sync_replication_slots",
-	// Never generated as a static default (see NativeFailoverSlotGUCs'
-	// doc comment) -- its correct value depends on live replication
-	// topology, so it's only ever pushed here directly via the Patroni
-	// REST client's PatchDynamicConfig, by InstanceMonitor's runtime
-	// reconciliation (see server/internal/monitor/instance_monitor.go).
-	// Listed here purely so this file stays the one place documenting
-	// every GUC this codebase manages through Patroni's DCS, reload-safe.
+	// Never generated as a static default (see postgres.DefaultGUCs' doc
+	// comment) -- its correct value depends on live replication topology,
+	// so it's only ever pushed here directly via the Patroni REST client's
+	// PatchDynamicConfig, by InstanceMonitor's runtime reconciliation (see
+	// server/internal/monitor/instance_monitor.go). Listed here purely so
+	// this file stays the one place documenting every GUC this codebase
+	// manages through Patroni's DCS, reload-safe.
 	"synchronized_standby_slots",
 )
 

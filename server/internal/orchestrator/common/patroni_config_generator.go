@@ -232,7 +232,6 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 		})
 	}
 	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(p.NodeOrdinal))
-	maps.Copy(parameters, postgres.NativeFailoverSlotGUCs(p.PgEdgeVersion))
 	maps.Copy(parameters, p.SpecParameters)
 
 	return parameters
