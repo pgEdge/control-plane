@@ -491,23 +491,29 @@ func AdvanceReplicationOrigin(slotName, lsn string) Statement {
 
 // SpockProgressReachedLSN reports whether the local node's apply progress
 // from the named peer has reached targetLSN. Uses remote_lsn (the LSN of the
-// last applied commit in Spock 5.x) rather than received_lsn, which can
-// advance on keepalive messages before any commits have been applied.
-func SpockProgressReachedLSN(peerNodeName, targetLSN string) Query[bool] {
+// last applied commit) on Spock < 6, or remote_commit_lsn on Spock >= 6 —
+// spock.progress became a view over apply_group_progress() in Spock 6 and
+// the column was renamed. Neither uses received_lsn, which can advance on
+// keepalive messages before any commits have been applied.
+func SpockProgressReachedLSN(spockMajor uint64, peerNodeName, targetLSN string) Query[bool] {
+	column := "remote_lsn"
+	if spockMajor >= 6 {
+		column = "remote_commit_lsn"
+	}
 	return Query[bool]{
-		SQL: `
+		SQL: fmt.Sprintf(`
 			SELECT COALESCE(
-				(SELECT p.remote_lsn >= @target_lsn::pg_lsn
+				(SELECT p.%s >= @target_lsn::pg_lsn
 				 FROM spock.progress p
 				 JOIN spock.node n ON n.node_id = p.remote_node_id
 				 WHERE p.node_id = (SELECT node_id FROM spock.node_info())
 				   AND n.node_name = @peer_node_name),
 				false
 			)
-		`,
+		`, column),
 		Args: pgx.NamedArgs{
 			"peer_node_name": peerNodeName,
-			"target_lsn":    targetLSN,
+			"target_lsn":     targetLSN,
 		},
 	}
 }

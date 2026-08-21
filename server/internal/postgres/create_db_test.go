@@ -33,6 +33,39 @@ func TestSyncEvent(t *testing.T) {
 	}
 }
 
+func TestSpockProgressReachedLSN(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		spockMajor     uint64
+		expectedColumn string
+	}{
+		{
+			name:           "spock 5",
+			spockMajor:     5,
+			expectedColumn: "p.remote_lsn",
+		},
+		{
+			name:           "spock 6",
+			spockMajor:     6,
+			expectedColumn: "p.remote_commit_lsn",
+		},
+		{
+			name:           "spock 7 (future major, treated like 6)",
+			spockMajor:     7,
+			expectedColumn: "p.remote_commit_lsn",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			query := postgres.SpockProgressReachedLSN(tc.spockMajor, "n1", "0/0")
+			assert.Contains(t, query.SQL, tc.expectedColumn)
+			assert.Equal(t, pgx.NamedArgs{
+				"peer_node_name": "n1",
+				"target_lsn":     "0/0",
+			}, query.Args)
+		})
+	}
+}
+
 func TestWaitForSyncEvent(t *testing.T) {
 	for _, tc := range []struct {
 		name           string

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/testutils"
 )
 
@@ -550,6 +551,154 @@ func TestValidateManifest(t *testing.T) {
 
 	if err := m.validateManifest([]byte(`not json`)); err == nil {
 		t.Error("expected error for non-JSON input")
+	}
+}
+
+// TestBuildVersions_StabilityWired verifies that a "stability" value on a
+// manifest entry is actually carried through to the runtime Images.Stability
+// field. Regression test: buildVersions previously parsed Stability off the
+// JSON entry but never copied it onto the constructed *Images, so every
+// entry loaded from a real manifest silently ended up with Stability == "",
+// which the filtering logic in AvailableUpgrades/FindUpgrade treats as
+// "stable" — a "dev" entry would have had zero effect.
+func TestBuildVersions_StabilityWired(t *testing.T) {
+	m := &ManifestLoader{logger: testutils.Logger(t), cfg: config.Config{
+		DockerSwarm: config.DockerSwarm{ImageRepositoryHost: "ghcr.io/pgedge"},
+	}}
+	data, err := json.Marshal(map[string]any{
+		"schema_version": 1,
+		"images": map[string]any{
+			"postgres": []map[string]any{
+				{
+					"postgres_version": "18.4",
+					"spock_version":    "5",
+					"image":            "pgedge-postgres:18.4-spock5.0.10-standard-1",
+					"stability":        "stable",
+					"default":          true,
+				},
+				{
+					"postgres_version": "18.4",
+					"spock_version":    "6",
+					"image":            "pgedge-postgres:18-spock6-standard",
+					"stability":        "dev",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v, _, err := m.parseManifestData(data)
+	if err != nil {
+		t.Fatalf("parseManifestData: %v", err)
+	}
+
+	spock6 := ds.MustParsePgEdgeVersion("18.4", "6")
+	imgs, err := v.GetImages(spock6)
+	if err != nil {
+		t.Fatalf("GetImages(spock6): %v", err)
+	}
+	if imgs.Stability != "dev" {
+		t.Errorf("Stability = %q, want %q", imgs.Stability, "dev")
+	}
+
+	if v.Default().SpockVersion.String() != "5" {
+		t.Errorf("default spock version = %s, want 5 (dev entry must never be default)", v.Default().SpockVersion)
+	}
+}
+
+// TestBuildVersions_RejectsDevDefault verifies that manifest loading fails
+// outright if a non-stable entry is marked default, rather than silently
+// allowing a dev image to become the default for new database creation.
+func TestBuildVersions_RejectsDevDefault(t *testing.T) {
+	m := &ManifestLoader{logger: testutils.Logger(t), cfg: config.Config{
+		DockerSwarm: config.DockerSwarm{ImageRepositoryHost: "ghcr.io/pgedge"},
+	}}
+	data, err := json.Marshal(map[string]any{
+		"schema_version": 1,
+		"images": map[string]any{
+			"postgres": []map[string]any{
+				{
+					"postgres_version": "18.4",
+					"spock_version":    "6",
+					"image":            "pgedge-postgres:18-spock6-standard",
+					"stability":        "dev",
+					"default":          true,
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := m.parseManifestData(data); err == nil {
+		t.Fatal("expected error when a dev-stability entry is marked default")
+	}
+}
+
+// TestBuildVersions_FallbackDefaultSkipsNonStable verifies that when no entry
+// is explicitly marked default, the implicit "last entry" fallback still
+// never selects a non-stable entry.
+func TestBuildVersions_FallbackDefaultSkipsNonStable(t *testing.T) {
+	m := &ManifestLoader{logger: testutils.Logger(t), cfg: config.Config{
+		DockerSwarm: config.DockerSwarm{ImageRepositoryHost: "ghcr.io/pgedge"},
+	}}
+	data, err := json.Marshal(map[string]any{
+		"schema_version": 1,
+		"images": map[string]any{
+			"postgres": []map[string]any{
+				{
+					"postgres_version": "18.4",
+					"spock_version":    "5",
+					"image":            "pgedge-postgres:18.4-spock5.0.10-standard-1",
+					"stability":        "stable",
+				},
+				{
+					"postgres_version": "18.4",
+					"spock_version":    "6",
+					"image":            "pgedge-postgres:18-spock6-standard",
+					"stability":        "dev",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v, _, err := m.parseManifestData(data)
+	if err != nil {
+		t.Fatalf("parseManifestData: %v", err)
+	}
+	if v.Default().SpockVersion.String() != "5" {
+		t.Errorf("default spock version = %s, want 5 (fallback must skip the trailing dev entry)", v.Default().SpockVersion)
+	}
+}
+
+// TestEmbeddedManifestValid_Spock6DevEntryNotDefault verifies the real,
+// shipped version-manifest.json's Spock 6 dev entry is loaded (so it's
+// reachable via an explicit postgres_version/spock_version request or an
+// orchestrator_opts image override) but never selected as the default.
+func TestEmbeddedManifestValid_Spock6DevEntryNotDefault(t *testing.T) {
+	m := &ManifestLoader{logger: testutils.Logger(t)}
+	v, _, err := m.parseManifestData(embeddedManifest)
+	if err != nil {
+		t.Fatalf("embedded manifest cannot be parsed: %v", err)
+	}
+
+	spock6 := ds.MustParsePgEdgeVersion("18.6", "6")
+	imgs, err := v.GetImages(spock6)
+	if err != nil {
+		t.Fatalf("expected embedded manifest to have a spock6 entry: %v", err)
+	}
+	if imgs.Stability != "dev" {
+		t.Errorf("spock6 entry Stability = %q, want %q", imgs.Stability, "dev")
+	}
+
+	if major, _ := v.Default().SpockVersion.Major(); major != 5 {
+		t.Errorf("default spock major = %d, want 5 (spock6 dev entry must never be default)", major)
 	}
 }
 

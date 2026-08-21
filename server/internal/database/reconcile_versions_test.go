@@ -123,6 +123,59 @@ func TestReconcileVersions(t *testing.T) {
 			},
 		},
 		{
+			// Before ds.ParseVersion accepted pre-release suffixes, this
+			// instance would be silently skipped at reconcile_versions.go's
+			// ds.ParsePgEdgeVersion call (line 141) and never appear in
+			// updatedInstances. It should now reconcile normally, with the
+			// pre-release suffix dropped by Normalize().
+			name: "spock beta version is not silently skipped",
+			spec: &database.StoredSpec{
+				Spec: &database.Spec{
+					PostgresVersion: "17.4",
+					SpockVersion:    "5",
+					Nodes: []*database.Node{
+						{Name: "n1", HostIDs: []string{"host-1"}},
+					},
+				},
+			},
+			instances: []*database.StoredInstance{
+				{
+					InstanceID:    "n1-host-1",
+					NodeName:      "n1",
+					HostID:        "host-1",
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", "5"),
+				},
+			},
+			statuses: []*database.StoredInstanceStatus{
+				{
+					InstanceID: "n1-host-1",
+					Status: &database.InstanceStatus{
+						StatusUpdatedAt: utils.PointerTo(time.Now()),
+						Role:            utils.PointerTo(patroni.InstanceRolePrimary),
+						PostgresVersion: utils.PointerTo("17.5"),
+						SpockVersion:    utils.PointerTo("6.0.0-beta.1"),
+					},
+				},
+			},
+			expectedSpec: &database.StoredSpec{
+				Spec: &database.Spec{
+					PostgresVersion: "17.5",
+					SpockVersion:    "6",
+					Nodes: []*database.Node{
+						{Name: "n1", HostIDs: []string{"host-1"}},
+					},
+				},
+			},
+			expectedInstances: []*database.StoredInstance{
+				{
+					InstanceID:    "n1-host-1",
+					NodeName:      "n1",
+					HostID:        "host-1",
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.5", "6"),
+				},
+			},
+		},
+		{
 			name: "all nodes updated spock only",
 			spec: &database.StoredSpec{
 				Spec: &database.Spec{
