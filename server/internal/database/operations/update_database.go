@@ -192,14 +192,6 @@ func addNodesStates(updates, adds []*NodeResources) ([]*resource.State, error) {
 		states = append(states, populate)
 	}
 
-	enable, err := EnablePeerSubscriptions(updates, adds)
-	if err != nil {
-		return nil, err
-	}
-	if enable != nil {
-		states = append(states, enable)
-	}
-
 	return states, nil
 }
 

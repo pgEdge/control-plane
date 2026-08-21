@@ -14,9 +14,9 @@ import (
 )
 
 // spock6DevImage is a floating/mutable tag tracking the latest Spock 6
-// development build. Not pinned to a specific build number: nightly CI
-// re-running this test picks up whatever the tag currently resolves to,
-// with no extra plumbing needed to point CI at "latest."
+// development build. Not pinned to a specific build number: the scheduled
+// CI job re-running this test picks up whatever the tag currently resolves
+// to, with no extra plumbing needed to point CI at "latest."
 const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
 
 // TestSpock6AddNode validates the add-node workflow end-to-end against a
@@ -25,8 +25,7 @@ const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
 // constraints, since spock6 manifest entries are deliberately "dev"
 // stability and never auto-selected), adds a 3rd node, and confirms the
 // full mesh reaches "replicating" — exercising the Spock-major-gated
-// spock.progress query (PeerCatchupResource) and the verify-replicating
-// step (VerifySubscriptionReplicatingResource) added in this same ticket.
+// spock.progress query (PeerCatchupResource).
 func TestSpock6AddNode(t *testing.T) {
 	t.Parallel()
 

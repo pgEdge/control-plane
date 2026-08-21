@@ -162,40 +162,6 @@
   [
     [
       {
-        "type": "update",
-        "resource_id": "database.subscription::n2:n3:test",
-        "reason": "has_diff",
-        "diff": [
-          {
-            "value": false,
-            "op": "replace",
-            "path": "/disabled"
-          },
-          {
-            "value": [
-              {
-                "id": "n2:n3:test",
-                "type": "database.replication_origin_advance"
-              }
-            ],
-            "op": "replace",
-            "path": "/extra_dependencies"
-          }
-        ]
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.verify_subscription_replicating::n2:n3:test",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ]
-  ],
-  [
-    [
-      {
         "type": "create",
         "resource_id": "database.replication_slot::n3:n1:test",
         "reason": "does_not_exist",
@@ -237,9 +203,9 @@
         "reason": "has_diff",
         "diff": [
           {
-            "value": null,
+            "value": false,
             "op": "replace",
-            "path": "/extra_dependencies"
+            "path": "/disabled"
           }
         ]
       },
@@ -259,12 +225,12 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.roles_source::n3",
+        "resource_id": "database.replication_origin_advance::n2:n3:test",
         "diff": null
       },
       {
         "type": "delete",
-        "resource_id": "database.verify_subscription_replicating::n2:n3:test",
+        "resource_id": "database.roles_source::n3",
         "diff": null
       }
     ],
@@ -273,16 +239,7 @@
         "type": "delete",
         "resource_id": "database.dump_roles::n1",
         "diff": null
-      }
-    ],
-    [
-      {
-        "type": "delete",
-        "resource_id": "database.replication_origin_advance::n2:n3:test",
-        "diff": null
-      }
-    ],
-    [
+      },
       {
         "type": "delete",
         "resource_id": "database.replication_slot_advance_from_cts::n2:n3:test",
