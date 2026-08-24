@@ -171,7 +171,7 @@ func (h *Host) ClientConfig() client.ServerConfig {
 	return client.NewHTTPServerConfig(h.id, &url.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("localhost:%d", h.port),
-	}, 0)
+	})
 }
 
 // GetEtcdMode retrieves the etcd mode for this host from the API.

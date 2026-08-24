@@ -586,6 +586,11 @@ type InstanceSpec struct {
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	InPlaceRestore   bool              `json:"in_place_restore,omitempty"`
 	AllHostIDs       []string          `json:"all_host_ids"` // All host IDs in the database
+	// PeerInstanceIDs are the InstanceIDs of this instance's sibling
+	// instances within the same Spock node (i.e. its physical HA peers),
+	// excluding itself. Used to compute synchronized_standby_slots -- see
+	// postgres.DefaultGUCs.
+	PeerInstanceIDs []string `json:"peer_instance_ids,omitempty"`
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
@@ -641,6 +646,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		NodeSize:         s.NodeSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
 		AllHostIDs:       slices.Clone(s.AllHostIDs),
+		PeerInstanceIDs:  slices.Clone(s.PeerInstanceIDs),
 	}
 }
 
@@ -744,6 +750,19 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
 				AllHostIDs:       allHostIDs,
 			}
+		}
+
+		// Second pass: each instance's peers are every other instance in the
+		// same node, which requires every instance's InstanceID to already
+		// be assigned above first.
+		for hostIdx, instance := range instances {
+			peers := make([]string, 0, len(instances)-1)
+			for otherIdx, other := range instances {
+				if otherIdx != hostIdx {
+					peers = append(peers, other.InstanceID)
+				}
+			}
+			instance.PeerInstanceIDs = peers
 		}
 
 		nodes[nodeIdx] = &NodeInstances{

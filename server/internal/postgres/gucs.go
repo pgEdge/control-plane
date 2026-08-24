@@ -1,7 +1,10 @@
 package postgres
 
 import (
+	"fmt"
 	"math"
+	"sort"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
@@ -37,7 +40,7 @@ func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
 	return pgVersion.Compare(minVersion) >= 0
 }
 
-func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
+func DefaultGUCs(version *ds.PgEdgeVersion, peerInstanceIDs []string) map[string]any {
 	gucs := map[string]any{
 		"archive_command":              "/bin/true",
 		"archive_mode":                 "on",
@@ -65,25 +68,60 @@ func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
 		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
 	}
 	if NeedsNativeFailoverSlotsForVersion(version) {
-		// synchronized_standby_slots is deliberately NOT set here even
-		// though the gate passed: its correct value is the current set of
-		// physical standby slot names, which isn't knowable at
-		// config-generation/bootstrap time (no instances exist yet, let
-		// alone standbys) and changes over the node's lifetime as replicas
-		// are added/removed or a failover promotes a different primary.
-		// That value is instead computed from live replication state and
-		// kept in sync at runtime — see
-		// server/internal/monitor/instance_monitor.go.
 		gucs["sync_replication_slots"] = "on"
+		if slots := synchronizedStandbySlots(peerInstanceIDs); slots != "" {
+			gucs["synchronized_standby_slots"] = slots
+		}
 	}
 	return gucs
 }
 
+// synchronizedStandbySlots computes this instance's synchronized_standby_slots
+// value from its peer instances' IDs, sorted for a stable result.
+func synchronizedStandbySlots(peerInstanceIDs []string) string {
+	if len(peerInstanceIDs) == 0 {
+		return ""
+	}
+	names := make([]string, len(peerInstanceIDs))
+	for i, id := range peerInstanceIDs {
+		names[i] = patroniSlotNameFromInstanceID(id)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ",")
+}
+
+// patroniSlotNameFromInstanceID reproduces Patroni's own
+// slot_name_from_member_name (patroni/dcs/__init__.py): lowercase, "-"/"."
+// become "_", anything else invalid becomes "uNNNN" (its ordinal, zero
+// padded to 4 digits), truncated to 63 bytes. This has to match exactly,
+// character for character, since Patroni names each member's physical
+// replication slot from its own member name -- which Control Plane sets to
+// the instance's InstanceID (see PatroniConfigGenerator.Generate's Name
+// field) -- and this is how synchronized_standby_slots names that same slot
+// from the Control Plane side.
+func patroniSlotNameFromInstanceID(instanceID string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(instanceID) {
+		switch {
+		case r == '-' || r == '.':
+			b.WriteByte('_')
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_':
+			b.WriteRune(r)
+		default:
+			fmt.Fprintf(&b, "u%04d", r)
+		}
+	}
+	s := b.String()
+	if len(s) > 63 {
+		s = s[:63]
+	}
+	return s
+}
+
 // NeedsNativeFailoverSlots reports whether the given Spock and Postgres
 // major versions require PG17+'s native logical-slot-failover mechanism:
-// replication slots created with failover => true, plus
-// sync_replication_slots (see DefaultGUCs) and synchronized_standby_slots
-// (see server/internal/monitor/instance_monitor.go) kept in sync.
+// replication slots created with failover => true, plus sync_replication_slots
+// and synchronized_standby_slots kept in sync (see DefaultGUCs).
 //
 // The FAILOVER-flag history this needs to account for is more specific
 // than "5.x doesn't have it, 6.0 does": 5.0.7 had it on unconditionally,

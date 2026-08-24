@@ -131,7 +131,7 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, de
 		server := client.NewHTTPServerConfig(host, &url.URL{
 			Scheme: "http",
 			Host:   fmt.Sprintf("%s:%d", cfg.ExternalIP, cfg.Port),
-		}, 0)
+		})
 		servers = append(servers, server)
 	}
 

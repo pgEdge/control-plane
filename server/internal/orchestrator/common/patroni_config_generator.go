@@ -60,6 +60,10 @@ type PatroniConfigGenerator struct {
 	PatroniAllowlist []string `json:"patroni_allowlist"`
 	// PatroniPort is the port that Patroni will listen on.
 	PatroniPort int `json:"patroni_port"`
+	// PeerInstanceIDs are the InstanceIDs of this instance's physical HA
+	// peers within the same Spock node, used to compute
+	// synchronized_standby_slots.
+	PeerInstanceIDs []string `json:"peer_instance_ids,omitempty"`
 	// PgEdgeVersion is the Postgres/Spock version for this instance. This is
 	// used to gate version-specific default Postgres parameters.
 	PgEdgeVersion *ds.PgEdgeVersion `json:"pg_edge_version,omitempty"`
@@ -148,6 +152,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		NodeSize:               opts.Instance.NodeSize,
 		OrchestratorParameters: opts.OrchestratorParameters,
 		PatroniPort:            opts.PatroniPort,
+		PeerInstanceIDs:        opts.Instance.PeerInstanceIDs,
 		PgEdgeVersion:          opts.Instance.PgEdgeVersion,
 		PostgresCertsDir:       opts.Paths.Instance.PostgresCertificates(),
 		PostgresPort:           opts.PostgresPort,
@@ -212,7 +217,7 @@ func (p *PatroniConfigGenerator) AuthMethod() hba.AuthMethod {
 }
 
 func (p *PatroniConfigGenerator) parameters() map[string]any {
-	parameters := postgres.DefaultGUCs(p.PgEdgeVersion)
+	parameters := postgres.DefaultGUCs(p.PgEdgeVersion, p.PeerInstanceIDs)
 	maps.Copy(parameters, postgres.SpockDefaultGUCs())
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{

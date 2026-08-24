@@ -126,10 +126,3 @@ func TestCreateReplicationSlot(t *testing.T) {
 		})
 	}
 }
-
-func TestPhysicalReplicationSlotNames(t *testing.T) {
-	query := postgres.PhysicalReplicationSlotNames()
-	assert.Contains(t, query.SQL, "slot_type = 'physical'")
-	assert.Contains(t, query.SQL, "NOT temporary",
-		"must exclude temporary slots -- they vanish with their creating session and shouldn't be depended on")
-}

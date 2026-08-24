@@ -323,17 +323,9 @@ func ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode strin
 	}
 }
 
-// CreateReplicationSlot creates the logical replication slot backing a
-// peer subscription. failover should be true only when
-// postgres.NeedsNativeFailoverSlots reports the managed database's Spock
-// and Postgres majors both require it -- when false, the statement is
-// byte-for-byte identical to the pre-failover-slot-support form, so
-// clusters that don't need this see no behavior change at all.
-// pg_create_logical_replication_slot's failover parameter was only added
-// in PG17, which is exactly the same version floor
-// NeedsNativeFailoverSlots already requires, so there's no separate PG
-// major check needed here -- failover=true never happens on an older
-// Postgres where the 5-arg form wouldn't exist.
+// CreateReplicationSlot creates the logical replication slot backing a peer
+// subscription. Pass failover from NeedsNativeFailoverSlots; false is
+// byte-for-byte identical to the pre-failover-slot-support statement.
 func CreateReplicationSlot(databaseName, providerNode, subscriberNode string, failover bool) ConditionalStatement {
 	sql := fmt.Sprintf("SELECT pg_create_logical_replication_slot(%s, 'spock_output');", slotNameExpr)
 	if failover {
@@ -420,42 +412,6 @@ func ReplicationSlotExists(databaseName, providerNode, subscriberNode string) Qu
 	return Query[bool]{
 		SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s);", slotNameExpr),
 		Args: slotNameArgs(databaseName, providerNode, subscriberNode),
-	}
-}
-
-// PhysicalReplicationSlotNames lists every permanent (non-temporary)
-// physical replication slot currently on this instance -- i.e. the slots
-// backing this node's own physical (Patroni-managed HA) standbys, as
-// distinct from the logical spock_output slots backing peer
-// subscriptions. Used to compute synchronized_standby_slots: Patroni
-// creates and names these itself (permanent member slots, PG11+'s
-// use_slots), Control Plane never creates or names a physical slot
-// directly, so the live catalog is the only source of truth for "which
-// slot names exist right now" -- there's no Go-side naming convention to
-// reproduce instead.
-//
-// Temporary slots are deliberately excluded: they're scoped to whatever
-// session created them (e.g. a one-off basebackup helper bootstrapping a
-// new replica) and vanish the moment that session ends. Including one
-// here could reference a slot name in synchronized_standby_slots that's
-// already gone by the time Postgres reloads -- not harmful (Postgres
-// treats a missing slot name as simply never satisfied, not an error),
-// but pointless churn that a temporary slot, by definition, was never
-// meant to be depended on for.
-func PhysicalReplicationSlotNames() Query[string] {
-	return Query[string]{
-		SQL: "SELECT slot_name FROM pg_replication_slots WHERE slot_type = 'physical' AND NOT temporary ORDER BY slot_name;",
-	}
-}
-
-// CurrentSynchronizedStandbySlots reports the live value of Postgres 17+'s
-// synchronized_standby_slots GUC on this connection, as a plain
-// comma-separated string (its raw on-disk/runtime representation) --
-// used by InstanceMonitor to detect drift from the desired value without
-// forcing an unconditional reload on every check.
-func CurrentSynchronizedStandbySlots() Query[string] {
-	return Query[string]{
-		SQL: "SELECT setting FROM pg_settings WHERE name = 'synchronized_standby_slots';",
 	}
 }
 

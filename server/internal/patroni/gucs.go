@@ -16,14 +16,6 @@ var dynamicGUCs = ds.NewSet(
 	"max_replication_slots",
 	"wal_keep_segments",
 	"wal_keep_size",
-	// Never generated as a static default (see postgres.DefaultGUCs' doc
-	// comment) -- its correct value depends on live replication topology,
-	// so it's only ever pushed here directly via the Patroni REST client's
-	// PatchDynamicConfig, by InstanceMonitor's runtime reconciliation (see
-	// server/internal/monitor/instance_monitor.go). Listed here purely so
-	// this file stays the one place documenting every GUC this codebase
-	// manages through Patroni's DCS, reload-safe.
-	"synchronized_standby_slots",
 )
 
 // ExtractPatroniControlledGUCs extracts the GUCs that Patroni controls into a
