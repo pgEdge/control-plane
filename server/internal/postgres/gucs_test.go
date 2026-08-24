@@ -73,6 +73,22 @@ func TestNeedsNativeFailoverSlotsForVersion(t *testing.T) {
 		{name: "spock 6 pg16", version: ds.MustParsePgEdgeVersion("16.10", "6"), expected: false},
 		{name: "spock 6 pg17", version: ds.MustParsePgEdgeVersion("17.0", "6"), expected: true},
 		{name: "spock 6 pg18", version: ds.MustParsePgEdgeVersion("18.4", "6"), expected: true},
+		{
+			name: "unresolved spock major",
+			version: &ds.PgEdgeVersion{
+				PostgresVersion: ds.MustParsePgEdgeVersion("18.4", "6").PostgresVersion,
+				SpockVersion:    &ds.Version{},
+			},
+			expected: false,
+		},
+		{
+			name: "unresolved postgres major",
+			version: &ds.PgEdgeVersion{
+				PostgresVersion: &ds.Version{},
+				SpockVersion:    ds.MustParsePgEdgeVersion("18.4", "6").SpockVersion,
+			},
+			expected: false,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, postgres.NeedsNativeFailoverSlotsForVersion(tc.version))
