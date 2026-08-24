@@ -90,15 +90,11 @@ func synchronizedStandbySlots(peerInstanceIDs []string) string {
 	return strings.Join(names, ",")
 }
 
-// patroniSlotNameFromInstanceID reproduces Patroni's own
-// slot_name_from_member_name (patroni/dcs/__init__.py): lowercase, "-"/"."
-// become "_", anything else invalid becomes "uNNNN" (its ordinal, zero
-// padded to 4 digits), truncated to 63 bytes. This has to match exactly,
-// character for character, since Patroni names each member's physical
-// replication slot from its own member name -- which Control Plane sets to
-// the instance's InstanceID (see PatroniConfigGenerator.Generate's Name
-// field) -- and this is how synchronized_standby_slots names that same slot
-// from the Control Plane side.
+// patroniSlotNameFromInstanceID must exactly reproduce Patroni's own
+// slot_name_from_member_name (patroni/dcs/__init__.py), since that's what
+// actually names each peer's physical replication slot: lowercase, "-"/"."
+// become "_", anything else invalid becomes "uNNNN" (its zero-padded
+// ordinal), truncated to 63 bytes.
 func patroniSlotNameFromInstanceID(instanceID string) string {
 	var b strings.Builder
 	for _, r := range strings.ToLower(instanceID) {
@@ -119,27 +115,16 @@ func patroniSlotNameFromInstanceID(instanceID string) string {
 }
 
 // NeedsNativeFailoverSlots reports whether the given Spock and Postgres
-// major versions require PG17+'s native logical-slot-failover mechanism:
-// replication slots created with failover => true, plus sync_replication_slots
-// and synchronized_standby_slots kept in sync (see DefaultGUCs).
-//
-// The FAILOVER-flag history this needs to account for is more specific
-// than "5.x doesn't have it, 6.0 does": 5.0.7 had it on unconditionally,
-// 5.0.8-5.0.10 removed it entirely, 5.0.11 brought it back opt-in behind
-// spock.use_native_failover_slots (default off), and 6.0.0 made it
-// unconditional again with that GUC removed. Deliberately gated on Spock
-// major >= 6 only, never on any 5.x minor (including 5.0.11's opt-in
-// GUC) — existing 5.x deployments must see zero behavior change from
-// this, and Control Plane doesn't manage that opt-in GUC either way.
+// major versions require PG17+'s native logical-slot-failover mechanism
+// (see DefaultGUCs). Gated on Spock major >= 6 only: 5.x had this behind an
+// opt-in GUC at times, but Control Plane never manages that GUC, so no 5.x
+// minor should trigger this.
 func NeedsNativeFailoverSlots(spockMajor, pgMajor uint64) bool {
 	return spockMajor >= 6 && pgMajor >= 17
 }
 
-// NeedsNativeFailoverSlotsForVersion is NeedsNativeFailoverSlots for
-// callers that have a declared *ds.PgEdgeVersion on hand (e.g. an
-// instance's spec) rather than already-extracted major versions. Returns
-// false for a nil version or either major being unresolvable, matching
-// how the rest of this file treats an unknown/unparseable version.
+// NeedsNativeFailoverSlotsForVersion is NeedsNativeFailoverSlots for a
+// declared *ds.PgEdgeVersion; false if either major is unresolvable.
 func NeedsNativeFailoverSlotsForVersion(version *ds.PgEdgeVersion) bool {
 	spockMajor, pgMajor, ok := nativeFailoverSlotMajors(version)
 	return ok && NeedsNativeFailoverSlots(spockMajor, pgMajor)

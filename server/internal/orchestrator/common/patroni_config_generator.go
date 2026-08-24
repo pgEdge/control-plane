@@ -60,9 +60,8 @@ type PatroniConfigGenerator struct {
 	PatroniAllowlist []string `json:"patroni_allowlist"`
 	// PatroniPort is the port that Patroni will listen on.
 	PatroniPort int `json:"patroni_port"`
-	// PeerInstanceIDs are the InstanceIDs of this instance's physical HA
-	// peers within the same Spock node, used to compute
-	// synchronized_standby_slots.
+	// PeerInstanceIDs are this instance's physical HA peers in the same
+	// Spock node, used to compute synchronized_standby_slots.
 	PeerInstanceIDs []string `json:"peer_instance_ids,omitempty"`
 	// PgEdgeVersion is the Postgres/Spock version for this instance. This is
 	// used to gate version-specific default Postgres parameters.
