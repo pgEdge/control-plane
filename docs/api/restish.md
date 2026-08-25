@@ -217,7 +217,10 @@ time, though, so pass that from a separate file you don't commit instead
 of adding it to `databases/example.json`:
 
 ```sh
-cat > /tmp/example.create.json <<'EOF'
+umask 077
+tmpfile=$(mktemp)
+trap 'rm -f "$tmpfile"' EXIT
+cat > "$tmpfile" <<'EOF'
 {
     "id": "example",
     "spec": {
@@ -239,9 +242,14 @@ cat > /tmp/example.create.json <<'EOF'
     }
 }
 EOF
-restish pgedge create-database < /tmp/example.create.json
-rm /tmp/example.create.json
+restish pgedge create-database < "$tmpfile"
 ```
+
+`umask 077` keeps the file unreadable by anyone else on the machine while
+it exists, `mktemp` avoids a predictable filename, and the `trap` removes
+it as soon as this shell exits — including if `create-database` itself
+fails — rather than relying on a final `rm` that a failure or an
+interrupted copy-paste could skip.
 
 Update the same database by editing `databases/example.json` and
 re-applying it against the `update-database` command. No password is
@@ -278,11 +286,13 @@ already stored unless you explicitly send a new one. See
 In practice, that means the default workflow is the one shown above: keep
 `databases/example.json` secret-free from the start, and pass real secret
 values only from a separate, uncommitted file for the one `create-database`
-call that needs them — deleting that file immediately afterward rather than
-editing secrets out of the committed file after the fact. From then on,
-`update-database` runs against the secret-free file as-is. If you need to
-rotate a password, apply it the same way: a temporary file with the new
-value, passed once, then removed.
+call that needs them — a file created with a restrictive `umask`, an
+unpredictable `mktemp` path, and an `EXIT` trap so it's removed even if
+the command fails, rather than editing secrets out of the committed file
+after the fact. From then on, `update-database` runs against the
+secret-free file as-is. If you need to rotate a password, apply it the
+same way: the same `umask`/`mktemp`/`trap` pattern, with the new value,
+passed once.
 
 This keeps `databases/example.json` safe to read, diff, and share at any
 point — it's never the file that held the credential, so there's no window
