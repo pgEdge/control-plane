@@ -5,6 +5,7 @@ CI ?= false
 DEBUG ?= 0
 LOG_LEVEL ?= info
 DEV_IMAGE_REPO ?= ghcr.io/pgedge
+DEV_IMAGE_MANIFEST ?= local
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
 TEST_RERUN_FAILS ?= 0
 TEST_DISABLE_CACHE ?= 0
@@ -26,6 +27,20 @@ CLUSTER_TEST_DATA_DIR ?=
 DEV_LIMA_OS ?= rocky-9
 DEV_LIMA_USE_STAGING_PACKAGES ?= false
 
+ifeq ($(DEV_IMAGE_MANIFEST),local)
+	dev_manifest_vars=DEV_MANIFEST_PATH=/version-manifest.json \
+		DEV_MANIFEST_URL=""
+else ifeq ($(DEV_IMAGE_MANIFEST),staging)
+	dev_manifest_vars=DEV_MANIFEST_URL=https://downloads.pgedge.com/manifests/staging/control-plane/version-manifest.json \
+		DEV_MANIFEST_PATH=""
+else ifeq ($(DEV_IMAGE_MANIFEST),release)
+	dev_manifest_vars=DEV_MANIFEST_URL=https://downloads.pgedge.com/manifests/release/control-plane/version-manifest.json \
+		DEV_MANIFEST_PATH=""
+else
+$(error Invalid DEV_IMAGE_MANIFEST '$(DEV_IMAGE_MANIFEST)'. Valid options are 'local', 'staging', and 'release')
+endif
+
+
 ci_enabled=$(filter true,$(CI))
 docker_swarm_state=$(shell docker info --format '{{.Swarm.LocalNodeState}}')
 buildx_builder=$(if $(ci_enabled),"control-plane-ci","control-plane")
@@ -34,6 +49,7 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		DEBUG=$(DEBUG) \
 		LOG_LEVEL=$(LOG_LEVEL) \
 		DEV_IMAGE_REPO=$(DEV_IMAGE_REPO) \
+		$(dev_manifest_vars) \
 		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
 docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
 e2e_args=-tags=e2e_test -count=1 -timeout=45m \

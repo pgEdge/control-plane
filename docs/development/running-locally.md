@@ -196,6 +196,25 @@ This is an example remote debugging configuration for VSCode:
 
 After attaching the debugger, the server will start normally.
 
+#### Changing Manifests
+
+You can change the manifest source by specifying the `DEV_IMAGE_MANIFEST` environment
+variable when you run `make dev-watch`. This environment currently supports three different manifest sources:
+
+```sh
+# 'local' is the default option. This will use the local version manifest
+# server/internal/orchestrator/swarm/version-manifest.json
+make dev-watch DEV_IMAGE_MANIFEST=local
+
+# This will use the published staging manifest
+# https://downloads.pgedge.com/manifests/staging/control-plane/version-manifest.json
+make dev-watch DEV_IMAGE_MANIFEST=staging
+
+# This will use the published release manifest
+# https://downloads.pgedge.com/manifests/release/control-plane/version-manifest.json
+make dev-watch DEV_IMAGE_MANIFEST=release
+```
+
 ### API Documentation
 
 The `docker-compose.yaml` file for this configuration includes an API
