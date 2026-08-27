@@ -1,7 +1,10 @@
 package postgres
 
 import (
+	"fmt"
 	"math"
+	"sort"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
@@ -37,7 +40,7 @@ func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
 	return pgVersion.Compare(minVersion) >= 0
 }
 
-func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
+func DefaultGUCs(version *ds.PgEdgeVersion, peerInstanceIDs []string) map[string]any {
 	gucs := map[string]any{
 		"archive_command":              "/bin/true",
 		"archive_mode":                 "on",
@@ -64,7 +67,82 @@ func DefaultGUCs(version *ds.PgEdgeVersion) map[string]any {
 	if needsOutputPluginLibraries(version) {
 		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
 	}
+	if NeedsNativeFailoverSlotsForVersion(version) {
+		gucs["sync_replication_slots"] = "on"
+		if slots := synchronizedStandbySlots(peerInstanceIDs); slots != "" {
+			gucs["synchronized_standby_slots"] = slots
+		}
+	}
 	return gucs
+}
+
+// synchronizedStandbySlots computes this instance's synchronized_standby_slots
+// value from its peer instances' IDs, sorted for a stable result.
+func synchronizedStandbySlots(peerInstanceIDs []string) string {
+	if len(peerInstanceIDs) == 0 {
+		return ""
+	}
+	names := make([]string, len(peerInstanceIDs))
+	for i, id := range peerInstanceIDs {
+		names[i] = patroniSlotNameFromInstanceID(id)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ",")
+}
+
+// patroniSlotNameFromInstanceID must exactly reproduce Patroni's own
+// slot_name_from_member_name (patroni/dcs/__init__.py), since that's what
+// actually names each peer's physical replication slot: lowercase, "-"/"."
+// become "_", anything else invalid becomes "uNNNN" (its zero-padded
+// ordinal), truncated to 63 bytes.
+func patroniSlotNameFromInstanceID(instanceID string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(instanceID) {
+		switch {
+		case r == '-' || r == '.':
+			b.WriteByte('_')
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_':
+			b.WriteRune(r)
+		default:
+			fmt.Fprintf(&b, "u%04d", r)
+		}
+	}
+	s := b.String()
+	if len(s) > 63 {
+		s = s[:63]
+	}
+	return s
+}
+
+// NeedsNativeFailoverSlots reports whether the given Spock and Postgres
+// major versions require PG17+'s native logical-slot-failover mechanism
+// (see DefaultGUCs). Gated on Spock major >= 6 only: 5.x had this behind an
+// opt-in GUC at times, but Control Plane never manages that GUC, so no 5.x
+// minor should trigger this.
+func NeedsNativeFailoverSlots(spockMajor, pgMajor uint64) bool {
+	return spockMajor >= 6 && pgMajor >= 17
+}
+
+// NeedsNativeFailoverSlotsForVersion is NeedsNativeFailoverSlots for a
+// declared *ds.PgEdgeVersion; false if either major is unresolvable.
+func NeedsNativeFailoverSlotsForVersion(version *ds.PgEdgeVersion) bool {
+	spockMajor, pgMajor, ok := nativeFailoverSlotMajors(version)
+	return ok && NeedsNativeFailoverSlots(spockMajor, pgMajor)
+}
+
+func nativeFailoverSlotMajors(version *ds.PgEdgeVersion) (spockMajor, pgMajor uint64, ok bool) {
+	if version == nil || version.SpockVersion == nil || version.PostgresVersion == nil {
+		return 0, 0, false
+	}
+	spockMajor, ok = version.SpockVersion.Major()
+	if !ok {
+		return 0, 0, false
+	}
+	pgMajor, ok = version.PostgresVersion.MajorMinorVersion().Major()
+	if !ok {
+		return 0, 0, false
+	}
+	return spockMajor, pgMajor, true
 }
 
 func SpockDefaultGUCs() map[string]any {

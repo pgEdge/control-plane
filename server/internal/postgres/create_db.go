@@ -323,11 +323,18 @@ func ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode strin
 	}
 }
 
-func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+// CreateReplicationSlot creates the logical replication slot backing a peer
+// subscription. Pass failover from NeedsNativeFailoverSlots; false is
+// byte-for-byte identical to the pre-failover-slot-support statement.
+func CreateReplicationSlot(databaseName, providerNode, subscriberNode string, failover bool) ConditionalStatement {
+	sql := fmt.Sprintf("SELECT pg_create_logical_replication_slot(%s, 'spock_output');", slotNameExpr)
+	if failover {
+		sql = fmt.Sprintf("SELECT pg_create_logical_replication_slot(%s, 'spock_output', false, false, true);", slotNameExpr)
+	}
 	return ConditionalStatement{
 		If: ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode),
 		Then: Statement{
-			SQL:  fmt.Sprintf("SELECT pg_create_logical_replication_slot(%s, 'spock_output');", slotNameExpr),
+			SQL:  sql,
 			Args: slotNameArgs(databaseName, providerNode, subscriberNode),
 		},
 	}
