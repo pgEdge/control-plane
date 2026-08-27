@@ -1,6 +1,6 @@
 # Using Restish as a CLI
 
-The pgEdge Control Plane makes use of a tool called [Restish](https://rest.sh) to get a CLI-like experience against the Control Plane's HTTP API. Restish is a generic, open-source REST client that turns any [OpenAPI](openapi.md)-described API into a set of generated commands, complete with shell completion and readable output.
+The pgEdge Control Plane can be used with a tool called [Restish](https://rest.sh) to get a CLI-like experience against the Control Plane's HTTP API. Restish is a generic, open-source REST client that turns any [OpenAPI](openapi.md)-described API into a set of generated commands, complete with shell completion and readable output.
 
 Jump to what you're trying to do:
 
@@ -14,23 +14,24 @@ If you already have a Control Plane cluster running (see the
 [installation quickstart](../installation/quickstart.md) if not), you can
 be running commands against it in three steps:
 
-First, install Restish:
 
-```sh
-brew install restish
-```
+### 1. Installation
 
-Then connect Restish to your cluster:
+First, install Restish [via Restish's official website](https://rest.sh/docs/getting-started/install/). Restish supports many installation methods, including Homebrew (macOS), github releases, and OCI images; select the option that most aligns with your organizations preferences and practices. 
 
+### 2. Connection
 !!! warning
 
     Only connect this way to clusters and databases you're okay with experimenting on. See [Managing Multiple Environments](#managing-multiple-environments)
     before connecting Restish to anything production.
 
+Connect Restish to your cluster:
+
 
 ```sh
 restish api connect pgedge http://localhost:3000
 ```
+### 3. Verification
 
 Then run your first command:
 
@@ -42,10 +43,6 @@ That's enough to start experimenting — `restish pgedge --help` lists every
 generated command, and once you have a database config file (see
 [Managing Database Configuration as Files](#managing-database-configuration-as-files)
 below), `restish pgedge create-database < your-file.json` creates one.
-
-See the [Restish install guide](https://rest.sh/docs/getting-started/install/)
-for other install options, including release archives, containers, and
-building from source.
 
 ## Managing Multiple Environments
 
@@ -217,10 +214,12 @@ time, though, so pass that from a separate file you don't commit instead
 of adding it to `databases/example.json`:
 
 ```sh
-umask 077
-tmpfile=$(mktemp)
-trap 'rm -f "$tmpfile"' EXIT
-cat > "$tmpfile" <<'EOF'
+(
+  set -e
+  umask 077
+  tmpfile=$(mktemp)
+  trap 'rm -f "$tmpfile"' EXIT
+  cat > "$tmpfile" <<'EOF'
 {
     "id": "example",
     "spec": {
@@ -242,14 +241,16 @@ cat > "$tmpfile" <<'EOF'
     }
 }
 EOF
-restish pgedge create-database < "$tmpfile"
+  restish pgedge create-database < "$tmpfile"
+)
 ```
 
 `umask 077` keeps the file unreadable by anyone else on the machine while
-it exists, `mktemp` avoids a predictable filename, and the `trap` removes
-it as soon as this shell exits — including if `create-database` itself
-fails — rather than relying on a final `rm` that a failure or an
-interrupted copy-paste could skip.
+it exists, `mktemp` avoids a predictable filename, and the subshell `(...)`
+limits the `trap`'s scope: when `create-database` returns (or fails), the
+subshell exits and the trap fires immediately, removing the file before
+control returns to your interactive shell — rather than waiting until you
+close the terminal.
 
 Update the same database by editing `databases/example.json` and
 re-applying it against the `update-database` command. No password is
@@ -258,6 +259,16 @@ needed, since it's omitted from the request entirely:
 ```sh
 restish pgedge update-database example < databases/example.json
 ```
+
+!!! note
+
+    Restish retries network errors and transient server errors (`429`,
+    `500`, `502`, `503`, `504`) automatically, but not `create-database`,
+    `update-database`, or `delete-database` themselves — POST/PUT/PATCH/DELETE
+    requests are only retried if you explicitly pass `--rsh-retry-unsafe`,
+    which prints a warning when used. Leave that flag off for database
+    operations: retrying a request that already partially succeeded on the
+    server can double-process it.
 
 To apply the same file to a specific environment instead of your default
 cluster, add the profile you set up in
@@ -287,12 +298,13 @@ In practice, that means the default workflow is the one shown above: keep
 `databases/example.json` secret-free from the start, and pass real secret
 values only from a separate, uncommitted file for the one `create-database`
 call that needs them — a file created with a restrictive `umask`, an
-unpredictable `mktemp` path, and an `EXIT` trap so it's removed even if
-the command fails, rather than editing secrets out of the committed file
-after the fact. From then on, `update-database` runs against the
-secret-free file as-is. If you need to rotate a password, apply it the
-same way: the same `umask`/`mktemp`/`trap` pattern, with the new value,
-passed once.
+unpredictable `mktemp` path, and an `EXIT` trap inside a subshell so it's
+removed as soon as `create-database` returns (even if it fails), rather
+than waiting until you close the terminal or editing secrets out of the
+committed file after the fact. From then on, `update-database` runs against
+the secret-free file as-is. If you need to rotate a password, apply it the
+same way: the same `umask`/`mktemp`/`trap`-in-subshell pattern, with the
+new value, passed once.
 
 This keeps `databases/example.json` safe to read, diff, and share at any
 point — it's never the file that held the credential, so there's no window
