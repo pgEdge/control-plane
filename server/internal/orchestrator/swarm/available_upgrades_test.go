@@ -39,8 +39,8 @@ func TestVersions_AvailableUpgrades(t *testing.T) {
 	})
 
 	t.Run("returns nil when no newer entries exist (already at latest)", func(t *testing.T) {
-		// 18.4 is the newest in pg18 bucket — no upgrades available
-		current := ds.MustParsePgEdgeVersion("18.4", "5")
+		// 18.6 is the newest in pg18 bucket — no upgrades available
+		current := ds.MustParsePgEdgeVersion("18.6", "5")
 		upgrades := v.AvailableUpgrades(current)
 		assert.Nil(t, upgrades)
 	})

@@ -16,6 +16,8 @@ services:
       - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-1
       - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
       - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=${DEV_MANIFEST_PATH}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_URL=${DEV_MANIFEST_URL}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/v1/version"]
       interval: 2s
@@ -25,6 +27,7 @@ services:
       - ./config.json:/config.json
       - ./data:${WORKSPACE_DIR}/docker/control-plane-dev/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - ../../server/internal/orchestrator/swarm/version-manifest.json:/version-manifest.json:ro
     network_mode: host
   host-2:
     extends:
@@ -38,6 +41,8 @@ services:
       - PGEDGE_ETCD_SERVER__CLIENT_PORT=2479
       - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
       - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=${DEV_MANIFEST_PATH}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_URL=${DEV_MANIFEST_URL}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3001/v1/version"]
       interval: 2s
@@ -55,6 +60,8 @@ services:
       - PGEDGE_ETCD_SERVER__CLIENT_PORT=2579
       - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
       - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=${DEV_MANIFEST_PATH}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_URL=${DEV_MANIFEST_URL}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3002/v1/version"]
       interval: 2s
@@ -71,6 +78,8 @@ services:
       - PGEDGE_ETCD_MODE=client
       - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
       - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=${DEV_MANIFEST_PATH}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_URL=${DEV_MANIFEST_URL}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3003/v1/version"]
       interval: 2s
@@ -87,6 +96,8 @@ services:
       - PGEDGE_ETCD_MODE=client
       - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
       - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=${DEV_MANIFEST_PATH}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_URL=${DEV_MANIFEST_URL}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3004/v1/version"]
       interval: 2s
@@ -103,6 +114,8 @@ services:
       - PGEDGE_ETCD_MODE=client
       - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
       - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_PATH=${DEV_MANIFEST_PATH}
+      - PGEDGE_DOCKER_SWARM__MANIFEST_URL=${DEV_MANIFEST_URL}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3005/v1/version"]
       interval: 2s
