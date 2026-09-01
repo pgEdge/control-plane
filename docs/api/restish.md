@@ -17,7 +17,7 @@ be running commands against it in three steps:
 
 ### 1. Installation
 
-First, install Restish [via Restish's official website](https://rest.sh/docs/getting-started/install/). Restish supports many installation methods, including Homebrew (macOS), github releases, and OCI images; select the option that most aligns with your organizations preferences and practices. 
+First, install Restish [via Restish's official website](https://rest.sh/docs/getting-started/install/). Restish supports many installation methods, including Homebrew (macOS), GitHub Releases, and OCI images; select the option that most aligns with your organization's preferences and practices.
 
 ### 2. Connection
 !!! warning
@@ -219,38 +219,21 @@ of adding it to `databases/example.json`:
   umask 077
   tmpfile=$(mktemp)
   trap 'rm -f "$tmpfile"' EXIT
-  cat > "$tmpfile" <<'EOF'
-{
-    "id": "example",
-    "spec": {
-        "database_name": "example",
-        "database_users": [
-            {
-                "username": "admin",
-                "password": "changeme",
-                "db_owner": true,
-                "attributes": ["SUPERUSER", "LOGIN"]
-            }
-        ],
-        "port": 5432,
-        "nodes": [
-            { "name": "n1", "host_ids": ["host-1"] },
-            { "name": "n2", "host_ids": ["host-2"] },
-            { "name": "n3", "host_ids": ["host-3"] }
-        ]
-    }
-}
-EOF
+  read -rsp "Password: " DB_PASS; echo
+  jq --arg pw "$DB_PASS" '.spec.database_users[0].password = $pw' \
+    databases/example.json > "$tmpfile"
   restish pgedge create-database < "$tmpfile"
 )
 ```
 
-`umask 077` keeps the file unreadable by anyone else on the machine while
-it exists, `mktemp` avoids a predictable filename, and the subshell `(...)`
-limits the `trap`'s scope: when `create-database` returns (or fails), the
-subshell exits and the trap fires immediately, removing the file before
-control returns to your interactive shell — rather than waiting until you
-close the terminal.
+`read -rsp` prompts for the password without echo, so it never appears in
+your terminal output or shell history. `jq` receives the value via
+`--arg` and injects it into `databases/example.json` at runtime, so the
+password never appears in the command text itself. `umask 077` keeps the
+tmpfile unreadable by anyone else on the machine while it exists, and the
+subshell `(...)` limits the `trap`'s scope: when `create-database` returns
+(or fails), the subshell exits and the trap fires immediately, removing the
+file before control returns to your interactive shell.
 
 Update the same database by editing `databases/example.json` and
 re-applying it against the `update-database` command. No password is
@@ -262,8 +245,8 @@ restish pgedge update-database example < databases/example.json
 
 !!! note
 
-    Restish retries network errors and transient server errors (`429`,
-    `500`, `502`, `503`, `504`) automatically, but not `create-database`,
+    Restish retries network errors and transient server errors (`408`,
+    `429`, `500`, `502`, `503`, `504`) automatically, but not `create-database`,
     `update-database`, or `delete-database` themselves — POST/PUT/PATCH/DELETE
     requests are only retried if you explicitly pass `--rsh-retry-unsafe`,
     which prints a warning when used. Leave that flag off for database
@@ -296,15 +279,14 @@ already stored unless you explicitly send a new one. See
 
 In practice, that means the default workflow is the one shown above: keep
 `databases/example.json` secret-free from the start, and pass real secret
-values only from a separate, uncommitted file for the one `create-database`
-call that needs them — a file created with a restrictive `umask`, an
-unpredictable `mktemp` path, and an `EXIT` trap inside a subshell so it's
-removed as soon as `create-database` returns (even if it fails), rather
-than waiting until you close the terminal or editing secrets out of the
-committed file after the fact. From then on, `update-database` runs against
-the secret-free file as-is. If you need to rotate a password, apply it the
-same way: the same `umask`/`mktemp`/`trap`-in-subshell pattern, with the
-new value, passed once.
+values only from a separate, uncommitted tmpfile for the one
+`create-database` call that needs them — prompted interactively with echo
+disabled (so the value never enters shell history), injected via `jq` at
+runtime, and written to a file created with a restrictive `umask` inside a
+subshell so it's removed as soon as `create-database` returns (even if it
+fails). From then on, `update-database` runs against the secret-free file
+as-is. If you need to rotate a password, apply it the same way: `read -rsp`
+for the new value, `jq` to inject it, passed once.
 
 This keeps `databases/example.json` safe to read, diff, and share at any
 point — it's never the file that held the credential, so there's no window
