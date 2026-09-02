@@ -264,6 +264,63 @@ value in `orchestrator_opts.swarm.image` when creating the database:
     Digest pinning guarantees that you run a specific immutable image even
     if the tag is later reassigned to a different image in the registry.
 
+### Spock 6 Preview Images
+
+Spock 6 is available today as a preview manifest entry (`"stability":
+"dev"` in the version manifest), currently paired with Postgres 18.6.
+Preview entries are excluded from image upgrades (see below) and are
+never chosen for a database that omits `postgres_version` and
+`spock_version`, but you can still request one directly by setting
+those fields to a matching manifest entry, or by pinning the image
+explicitly with `orchestrator_opts.swarm.image`.
+
+The following request creates a database pinned to the Spock 6 preview
+image:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "postgres_version": "18.6",
+                "spock_version": "6",
+                "orchestrator_opts": {
+                    "swarm": {
+                        "image": "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
+                    }
+                },
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { "name": "n2", "host_ids": ["host-2"] }
+                ]
+            }
+        }'
+    ```
+
+!!! note
+
+    The Spock 6 preview image tracks the latest Spock 6 build against
+    Postgres 18, so its resolved Postgres minor version can advance ahead
+    of the manifest entry's declared `postgres_version`.
+
+!!! warning
+
+    Preview images are for evaluation, not production use. The Control
+    Plane rejects preview images as targets for the
+    [image upgrade](./upgrade-db.md#image-upgrades) action, and they are
+    excluded from `available_upgrades`.
+
 ## Image Validation
 
 When `orchestrator_opts.swarm.image` is set, the Control Plane validates the

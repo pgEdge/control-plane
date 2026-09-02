@@ -1,0 +1,3 @@
+kind: Added
+body: Added foundational support for Spock 6, available as a dev-stability preview image via the version manifest. Databases running Spock 6 on Postgres 17 or later automatically use Postgres's native replication slot failover.
+time: 2026-08-27T14:04:29.000000+00:00

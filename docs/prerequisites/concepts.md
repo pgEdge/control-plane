@@ -37,6 +37,14 @@ Each node is composed of one or more Postgres instances, where one instance is a
 
 When a node which has multiple instances is created, the primary instance for the node will be placed on the first host specified for the node in the database spec. After a database is created, the primary instance may change due to a failover or switchover operation. 
 
+For a node running Spock 6 on Postgres 17 or later, the Control Plane
+automatically configures Postgres's native replication slot failover
+(`sync_replication_slots` and `synchronized_standby_slots`) for that
+node. This keeps the node's Spock replication slots synchronized to its
+read replicas, so a failover or switchover can promote a replica without
+Spock needing to re-create replication slots on the new primary. No
+configuration is required to use this behavior.
+
 ## Orchestrators
 
 The Control Plane is architected to support multiple orchestrators, giving you flexibility in how database instances are deployed and managed.
