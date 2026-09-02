@@ -378,14 +378,26 @@ func (s *PostInitHandlers) GetDatabase(ctx context.Context, req *api.GetDatabase
 }
 
 func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
+	databaseID, err := dbIdentToString(req.DatabaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	existing, err := s.dbSvc.GetDatabase(ctx, databaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	// Refill service secrets (e.g. RAG api_key values) that GET stripped from a
+	// prior read, so a read-edit-write cycle on an unrelated field doesn't 400
+	// for missing secrets the caller was never shown. Must run before
+	// apiToDatabaseSpec, which validates the incoming spec and would otherwise
+	// reject it as missing required secrets.
+	restoreOmittedServiceSecrets(req.Request.Spec, existing.Spec)
+
 	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, &req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
-	}
-
-	existing, err := s.dbSvc.GetDatabase(ctx, spec.DatabaseID)
-	if err != nil {
-		return nil, apiErr(err)
 	}
 	// API-level update validation:
 	// ensure that for any newly added nodes, source_node (if set) refers

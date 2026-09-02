@@ -82,6 +82,109 @@ func scrubSensitiveValue(v any) any {
 	}
 }
 
+// isBlankConfigValue reports whether v represents "no value supplied" for a
+// sensitive config field: either the key was omitted entirely (scrubbed by
+// scrubSensitiveConfig, which deletes rather than blanks) or it was submitted
+// as null/empty string.
+func isBlankConfigValue(v any) bool {
+	if v == nil {
+		return true
+	}
+	s, ok := v.(string)
+	return ok && s == ""
+}
+
+// restoreSensitiveConfig is the inverse of scrubSensitiveConfig: it fills
+// sensitive keys that are missing or blank in newConfig with the corresponding
+// value from oldConfig, so a read-edit-write cycle on an unrelated field
+// doesn't require the caller to re-supply secrets that GET never showed them
+// (see scrubSensitiveConfig / isSensitiveConfigKey). Nested objects inside
+// arrays (e.g. RAG pipelines) are matched to their old counterpart by a "name"
+// field when present, falling back to position.
+func restoreSensitiveConfig(newConfig, oldConfig map[string]any) map[string]any {
+	if newConfig == nil {
+		return nil
+	}
+	out := make(map[string]any, len(newConfig))
+	for k, v := range newConfig {
+		if isSensitiveConfigKey(k) && isBlankConfigValue(v) {
+			if old, ok := oldConfig[k]; ok && !isBlankConfigValue(old) {
+				out[k] = old
+				continue
+			}
+		}
+		out[k] = restoreSensitiveValue(v, oldConfig[k])
+	}
+	// Sensitive keys entirely absent from newConfig (the common case, since
+	// scrubSensitiveConfig deletes rather than blanks them) are restored here.
+	for k, old := range oldConfig {
+		if _, present := newConfig[k]; present {
+			continue
+		}
+		if isSensitiveConfigKey(k) && !isBlankConfigValue(old) {
+			out[k] = old
+		}
+	}
+	return out
+}
+
+func restoreSensitiveValue(newVal, oldVal any) any {
+	switch nv := newVal.(type) {
+	case map[string]any:
+		ov, _ := oldVal.(map[string]any)
+		return restoreSensitiveConfig(nv, ov)
+	case []any:
+		ov, _ := oldVal.([]any)
+		oldByName := make(map[string]map[string]any, len(ov))
+		for _, elem := range ov {
+			if em, ok := elem.(map[string]any); ok {
+				if name, ok := em["name"].(string); ok {
+					oldByName[name] = em
+				}
+			}
+		}
+		out := make([]any, len(nv))
+		for i, elem := range nv {
+			em, ok := elem.(map[string]any)
+			if !ok {
+				out[i] = elem
+				continue
+			}
+			var match map[string]any
+			if name, ok := em["name"].(string); ok {
+				match = oldByName[name]
+			} else if i < len(ov) {
+				match, _ = ov[i].(map[string]any)
+			}
+			out[i] = restoreSensitiveConfig(em, match)
+		}
+		return out
+	default:
+		return newVal
+	}
+}
+
+// restoreOmittedServiceSecrets fills service config secrets that were stripped
+// from a prior GET response back into newSpec, using the stored config from
+// oldSpec. This gives service secrets the same "omitted means keep the stored
+// value" semantics that User.DefaultOptionalFieldsFrom already provides for
+// database user passwords. Only services that already exist in oldSpec are
+// touched (matched by service_id) — a newly added service still must supply
+// its own secrets.
+func restoreOmittedServiceSecrets(newSpec *api.DatabaseSpec, oldSpec *database.Spec) {
+	oldConfigByServiceID := make(map[string]map[string]any, len(oldSpec.Services))
+	for _, svc := range oldSpec.Services {
+		oldConfigByServiceID[svc.ServiceID] = svc.Config
+	}
+	for _, svc := range newSpec.Services {
+		oldConfig, ok := oldConfigByServiceID[string(svc.ServiceID)]
+		if !ok || svc.Config == nil {
+			continue
+		}
+		svc.Config = restoreSensitiveConfig(svc.Config, oldConfig)
+	}
+}
+
 func hostToAPI(h *host.Host) *api.Host {
 	components := make(map[string]*api.ComponentStatus, len(h.Status.Components))
 	for name, status := range h.Status.Components {
