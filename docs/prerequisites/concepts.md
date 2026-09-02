@@ -37,13 +37,14 @@ Each node is composed of one or more Postgres instances, where one instance is a
 
 When a node which has multiple instances is created, the primary instance for the node will be placed on the first host specified for the node in the database spec. After a database is created, the primary instance may change due to a failover or switchover operation. 
 
-For a node running Spock 6 on Postgres 17 or later, the Control Plane
-automatically configures Postgres's native replication slot failover
-(`sync_replication_slots` and `synchronized_standby_slots`) for that
-node. This keeps the node's Spock replication slots synchronized to its
-read replicas, so a failover or switchover can promote a replica without
-Spock needing to re-create replication slots on the new primary. No
-configuration is required to use this behavior.
+For a node running Spock 6 or later on Postgres 17 or later, the Control
+Plane automatically enables Postgres's native replication slot failover
+(`sync_replication_slots`) for that node. When the node also has read
+replicas, the Control Plane additionally configures
+`synchronized_standby_slots` to keep the node's Spock replication slots
+synchronized to those replicas, so a failover or switchover can promote
+a replica without Spock needing to re-create replication slots on the
+new primary. No configuration is required to use this behavior.
 
 ## Orchestrators
 

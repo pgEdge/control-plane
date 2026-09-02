@@ -266,8 +266,8 @@ value in `orchestrator_opts.swarm.image` when creating the database:
 
 ### Spock 6 Preview Images
 
-Spock 6 is available today as a preview manifest entry (`"stability":
-"dev"` in the version manifest), currently paired with Postgres 18.6.
+Spock 6 is available as a preview manifest entry (`"stability": "dev"`
+in the version manifest), currently paired with Postgres 18.6.
 Preview entries are excluded from image upgrades (see below) and are
 never chosen for a database that omits `postgres_version` and
 `spock_version`, but you can still request one directly by setting
