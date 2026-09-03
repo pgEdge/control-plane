@@ -264,6 +264,74 @@ value in `orchestrator_opts.swarm.image` when creating the database:
     Digest pinning guarantees that you run a specific immutable image even
     if the tag is later reassigned to a different image in the registry.
 
+### Spock 6 Preview Images
+
+Spock 6 is available as a preview manifest entry (`"stability": "dev"`
+in the version manifest), currently paired with Postgres 18.6. Spock 6
+itself supports Postgres 15 through 19; the version manifest currently
+offers only this one Postgres 18.6 pairing as a preview. This preview
+is available for Docker Swarm deployments only; the systemd
+orchestrator does not currently support Spock 6 packages.
+
+Preview entries are excluded from image upgrades (see below) and are
+never chosen for a database that omits `postgres_version` and
+`spock_version`. To create a new database on the Spock 6 preview
+image, set `postgres_version` and `spock_version` to match the
+manifest entry:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "postgres_version": "18.6",
+                "spock_version": "6",
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { "name": "n2", "host_ids": ["host-2"] }
+                ]
+            }
+        }'
+    ```
+
+Overriding `orchestrator_opts.swarm.image` is only necessary if you need
+an image other than the manifest default for that version pair, such as
+pinning a specific build. See
+[Using a Custom Image](#using-a-custom-image).
+
+!!! note
+
+    The Spock 6 preview image tracks the latest Spock 6 build against
+    Postgres 18, so its resolved Postgres minor version can advance ahead
+    of the manifest entry's declared `postgres_version`.
+
+!!! warning
+
+    This preview supports only creating a new database on Spock 6. It
+    does not support upgrading an existing database from Spock 5.x to
+    Spock 6. The Control Plane does not validate or block a
+    `spock_version` change on an existing database's spec, but doing so
+    is unsupported and can break replication, since a Spock 6
+    subscription cannot sync from a Spock 5.x peer.
+
+!!! warning
+
+    Preview images are for evaluation, not production use. The Control
+    Plane rejects preview images as targets for the
+    [image upgrade](./upgrade-db.md#image-upgrades) action, and they are
+    excluded from `available_upgrades`.
+
 ## Image Validation
 
 When `orchestrator_opts.swarm.image` is set, the Control Plane validates the
