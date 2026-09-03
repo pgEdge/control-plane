@@ -55,11 +55,11 @@ type MCPServiceConfig struct {
 	DisableCountRows           *bool `json:"disable_count_rows,omitempty"`
 
 	// Optional - knowledgebase search
-	KBEnabled            *bool   `json:"kb_enabled,omitempty"`
-	KBEmbeddingProvider  *string `json:"kb_embedding_provider,omitempty"`
-	KBEmbeddingModel     *string `json:"kb_embedding_model,omitempty"`
-	KBEmbeddingAPIKey    *string `json:"kb_embedding_api_key,omitempty"`
-	KBDatabaseHostPath   *string `json:"kb_database_host_path,omitempty"`
+	KBEnabled           *bool   `json:"kb_enabled,omitempty"`
+	KBEmbeddingProvider *string `json:"kb_embedding_provider,omitempty"`
+	KBEmbeddingModel    *string `json:"kb_embedding_model,omitempty"`
+	KBEmbeddingAPIKey   *string `json:"kb_embedding_api_key,omitempty"`
+	KBDatabaseHostPath  *string `json:"kb_database_host_path,omitempty"`
 }
 
 // mcpKnownKeys is the set of all valid config keys for MCP service configuration.
@@ -134,7 +134,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	embeddingModel, emErrs := optionalString(config, "embedding_model")
 	errs = append(errs, emErrs...)
 
-	embeddingAPIKey, eakErrs := optionalString(config, "embedding_api_key")
+	embeddingAPIKey, eakErrs := optionalSecretString(config, "embedding_api_key", isUpdate)
 	errs = append(errs, eakErrs...)
 
 	// LLM fields: conditionally required when llm_enabled is true,
@@ -238,7 +238,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	kbEmbeddingModel, kbemErrs := optionalString(config, "kb_embedding_model")
 	errs = append(errs, kbemErrs...)
 
-	kbEmbeddingAPIKey, kbeakErrs := optionalString(config, "kb_embedding_api_key")
+	kbEmbeddingAPIKey, kbeakErrs := optionalSecretString(config, "kb_embedding_api_key", isUpdate)
 	errs = append(errs, kbeakErrs...)
 
 	kbDatabaseHostPath, kbdhpErrs := optionalString(config, "kb_database_host_path")
@@ -440,7 +440,7 @@ func requireString(config map[string]any, key string) (string, []error) {
 // final, merged config.
 func requireStringForProvider(config map[string]any, key, provider string, isUpdate bool) (string, []error) {
 	val, ok := config[key]
-	if !ok {
+	if !ok || val == nil {
 		if isUpdate {
 			return "", nil
 		}
@@ -470,6 +470,34 @@ func optionalString(config map[string]any, key string) (*string, []error) {
 		return nil, []error{fmt.Errorf("%s must be a string", key)}
 	}
 	if s == "" {
+		return nil, []error{fmt.Errorf("%s must not be empty", key)}
+	}
+	return &s, nil
+}
+
+// optionalSecretString extracts an optional secret string from the config
+// map, e.g. embedding_api_key. An explicit JSON null is always treated the
+// same as the key being absent, since both mean "no value provided" for an
+// optional field. An empty string is normally rejected like optionalString,
+// but is also treated as absent when isUpdate is true: the caller is expected
+// to have already restored any stored value via Spec.DefaultOptionalFieldsFrom
+// before validation runs, and a key still missing after that is caught at
+// deploy time, when ParseMCPServiceConfig is called again with
+// isUpdate=false against the final, merged config. A non-string value is
+// always a type error, isUpdate or not.
+func optionalSecretString(config map[string]any, key string, isUpdate bool) (*string, []error) {
+	val, ok := config[key]
+	if !ok || val == nil {
+		return nil, nil
+	}
+	s, ok := val.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("%s must be a string", key)}
+	}
+	if s == "" {
+		if isUpdate {
+			return nil, nil
+		}
 		return nil, []error{fmt.Errorf("%s must not be empty", key)}
 	}
 	return &s, nil
