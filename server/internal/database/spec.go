@@ -451,6 +451,7 @@ func (s *Spec) DefaultOptionalFieldsFrom(other *Spec) {
 
 	s.defaultOptionalFieldFromNodes(other.Nodes)
 	s.defaultOptionalFieldFromUsers(other.DatabaseUsers)
+	s.defaultOptionalFieldFromServices(other.Services)
 
 	if s.BackupConfig != nil && other.BackupConfig != nil {
 		s.BackupConfig.DefaultOptionalFieldsFrom(other.BackupConfig)
@@ -536,6 +537,20 @@ func (s Spec) defaultOptionalFieldFromUsers(other []*User) {
 		otherUser, ok := otherUsersByName[u.Username]
 		if ok {
 			u.DefaultOptionalFieldsFrom(otherUser)
+		}
+	}
+}
+
+func (s Spec) defaultOptionalFieldFromServices(other []*ServiceSpec) {
+	otherServicesByID := make(map[string]*ServiceSpec, len(other))
+	for _, svc := range other {
+		otherServicesByID[svc.ServiceID] = svc
+	}
+
+	for _, svc := range s.Services {
+		otherSvc, ok := otherServicesByID[svc.ServiceID]
+		if ok {
+			svc.DefaultOptionalFieldsFrom(otherSvc)
 		}
 	}
 }

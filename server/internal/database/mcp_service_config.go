@@ -97,8 +97,14 @@ var validLLMProviders = []string{"anthropic", "openai", "ollama"}
 var validEmbeddingProviders = []string{"voyage", "openai", "ollama"}
 var validKBEmbeddingProviders = []string{"voyage", "openai"}
 
-// ParseMCPServiceConfig parses and validates a config map into a typed MCPServiceConfig.
-// If isUpdate is true, bootstrap-only fields (init_token, init_users) are rejected.
+// ParseMCPServiceConfig parses and validates a config map into a typed
+// MCPServiceConfig. If isUpdate is true, bootstrap-only fields (init_token,
+// init_users) are rejected, and api_key-style secrets (anthropic_api_key,
+// openai_api_key, embedding_api_key, kb_embedding_api_key) are not required:
+// the caller is expected to have already restored any stored value via
+// Spec.DefaultOptionalFieldsFrom before validation runs, and a key still
+// missing after that is caught at deploy time, when ParseMCPServiceConfig is
+// called again with isUpdate=false against the final, merged config.
 func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceConfig, []error) {
 	var errs []error
 
@@ -157,19 +163,21 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		if llmProvider != "" && slices.Contains(validLLMProviders, llmProvider) {
 			switch llmProvider {
 			case "anthropic":
-				key, keyErrs := requireStringForProvider(config, "anthropic_api_key", "anthropic")
+				key, keyErrs := requireStringForProvider(config, "anthropic_api_key", "anthropic", isUpdate)
 				errs = append(errs, keyErrs...)
 				if key != "" {
 					anthropicKey = &key
 				}
 			case "openai":
-				key, keyErrs := requireStringForProvider(config, "openai_api_key", "openai")
+				key, keyErrs := requireStringForProvider(config, "openai_api_key", "openai", isUpdate)
 				errs = append(errs, keyErrs...)
 				if key != "" {
 					openaiKey = &key
 				}
 			case "ollama":
-				url, urlErrs := requireStringForProvider(config, "ollama_url", "ollama")
+				// ollama_url is not a secret (GET never strips it), so it's
+				// always required here regardless of isUpdate.
+				url, urlErrs := requireStringForProvider(config, "ollama_url", "ollama", false)
 				errs = append(errs, urlErrs...)
 				if url != "" {
 					ollamaURL = &url
@@ -281,8 +289,10 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 			} else if !slices.Contains(validKBEmbeddingProviders, *kbEmbeddingProvider) {
 				errs = append(errs, fmt.Errorf("kb_embedding_provider must be one of: %s", strings.Join(validKBEmbeddingProviders, ", ")))
 			} else {
-				// voyage and openai require an API key
-				if kbEmbeddingAPIKey == nil {
+				// voyage and openai require an API key, except on an update,
+				// where an omitted key is expected to already have been
+				// restored from the stored spec before validation runs.
+				if !isUpdate && kbEmbeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("kb_embedding_api_key is required when kb_embedding_provider is %q", *kbEmbeddingProvider))
 				}
 			}
@@ -333,10 +343,11 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 			if embeddingModel == nil {
 				errs = append(errs, fmt.Errorf("embedding_model is required when embedding_provider is set"))
 			}
-			// Provider-specific credential requirements
+			// Provider-specific credential requirements. api_key is not
+			// required on an update — see requireStringForProvider.
 			switch *embeddingProvider {
 			case "voyage", "openai":
-				if embeddingAPIKey == nil {
+				if !isUpdate && embeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("embedding_api_key is required when embedding_provider is %q", *embeddingProvider))
 				}
 			case "ollama":
@@ -420,10 +431,19 @@ func requireString(config map[string]any, key string) (string, []error) {
 	return s, nil
 }
 
-// requireStringForProvider extracts a required non-empty string for a specific provider.
-func requireStringForProvider(config map[string]any, key, provider string) (string, []error) {
+// requireStringForProvider extracts a required non-empty string for a
+// specific provider. When isUpdate is true, a missing or empty value is
+// allowed: the caller is expected to have already restored any stored value
+// via Spec.DefaultOptionalFieldsFrom before validation runs, and a value
+// still missing after that is caught at deploy time, when
+// ParseMCPServiceConfig is called again with isUpdate=false against the
+// final, merged config.
+func requireStringForProvider(config map[string]any, key, provider string, isUpdate bool) (string, []error) {
 	val, ok := config[key]
 	if !ok {
+		if isUpdate {
+			return "", nil
+		}
 		return "", []error{fmt.Errorf("%s is required when llm_provider is %q", key, provider)}
 	}
 	s, ok := val.(string)
@@ -431,6 +451,9 @@ func requireStringForProvider(config map[string]any, key, provider string) (stri
 		return "", []error{fmt.Errorf("%s must be a string", key)}
 	}
 	if s == "" {
+		if isUpdate {
+			return "", nil
+		}
 		return "", []error{fmt.Errorf("%s must not be empty", key)}
 	}
 	return s, nil

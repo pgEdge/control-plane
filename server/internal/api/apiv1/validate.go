@@ -95,7 +95,11 @@ func validatePgIdentConf(lines []string, path validation.Path) []error {
 	return errs
 }
 
-func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, spec *api.DatabaseSpec) error {
+// validateDatabaseSpec validates spec. existingServiceIDs holds the
+// service_id of every service already present in the stored spec (nil for a
+// create); a service whose ID is in this set may omit secrets that
+// Spec.DefaultOptionalFieldsFrom will restore from stored state afterward.
+func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, spec *api.DatabaseSpec, existingServiceIDs ds.Set[string]) error {
 	var errs []error
 
 	errs = append(errs, validateCPUs(spec.Cpus, validation.NewPath("cpus"))...)
@@ -196,7 +200,8 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 			}
 			seenServiceIDs.Add(string(svc.ServiceID))
 
-			errs = append(errs, validateServiceSpec(svc, svcPath, false, databaseID, spec.DatabaseUsers, seenNodeNames)...)
+			isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+			errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, databaseID, spec.DatabaseUsers, seenNodeNames)...)
 		}
 	}
 

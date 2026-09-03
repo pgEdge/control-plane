@@ -690,9 +690,10 @@ func TestValidateNode(t *testing.T) {
 
 func TestValidateDatabaseSpec(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		spec     *api.DatabaseSpec
-		expected []string
+		name               string
+		spec               *api.DatabaseSpec
+		existingServiceIDs ds.Set[string]
+		expected           []string
 	}{
 		{
 			name: "valid minimal",
@@ -1442,7 +1443,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.NotPanics(t, func() {
-				err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)
+				err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec, tc.existingServiceIDs)
 				if len(tc.expected) < 1 {
 					assert.NoError(t, err)
 				} else {
@@ -2050,6 +2051,49 @@ func TestValidateServiceSpec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateServiceSpec_RAGUpdateOmitsAPIKey(t *testing.T) {
+	// PLAT-715: GET strips api_key from a RAG service's config, so a
+	// read-edit-write cycle resubmits the pipeline without it. On create
+	// (isUpdate=false) that must still fail — there's no stored value to fall
+	// back to. On an existing service (isUpdate=true), the omission must be
+	// allowed here: Spec.DefaultOptionalFieldsFrom restores the real value
+	// afterward, and the final, merged config is re-validated strictly
+	// (isUpdate=false) at deploy time.
+	testDBUsers := []*api.DatabaseUserSpec{
+		{Username: "app", DbOwner: utils.PointerTo(true)},
+	}
+	svc := &api.ServiceSpec{
+		ServiceID:   "rag",
+		ServiceType: "rag",
+		Version:     "latest",
+		HostIds:     []api.Identifier{"host-1"},
+		ConnectAs:   "app",
+		Config: map[string]any{
+			"pipelines": []any{
+				map[string]any{
+					"name": "docs",
+					"tables": []any{
+						map[string]any{"table": "docs", "text_column": "content", "vector_column": "embedding"},
+					},
+					"embedding_llm": map[string]any{"provider": "voyage", "model": "voyage-3"},
+					"rag_llm":       map[string]any{"provider": "anthropic", "model": "claude-3"},
+				},
+			},
+		},
+	}
+
+	t.Run("create requires api_key", func(t *testing.T) {
+		err := errors.Join(validateServiceSpec(svc, nil, false, "test-db", testDBUsers)...)
+		assert.ErrorContains(t, err, "embedding_llm.api_key is required")
+		assert.ErrorContains(t, err, "rag_llm.api_key is required")
+	})
+
+	t.Run("update on an existing service allows the omission", func(t *testing.T) {
+		err := errors.Join(validateServiceSpec(svc, nil, true, "test-db", testDBUsers)...)
+		assert.NoError(t, err)
+	})
 }
 
 func TestValidateServiceSpec_NameBudget(t *testing.T) {

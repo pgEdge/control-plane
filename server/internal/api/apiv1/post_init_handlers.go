@@ -310,7 +310,9 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context, req *api.ListDatab
 }
 
 func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
-	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, req.ID, req.TenantID, req.Spec)
+	// No existing services on a create, so every service must supply its own
+	// secrets.
+	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, req.ID, req.TenantID, req.Spec, nil)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
@@ -388,14 +390,17 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, apiErr(err)
 	}
 
-	// Refill service secrets (e.g. RAG api_key values) that GET stripped from a
-	// prior read, so a read-edit-write cycle on an unrelated field doesn't 400
-	// for missing secrets the caller was never shown. Must run before
-	// apiToDatabaseSpec, which validates the incoming spec and would otherwise
-	// reject it as missing required secrets.
-	restoreOmittedServiceSecrets(req.Request.Spec, existing.Spec)
+	// A service already present in the stored spec may omit secrets that GET
+	// stripped from a prior read (see ServiceSpec.DefaultOptionalFieldsFrom) —
+	// tell validation which services those are so it doesn't reject the
+	// omission before the merge below has a chance to restore the stored
+	// value. A newly added service must still supply its own secrets.
+	existingServiceIDs := make(ds.Set[string], len(existing.Spec.Services))
+	for _, svc := range existing.Spec.Services {
+		existingServiceIDs.Add(svc.ServiceID)
+	}
 
-	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, &req.DatabaseID, req.Request.TenantID, req.Request.Spec)
+	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, &req.DatabaseID, req.Request.TenantID, req.Request.Spec, existingServiceIDs)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
@@ -406,7 +411,8 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, makeInvalidInputErr(err)
 	}
 	// Copy optional fields from the previous spec to the current spec if they
-	// are unset.
+	// are unset. This also restores service secrets omitted from an existing
+	// service's config (see ServiceSpec.DefaultOptionalFieldsFrom).
 	spec.DefaultOptionalFieldsFrom(existing.Spec)
 
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)

@@ -14,6 +14,7 @@ import (
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
@@ -21,28 +22,12 @@ import (
 )
 
 // isSensitiveConfigKey returns true if the given config key name likely
-// contains a secret value that should not be returned in API responses.
+// contains a secret value that should not be returned in API responses. The
+// canonical definition lives in the database package, shared with
+// ServiceSpec.DefaultOptionalFieldsFrom, which restores these same keys from
+// stored state when an update omits them.
 func isSensitiveConfigKey(key string) bool {
-	k := strings.ToLower(key)
-	// Use suffix matching for "token" to avoid stripping non-secret keys like
-	// "token_budget". Keys named exactly "token" or ending with "_token" (e.g.
-	// "init_token", "auth_token") are still treated as sensitive.
-	if k == "token" || strings.HasSuffix(k, "_token") {
-		return true
-	}
-	patterns := []string{
-		"password", "secret",
-		"api_key", "apikey", "api-key",
-		"credential", "private_key", "private-key",
-		"access_key", "access-key",
-		"init_users", // mcp 'init_users' contains embedded passwords and must be stripped
-	}
-	for _, p := range patterns {
-		if strings.Contains(k, p) {
-			return true
-		}
-	}
-	return false
+	return database.IsSensitiveConfigKey(key)
 }
 
 // normalizeConfig ensures a nil config map is converted to an empty map so
@@ -79,112 +64,6 @@ func scrubSensitiveValue(v any) any {
 		return out
 	default:
 		return v
-	}
-}
-
-// isBlankConfigValue reports whether v represents "no value supplied" for a
-// sensitive config field: either the key was omitted entirely (scrubbed by
-// scrubSensitiveConfig, which deletes rather than blanks) or it was submitted
-// as null/empty string.
-func isBlankConfigValue(v any) bool {
-	if v == nil {
-		return true
-	}
-	s, ok := v.(string)
-	return ok && s == ""
-}
-
-// restoreSensitiveConfig is the inverse of scrubSensitiveConfig: it fills
-// sensitive keys that are missing or blank in newConfig with the corresponding
-// value from oldConfig, so a read-edit-write cycle on an unrelated field
-// doesn't require the caller to re-supply secrets that GET never showed them
-// (see scrubSensitiveConfig / isSensitiveConfigKey). Nested objects inside
-// arrays (e.g. RAG pipelines) are matched to their old counterpart by a "name"
-// field when present, falling back to position.
-func restoreSensitiveConfig(newConfig, oldConfig map[string]any) map[string]any {
-	if newConfig == nil {
-		return nil
-	}
-	out := make(map[string]any, len(newConfig))
-	for k, v := range newConfig {
-		if isSensitiveConfigKey(k) && isBlankConfigValue(v) {
-			if old, ok := oldConfig[k]; ok && !isBlankConfigValue(old) {
-				out[k] = old
-				continue
-			}
-		}
-		out[k] = restoreSensitiveValue(v, oldConfig[k])
-	}
-	// Sensitive keys entirely absent from newConfig (the common case, since
-	// scrubSensitiveConfig deletes rather than blanks them) are restored here.
-	for k, old := range oldConfig {
-		if _, present := newConfig[k]; present {
-			continue
-		}
-		if isSensitiveConfigKey(k) && !isBlankConfigValue(old) {
-			out[k] = old
-		}
-	}
-	return out
-}
-
-func restoreSensitiveValue(newVal, oldVal any) any {
-	switch nv := newVal.(type) {
-	case map[string]any:
-		ov, _ := oldVal.(map[string]any)
-		return restoreSensitiveConfig(nv, ov)
-	case []any:
-		ov, _ := oldVal.([]any)
-		oldByName := make(map[string]map[string]any, len(ov))
-		for _, elem := range ov {
-			if em, ok := elem.(map[string]any); ok {
-				if name, ok := em["name"].(string); ok {
-					oldByName[name] = em
-				}
-			}
-		}
-		out := make([]any, len(nv))
-		for i, elem := range nv {
-			em, ok := elem.(map[string]any)
-			if !ok {
-				out[i] = elem
-				continue
-			}
-			var match map[string]any
-			if name, ok := em["name"].(string); ok {
-				match = oldByName[name]
-			} else if i < len(ov) {
-				match, _ = ov[i].(map[string]any)
-			}
-			out[i] = restoreSensitiveConfig(em, match)
-		}
-		return out
-	default:
-		return newVal
-	}
-}
-
-// restoreOmittedServiceSecrets fills service config secrets that were stripped
-// from a prior GET response back into newSpec, using the stored config from
-// oldSpec. This gives service secrets the same "omitted means keep the stored
-// value" semantics that User.DefaultOptionalFieldsFrom already provides for
-// database user passwords. Only services that already exist in oldSpec are
-// touched (matched by service_id) — a newly added service still must supply
-// its own secrets.
-func restoreOmittedServiceSecrets(newSpec *api.DatabaseSpec, oldSpec *database.Spec) {
-	oldConfigByServiceID := make(map[string]map[string]any, len(oldSpec.Services))
-	for _, svc := range oldSpec.Services {
-		oldConfigByServiceID[svc.ServiceID] = svc.Config
-	}
-	for _, svc := range newSpec.Services {
-		if svc == nil {
-			continue
-		}
-		oldConfig, ok := oldConfigByServiceID[string(svc.ServiceID)]
-		if !ok || svc.Config == nil {
-			continue
-		}
-		svc.Config = restoreSensitiveConfig(svc.Config, oldConfig)
 	}
 }
 
@@ -854,10 +733,17 @@ func apiToScripts(scripts *api.DatabaseScripts) *database.ScriptStatements {
 	}
 }
 
+// apiToDatabaseSpec validates and converts apiSpec into a database.Spec.
+// existingServiceIDs should hold the service_id of every service already
+// present in the stored spec (nil for a create, where nothing exists yet); it
+// lets validation know which services may omit secrets that
+// Spec.DefaultOptionalFieldsFrom will restore from stored state afterward,
+// versus a newly added service, which must still supply its own secrets.
 func apiToDatabaseSpec(
 	orchestrator config.Orchestrator,
 	id, tID *api.Identifier,
 	apiSpec *api.DatabaseSpec,
+	existingServiceIDs ds.Set[string],
 ) (*database.Spec, error) {
 	var databaseID string
 	var err error
@@ -877,7 +763,7 @@ func apiToDatabaseSpec(
 		}
 		tenantID = &t
 	}
-	if err := validateDatabaseSpec(orchestrator, databaseID, apiSpec); err != nil {
+	if err := validateDatabaseSpec(orchestrator, databaseID, apiSpec, existingServiceIDs); err != nil {
 		return nil, err
 	}
 

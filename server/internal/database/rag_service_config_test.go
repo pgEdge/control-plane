@@ -121,11 +121,47 @@ func TestParseRAGServiceConfig_OllamaEmbedding(t *testing.T) {
 	assert.Nil(t, cfg.Pipelines[0].EmbeddingLLM.APIKey)
 }
 
-func TestParseRAGServiceConfig_IsUpdateIgnored(t *testing.T) {
-	// RAG has no bootstrap-only fields; isUpdate=true should behave identically.
-	cfg, errs := database.ParseRAGServiceConfig(minimalRAGConfig(), true)
-	require.Empty(t, errs)
+func TestParseRAGServiceConfig_IsUpdateRelaxesRequiredAPIKey(t *testing.T) {
+	// On create (isUpdate=false), api_key is required for non-ollama providers.
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["embedding_llm"] = map[string]any{
+		"provider": "voyage",
+		"model":    "voyage-3",
+		// missing api_key
+	}
+
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs, "api_key should be required when isUpdate is false")
+
+	// On update (isUpdate=true), a missing api_key is allowed — the caller is
+	// expected to have already restored any stored value via
+	// Spec.DefaultOptionalFieldsFrom before validation runs; a key still
+	// missing after that (e.g. a brand-new pipeline) is caught at deploy time,
+	// when ParseRAGServiceConfig is called again with isUpdate=false.
+	cfg, errs := database.ParseRAGServiceConfig(config, true)
+	require.Empty(t, errs, "api_key should not be required when isUpdate is true")
 	require.NotNil(t, cfg)
+	assert.Nil(t, cfg.Pipelines[0].EmbeddingLLM.APIKey)
+}
+
+func TestParseRAGServiceConfig_IsUpdateStillRequiresProviderAndModel(t *testing.T) {
+	// isUpdate only relaxes the api_key requirement — structural checks like
+	// provider/model still apply.
+	config := map[string]any{
+		"pipelines": []any{
+			map[string]any{
+				"name": "my-pipeline",
+				"tables": []any{
+					map[string]any{"table": "t", "text_column": "tc", "vector_column": "vc"},
+				},
+				"embedding_llm": map[string]any{"provider": "not-a-real-provider"},
+				"rag_llm":       map[string]any{"provider": "anthropic", "model": "claude-3", "api_key": "k"},
+			},
+		},
+	}
+	_, errs := database.ParseRAGServiceConfig(config, true)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "embedding_llm.provider")
 }
 
 func TestParseRAGServiceConfig_MissingPipelines(t *testing.T) {
