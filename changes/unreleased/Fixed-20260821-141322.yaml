@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed peer subscriptions remaining permanently disabled when adding a node to a database that already had three or more nodes.
-time: 2026-08-21T14:13:22.000000+00:00
