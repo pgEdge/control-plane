@@ -177,6 +177,9 @@ func restoreOmittedServiceSecrets(newSpec *api.DatabaseSpec, oldSpec *database.S
 		oldConfigByServiceID[svc.ServiceID] = svc.Config
 	}
 	for _, svc := range newSpec.Services {
+		if svc == nil {
+			continue
+		}
 		oldConfig, ok := oldConfigByServiceID[string(svc.ServiceID)]
 		if !ok || svc.Config == nil {
 			continue

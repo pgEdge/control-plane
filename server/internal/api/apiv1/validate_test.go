@@ -1424,16 +1424,33 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				`"spock" must be included in shared_preload_libraries`,
 			},
 		},
+		{
+			name: "null service entry is rejected, not dereferenced",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []api.Identifier{api.Identifier("host-1")},
+					},
+				},
+				Services: []*api.ServiceSpec{nil},
+			},
+			expected: []string{
+				`services[0]: service must not be null`,
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)
-			if len(tc.expected) < 1 {
-				assert.NoError(t, err)
-			} else {
-				for _, expected := range tc.expected {
-					assert.ErrorContains(t, err, expected)
+			assert.NotPanics(t, func() {
+				err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", tc.spec)
+				if len(tc.expected) < 1 {
+					assert.NoError(t, err)
+				} else {
+					for _, expected := range tc.expected {
+						assert.ErrorContains(t, err, expected)
+					}
 				}
-			}
+			})
 		})
 	}
 }
@@ -2451,4 +2468,15 @@ func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateDatabaseUpdate_NullServiceEntry(t *testing.T) {
+	old := &database.Spec{Services: []*database.ServiceSpec{{ServiceID: "rag"}}}
+	newSpec := &api.DatabaseSpec{Services: []*api.ServiceSpec{nil}}
+
+	var err error
+	assert.NotPanics(t, func() {
+		err = validateDatabaseUpdate(old, newSpec)
+	})
+	assert.ErrorContains(t, err, "services[0]: service must not be null")
 }

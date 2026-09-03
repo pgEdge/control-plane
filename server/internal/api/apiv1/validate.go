@@ -184,6 +184,11 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 		for i, svc := range spec.Services {
 			svcPath := servicesPath.AppendArrayIndex(i)
 
+			if svc == nil {
+				errs = append(errs, validation.NewError(errors.New("service must not be null"), svcPath))
+				continue
+			}
+
 			// Check for duplicate service IDs
 			if seenServiceIDs.Has(string(svc.ServiceID)) {
 				err := errors.New("service IDs must be unique within a database")
@@ -252,6 +257,12 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
 	for i, svc := range new.Services {
 		svcPath := validation.NewPath("services", validation.ArrayIndexElement(i))
+
+		if svc == nil {
+			errs = append(errs, validation.NewError(errors.New("service must not be null"), svcPath))
+			continue
+		}
+
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
 
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
@@ -577,6 +588,9 @@ func validateUniquePorts(spec *api.DatabaseSpec) []error {
 
 	servicesPath := validation.NewPath("services")
 	for i, service := range spec.Services {
+		if service == nil {
+			continue
+		}
 		servicePath := servicesPath.AppendArrayIndex(i)
 
 		for _, h := range service.HostIds {

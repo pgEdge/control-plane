@@ -219,6 +219,21 @@ func TestRestoreOmittedServiceSecrets(t *testing.T) {
 		_, present := embeddingLLM["api_key"]
 		assert.False(t, present)
 	})
+
+	t.Run("a null service entry is skipped rather than dereferenced", func(t *testing.T) {
+		newSpec := &api.DatabaseSpec{
+			Services: []*api.ServiceSpec{nil},
+		}
+		oldSpec := &database.Spec{
+			Services: []*database.ServiceSpec{
+				{ServiceID: "rag", Config: map[string]any{"api_key": "voyage-secret"}},
+			},
+		}
+
+		assert.NotPanics(t, func() {
+			restoreOmittedServiceSecrets(newSpec, oldSpec)
+		})
+	})
 }
 
 func TestNormalizeConfig(t *testing.T) {
