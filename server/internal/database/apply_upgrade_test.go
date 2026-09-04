@@ -23,14 +23,23 @@ import (
 )
 
 // stubOrchestrator is a minimal Orchestrator for service-layer tests.
-// Only FindUpgrade is configurable; all other methods return zero values.
+// Only FindUpgrade/FindMajorUpgrade are configurable; all other methods
+// return zero values.
 type stubOrchestrator struct {
-	findUpgradeFn func(*ds.PgEdgeVersion, string) (*database.AvailableUpgrade, error)
+	findUpgradeFn      func(*ds.PgEdgeVersion, string) (*database.AvailableUpgrade, error)
+	findMajorUpgradeFn func(*ds.PgEdgeVersion, string, string) (*database.AvailableUpgrade, error)
 }
 
 func (s *stubOrchestrator) FindUpgrade(cur *ds.PgEdgeVersion, img string) (*database.AvailableUpgrade, error) {
 	if s.findUpgradeFn != nil {
 		return s.findUpgradeFn(cur, img)
+	}
+	return nil, database.ErrUpgradeNotAvailable
+}
+
+func (s *stubOrchestrator) FindMajorUpgrade(cur *ds.PgEdgeVersion, targetSpockVersion, img string) (*database.AvailableUpgrade, error) {
+	if s.findMajorUpgradeFn != nil {
+		return s.findMajorUpgradeFn(cur, targetSpockVersion, img)
 	}
 	return nil, database.ErrUpgradeNotAvailable
 }

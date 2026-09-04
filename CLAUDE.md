@@ -198,6 +198,7 @@ API lifecycle:
 
 Key workflows in `server/internal/workflows/`:
 - **UpdateDatabase**: Creates/updates database (handles node additions, configuration updates)
+- **MajorVersionUpgrade**: Dedicated rolling upgrade of a database's Spock major version, one node at a time; independent of UpdateDatabase's patch/minor upgrade path
 - **DeleteDatabase**: Removes database and cleanup
 - **PgBackRestBackup**: Initiates backup operations
 - **PgBackRestRestore**: Performs in-place restores

@@ -1690,6 +1690,187 @@ func DecodeApplyUpgradeResponse(decoder func(*http.Response) goahttp.Decoder, re
 	}
 }
 
+// BuildApplyMajorUpgradeRequest instantiates a HTTP request object with method
+// and path set to call the "control-plane" service "apply-major-upgrade"
+// endpoint
+func (c *Client) BuildApplyMajorUpgradeRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+	)
+	{
+		p, ok := v.(*controlplane.ApplyMajorUpgradePayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "apply-major-upgrade", "*controlplane.ApplyMajorUpgradePayload", v)
+		}
+		databaseID = string(p.DatabaseID)
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ApplyMajorUpgradeControlPlanePath(databaseID)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "apply-major-upgrade", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeApplyMajorUpgradeRequest returns an encoder for requests sent to the
+// control-plane apply-major-upgrade server.
+func EncodeApplyMajorUpgradeRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ApplyMajorUpgradePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "apply-major-upgrade", "*controlplane.ApplyMajorUpgradePayload", v)
+		}
+		body := NewApplyMajorUpgradeRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "apply-major-upgrade", err)
+		}
+		return nil
+	}
+}
+
+// DecodeApplyMajorUpgradeResponse returns a decoder for responses returned by
+// the control-plane apply-major-upgrade endpoint. restoreBody controls whether
+// the response body should be restored after having been read.
+// DecodeApplyMajorUpgradeResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeApplyMajorUpgradeResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ApplyMajorUpgradeResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+			}
+			err = ValidateApplyMajorUpgradeResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+			}
+			res := NewApplyMajorUpgradeResponseOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body ApplyMajorUpgradeClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+				}
+				err = ValidateApplyMajorUpgradeClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+				}
+				return nil, NewApplyMajorUpgradeClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body ApplyMajorUpgradeDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+				}
+				err = ValidateApplyMajorUpgradeDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+				}
+				return nil, NewApplyMajorUpgradeDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body ApplyMajorUpgradeOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+				}
+				err = ValidateApplyMajorUpgradeOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+				}
+				return nil, NewApplyMajorUpgradeOperationAlreadyInProgress(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "apply-major-upgrade", resp.StatusCode, string(body))
+			}
+		case http.StatusBadRequest:
+			var (
+				body ApplyMajorUpgradeInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+			}
+			err = ValidateApplyMajorUpgradeInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+			}
+			return nil, NewApplyMajorUpgradeInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body ApplyMajorUpgradeNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+			}
+			err = ValidateApplyMajorUpgradeNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+			}
+			return nil, NewApplyMajorUpgradeNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ApplyMajorUpgradeServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "apply-major-upgrade", err)
+			}
+			err = ValidateApplyMajorUpgradeServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "apply-major-upgrade", err)
+			}
+			return nil, NewApplyMajorUpgradeServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "apply-major-upgrade", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildDeleteDatabaseRequest instantiates a HTTP request object with method
 // and path set to call the "control-plane" service "delete-database" endpoint
 func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.Request, error) {
@@ -4642,6 +4823,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBody(v *control
 	res := &DatabaseNodeSpecRequestBody{
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
@@ -5140,6 +5322,7 @@ func marshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Databas
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
@@ -5778,6 +5961,7 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneDatabaseNodeSpec(v *Data
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
@@ -6262,6 +6446,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBodyRequestBody
 	res := &DatabaseNodeSpecRequestBodyRequestBody{
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
@@ -6762,6 +6947,7 @@ func marshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,

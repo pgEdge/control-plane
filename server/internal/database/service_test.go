@@ -192,6 +192,52 @@ func TestValidateChangedSpec(t *testing.T) {
 			},
 			expectedErr: "major version changed from 17 to 18",
 		},
+		{
+			name: "invalid database-level spock version update",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "6",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "spock major version changed from 5 to 6; use the dedicated major-version upgrade action instead",
+		},
+		{
+			name: "invalid node-level spock version update",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-2"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}, SpockVersion: "6"},
+					{Name: "n2", HostIDs: []string{"host-2"}},
+				},
+			},
+			expectedErr: "spock major version changed from 5 to 6; use the dedicated major-version upgrade action instead",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := database.ValidateChangedSpec(tc.current, tc.updated)

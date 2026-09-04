@@ -202,6 +202,14 @@ type Orchestrator interface {
 	// Returns the validated upgrade descriptor on success, or
 	// ErrUpgradeNotAvailable (possibly wrapped) on any validation failure.
 	FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*AvailableUpgrade, error)
+	// FindMajorUpgrade validates that targetImage is usable for a dedicated
+	// Spock major-version upgrade away from current: same postgres_version,
+	// a different (specifically, the requested) spock major, and present in
+	// the manifest at any stability level (a new Spock major is expected to
+	// still be "dev" stability while this action is what's used for it).
+	// Returns the validated upgrade descriptor on success, or
+	// ErrUpgradeNotAvailable (possibly wrapped) on any validation failure.
+	FindMajorUpgrade(current *ds.PgEdgeVersion, targetSpockVersion, targetImage string) (*AvailableUpgrade, error)
 }
 
 // AvailableUpgrade describes a single candidate image upgrade available for a

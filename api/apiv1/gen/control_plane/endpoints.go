@@ -28,6 +28,7 @@ type Endpoints struct {
 	GetDatabase            goa.Endpoint
 	UpdateDatabase         goa.Endpoint
 	ApplyUpgrade           goa.Endpoint
+	ApplyMajorUpgrade      goa.Endpoint
 	DeleteDatabase         goa.Endpoint
 	BackupDatabaseNode     goa.Endpoint
 	SwitchoverDatabaseNode goa.Endpoint
@@ -63,6 +64,7 @@ func NewEndpoints(s Service) *Endpoints {
 		GetDatabase:            NewGetDatabaseEndpoint(s),
 		UpdateDatabase:         NewUpdateDatabaseEndpoint(s),
 		ApplyUpgrade:           NewApplyUpgradeEndpoint(s),
+		ApplyMajorUpgrade:      NewApplyMajorUpgradeEndpoint(s),
 		DeleteDatabase:         NewDeleteDatabaseEndpoint(s),
 		BackupDatabaseNode:     NewBackupDatabaseNodeEndpoint(s),
 		SwitchoverDatabaseNode: NewSwitchoverDatabaseNodeEndpoint(s),
@@ -99,6 +101,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetDatabase = m(e.GetDatabase)
 	e.UpdateDatabase = m(e.UpdateDatabase)
 	e.ApplyUpgrade = m(e.ApplyUpgrade)
+	e.ApplyMajorUpgrade = m(e.ApplyMajorUpgrade)
 	e.DeleteDatabase = m(e.DeleteDatabase)
 	e.BackupDatabaseNode = m(e.BackupDatabaseNode)
 	e.SwitchoverDatabaseNode = m(e.SwitchoverDatabaseNode)
@@ -229,6 +232,15 @@ func NewApplyUpgradeEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*ApplyUpgradePayload)
 		return s.ApplyUpgrade(ctx, p)
+	}
+}
+
+// NewApplyMajorUpgradeEndpoint returns an endpoint function that calls the
+// method "apply-major-upgrade" of service "control-plane".
+func NewApplyMajorUpgradeEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ApplyMajorUpgradePayload)
+		return s.ApplyMajorUpgrade(ctx, p)
 	}
 }
 
