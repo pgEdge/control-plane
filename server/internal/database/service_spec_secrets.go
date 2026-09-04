@@ -32,9 +32,9 @@ func IsSensitiveConfigKey(key string) bool {
 }
 
 // isBlankConfigValue reports whether v represents "no value supplied" for a
-// sensitive config field: either the key was omitted entirely (the API layer
-// deletes rather than blanks stripped keys) or it was submitted as null/empty
-// string.
+// sensitive config field: it is either nil or an empty string. Used to check
+// a candidate restoration value (typically from stored state) isn't itself
+// blank, so a blank stored value is never "restored" in its place.
 func isBlankConfigValue(v any) bool {
 	if v == nil {
 		return true
@@ -44,28 +44,24 @@ func isBlankConfigValue(v any) bool {
 }
 
 // restoreSensitiveConfig is the inverse of the API layer's config scrubbing:
-// it fills sensitive keys that are missing or blank in newConfig with the
+// it fills sensitive keys that are missing entirely from newConfig with the
 // corresponding value from oldConfig, so a read-edit-write cycle on an
 // unrelated field doesn't require the caller to re-supply secrets that GET
-// never showed them. Nested objects inside arrays (e.g. RAG pipelines) are
-// matched to their old counterpart by a "name" field when present, falling
-// back to position.
+// never showed them (the API layer deletes rather than blanks stripped keys,
+// so this is the common case). A key that IS present in newConfig, including
+// an explicit null or empty string, is left as submitted rather than
+// restored — that's how a caller unsets a sensitive value, mirroring the
+// explicit-null-to-unset convention used elsewhere (e.g. Patroni's API).
+// Nested objects inside arrays (e.g. RAG pipelines) are matched to their old
+// counterpart by a "name" field when present, falling back to position.
 func restoreSensitiveConfig(newConfig, oldConfig map[string]any) map[string]any {
 	if newConfig == nil {
 		return nil
 	}
 	out := make(map[string]any, len(newConfig))
 	for k, v := range newConfig {
-		if IsSensitiveConfigKey(k) && isBlankConfigValue(v) {
-			if old, ok := oldConfig[k]; ok && !isBlankConfigValue(old) {
-				out[k] = old
-				continue
-			}
-		}
 		out[k] = restoreSensitiveValue(v, oldConfig[k])
 	}
-	// Sensitive keys entirely absent from newConfig (the common case, since
-	// the API layer deletes rather than blanks them) are restored here.
 	for k, old := range oldConfig {
 		if _, present := newConfig[k]; present {
 			continue
@@ -114,12 +110,13 @@ func restoreSensitiveValue(newVal, oldVal any) any {
 }
 
 // DefaultOptionalFieldsFrom will default this service's config secrets to the
-// values from the given service, for any secret omitted or blank in this
+// values from the given service, for any secret entirely omitted from this
 // service's config. This gives service secrets (e.g. a RAG pipeline's
 // api_key) the same "omitted means keep the stored value" semantics that
 // User.DefaultOptionalFieldsFrom and Repository.DefaultOptionalFieldsFrom
 // already provide for database user passwords and backup/restore repository
-// credentials.
+// credentials. A secret submitted as an explicit null or empty string is not
+// restored — that's how a caller unsets one.
 func (s *ServiceSpec) DefaultOptionalFieldsFrom(other *ServiceSpec) {
 	if other == nil || s.Config == nil {
 		return

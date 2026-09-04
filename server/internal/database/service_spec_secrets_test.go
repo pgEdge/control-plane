@@ -115,6 +115,63 @@ func TestServiceSpec_DefaultOptionalFieldsFrom(t *testing.T) {
 		})
 		assert.Equal(t, "", newSvc.Config["api_key"])
 	})
+
+	t.Run("an explicit null clears a top-level secret instead of restoring it", func(t *testing.T) {
+		current := &database.ServiceSpec{ServiceID: "rag", Config: map[string]any{"api_key": "sk-old"}}
+		newSvc := &database.ServiceSpec{ServiceID: "rag", Config: map[string]any{"api_key": nil}}
+
+		newSvc.DefaultOptionalFieldsFrom(current)
+
+		assert.Nil(t, newSvc.Config["api_key"])
+	})
+
+	t.Run("an explicit empty string clears a top-level secret instead of restoring it", func(t *testing.T) {
+		current := &database.ServiceSpec{ServiceID: "rag", Config: map[string]any{"api_key": "sk-old"}}
+		newSvc := &database.ServiceSpec{ServiceID: "rag", Config: map[string]any{"api_key": ""}}
+
+		newSvc.DefaultOptionalFieldsFrom(current)
+
+		assert.Equal(t, "", newSvc.Config["api_key"])
+	})
+
+	t.Run("an explicit null clears a nested pipeline secret instead of restoring it", func(t *testing.T) {
+		current := &database.ServiceSpec{
+			ServiceID: "rag",
+			Config: map[string]any{
+				"pipelines": []any{
+					map[string]any{
+						"name": "docs",
+						"embedding_llm": map[string]any{
+							"provider": "voyage",
+							"model":    "voyage-3",
+							"api_key":  "voyage-secret",
+						},
+					},
+				},
+			},
+		}
+		newSvc := &database.ServiceSpec{
+			ServiceID: "rag",
+			Config: map[string]any{
+				"pipelines": []any{
+					map[string]any{
+						"name": "docs",
+						"embedding_llm": map[string]any{
+							"provider": "voyage",
+							"model":    "voyage-3",
+							"api_key":  nil,
+						},
+					},
+				},
+			},
+		}
+
+		newSvc.DefaultOptionalFieldsFrom(current)
+
+		pipelines := newSvc.Config["pipelines"].([]any)
+		embeddingLLM := pipelines[0].(map[string]any)["embedding_llm"].(map[string]any)
+		assert.Nil(t, embeddingLLM["api_key"])
+	})
 }
 
 func TestSpec_DefaultOptionalFieldsFrom_Services(t *testing.T) {
