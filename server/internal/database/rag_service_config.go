@@ -77,8 +77,15 @@ var ragKnownTopLevelKeys = map[string]bool{
 	"defaults":  true,
 }
 
-// ParseRAGServiceConfig parses and validates a config map into a typed RAGServiceConfig.
-func ParseRAGServiceConfig(config map[string]any, _ bool) (*RAGServiceConfig, []error) {
+// ParseRAGServiceConfig parses and validates a config map into a typed
+// RAGServiceConfig. When isUpdate is true, api_key is not required on
+// providers that normally need one: an update is expected to have already had
+// omitted secrets restored from the stored spec (see
+// Spec.DefaultOptionalFieldsFrom), and a key that's still missing after that
+// (e.g. a brand-new pipeline) is caught at deploy time instead, when
+// ParseRAGServiceConfig is called again with isUpdate=false against the final,
+// merged config.
+func ParseRAGServiceConfig(config map[string]any, isUpdate bool) (*RAGServiceConfig, []error) {
 	var errs []error
 
 	// Check for unknown top-level keys
@@ -115,7 +122,7 @@ func ParseRAGServiceConfig(config map[string]any, _ bool) (*RAGServiceConfig, []
 	}
 	seenNames := make(map[string]bool, len(cfg.Pipelines))
 	for i, p := range cfg.Pipelines {
-		errs = append(errs, validateRAGPipeline(p, i, seenNames)...)
+		errs = append(errs, validateRAGPipeline(p, i, seenNames, isUpdate)...)
 	}
 
 	// Validate defaults (optional)
@@ -134,7 +141,7 @@ func ParseRAGServiceConfig(config map[string]any, _ bool) (*RAGServiceConfig, []
 	return &cfg, nil
 }
 
-func validateRAGPipeline(p RAGPipeline, i int, seenNames map[string]bool) []error {
+func validateRAGPipeline(p RAGPipeline, i int, seenNames map[string]bool, isUpdate bool) []error {
 	var errs []error
 	prefix := fmt.Sprintf("pipelines[%d]", i)
 
@@ -158,10 +165,10 @@ func validateRAGPipeline(p RAGPipeline, i int, seenNames map[string]bool) []erro
 	}
 
 	// embedding_llm (required)
-	errs = append(errs, validateRAGLLMConfig(p.EmbeddingLLM, prefix+".embedding_llm", ragEmbeddingProviders)...)
+	errs = append(errs, validateRAGLLMConfig(p.EmbeddingLLM, prefix+".embedding_llm", ragEmbeddingProviders, isUpdate)...)
 
 	// rag_llm (required)
-	errs = append(errs, validateRAGLLMConfig(p.RAGLLM, prefix+".rag_llm", ragLLMProviders)...)
+	errs = append(errs, validateRAGLLMConfig(p.RAGLLM, prefix+".rag_llm", ragLLMProviders, isUpdate)...)
 
 	// token_budget (optional, > 0)
 	if p.TokenBudget != nil && *p.TokenBudget <= 0 {
@@ -199,7 +206,7 @@ func validateRAGTable(t RAGPipelineTable, prefix string, j int) []error {
 	return errs
 }
 
-func validateRAGLLMConfig(llm RAGPipelineLLMConfig, prefix string, validProviders []string) []error {
+func validateRAGLLMConfig(llm RAGPipelineLLMConfig, prefix string, validProviders []string, isUpdate bool) []error {
 	var errs []error
 
 	// provider (required)
@@ -215,10 +222,12 @@ func validateRAGLLMConfig(llm RAGPipelineLLMConfig, prefix string, validProvider
 		errs = append(errs, fmt.Errorf("%s.model is required", prefix))
 	}
 
-	// Provider-specific: api_key required for non-ollama providers
+	// Provider-specific: api_key required for non-ollama providers, except on
+	// an update, where an omitted key is expected to already have been
+	// restored from the stored spec before validation runs.
 	switch llm.Provider {
 	case "anthropic", "openai", "voyage":
-		if llm.APIKey == nil || *llm.APIKey == "" {
+		if !isUpdate && (llm.APIKey == nil || *llm.APIKey == "") {
 			errs = append(errs, fmt.Errorf("%s.api_key is required when provider is %q", prefix, llm.Provider))
 		}
 	}

@@ -14,6 +14,7 @@ import (
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
@@ -21,28 +22,12 @@ import (
 )
 
 // isSensitiveConfigKey returns true if the given config key name likely
-// contains a secret value that should not be returned in API responses.
+// contains a secret value that should not be returned in API responses. The
+// canonical definition lives in the database package, shared with
+// ServiceSpec.DefaultOptionalFieldsFrom, which restores these same keys from
+// stored state when an update omits them.
 func isSensitiveConfigKey(key string) bool {
-	k := strings.ToLower(key)
-	// Use suffix matching for "token" to avoid stripping non-secret keys like
-	// "token_budget". Keys named exactly "token" or ending with "_token" (e.g.
-	// "init_token", "auth_token") are still treated as sensitive.
-	if k == "token" || strings.HasSuffix(k, "_token") {
-		return true
-	}
-	patterns := []string{
-		"password", "secret",
-		"api_key", "apikey", "api-key",
-		"credential", "private_key", "private-key",
-		"access_key", "access-key",
-		"init_users", // mcp 'init_users' contains embedded passwords and must be stripped
-	}
-	for _, p := range patterns {
-		if strings.Contains(k, p) {
-			return true
-		}
-	}
-	return false
+	return database.IsSensitiveConfigKey(key)
 }
 
 // normalizeConfig ensures a nil config map is converted to an empty map so
@@ -748,10 +733,17 @@ func apiToScripts(scripts *api.DatabaseScripts) *database.ScriptStatements {
 	}
 }
 
+// apiToDatabaseSpec validates and converts apiSpec into a database.Spec.
+// existingServiceIDs should hold the service_id of every service already
+// present in the stored spec (nil for a create, where nothing exists yet); it
+// lets validation know which services may omit secrets that
+// Spec.DefaultOptionalFieldsFrom will restore from stored state afterward,
+// versus a newly added service, which must still supply its own secrets.
 func apiToDatabaseSpec(
 	orchestrator config.Orchestrator,
 	id, tID *api.Identifier,
 	apiSpec *api.DatabaseSpec,
+	existingServiceIDs ds.Set[string],
 ) (*database.Spec, error) {
 	var databaseID string
 	var err error
@@ -771,7 +763,7 @@ func apiToDatabaseSpec(
 		}
 		tenantID = &t
 	}
-	if err := validateDatabaseSpec(orchestrator, databaseID, apiSpec); err != nil {
+	if err := validateDatabaseSpec(orchestrator, databaseID, apiSpec, existingServiceIDs); err != nil {
 		return nil, err
 	}
 

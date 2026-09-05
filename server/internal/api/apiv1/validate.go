@@ -95,7 +95,11 @@ func validatePgIdentConf(lines []string, path validation.Path) []error {
 	return errs
 }
 
-func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, spec *api.DatabaseSpec) error {
+// validateDatabaseSpec validates spec. existingServiceIDs holds the
+// service_id of every service already present in the stored spec (nil for a
+// create); a service whose ID is in this set may omit secrets that
+// Spec.DefaultOptionalFieldsFrom will restore from stored state afterward.
+func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, spec *api.DatabaseSpec, existingServiceIDs ds.Set[string]) error {
 	var errs []error
 
 	errs = append(errs, validateCPUs(spec.Cpus, validation.NewPath("cpus"))...)
@@ -184,6 +188,11 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 		for i, svc := range spec.Services {
 			svcPath := servicesPath.AppendArrayIndex(i)
 
+			if svc == nil {
+				errs = append(errs, validation.NewError(errors.New("service must not be null"), svcPath))
+				continue
+			}
+
 			// Check for duplicate service IDs
 			if seenServiceIDs.Has(string(svc.ServiceID)) {
 				err := errors.New("service IDs must be unique within a database")
@@ -191,7 +200,8 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 			}
 			seenServiceIDs.Add(string(svc.ServiceID))
 
-			errs = append(errs, validateServiceSpec(svc, svcPath, false, databaseID, spec.DatabaseUsers, seenNodeNames)...)
+			isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+			errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, databaseID, spec.DatabaseUsers, seenNodeNames)...)
 		}
 	}
 
@@ -252,6 +262,12 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
 	for i, svc := range new.Services {
 		svcPath := validation.NewPath("services", validation.ArrayIndexElement(i))
+
+		if svc == nil {
+			errs = append(errs, validation.NewError(errors.New("service must not be null"), svcPath))
+			continue
+		}
+
 		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
 
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
@@ -577,6 +593,9 @@ func validateUniquePorts(spec *api.DatabaseSpec) []error {
 
 	servicesPath := validation.NewPath("services")
 	for i, service := range spec.Services {
+		if service == nil {
+			continue
+		}
 		servicePath := servicesPath.AppendArrayIndex(i)
 
 		for _, h := range service.HostIds {

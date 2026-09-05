@@ -252,6 +252,18 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Contains(t, joinedErr(errs).Error(), "anthropic_api_key must not be empty")
 		})
 
+		t.Run("anthropic with null anthropic_api_key", func(t *testing.T) {
+			config := map[string]any{
+				"llm_enabled":       true,
+				"llm_provider":      "anthropic",
+				"llm_model":         "claude-3-5-sonnet-20241022",
+				"anthropic_api_key": nil,
+			}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "anthropic_api_key is required when llm_provider is")
+		})
+
 		t.Run("openai without openai_api_key", func(t *testing.T) {
 			config := map[string]any{
 				"llm_enabled":  true,
@@ -755,6 +767,130 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Nil(t, cfg.InitToken)
 			assert.Nil(t, cfg.InitUsers)
 		})
+
+		// PLAT-715: GET strips api_key-style secrets, so a read-edit-write
+		// cycle resubmits config without them. On isUpdate=true these must not
+		// be required — Spec.DefaultOptionalFieldsFrom is expected to have
+		// already restored the stored value before validation runs.
+		t.Run("missing anthropic_api_key is allowed", func(t *testing.T) {
+			config := anthropicBase()
+			delete(config, "anthropic_api_key")
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.AnthropicAPIKey)
+		})
+
+		t.Run("missing openai_api_key is allowed", func(t *testing.T) {
+			config := openaiBase()
+			delete(config, "openai_api_key")
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.OpenAIAPIKey)
+		})
+
+		t.Run("missing embedding_api_key is allowed", func(t *testing.T) {
+			config := map[string]any{
+				"embedding_provider": "voyage",
+				"embedding_model":    "voyage-3",
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.EmbeddingAPIKey)
+		})
+
+		t.Run("missing kb_embedding_api_key is allowed", func(t *testing.T) {
+			config := map[string]any{
+				"kb_enabled":            true,
+				"kb_embedding_provider": "voyage",
+				"kb_embedding_model":    "voyage-3",
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.KBEmbeddingAPIKey)
+		})
+
+		t.Run("missing ollama_url is still rejected (not a secret GET would strip)", func(t *testing.T) {
+			config := map[string]any{
+				"llm_enabled":  true,
+				"llm_provider": "ollama",
+				"llm_model":    "llama3.2",
+			}
+			_, errs := database.ParseMCPServiceConfig(config, true)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), `ollama_url is required when llm_provider is "ollama"`)
+		})
+
+		// A client might explicitly submit null (rather than omitting the key)
+		// or an empty string; both must be treated the same as omission here.
+		t.Run("explicit null anthropic_api_key is allowed", func(t *testing.T) {
+			config := anthropicBase()
+			config["anthropic_api_key"] = nil
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.AnthropicAPIKey)
+		})
+
+		t.Run("empty string anthropic_api_key is allowed", func(t *testing.T) {
+			config := anthropicBase()
+			config["anthropic_api_key"] = ""
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.AnthropicAPIKey)
+		})
+
+		t.Run("explicit null openai_api_key is allowed", func(t *testing.T) {
+			config := openaiBase()
+			config["openai_api_key"] = nil
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.OpenAIAPIKey)
+		})
+
+		t.Run("explicit null embedding_api_key is allowed", func(t *testing.T) {
+			config := map[string]any{
+				"embedding_provider": "voyage",
+				"embedding_model":    "voyage-3",
+				"embedding_api_key":  nil,
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.EmbeddingAPIKey)
+		})
+
+		t.Run("empty string embedding_api_key is allowed", func(t *testing.T) {
+			config := map[string]any{
+				"embedding_provider": "voyage",
+				"embedding_model":    "voyage-3",
+				"embedding_api_key":  "",
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.EmbeddingAPIKey)
+		})
+
+		t.Run("explicit null kb_embedding_api_key is allowed", func(t *testing.T) {
+			config := map[string]any{
+				"kb_enabled":            true,
+				"kb_embedding_provider": "voyage",
+				"kb_embedding_model":    "voyage-3",
+				"kb_embedding_api_key":  nil,
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.KBEmbeddingAPIKey)
+		})
+
+		t.Run("empty string kb_embedding_api_key is allowed", func(t *testing.T) {
+			config := map[string]any{
+				"kb_enabled":            true,
+				"kb_embedding_provider": "voyage",
+				"kb_embedding_model":    "voyage-3",
+				"kb_embedding_api_key":  "",
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.KBEmbeddingAPIKey)
+		})
 	})
 
 	t.Run("multiple errors", func(t *testing.T) {
@@ -931,11 +1067,11 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 			t.Run("kb_database_host_path override", func(t *testing.T) {
 				config := map[string]any{
-					"kb_enabled":             true,
-					"kb_embedding_provider":  "voyage",
-					"kb_embedding_model":     "voyage-3-lite",
-					"kb_embedding_api_key":   "voy-key",
-					"kb_database_host_path":  "/data/custom/my-kb.db",
+					"kb_enabled":            true,
+					"kb_embedding_provider": "voyage",
+					"kb_embedding_model":    "voyage-3-lite",
+					"kb_embedding_api_key":  "voy-key",
+					"kb_database_host_path": "/data/custom/my-kb.db",
 				}
 				cfg, errs := database.ParseMCPServiceConfig(config, false)
 				require.Empty(t, errs)

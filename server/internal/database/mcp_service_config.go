@@ -55,11 +55,11 @@ type MCPServiceConfig struct {
 	DisableCountRows           *bool `json:"disable_count_rows,omitempty"`
 
 	// Optional - knowledgebase search
-	KBEnabled            *bool   `json:"kb_enabled,omitempty"`
-	KBEmbeddingProvider  *string `json:"kb_embedding_provider,omitempty"`
-	KBEmbeddingModel     *string `json:"kb_embedding_model,omitempty"`
-	KBEmbeddingAPIKey    *string `json:"kb_embedding_api_key,omitempty"`
-	KBDatabaseHostPath   *string `json:"kb_database_host_path,omitempty"`
+	KBEnabled           *bool   `json:"kb_enabled,omitempty"`
+	KBEmbeddingProvider *string `json:"kb_embedding_provider,omitempty"`
+	KBEmbeddingModel    *string `json:"kb_embedding_model,omitempty"`
+	KBEmbeddingAPIKey   *string `json:"kb_embedding_api_key,omitempty"`
+	KBDatabaseHostPath  *string `json:"kb_database_host_path,omitempty"`
 }
 
 // mcpKnownKeys is the set of all valid config keys for MCP service configuration.
@@ -97,8 +97,14 @@ var validLLMProviders = []string{"anthropic", "openai", "ollama"}
 var validEmbeddingProviders = []string{"voyage", "openai", "ollama"}
 var validKBEmbeddingProviders = []string{"voyage", "openai"}
 
-// ParseMCPServiceConfig parses and validates a config map into a typed MCPServiceConfig.
-// If isUpdate is true, bootstrap-only fields (init_token, init_users) are rejected.
+// ParseMCPServiceConfig parses and validates a config map into a typed
+// MCPServiceConfig. If isUpdate is true, bootstrap-only fields (init_token,
+// init_users) are rejected, and api_key-style secrets (anthropic_api_key,
+// openai_api_key, embedding_api_key, kb_embedding_api_key) are not required:
+// the caller is expected to have already restored any stored value via
+// Spec.DefaultOptionalFieldsFrom before validation runs, and a key still
+// missing after that is caught at deploy time, when ParseMCPServiceConfig is
+// called again with isUpdate=false against the final, merged config.
 func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceConfig, []error) {
 	var errs []error
 
@@ -128,7 +134,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	embeddingModel, emErrs := optionalString(config, "embedding_model")
 	errs = append(errs, emErrs...)
 
-	embeddingAPIKey, eakErrs := optionalString(config, "embedding_api_key")
+	embeddingAPIKey, eakErrs := optionalSecretString(config, "embedding_api_key", isUpdate)
 	errs = append(errs, eakErrs...)
 
 	// LLM fields: conditionally required when llm_enabled is true,
@@ -157,19 +163,21 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		if llmProvider != "" && slices.Contains(validLLMProviders, llmProvider) {
 			switch llmProvider {
 			case "anthropic":
-				key, keyErrs := requireStringForProvider(config, "anthropic_api_key", "anthropic")
+				key, keyErrs := requireStringForProvider(config, "anthropic_api_key", "anthropic", isUpdate)
 				errs = append(errs, keyErrs...)
 				if key != "" {
 					anthropicKey = &key
 				}
 			case "openai":
-				key, keyErrs := requireStringForProvider(config, "openai_api_key", "openai")
+				key, keyErrs := requireStringForProvider(config, "openai_api_key", "openai", isUpdate)
 				errs = append(errs, keyErrs...)
 				if key != "" {
 					openaiKey = &key
 				}
 			case "ollama":
-				url, urlErrs := requireStringForProvider(config, "ollama_url", "ollama")
+				// ollama_url is not a secret (GET never strips it), so it's
+				// always required here regardless of isUpdate.
+				url, urlErrs := requireStringForProvider(config, "ollama_url", "ollama", false)
 				errs = append(errs, urlErrs...)
 				if url != "" {
 					ollamaURL = &url
@@ -230,7 +238,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	kbEmbeddingModel, kbemErrs := optionalString(config, "kb_embedding_model")
 	errs = append(errs, kbemErrs...)
 
-	kbEmbeddingAPIKey, kbeakErrs := optionalString(config, "kb_embedding_api_key")
+	kbEmbeddingAPIKey, kbeakErrs := optionalSecretString(config, "kb_embedding_api_key", isUpdate)
 	errs = append(errs, kbeakErrs...)
 
 	kbDatabaseHostPath, kbdhpErrs := optionalString(config, "kb_database_host_path")
@@ -281,8 +289,10 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 			} else if !slices.Contains(validKBEmbeddingProviders, *kbEmbeddingProvider) {
 				errs = append(errs, fmt.Errorf("kb_embedding_provider must be one of: %s", strings.Join(validKBEmbeddingProviders, ", ")))
 			} else {
-				// voyage and openai require an API key
-				if kbEmbeddingAPIKey == nil {
+				// voyage and openai require an API key, except on an update,
+				// where an omitted key is expected to already have been
+				// restored from the stored spec before validation runs.
+				if !isUpdate && kbEmbeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("kb_embedding_api_key is required when kb_embedding_provider is %q", *kbEmbeddingProvider))
 				}
 			}
@@ -333,10 +343,11 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 			if embeddingModel == nil {
 				errs = append(errs, fmt.Errorf("embedding_model is required when embedding_provider is set"))
 			}
-			// Provider-specific credential requirements
+			// Provider-specific credential requirements. api_key is not
+			// required on an update — see requireStringForProvider.
 			switch *embeddingProvider {
 			case "voyage", "openai":
-				if embeddingAPIKey == nil {
+				if !isUpdate && embeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("embedding_api_key is required when embedding_provider is %q", *embeddingProvider))
 				}
 			case "ollama":
@@ -420,10 +431,19 @@ func requireString(config map[string]any, key string) (string, []error) {
 	return s, nil
 }
 
-// requireStringForProvider extracts a required non-empty string for a specific provider.
-func requireStringForProvider(config map[string]any, key, provider string) (string, []error) {
+// requireStringForProvider extracts a required non-empty string for a
+// specific provider. When isUpdate is true, a missing or empty value is
+// allowed: the caller is expected to have already restored any stored value
+// via Spec.DefaultOptionalFieldsFrom before validation runs, and a value
+// still missing after that is caught at deploy time, when
+// ParseMCPServiceConfig is called again with isUpdate=false against the
+// final, merged config.
+func requireStringForProvider(config map[string]any, key, provider string, isUpdate bool) (string, []error) {
 	val, ok := config[key]
-	if !ok {
+	if !ok || val == nil {
+		if isUpdate {
+			return "", nil
+		}
 		return "", []error{fmt.Errorf("%s is required when llm_provider is %q", key, provider)}
 	}
 	s, ok := val.(string)
@@ -431,6 +451,9 @@ func requireStringForProvider(config map[string]any, key, provider string) (stri
 		return "", []error{fmt.Errorf("%s must be a string", key)}
 	}
 	if s == "" {
+		if isUpdate {
+			return "", nil
+		}
 		return "", []error{fmt.Errorf("%s must not be empty", key)}
 	}
 	return s, nil
@@ -447,6 +470,34 @@ func optionalString(config map[string]any, key string) (*string, []error) {
 		return nil, []error{fmt.Errorf("%s must be a string", key)}
 	}
 	if s == "" {
+		return nil, []error{fmt.Errorf("%s must not be empty", key)}
+	}
+	return &s, nil
+}
+
+// optionalSecretString extracts an optional secret string from the config
+// map, e.g. embedding_api_key. An explicit JSON null is always treated the
+// same as the key being absent, since both mean "no value provided" for an
+// optional field. An empty string is normally rejected like optionalString,
+// but is also treated as absent when isUpdate is true: the caller is expected
+// to have already restored any stored value via Spec.DefaultOptionalFieldsFrom
+// before validation runs, and a key still missing after that is caught at
+// deploy time, when ParseMCPServiceConfig is called again with
+// isUpdate=false against the final, merged config. A non-string value is
+// always a type error, isUpdate or not.
+func optionalSecretString(config map[string]any, key string, isUpdate bool) (*string, []error) {
+	val, ok := config[key]
+	if !ok || val == nil {
+		return nil, nil
+	}
+	s, ok := val.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("%s must be a string", key)}
+	}
+	if s == "" {
+		if isUpdate {
+			return nil, nil
+		}
 		return nil, []error{fmt.Errorf("%s must not be empty", key)}
 	}
 	return &s, nil

@@ -310,7 +310,9 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context, req *api.ListDatab
 }
 
 func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
-	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, req.ID, req.TenantID, req.Spec)
+	// No existing services on a create, so every service must supply its own
+	// secrets.
+	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, req.ID, req.TenantID, req.Spec, nil)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
@@ -378,14 +380,29 @@ func (s *PostInitHandlers) GetDatabase(ctx context.Context, req *api.GetDatabase
 }
 
 func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
-	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, &req.DatabaseID, req.Request.TenantID, req.Request.Spec)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, makeInvalidInputErr(err)
+		return nil, err
 	}
 
-	existing, err := s.dbSvc.GetDatabase(ctx, spec.DatabaseID)
+	existing, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if err != nil {
 		return nil, apiErr(err)
+	}
+
+	// A service already present in the stored spec may omit secrets that GET
+	// stripped from a prior read (see ServiceSpec.DefaultOptionalFieldsFrom) —
+	// tell validation which services those are so it doesn't reject the
+	// omission before the merge below has a chance to restore the stored
+	// value. A newly added service must still supply its own secrets.
+	existingServiceIDs := make(ds.Set[string], len(existing.Spec.Services))
+	for _, svc := range existing.Spec.Services {
+		existingServiceIDs.Add(svc.ServiceID)
+	}
+
+	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, &req.DatabaseID, req.Request.TenantID, req.Request.Spec, existingServiceIDs)
+	if err != nil {
+		return nil, makeInvalidInputErr(err)
 	}
 	// API-level update validation:
 	// ensure that for any newly added nodes, source_node (if set) refers
@@ -394,7 +411,8 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, makeInvalidInputErr(err)
 	}
 	// Copy optional fields from the previous spec to the current spec if they
-	// are unset.
+	// are unset. This also restores service secrets omitted from an existing
+	// service's config (see ServiceSpec.DefaultOptionalFieldsFrom).
 	spec.DefaultOptionalFieldsFrom(existing.Spec)
 
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
