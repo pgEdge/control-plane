@@ -320,9 +320,8 @@ pinning a specific build. See
 
     This preview supports only creating a new database on Spock 6. It
     does not support upgrading an existing database from Spock 5.x to
-    Spock 6. The Control Plane does not validate or block a
-    `spock_version` change on an existing database's spec, but doing so
-    is unsupported and can break replication, since a Spock 6
+    Spock 6. The Control Plane rejects a spec update that changes the
+    Spock major version on an existing database, since a Spock 6
     subscription cannot sync from a Spock 5.x peer.
 
 !!! warning
