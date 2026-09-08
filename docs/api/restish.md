@@ -20,8 +20,8 @@ be running commands against it in three steps:
 First, install Restish [via Restish's official website](https://rest.sh/docs/getting-started/install/). Restish supports many installation methods, including Homebrew (macOS), GitHub Releases, and OCI images; select the option that most aligns with your organization's preferences and practices.
 
 ### 2. Connection
-!!! warning
 
+Note: 
     Only connect this way to clusters and databases you're okay with experimenting on. See [Managing Multiple Environments](#managing-multiple-environments)
     before connecting Restish to anything production.
 
@@ -49,12 +49,12 @@ below), `restish pgedge create-database < your-file.json` creates one.
 Restish doesn't enforce any naming convention for the APIs you connect to.
 We recommend using Restish's **profiles** feature: one API registration, `pgedge`, holds a profile per environment, and each profile can override the base URL (and, if you need it later, auth or other per-environment request details).
 
-**Use descriptive cluster names.** Every cluster has its own durable `id`,
+**Use descriptive cluster names.** Every cluster has an **immutable** `id`,
 set at initialization and returned by `get-cluster`. `init-cluster` takes
 an optional `cluster_id` query parameter. Setting it to something descriptive will allow you to keep track of multiple different clusters.
 
 ```sh
-curl "http://host1.internal:3000/v1/cluster/init?cluster_id=production"
+restish pgedge init-cluster --cluster-id production
 ```
 
 Then select that cluster with a matching profile:
@@ -82,77 +82,18 @@ restish pgedge list-databases   # default profile: local/informal cluster
     across hosts while debugging), give it its own profile the same way:
     `-p production-host-1`.
 
-### Persisting Connections in a Project Config
-
-Register `pgedge` once, with a profile per environment, in a `.restish.json`
-file at the root of your infrastructure repo, instead of re-running
-`restish api connect` by hand every time you check it out. Restish
-discovers this file by walking up from your current directory:
-
-```jsonc
-{
-  "apis": {
-    "pgedge": {
-      "base_url": "http://host1.internal:3000",
-      "profiles": {
-        "default": {},
-        "staging": {
-          "base_url": "http://host1.staging.internal:3000"
-        },
-        "production": {
-          "base_url": "https://host1.prod.internal:3000"
-        }
-      }
-    }
-  }
-}
-```
-
-The top-level `base_url` is what the `default` profile falls back to — the
-same safe-fallback rule described above, expressed as config instead of
-prose. `staging` and `production` each override it, and only take effect
-when you pass `-p`.
-
-Commit this file, then run the following once per checkout:
+Add a profile per environment to the same `pgedge` registration with
+`restish api set`:
 
 ```sh
-restish config trust
+restish api set pgedge 'profiles.staging.base_url: http://host1.staging.internal:3000'
+restish api set pgedge 'profiles.production.base_url: https://host1.prod.internal:3000'
 ```
 
-Restish records that trust decision outside the repo, keyed to the file's
-contents, so your connections and profiles are ready every time you check
-out the repo. If working with a team, everyone ends up with the same
-setup without manually running `restish api connect` or keeping a personal
-copy in sync.
-
-!!! note
-
-    A project config only honors the `apis` and `theme` keys — nothing
-    else. Keep it secret-free: the Control Plane's dev and local endpoints
-    don't need auth, so these profiles can stay limited to `base_url` as
-    shown above. If a cluster you connect to does require auth, reference
-    the value as `env:NAME` rather than committing it literally.
-
-If a cluster has [mTLS enabled](../installation/mtls.md), add the CA and
-client certificate paths to that profile. These are file paths, not the
-credentials themselves, so — unlike a token or password — they're fine to
-commit as long as everyone using the file also has the actual `ca.crt`,
-`client.crt`, and `client.key` in place locally:
-
-```jsonc
-"production": {
-  "base_url": "https://host1.prod.internal:3000",
-  "ca_cert": "/opt/pgedge/control-plane/ca.crt",
-  "client_cert": "/opt/pgedge/control-plane/client.crt",
-  "client_key": "/opt/pgedge/control-plane/client.key"
-}
-```
-
-Not every connection belongs in that shared file, though. Anything that's
- per-machine (eg. a Lima VM IP that's different for every developer, a personal sandbox) should stay out of source control. Restish also
-won't let you add a profile to an API that came from trusted project
-config, so register a personal one under its own name instead, which
-writes to your own local Restish config:
+Not every connection belongs on your everyday `pgedge` registration,
+though. Anything that's per-machine (eg. a Lima VM IP that's different for
+every developer, a personal sandbox) is better off registered under its
+own name so it doesn't collide with your regular setup:
 
 ```sh
 restish api connect pgedge-sandbox http://192.168.64.3:3000
@@ -168,6 +109,9 @@ restish api connect pgedge-sandbox https://192.168.64.3:3000 \
     --spec https://192.168.64.3:3000/v1/openapi.json
 ```
 
+If the cluster also requires a client certificate for mTLS, see
+[Connecting Over mTLS](#connecting-over-mtls).
+
 Either way you connect something, the same commands work afterward:
 
 ```sh
@@ -176,6 +120,33 @@ restish api inspect pgedge-sandbox           # the URL, profiles, and spec Resti
 restish api remove pgedge-sandbox            # disconnect (personal connections only)
 restish pgedge-sandbox --help                # every generated command
 restish pgedge-sandbox list-databases --help # options for one command
+```
+
+Restish also supports registering connections in a `.restish.json` project
+config file so a whole team shares the same setup automatically — most
+See Restish's own docs on
+[project configuration](https://rest.sh/docs/reference/config/).
+
+### Connecting Over mTLS
+
+If a cluster has [mTLS enabled](../installation/mtls.md), pass the CA
+certificate plus a client certificate and key when you connect:
+
+```sh
+restish api connect pgedge-sandbox https://192.168.64.3:3000 \
+    --rsh-ca-cert ./ca.crt \
+    --rsh-client-cert ./client.crt \
+    --rsh-client-key ./client.key
+```
+
+For a shared registration like `pgedge`, set the same paths per profile
+with `restish api set`:
+
+```sh
+restish api set pgedge \
+    'profiles.production.ca_cert: /opt/pgedge/control-plane/ca.crt' \
+    'profiles.production.client_cert: /opt/pgedge/control-plane/client.crt' \
+    'profiles.production.client_key: /opt/pgedge/control-plane/client.key'
 ```
 
 ## Managing Database Configuration as Files
@@ -268,10 +239,10 @@ workflow you'd use for any other infrastructure-as-code.
 
 ### Handling Secrets
 
-The one field in these files that doesn't belong in source control is
-`database_users[].password` (and, if you're configuring backups,
-credentials like `s3_key_secret`). The Control Plane's update endpoint is
-built to make this easy: **secret fields are only required the first time
+Secret fields, such as `database_users[].password` or `s3_key_secret`,
+should be excluded from any files committed to source control. The
+Control Plane's update endpoint is built to make this easy: **secret
+fields are only required the first time
 you create a database. On every `update-database` call after that, you can
 leave them out entirely** — the Control Plane keeps whatever value is
 already stored unless you explicitly send a new one. See
@@ -291,3 +262,11 @@ for the new value, `jq` to inject it, passed once.
 This keeps `databases/example.json` safe to read, diff, and share at any
 point — it's never the file that held the credential, so there's no window
 where committing it (or `git add -A`, or a stray backup) could leak one.
+
+!!! tip
+
+    The Control Plane excludes every secret field from its responses, you can skip manual redaction entirely: create the database from a one-off request that includes all of its secrets, then pull the sanitized spec back into your file:
+
+    ```sh
+    restish pgedge get-database example | jq '{ id, spec }' > databases/example.json
+    ```
