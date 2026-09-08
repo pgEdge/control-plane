@@ -74,7 +74,6 @@ func (r *DumpRolesResource) Create(ctx context.Context, rc *resource.Context) er
 		"pg_dumpall",
 		"--roles-only",
 		"--username=pgedge",
-		"--host=localhost",
 		fmt.Sprintf("--port=%d", primary.ConnectionInfo.AdminPort),
 	}
 	var dump strings.Builder

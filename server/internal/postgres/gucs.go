@@ -60,6 +60,7 @@ func DefaultGUCs(version *ds.PgEdgeVersion, peerInstanceIDs []string) map[string
 		"shared_preload_libraries":     "pg_stat_statements,snowflake,spock",
 		"track_commit_timestamp":       "on",
 		"track_io_timing":              "on",
+		"unix_socket_permissions":      "0700",
 		"wal_level":                    "logical",
 		"wal_log_hints":                "on",
 		"wal_sender_timeout":           "5s",
