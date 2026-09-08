@@ -48,6 +48,11 @@ type Database struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	State            DatabaseState
+	// RawState is the state as persisted in storage, before any derived
+	// adjustments (e.g. degrading State based on instance health). Callers
+	// that need to perform a guarded transition against the stored state
+	// (e.g. a compare-and-swap) should use this instead of State.
+	RawState         DatabaseState
 	Spec             *Spec
 	Instances        []*Instance
 	ServiceInstances []*ServiceInstance
@@ -96,6 +101,7 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 		CreatedAt:        d.CreatedAt,
 		UpdatedAt:        d.UpdatedAt,
 		State:            state,
+		RawState:         d.State,
 		Spec:             storedSpec.Spec,
 		Instances:        instances,
 		ServiceInstances: serviceInstances,
