@@ -11,12 +11,14 @@ import (
 // mcpYAMLConfig mirrors the MCP server's Config struct for YAML generation.
 // Only fields the CP needs to set are included.
 type mcpYAMLConfig struct {
-	HTTP          mcpHTTPConfig       `yaml:"http"`
-	Databases     []mcpDatabaseConfig `yaml:"databases"`
-	LLM           *mcpLLMConfig       `yaml:"llm,omitempty"`
-	Embedding     *mcpEmbeddingConfig `yaml:"embedding,omitempty"`
-	Knowledgebase *mcpKBConfig        `yaml:"knowledgebase,omitempty"`
-	Builtins      mcpBuiltinsConfig   `yaml:"builtins"`
+	HTTP              mcpHTTPConfig       `yaml:"http"`
+	Databases         []mcpDatabaseConfig `yaml:"databases"`
+	LLM               *mcpLLMConfig       `yaml:"llm,omitempty"`
+	Embedding         *mcpEmbeddingConfig `yaml:"embedding,omitempty"`
+	Knowledgebase     *mcpKBConfig        `yaml:"knowledgebase,omitempty"`
+	Builtins          mcpBuiltinsConfig   `yaml:"builtins"`
+	TraceFile         string              `yaml:"trace_file,omitempty"`
+	TraceMetadataOnly *bool               `yaml:"trace_metadata_only,omitempty"`
 }
 
 type mcpHTTPConfig struct {
@@ -58,6 +60,7 @@ type mcpLLMConfig struct {
 	Model           string  `yaml:"model"`
 	AnthropicAPIKey string  `yaml:"anthropic_api_key,omitempty"`
 	OpenAIAPIKey    string  `yaml:"openai_api_key,omitempty"`
+	GeminiAPIKey    string  `yaml:"gemini_api_key,omitempty"`
 	OllamaURL       string  `yaml:"ollama_url,omitempty"`
 	Temperature     float64 `yaml:"temperature"`
 	MaxTokens       int     `yaml:"max_tokens"`
@@ -69,6 +72,7 @@ type mcpEmbeddingConfig struct {
 	Model        string `yaml:"model"`
 	VoyageAPIKey string `yaml:"voyage_api_key,omitempty"`
 	OpenAIAPIKey string `yaml:"openai_api_key,omitempty"`
+	GeminiAPIKey string `yaml:"gemini_api_key,omitempty"`
 	OllamaURL    string `yaml:"ollama_url,omitempty"`
 }
 
@@ -79,6 +83,7 @@ type mcpKBConfig struct {
 	EmbeddingModel        string `yaml:"embedding_model"`
 	EmbeddingVoyageAPIKey string `yaml:"embedding_voyage_api_key,omitempty"`
 	EmbeddingOpenAIAPIKey string `yaml:"embedding_openai_api_key,omitempty"`
+	EmbeddingGeminiAPIKey string `yaml:"embedding_gemini_api_key,omitempty"`
 }
 
 type mcpBuiltinsConfig struct {
@@ -148,6 +153,10 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 			if cfg.OpenAIAPIKey != nil {
 				l.OpenAIAPIKey = *cfg.OpenAIAPIKey
 			}
+		case "gemini":
+			if cfg.GeminiAPIKey != nil {
+				l.GeminiAPIKey = *cfg.GeminiAPIKey
+			}
 		case "ollama":
 			if cfg.OllamaURL != nil {
 				l.OllamaURL = *cfg.OllamaURL
@@ -172,6 +181,8 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 				emb.VoyageAPIKey = *cfg.EmbeddingAPIKey
 			case "openai":
 				emb.OpenAIAPIKey = *cfg.EmbeddingAPIKey
+			case "gemini":
+				emb.GeminiAPIKey = *cfg.EmbeddingAPIKey
 			}
 		}
 		if *cfg.EmbeddingProvider == "ollama" && cfg.OllamaURL != nil {
@@ -201,6 +212,8 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 			k.EmbeddingVoyageAPIKey = *cfg.KBEmbeddingAPIKey
 		case "openai":
 			k.EmbeddingOpenAIAPIKey = *cfg.KBEmbeddingAPIKey
+		case "gemini":
+			k.EmbeddingGeminiAPIKey = *cfg.KBEmbeddingAPIKey
 		}
 		kb = k
 	}
@@ -238,6 +251,21 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 		hosts[i] = mcpHostEntry{Host: h.Host, Port: h.Port}
 	}
 
+	// Audit trace: written inside the existing /app/data bind mount, so no
+	// new mount is needed. Metadata-only defaults to true when trace is
+	// enabled but the caller didn't say otherwise, so query text and result
+	// rows don't land on disk by default.
+	var traceFile string
+	var traceMetadataOnly *bool
+	if cfg.AuditTraceEnabled != nil && *cfg.AuditTraceEnabled {
+		traceFile = "/app/data/audit-trace.log"
+		metadataOnly := true
+		if cfg.AuditTraceMetadataOnly != nil {
+			metadataOnly = *cfg.AuditTraceMetadataOnly
+		}
+		traceMetadataOnly = &metadataOnly
+	}
+
 	yamlCfg := &mcpYAMLConfig{
 		HTTP: mcpHTTPConfig{
 			Enabled: true,
@@ -269,6 +297,8 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 		Builtins: mcpBuiltinsConfig{
 			Tools: tools,
 		},
+		TraceFile:         traceFile,
+		TraceMetadataOnly: traceMetadataOnly,
 	}
 
 	data, err := yaml.Marshal(yamlCfg)

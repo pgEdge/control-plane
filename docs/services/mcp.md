@@ -10,6 +10,13 @@ searches. For more information, see the
 [pgEdge Postgres MCP](https://github.com/pgEdge/pgedge-postgres-mcp)
 project.
 
+!!! note
+
+    MCP version `1.1.0` is now the default: a service spec that omits
+    `version`, or sets it to `"latest"`, resolves to `1.1.0`. The
+    examples on this page pin `"version": "1.1.0"` explicitly so they
+    do not silently pick up a future default version.
+
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover MCP-specific
 configuration.
@@ -31,10 +38,11 @@ configuration fields:
 | Field                  | Type    | Default | Description |
 |------------------------|---------|---------|-------------|
 | `llm_enabled`          | boolean | `false` | Set to `true` to enable the LLM proxy. When `false`, the fields below must not be provided. |
-| `llm_provider`         | string  | —       | The LLM provider to use. One of: `anthropic`, `openai`, `ollama`. Required when `llm_enabled` is `true`. |
-| `llm_model`            | string  | —       | The model name for the selected provider (e.g., `claude-sonnet-4-5`, `gpt-4o`, `llama3.2`). Required when `llm_enabled` is `true`. |
+| `llm_provider`         | string  | —       | The LLM provider to use. One of: `anthropic`, `openai`, `gemini`, `ollama`. Required when `llm_enabled` is `true`. |
+| `llm_model`            | string  | —       | The model name for the selected provider (e.g., `claude-sonnet-4-5`, `gpt-4o`, `gemini-2.5-flash`, `llama3.2`). Required when `llm_enabled` is `true`. |
 | `anthropic_api_key`    | string  | —       | Your Anthropic API key. Required when `llm_provider` is `anthropic`. |
 | `openai_api_key`       | string  | —       | Your OpenAI API key. Required when `llm_provider` is `openai`. |
+| `gemini_api_key`       | string  | —       | Your Gemini API key. Required when `llm_provider` is `gemini`. |
 | `ollama_url`           | string  | —       | The base URL of your Ollama server (e.g., `http://ollama-host:11434`). Required when `llm_provider` is `ollama`. |
 
 ### Security
@@ -48,6 +56,8 @@ security configuration fields:
 | `allow_writes`   | boolean | `false` | When `true`, the `query_database` tool can execute write statements and the service connects to the primary node. When `false`, write statements are rejected by the MCP server and the service prefers a standby node. |
 | `init_token`     | string  | —       | A bootstrap token for initial access to the MCP server. See [Bootstrapping](#bootstrapping). |
 | `init_users`     | array   | —       | Initial user accounts to create on the MCP server. See [Bootstrapping](#bootstrapping). |
+| `audit_trace_enabled` | boolean | `false` | When `true`, the MCP server writes a per-request audit trace to `audit-trace.log` inside its existing data bind-mount; no additional mount is required. |
+| `audit_trace_metadata_only` | boolean | `true` | Only valid when `audit_trace_enabled` is `true`. When `true` (the default once tracing is enabled), the trace records request metadata only; query text and result rows are not written. Set to `false` for full detail, matching the upstream server's own default. |
 
 ### Tools
 
@@ -75,9 +85,9 @@ following table describes the embedding configuration fields:
 
 | Field                  | Type   | Description |
 |------------------------|--------|-------------|
-| `embedding_provider`   | string | The embedding provider. One of: `voyage`, `openai`, `ollama`. |
-| `embedding_model`      | string | The embedding model name (e.g., `voyage-3`, `text-embedding-3-small`, `nomic-embed-text`). Required when `embedding_provider` is set. |
-| `embedding_api_key`    | string | API key for the embedding provider. Required for `voyage` and `openai` providers. |
+| `embedding_provider`   | string | The embedding provider. One of: `voyage`, `openai`, `gemini`, `ollama`. |
+| `embedding_model`      | string | The embedding model name (e.g., `voyage-3`, `text-embedding-3-small`, `gemini-embedding-001`, `nomic-embed-text`). Required when `embedding_provider` is set. |
+| `embedding_api_key`    | string | API key for the embedding provider. Required for `voyage`, `openai`, and `gemini` providers. |
 
 ### Knowledgebase
 
@@ -87,8 +97,9 @@ host; the Control Plane bind-mounts it into the container read-only.
 Knowledgebase support is opt-in. When `kb_enabled` is `false` (the
 default), no KB file is required — and any other `kb_*` fields present
 in the config are **rejected** by the validator, not silently ignored.
-Only `voyage` and `openai` are supported as embedding providers for the
-knowledgebase; Ollama support is planned for a future release.
+Only `voyage`, `openai`, and `gemini` are supported as embedding
+providers for the knowledgebase; Ollama support is planned for a
+future release.
 
 !!! warning
 
@@ -113,9 +124,9 @@ The following table describes the knowledgebase configuration fields:
 | Field                     | Type    | Description |
 |---------------------------|---------|-------------|
 | `kb_enabled`              | boolean | Set to `true` to enable knowledgebase search. When `false` (the default), any other `kb_*` fields in the config are **rejected** — they must be removed before the config is accepted. |
-| `kb_embedding_provider`   | string  | Embedding provider for the KB. One of: `voyage`, `openai`. Required when `kb_enabled` is `true`. |
-| `kb_embedding_model`      | string  | Embedding model for the KB (e.g., `voyage-3-lite`, `text-embedding-3-small`). Required when `kb_enabled` is `true`. |
-| `kb_embedding_api_key`    | string  | API key for the KB embedding provider. Required for `voyage` and `openai`. Scrubbed from API responses. |
+| `kb_embedding_provider`   | string  | Embedding provider for the KB. One of: `voyage`, `openai`, `gemini`. Required when `kb_enabled` is `true`. |
+| `kb_embedding_model`      | string  | Embedding model for the KB (e.g., `voyage-3-lite`, `text-embedding-3-small`, `gemini-embedding-001`). Required when `kb_enabled` is `true`. |
+| `kb_embedding_api_key`    | string  | API key for the KB embedding provider. Required for `voyage`, `openai`, and `gemini`. Scrubbed from API responses. |
 | `kb_database_host_path`   | string  | Full path to the KB SQLite file on the host. Defaults to `{data_dir}/kb/nla-kb.db`. Must be an absolute path. |
 
 ### LLM Tuning
@@ -208,7 +219,7 @@ you connect via an MCP client that supplies its own LLM:
                     {
                         "service_id": "mcp-server",
                         "service_type": "mcp",
-                        "version": "latest",
+                        "version": "1.1.0",
                         "host_ids": ["host-1"],
                         "port": 8080,
                         "connect_as": "mcp_user",
@@ -253,7 +264,7 @@ Anthropic as the provider:
                     {
                         "service_id": "mcp-server",
                         "service_type": "mcp",
-                        "version": "latest",
+                        "version": "1.1.0",
                         "host_ids": ["host-1"],
                         "port": 8080,
                         "connect_as": "mcp_user",
@@ -302,7 +313,7 @@ OpenAI and configures embedding support:
                     {
                         "service_id": "mcp-server",
                         "service_type": "mcp",
-                        "version": "latest",
+                        "version": "1.1.0",
                         "host_ids": ["host-1"],
                         "port": 8080,
                         "connect_as": "mcp_user",
@@ -354,7 +365,7 @@ to use a self-hosted Ollama server for both the LLM and embeddings:
                     {
                         "service_id": "mcp-server",
                         "service_type": "mcp",
-                        "version": "latest",
+                        "version": "1.1.0",
                         "host_ids": ["host-1"],
                         "port": 8080,
                         "connect_as": "mcp_user",
@@ -408,7 +419,7 @@ sudo cp /path/to/your/nla-kb.db /var/lib/pgedge-control-plane/kb/nla-kb.db
                     {
                         "service_id": "mcp-server",
                         "service_type": "mcp",
-                        "version": "latest",
+                        "version": "1.1.0",
                         "host_ids": ["host-1"],
                         "port": 8080,
                         "connect_as": "mcp_user",

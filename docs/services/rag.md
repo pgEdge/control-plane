@@ -19,9 +19,30 @@ queries to the service, which performs hybrid vector and keyword search
 against document tables and returns LLM-synthesized answers with source
 citations.
 
+RAG version `2.0.0` is now the default: a service spec that omits
+`version`, or sets it to `"latest"`, resolves to `2.0.0`. The examples
+on this page pin `"version": "2.0.0"` explicitly so they do not
+silently pick up a future default version.
+
+Upstream RAG 2.0.0 adds an opt-in caller-identity mode, where retrieval
+can run as the calling user instead of a single fixed database role.
+That mode is out of scope for the Control Plane: the single `connect_as`
+role model described above is unchanged.
+
 See [Managing Services](managing.md) for instructions on adding,
 updating, and removing services. The sections below cover RAG-specific
 configuration.
+
+!!! note "Upgrading from RAG 1.0.0"
+
+    RAG 2.0.0 fixes a hybrid-search bug present in 1.0.0: when a
+    pipeline's table had no `id_column` configured, the vector search
+    arm of hybrid search was silently dropped, and results came from
+    BM25 keyword search alone. In 2.0.0 both arms are correctly fused
+    via Reciprocal Rank Fusion regardless of whether `id_column` is
+    set. Existing pipelines without `id_column` will generally see
+    better, more semantically relevant results after upgrading; no
+    configuration change is required.
 
 ## Database Prerequisites
 
@@ -95,7 +116,7 @@ The following table describes the pipeline configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `pipelines[].name` | string | Required. Pipeline identifier used in query URLs. Lowercase alphanumeric, hyphens, and underscores. Must not start with a hyphen. |
+| `pipelines[].name` | string | Required. Pipeline identifier used in query URLs. Lowercase alphanumeric, hyphens, and underscores, up to 63 characters. Must not start with a hyphen. |
 | `pipelines[].description` | string | Optional. Human-readable pipeline description. |
 | `pipelines[].tables[]` | array | Required. Array of table specifications. See [Table Configuration](#table-configuration). |
 | `pipelines[].embedding_llm` | object | Required. Embedding provider config. See [Embedding Configuration](#embedding-configuration). |
@@ -104,21 +125,25 @@ The following table describes the pipeline configuration fields:
 | `pipelines[].top_n` | integer | Optional. Number of documents to retrieve per query. |
 | `pipelines[].system_prompt` | string | Optional. Custom system prompt prepended to every LLM request for this pipeline. |
 | `pipelines[].search` | object | Optional. Search behavior settings. See [Search Configuration](#search-configuration). |
+| `pipelines[].allow_include_sources` | boolean | Optional. Defaults to `false`. When `true`, clients querying this pipeline may set `include_sources: true` to receive the raw content of retrieved documents. Exposing a corpus this way is an explicit per-pipeline decision. |
+| `pipelines[].rerank` | object | Optional. Reranking stage that reorders search results by relevance before context building. See [Reranking Configuration](#reranking-configuration). |
 
 ### Embedding Configuration
 
 The `embedding_llm` object configures the embedding provider used to
 vectorize each incoming query. The embedding vector is then used for
 similarity search against stored document vectors. All required fields
-must be set; `api_key` is not required for `ollama`.
+must be set; `api_key` is not required for `ollama`. Anthropic is not
+a valid `embedding_llm` provider - Anthropic does not offer an
+embeddings API.
 
 The following table describes the embedding configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `provider` | string | Required. The embedding provider. One of: `openai`, `voyage`, `ollama`. |
-| `model` | string | Required. The embedding model name (e.g., `text-embedding-3-small`, `voyage-3`, `nomic-embed-text`). |
-| `api_key` | string | API key for the provider. Required for `openai` and `voyage`. Not used for `ollama`. |
+| `provider` | string | Required. The embedding provider. One of: `openai`, `voyage`, `gemini`, `ollama`. |
+| `model` | string | Required. The embedding model name (e.g., `text-embedding-3-small`, `voyage-3`, `gemini-embedding-001`, `nomic-embed-text`). |
+| `api_key` | string | API key for the provider. Required for `openai`, `voyage`, and `gemini`. Not used for `ollama`. |
 | `base_url` | string | Optional. Custom base URL for the provider API. Required for `ollama` - set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
 
 ### LLM Configuration
@@ -131,9 +156,9 @@ The following table describes the LLM configuration fields:
 
 | Field | Type | Description |
 |---|---|---|
-| `provider` | string | Required. The LLM provider. One of: `anthropic`, `openai`, `ollama`. |
-| `model` | string | Required. The model name (e.g., `claude-sonnet-4-5`, `gpt-4o`, `llama3.2`). |
-| `api_key` | string | API key for the provider. Required for `anthropic` and `openai`. Not used for `ollama`. |
+| `provider` | string | Required. The LLM provider. One of: `anthropic`, `openai`, `gemini`, `ollama`. |
+| `model` | string | Required. The model name (e.g., `claude-sonnet-4-5`, `gpt-4o`, `gemini-2.5-flash`, `llama3.2`). |
+| `api_key` | string | API key for the provider. Required for `anthropic`, `openai`, and `gemini`. Not used for `ollama`. |
 | `base_url` | string | Optional. Custom base URL for API gateway routing. Required for `ollama` - set this to the network-accessible address of your Ollama server (e.g., `http://192.168.1.10:11434`). |
 
 !!! note
@@ -165,6 +190,25 @@ configuration fields:
 |---|---|---|---|
 | `hybrid_enabled` | boolean | `true` | Enable hybrid search combining vector similarity and BM25 keyword matching. Set to `false` for vector-only search. |
 | `vector_weight` | float | `0.5` | Weight for vector search versus BM25 (0.0-1.0). Higher values prioritize semantic relevance. |
+
+### Reranking Configuration
+
+The optional `rerank` object adds a reranking stage that reorders
+search results by relevance immediately before context is built for
+the LLM. Voyage AI is currently the only supported reranking provider.
+When `embedding_llm` already uses `voyage` and supplies an `api_key`,
+`rerank.api_key` can be omitted - the pgEdge RAG Server reuses the
+`embedding_llm` key for the shared provider. If both fields do supply
+a key, the values must be identical.
+
+The following table describes the reranking configuration fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `rerank.provider` | string | Required. The reranking provider. Currently only `voyage` is supported. |
+| `rerank.model` | string | Required. The rerank model name (e.g., `rerank-2`). |
+| `rerank.api_key` | string | Optional. API key for the reranking provider. Required unless `embedding_llm` already uses `voyage` and supplies an `api_key`. |
+| `rerank.top_k` | integer | Optional. Number of top results to keep after reranking. `0` reorders all results without dropping any, matching upstream behavior. Must not be negative. |
 
 ### Defaults Configuration
 
@@ -279,7 +323,7 @@ that uses OpenAI for embeddings and Anthropic Claude to generate answers:
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "admin",
@@ -344,7 +388,7 @@ In the following example, OpenAI handles both embeddings and answer generation:
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "admin",
@@ -408,7 +452,7 @@ matching):
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "admin",
@@ -445,6 +489,80 @@ matching):
         }'
     ```
 
+### Reranking with Source Inclusion
+
+In the following example, Voyage AI provides both embeddings and
+reranking, sharing a single `api_key`. The pipeline also sets
+`allow_include_sources: true` so clients can request the raw content
+of retrieved documents:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-1:3000/v1/databases \
+        -H 'Content-Type: application/json' \
+        --data '{
+            "id": "knowledge-base",
+            "spec": {
+                "database_name": "knowledge_base",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "password": "admin_password",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] }
+                ],
+                "services": [
+                    {
+                        "service_id": "rag",
+                        "service_type": "rag",
+                        "version": "2.0.0",
+                        "host_ids": ["host-1"],
+                        "port": 9200,
+                        "connect_as": "admin",
+                        "config": {
+                            "pipelines": [
+                                {
+                                    "name": "default",
+                                    "tables": [
+                                        {
+                                            "table": "documents_content_chunks",
+                                            "text_column": "content",
+                                            "vector_column": "embedding"
+                                        }
+                                    ],
+                                    "embedding_llm": {
+                                        "provider": "voyage",
+                                        "model": "voyage-3",
+                                        "api_key": "pa-..."
+                                    },
+                                    "rag_llm": {
+                                        "provider": "anthropic",
+                                        "model": "claude-sonnet-4-5",
+                                        "api_key": "sk-ant-..."
+                                    },
+                                    "rerank": {
+                                        "provider": "voyage",
+                                        "model": "rerank-2",
+                                        "top_k": 5
+                                    },
+                                    "allow_include_sources": true
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }'
+    ```
+
+    Since `rerank.provider` is `voyage` and `embedding_llm` already
+    supplies a Voyage `api_key`, `rerank.api_key` can be omitted here.
+
 ### Ollama (Self-Hosted)
 
 In the following example, the RAG service uses a self-hosted Ollama
@@ -475,7 +593,7 @@ required; the Ollama server URL is provided via `base_url`:
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "admin",
@@ -538,7 +656,7 @@ In the following example, two pipelines share default values for
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "admin",
@@ -650,7 +768,7 @@ URL stays stable across container restarts.
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "app_read_only",
@@ -739,6 +857,14 @@ In the response, look for the following items:
 The `host_port` value is the port to use when querying the RAG
 service. If you used a fixed `port: 9200` in the service spec, the
 host port will always be `9200`.
+
+!!! note
+    The RAG container's health check calls its `/v1/health` endpoint,
+    which pings every configured pipeline's embedding and LLM
+    providers - a check that can take up to roughly 10 seconds in the
+    worst case. To accommodate this, the Control Plane checks health
+    every 30 seconds with a 20 second timeout, so `last_health_at` can
+    lag actual container readiness by up to that interval.
 
 !!! tip
     Use a fixed `port` value (e.g. `9200`) in the service spec rather
@@ -878,7 +1004,7 @@ array:
                     {
                         "service_id": "rag",
                         "service_type": "rag",
-                        "version": "latest",
+                        "version": "2.0.0",
                         "host_ids": ["host-1"],
                         "port": 9200,
                         "connect_as": "app_read_only",

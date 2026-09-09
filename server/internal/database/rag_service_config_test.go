@@ -1,6 +1,7 @@
 package database_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -371,6 +372,176 @@ func TestParseRAGServiceConfig_OllamaRAGLLM(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t, "ollama", cfg.Pipelines[0].RAGLLM.Provider)
 	assert.Nil(t, cfg.Pipelines[0].RAGLLM.APIKey)
+}
+
+func TestParseRAGServiceConfig_AllowIncludeSources(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["allow_include_sources"] = true
+	cfg, errs := database.ParseRAGServiceConfig(config, false)
+	require.Empty(t, errs)
+	require.NotNil(t, cfg)
+	require.NotNil(t, cfg.Pipelines[0].AllowIncludeSources)
+	assert.True(t, *cfg.Pipelines[0].AllowIncludeSources)
+}
+
+func TestParseRAGServiceConfig_PipelineNameTooLong(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["name"] = strings.Repeat("a", 64)
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "exceeds maximum length")
+}
+
+func TestParseRAGServiceConfig_PipelineNameMaxLengthIsValid(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["name"] = strings.Repeat("a", 63)
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.Empty(t, errs)
+}
+
+func TestParseRAGServiceConfig_AnthropicRejectedForEmbedding(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["embedding_llm"] = map[string]any{
+		"provider": "anthropic",
+		"model":    "claude-sonnet-4-5",
+		"api_key":  "sk-ant-key",
+	}
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "embedding_llm.provider")
+}
+
+func TestParseRAGServiceConfig_GeminiEmbeddingAndRAGLLM(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["embedding_llm"] = map[string]any{
+		"provider": "gemini",
+		"model":    "gemini-embedding-001",
+		"api_key":  "gm-key",
+	}
+	config["pipelines"].([]any)[0].(map[string]any)["rag_llm"] = map[string]any{
+		"provider": "gemini",
+		"model":    "gemini-2.5-flash",
+		"api_key":  "gm-key",
+	}
+	cfg, errs := database.ParseRAGServiceConfig(config, false)
+	require.Empty(t, errs)
+	require.NotNil(t, cfg)
+	assert.Equal(t, "gemini", cfg.Pipelines[0].EmbeddingLLM.Provider)
+	assert.Equal(t, "gemini", cfg.Pipelines[0].RAGLLM.Provider)
+}
+
+func TestParseRAGServiceConfig_Rerank_Valid(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+		"api_key":  "voy-rerank-key",
+		"top_k":    float64(5),
+	}
+	cfg, errs := database.ParseRAGServiceConfig(config, false)
+	require.Empty(t, errs)
+	require.NotNil(t, cfg)
+	require.NotNil(t, cfg.Pipelines[0].Rerank)
+	assert.Equal(t, "voyage", cfg.Pipelines[0].Rerank.Provider)
+	assert.Equal(t, 5, *cfg.Pipelines[0].Rerank.TopK)
+}
+
+func TestParseRAGServiceConfig_Rerank_ReusesEmbeddingVoyageKey(t *testing.T) {
+	config := minimalRAGConfig()
+	pipeline := config["pipelines"].([]any)[0].(map[string]any)
+	pipeline["embedding_llm"] = map[string]any{
+		"provider": "voyage",
+		"model":    "voyage-3",
+		"api_key":  "voy-key",
+	}
+	pipeline["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+		// no api_key: embedding_llm already supplies one for voyage
+	}
+	cfg, errs := database.ParseRAGServiceConfig(config, false)
+	require.Empty(t, errs)
+	require.NotNil(t, cfg)
+	assert.Nil(t, cfg.Pipelines[0].Rerank.APIKey)
+}
+
+func TestParseRAGServiceConfig_Rerank_MissingAPIKeyWithoutEmbeddingVoyage(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+		// embedding_llm is openai in minimalRAGConfig, so no voyage key to reuse
+	}
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "rerank.api_key")
+}
+
+func TestParseRAGServiceConfig_Rerank_MissingAPIKeyAllowedOnUpdate(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+	}
+	_, errs := database.ParseRAGServiceConfig(config, true)
+	require.Empty(t, errs)
+}
+
+func TestParseRAGServiceConfig_Rerank_MismatchedSharedProviderKey(t *testing.T) {
+	config := minimalRAGConfig()
+	pipeline := config["pipelines"].([]any)[0].(map[string]any)
+	pipeline["embedding_llm"] = map[string]any{
+		"provider": "voyage",
+		"model":    "voyage-3",
+		"api_key":  "voy-key-a",
+	}
+	pipeline["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+		"api_key":  "voy-key-b",
+	}
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "rerank.api_key")
+}
+
+func TestParseRAGServiceConfig_Rerank_InvalidProvider(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["rerank"] = map[string]any{
+		"provider": "openai",
+		"model":    "some-model",
+		"api_key":  "sk-key",
+	}
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "rerank.provider")
+}
+
+func TestParseRAGServiceConfig_Rerank_NegativeTopK(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+		"api_key":  "voy-key",
+		"top_k":    float64(-1),
+	}
+	_, errs := database.ParseRAGServiceConfig(config, false)
+	require.NotEmpty(t, errs)
+	assert.Contains(t, errs[0].Error(), "rerank.top_k")
+}
+
+func TestParseRAGServiceConfig_Rerank_TopKZeroIsValid(t *testing.T) {
+	config := minimalRAGConfig()
+	config["pipelines"].([]any)[0].(map[string]any)["rerank"] = map[string]any{
+		"provider": "voyage",
+		"model":    "rerank-2",
+		"api_key":  "voy-key",
+		"top_k":    float64(0),
+	}
+	cfg, errs := database.ParseRAGServiceConfig(config, false)
+	require.Empty(t, errs)
+	require.NotNil(t, cfg)
+	assert.Equal(t, 0, *cfg.Pipelines[0].Rerank.TopK)
 }
 
 func TestParseRAGServiceConfig_NegativeTopN(t *testing.T) {
