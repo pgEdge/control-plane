@@ -86,7 +86,7 @@ Add a profile per environment to the same `pgedge` registration with
 `restish api set`:
 
 ```sh
-restish api set pgedge 'profiles.staging.base_url: http://host1.staging.internal:3000'
+restish api set pgedge 'profiles.staging.base_url: https://host1.staging.internal:3000'
 restish api set pgedge 'profiles.production.base_url: https://host1.prod.internal:3000'
 ```
 
@@ -123,7 +123,9 @@ restish pgedge-sandbox list-databases --help # options for one command
 ```
 
 Restish also supports registering connections in a `.restish.json` project
-config file so a whole team shares the same setup automatically — most
+config file so a whole team shares the same setup automatically. Restish
+won't use a discovered project config until you review it and run
+`restish config trust`; re-run that command after any change to the file.
 See Restish's own docs on
 [project configuration](https://rest.sh/docs/reference/config/).
 
@@ -184,23 +186,25 @@ right away. Creating a database still needs a real password the first
 time, though, so pass that from a separate file you don't commit instead
 of adding it to `databases/example.json`:
 
-```sh
+```bash
 (
   set -e
   umask 077
   tmpfile=$(mktemp)
   trap 'rm -f "$tmpfile"' EXIT
   read -rsp "Password: " DB_PASS; echo
-  jq --arg pw "$DB_PASS" '.spec.database_users[0].password = $pw' \
+  jq --rawfile pw <(printf '%s' "$DB_PASS") \
+    '.spec.database_users[0].password = $pw' \
     databases/example.json > "$tmpfile"
   restish pgedge create-database < "$tmpfile"
 )
 ```
 
 `read -rsp` prompts for the password without echo, so it never appears in
-your terminal output or shell history. `jq` receives the value via
-`--arg` and injects it into `databases/example.json` at runtime, so the
-password never appears in the command text itself. `umask 077` keeps the
+your terminal output or shell history. `jq` reads the value from a file
+descriptor (`--rawfile pw <(printf '%s' "$DB_PASS")`) rather than a
+command-line argument, so the password never appears in the command text
+or in the process list. `umask 077` keeps the
 tmpfile unreadable by anyone else on the machine while it exists, and the
 subshell `(...)` limits the `trap`'s scope: when `create-database` returns
 (or fails), the subshell exits and the trap fires immediately, removing the
@@ -267,6 +271,19 @@ where committing it (or `git add -A`, or a stray backup) could leak one.
 
     The Control Plane excludes every secret field from its responses, you can skip manual redaction entirely: create the database from a one-off request that includes all of its secrets, then pull the sanitized spec back into your file:
 
-    ```sh
-    restish pgedge get-database example | jq '{ id, spec }' > databases/example.json
+    ```bash
+    (
+      set -e
+      set -o pipefail
+      tmpfile=$(mktemp)
+      trap 'rm -f "$tmpfile"' EXIT
+      restish pgedge get-database example | jq '{ id, spec }' > "$tmpfile"
+      jq empty "$tmpfile"
+      mv "$tmpfile" databases/example.json
+    )
     ```
+
+    The redirect writes to a tmpfile first; `databases/example.json` is
+    replaced only after `get-database` succeeds (`set -e` plus
+    `pipefail`) and `jq empty` confirms the output parses as JSON, and the
+    `mv` swaps it in atomically.
