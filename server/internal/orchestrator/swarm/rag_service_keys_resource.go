@@ -226,6 +226,10 @@ func validateKeyFilename(name string) error {
 // extractRAGAPIKeys builds the filename→value map from a parsed RAGServiceConfig.
 // Filenames follow the convention: {pipeline_name}_embedding.key and {pipeline_name}_rag.key.
 // Providers that do not require an API key (e.g. ollama) produce no entry.
+// A pipeline's optional rerank stage gets its own {pipeline_name}_rerank.key
+// file only when it needs a key embedding_llm isn't already supplying (see
+// validateRAGRerankConfig) — when embedding_llm uses the same provider, the
+// rerank stage reuses that key file instead of writing a duplicate.
 func extractRAGAPIKeys(cfg *database.RAGServiceConfig) map[string]string {
 	keys := make(map[string]string)
 	for _, p := range cfg.Pipelines {
@@ -234,6 +238,13 @@ func extractRAGAPIKeys(cfg *database.RAGServiceConfig) map[string]string {
 		}
 		if p.RAGLLM.APIKey != nil && *p.RAGLLM.APIKey != "" {
 			keys[p.Name+"_rag.key"] = *p.RAGLLM.APIKey
+		}
+		if p.Rerank != nil && p.Rerank.APIKey != nil && *p.Rerank.APIKey != "" {
+			embeddingHasSameProvider := p.EmbeddingLLM.Provider == p.Rerank.Provider &&
+				p.EmbeddingLLM.APIKey != nil && *p.EmbeddingLLM.APIKey != ""
+			if !embeddingHasSameProvider {
+				keys[p.Name+"_rerank.key"] = *p.Rerank.APIKey
+			}
 		}
 	}
 	return keys

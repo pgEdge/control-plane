@@ -313,6 +313,111 @@ func TestGenerateMCPConfig_ProviderKeys_OpenAI(t *testing.T) {
 	}
 }
 
+func TestGenerateMCPConfig_ProviderKeys_Gemini(t *testing.T) {
+	apiKey := "gm-test-key"
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			LLMEnabled:   utils.PointerTo(true),
+			LLMProvider:  "gemini",
+			LLMModel:     "gemini-2.5-flash",
+			GeminiAPIKey: &apiKey,
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
+	if cfg.LLM.GeminiAPIKey != apiKey {
+		t.Errorf("llm.gemini_api_key = %q, want %q", cfg.LLM.GeminiAPIKey, apiKey)
+	}
+	if cfg.LLM.OpenAIAPIKey != "" {
+		t.Errorf("llm.openai_api_key should be empty for gemini provider, got %q", cfg.LLM.OpenAIAPIKey)
+	}
+}
+
+func TestGenerateMCPConfig_AuditTrace_Enabled_DefaultsMetadataOnly(t *testing.T) {
+	enabled := true
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			AuditTraceEnabled: &enabled,
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+	cfg := parseYAML(t, data)
+
+	if cfg.TraceFile != "/app/data/audit-trace.log" {
+		t.Errorf("trace_file = %q, want %q", cfg.TraceFile, "/app/data/audit-trace.log")
+	}
+	if cfg.TraceMetadataOnly == nil || !*cfg.TraceMetadataOnly {
+		t.Errorf("trace_metadata_only = %v, want true (default)", cfg.TraceMetadataOnly)
+	}
+}
+
+func TestGenerateMCPConfig_AuditTrace_ExplicitMetadataOnlyFalse(t *testing.T) {
+	enabled := true
+	metadataOnly := false
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			AuditTraceEnabled:      &enabled,
+			AuditTraceMetadataOnly: &metadataOnly,
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+	cfg := parseYAML(t, data)
+
+	if cfg.TraceMetadataOnly == nil || *cfg.TraceMetadataOnly {
+		t.Errorf("trace_metadata_only = %v, want false (explicit)", cfg.TraceMetadataOnly)
+	}
+}
+
+func TestGenerateMCPConfig_AuditTrace_DisabledOmitsTraceFile(t *testing.T) {
+	data, err := GenerateMCPConfig(&MCPConfigParams{
+		Config:        &database.MCPServiceConfig{},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	})
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+	cfg := parseYAML(t, data)
+
+	if cfg.TraceFile != "" {
+		t.Errorf("trace_file should be empty (omitted), got %q", cfg.TraceFile)
+	}
+	if cfg.TraceMetadataOnly != nil {
+		t.Errorf("trace_metadata_only should be nil (omitted), got %v", *cfg.TraceMetadataOnly)
+	}
+}
+
 func TestGenerateMCPConfig_ProviderKeys_Ollama(t *testing.T) {
 	ollamaURL := "http://localhost:11434"
 	params := &MCPConfigParams{
@@ -491,6 +596,41 @@ func TestGenerateMCPConfig_EmbeddingOpenAI(t *testing.T) {
 	}
 	if cfg.Embedding.VoyageAPIKey != "" {
 		t.Errorf("embedding.voyage_api_key should be empty for openai embedding, got %q", cfg.Embedding.VoyageAPIKey)
+	}
+}
+
+func TestGenerateMCPConfig_EmbeddingGemini(t *testing.T) {
+	embProvider := "gemini"
+	embModel := "gemini-embedding-001"
+	embAPIKey := "gm-embed-key"
+
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			EmbeddingProvider: &embProvider,
+			EmbeddingModel:    &embModel,
+			EmbeddingAPIKey:   &embAPIKey,
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+
+	if cfg.Embedding == nil {
+		t.Fatal("embedding section should be present")
+	}
+	if cfg.Embedding.GeminiAPIKey != "gm-embed-key" {
+		t.Errorf("embedding.gemini_api_key = %q, want %q", cfg.Embedding.GeminiAPIKey, "gm-embed-key")
+	}
+	if cfg.Embedding.OpenAIAPIKey != "" {
+		t.Errorf("embedding.openai_api_key should be empty for gemini embedding, got %q", cfg.Embedding.OpenAIAPIKey)
 	}
 }
 
@@ -805,6 +945,40 @@ func TestGenerateMCPConfig_KBEnabled_OpenAIProvider(t *testing.T) {
 	}
 	if cfg.Knowledgebase.EmbeddingVoyageAPIKey != "" {
 		t.Errorf("knowledgebase.embedding_voyage_api_key should be empty for openai provider, got %q", cfg.Knowledgebase.EmbeddingVoyageAPIKey)
+	}
+}
+
+func TestGenerateMCPConfig_KBEnabled_GeminiProvider(t *testing.T) {
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			KBEnabled:           utils.PointerTo(true),
+			KBEmbeddingProvider: strPtr("gemini"),
+			KBEmbeddingModel:    strPtr("gemini-embedding-001"),
+			KBEmbeddingAPIKey:   strPtr("gm-kb-key"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.Knowledgebase == nil {
+		t.Fatal("knowledgebase section should be present when kb_enabled is true")
+	}
+	if cfg.Knowledgebase.EmbeddingProvider != "gemini" {
+		t.Errorf("knowledgebase.embedding_provider = %q, want %q", cfg.Knowledgebase.EmbeddingProvider, "gemini")
+	}
+	if cfg.Knowledgebase.EmbeddingGeminiAPIKey != "gm-kb-key" {
+		t.Errorf("knowledgebase.embedding_gemini_api_key = %q, want %q", cfg.Knowledgebase.EmbeddingGeminiAPIKey, "gm-kb-key")
+	}
+	if cfg.Knowledgebase.EmbeddingOpenAIAPIKey != "" {
+		t.Errorf("knowledgebase.embedding_openai_api_key should be empty for gemini provider, got %q", cfg.Knowledgebase.EmbeddingOpenAIAPIKey)
 	}
 }
 

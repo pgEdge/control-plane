@@ -727,3 +727,219 @@ func getEnvOrSkip(t testing.TB, key string) string {
 	}
 	return v
 }
+
+// TestProvisionRAGServicePinnedVersion200 provisions a RAG service pinned
+// explicitly to "2.0.0" (the current default, but pinning explicitly still
+// exercises manifest resolution end to end) and exercises the v2.0.0 config
+// fields: allow_include_sources and an optional voyage rerank stage.
+// Placeholder API keys are used so this runs without incurring LLM costs.
+func TestProvisionRAGServicePinnedVersion200(t *testing.T) {
+	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
+
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
+	host1 := hosts[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with RAG service pinned to 2.0.0")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_rag_pinned_2_0_0",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
+			},
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "rag",
+					ServiceType: "rag",
+					Version:     "2.0.0",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
+					ConnectAs:   "rag_user",
+					Config: map[string]any{
+						"pipelines": []any{
+							map[string]any{
+								"name": "default",
+								"tables": []any{
+									map[string]any{
+										"table":         "docs",
+										"text_column":   "content",
+										"vector_column": "embedding",
+									},
+								},
+								"embedding_llm": map[string]any{
+									"provider": "openai",
+									"model":    "text-embedding-3-small",
+									"api_key":  "sk-test-embed-key",
+								},
+								"rag_llm": map[string]any{
+									"provider": "anthropic",
+									"model":    "claude-haiku-4-5-20251001",
+									"api_key":  "sk-ant-test-key",
+								},
+								"allow_include_sources": true,
+								"rerank": map[string]any{
+									"provider": "voyage",
+									"model":    "rerank-2",
+									"api_key":  "pa-test-voyage-rerank-key",
+									"top_k":    5,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	require.NotNil(t, db.ServiceInstances, "ServiceInstances should not be nil")
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 RAG service instance")
+
+	si := db.ServiceInstances[0]
+	assert.Equal(t, "rag", si.ServiceID)
+
+	t.Log("Waiting for RAG service to be running")
+	si = waitForServiceRunning(ctx, t, db, si.ServiceInstanceID, 8*time.Minute)
+	if si.Status != nil && si.Status.ImageVersion != nil {
+		assert.Contains(t, *si.Status.ImageVersion, "2.0.0", "running container should use the pinned 2.0.0 image")
+	}
+}
+
+// TestUpdateRAGServiceVersion is the PLAT-715 regression test for RAG: it
+// fetches a database via GetDatabase (which strips embedding_llm/rag_llm
+// api_key values from the returned pipelines config), mutates only the
+// service's Version in that fetched spec, and feeds it straight back into
+// UpdateDatabase without resupplying the stripped secrets. Before the
+// PLAT-715 fix this always 400s, because RAG config validation unconditionally
+// required api_key back for non-ollama providers.
+func TestUpdateRAGServiceVersion(t *testing.T) {
+	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
+
+	hosts := fixture.HostIDs()
+	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
+	host1 := hosts[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with RAG service pinned to 1.0.0")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_rag_version_update",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+				{
+					Username:   "rag_user",
+					Password:   pointerTo("ragpassword"),
+					Attributes: []string{"LOGIN"},
+				},
+			},
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "rag",
+					ServiceType: "rag",
+					Version:     "1.0.0",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
+					ConnectAs:   "rag_user",
+					Config: map[string]any{
+						"pipelines": []any{
+							map[string]any{
+								"name": "default",
+								"tables": []any{
+									map[string]any{
+										"table":         "docs",
+										"text_column":   "content",
+										"vector_column": "embedding",
+									},
+								},
+								"embedding_llm": map[string]any{
+									"provider": "openai",
+									"model":    "text-embedding-3-small",
+									"api_key":  "sk-test-embed-key-version-update",
+								},
+								"rag_llm": map[string]any{
+									"provider": "anthropic",
+									"model":    "claude-haiku-4-5-20251001",
+									"api_key":  "sk-ant-test-key-version-update",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 RAG service instance")
+	waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 8*time.Minute)
+
+	t.Log("Fetching the database (this strips embedding_llm/rag_llm api_key from the returned config)")
+	require.NoError(t, db.Refresh(ctx), "failed to refresh database")
+
+	var ragSvc *controlplane.ServiceSpec
+	for _, svc := range db.Spec.Services {
+		if svc.ServiceID == "rag" {
+			ragSvc = svc
+		}
+	}
+	require.NotNil(t, ragSvc, "rag service should be present in the fetched spec")
+	pipelines, ok := ragSvc.Config["pipelines"].([]any)
+	require.True(t, ok && len(pipelines) == 1, "fetched config should have 1 pipeline")
+	pipeline := pipelines[0].(map[string]any)
+	_, hasEmbedKey := pipeline["embedding_llm"].(map[string]any)["api_key"]
+	_, hasRAGKey := pipeline["rag_llm"].(map[string]any)["api_key"]
+	require.False(t, hasEmbedKey, "embedding_llm.api_key should have been stripped from the GET response")
+	require.False(t, hasRAGKey, "rag_llm.api_key should have been stripped from the GET response")
+
+	t.Log("Bumping only the service version in the fetched spec, then feeding it back into UpdateDatabase")
+	ragSvc.Version = "2.0.0"
+
+	err := db.Update(ctx, UpdateOptions{Spec: db.Spec})
+	require.NoError(t, err, "UpdateDatabase should succeed even though the fetched spec never had api_key values to resupply")
+
+	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
+	si := waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 8*time.Minute)
+	if si.Status != nil && si.Status.ImageVersion != nil {
+		assert.Contains(t, *si.Status.ImageVersion, "2.0.0", "service should be running the new pinned version after update")
+	}
+}

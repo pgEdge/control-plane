@@ -233,6 +233,64 @@ func TestExtractRAGAPIKeys_MultiPipeline(t *testing.T) {
 	}
 }
 
+func TestExtractRAGAPIKeys_RerankOwnKeyFile(t *testing.T) {
+	embKey := "sk-openai-embed"
+	rerankKey := "voy-rerank-key"
+	cfg := &database.RAGServiceConfig{
+		Pipelines: []database.RAGPipeline{
+			{
+				Name: "default",
+				EmbeddingLLM: database.RAGPipelineLLMConfig{
+					Provider: "openai",
+					Model:    "text-embedding-3-small",
+					APIKey:   &embKey,
+				},
+				Rerank: &database.RAGRerankConfig{
+					Provider: "voyage",
+					Model:    "rerank-2",
+					APIKey:   &rerankKey,
+				},
+			},
+		},
+	}
+
+	keys := extractRAGAPIKeys(cfg)
+	if keys["default_rerank.key"] != rerankKey {
+		t.Errorf("default_rerank.key = %q, want %q", keys["default_rerank.key"], rerankKey)
+	}
+	if len(keys) != 2 {
+		t.Errorf("len(keys) = %d, want 2 (embedding + rerank)", len(keys))
+	}
+}
+
+func TestExtractRAGAPIKeys_RerankReusesEmbeddingVoyageKey(t *testing.T) {
+	voyageKey := "voy-shared-key"
+	cfg := &database.RAGServiceConfig{
+		Pipelines: []database.RAGPipeline{
+			{
+				Name: "search",
+				EmbeddingLLM: database.RAGPipelineLLMConfig{
+					Provider: "voyage",
+					Model:    "voyage-3",
+					APIKey:   &voyageKey,
+				},
+				Rerank: &database.RAGRerankConfig{
+					Provider: "voyage",
+					Model:    "rerank-2",
+				},
+			},
+		},
+	}
+
+	keys := extractRAGAPIKeys(cfg)
+	if _, ok := keys["search_rerank.key"]; ok {
+		t.Error("unexpected search_rerank.key: rerank should reuse embedding_llm's voyage key file, not write its own")
+	}
+	if keys["search_embedding.key"] != voyageKey {
+		t.Errorf("search_embedding.key = %q, want %q", keys["search_embedding.key"], voyageKey)
+	}
+}
+
 func TestGenerateRAGInstanceResources_IncludesKeysResource(t *testing.T) {
 	o := newTestOrchestrator(t)
 	spec := &database.ServiceInstanceSpec{

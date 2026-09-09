@@ -996,3 +996,148 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 	t.Logf("Service instance %s updated in-place after config change", serviceInstanceID)
 	t.Log("MCP service config update test completed successfully")
 }
+
+// TestProvisionMCPServicePinnedVersion110 provisions an MCP service pinned
+// explicitly to "1.1.0" (rather than "latest") and verifies it reaches running
+// state, confirming the version resolves through GetServiceImage end to end.
+func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
+	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
+
+	host1 := fixture.HostIDs()[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with MCP service pinned to 1.1.0")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_mcp_pinned_1_1_0",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					ConnectAs:   "admin",
+					Version:     "1.1.0",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_enabled":       true,
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test-key-pinned-110",
+					},
+				},
+			},
+		},
+	})
+
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance")
+
+	si := waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 5*time.Minute)
+	if si.Status != nil && si.Status.ImageVersion != nil {
+		assert.Contains(t, *si.Status.ImageVersion, "1.1.0", "running container should use the pinned 1.1.0 image")
+	}
+}
+
+// TestUpdateMCPServiceVersion is the PLAT-715 regression test: it fetches a
+// database via GetDatabase (which strips secret config fields such as
+// anthropic_api_key), mutates only the service's Version in that fetched spec,
+// and feeds it straight back into UpdateDatabase without resupplying the
+// stripped secret. Before the PLAT-715 fix this always 400s, because config
+// validation unconditionally required the secret back. It also verifies the
+// service actually moves to the new pinned version.
+func TestUpdateMCPServiceVersion(t *testing.T) {
+	t.Parallel()
+
+	fixture.SkipIfServicesUnsupported(t)
+
+	host1 := fixture.HostIDs()[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with MCP service pinned to 1.0.0")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_mcp_version_update",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					ConnectAs:   "admin",
+					Version:     "1.0.0",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_enabled":       true,
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test-key-version-update",
+					},
+				},
+			},
+		},
+	})
+
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance")
+	waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 5*time.Minute)
+
+	t.Log("Fetching the database (this strips anthropic_api_key from the returned config)")
+	require.NoError(t, db.Refresh(ctx), "failed to refresh database")
+
+	var mcpSvc *controlplane.ServiceSpec
+	for _, svc := range db.Spec.Services {
+		if svc.ServiceID == "mcp-server" {
+			mcpSvc = svc
+		}
+	}
+	require.NotNil(t, mcpSvc, "mcp-server service should be present in the fetched spec")
+	_, hasKey := mcpSvc.Config["anthropic_api_key"]
+	require.False(t, hasKey, "anthropic_api_key should have been stripped from the GET response")
+
+	t.Log("Bumping only the service version in the fetched spec, then feeding it back into UpdateDatabase")
+	mcpSvc.Version = "1.1.0"
+
+	err := db.Update(ctx, UpdateOptions{Spec: db.Spec})
+	require.NoError(t, err, "UpdateDatabase should succeed even though the fetched spec never had anthropic_api_key to resupply")
+
+	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
+	si := waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 5*time.Minute)
+	if si.Status != nil && si.Status.ImageVersion != nil {
+		assert.Contains(t, *si.Status.ImageVersion, "1.1.0", "service should be running the new pinned version after update")
+	}
+}

@@ -32,6 +32,15 @@ const (
 	serviceHealthCheckRetries     = 3
 )
 
+// RAG-specific health check timing. RAG's /v1/health endpoint pings every
+// pipeline's configured providers (embedding and completion), each bounded
+// at roughly 10s to comfortably survive one retry, so Interval/Timeout need
+// more headroom than the shared constants above give postgrest/mcp.
+const (
+	ragHealthCheckInterval = 30 * time.Second
+	ragHealthCheckTimeout  = 20 * time.Second
+)
+
 func buildPostgRESTEnvVars() []string {
 	// Connection details (hosts, credentials) are embedded in the db-uri inside
 	// postgrest.conf by PostgRESTConfigResource — they must not appear as env vars.
@@ -217,12 +226,19 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		// TaskTemplate change and restarts the container when pipelines or API
 		// keys change. Without this, bind-mount updates are invisible to Swarm.
 		env = []string{"PGEDGE_CONFIG_VERSION=" + serviceConfigHash(opts.ServiceSpec.Config)}
-		// No curl in the RHEL minimal image — use a TCP probe instead.
+		// No curl/wget in the minimal runtime image — issue the HTTP request
+		// with bash builtins over /dev/tcp instead. /v1/health pings every
+		// pipeline's configured providers and always returns HTTP 200 (with
+		// "healthy"/"degraded" in the body), so this confirms the server is
+		// up and completed a health pass within the timeout below, which is
+		// set comfortably above /v1/health's own ~10s worst-case ping budget.
 		healthcheck = &container.HealthConfig{
-			Test:        []string{"CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"},
+			Test: []string{"CMD-SHELL",
+				`exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /v1/health HTTP/1.0\r\n\r\n' >&3 && read -r status <&3 && [[ "$status" == *" 200 "* ]]`,
+			},
 			StartPeriod: serviceHealthCheckStartPeriod,
-			Interval:    serviceHealthCheckInterval,
-			Timeout:     serviceHealthCheckTimeout,
+			Interval:    ragHealthCheckInterval,
+			Timeout:     ragHealthCheckTimeout,
 			Retries:     serviceHealthCheckRetries,
 		}
 		mounts = []mount.Mount{

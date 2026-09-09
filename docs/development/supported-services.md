@@ -852,7 +852,7 @@ Use these examples to verify your integration or to hand-test with `curl`.
       {
         "service_id": "mcp-server",
         "service_type": "mcp",
-        "version": "latest",
+        "version": "1.1.0",
         "host_ids": ["host-1"],
         "port": 8080,
         "config": {
@@ -895,7 +895,7 @@ Other common validation errors:
 | Unsupported `service_type` | `services[0].service_type: unsupported service type 'foo' (only 'mcp' is currently supported)` |
 | Bad `version` format | `services[0].version: version must be in semver format (e.g., '1.0.0') or 'latest'` |
 | Missing provider API key | `services[0].config: missing required field 'anthropic_api_key' for anthropic provider` |
-| Unsupported `llm_provider` | `services[0].config[llm_provider]: unsupported llm_provider 'foo' (must be one of: anthropic, openai, ollama)` |
+| Unsupported `llm_provider` | `services[0].config[llm_provider]: unsupported llm_provider 'foo' (must be one of: anthropic, openai, gemini, ollama)` |
 
 ### Reading a Database with Service Instances
 
@@ -913,7 +913,7 @@ Other common validation errors:
       {
         "service_id": "mcp-server",
         "service_type": "mcp",
-        "version": "latest",
+        "version": "1.1.0",
         "host_ids": ["host-1"],
         "port": 8080,
         "config": {
@@ -932,7 +932,7 @@ Other common validation errors:
       "state": "running",
       "status": {
         "container_id": "a1b2c3d4e5f6",
-        "image_version": "latest",
+        "image_version": "postgres-mcp:1.1.0",
         "addresses": [
             "10.0.1.5",
             "mcp-server-host-1.internal"
@@ -981,7 +981,7 @@ accordingly.
       {
         "service_id": "mcp-server",
         "service_type": "mcp",
-        "version": "latest",
+        "version": "1.1.0",
         "host_ids": ["host-1"],
         "config": {
           "llm_provider": "anthropic",

@@ -51,6 +51,16 @@ func noLLMBase() map[string]any {
 	return map[string]any{}
 }
 
+// geminiBase returns a minimal valid config for the gemini provider with LLM enabled.
+func geminiBase() map[string]any {
+	return map[string]any{
+		"llm_enabled":    true,
+		"llm_provider":   "gemini",
+		"llm_model":      "gemini-2.5-flash",
+		"gemini_api_key": "gm-key",
+	}
+}
+
 // joinedErr joins a []error into a single error for assertion convenience.
 func joinedErr(errs []error) error {
 	return errors.Join(errs...)
@@ -89,6 +99,25 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Equal(t, "http://localhost:11434", *cfg.OllamaURL)
 			assert.Nil(t, cfg.AnthropicAPIKey)
 			assert.Nil(t, cfg.OpenAIAPIKey)
+		})
+
+		t.Run("minimal gemini config", func(t *testing.T) {
+			cfg, errs := database.ParseMCPServiceConfig(geminiBase(), false)
+			require.Empty(t, errs)
+			assert.Equal(t, "gemini", cfg.LLMProvider)
+			assert.Equal(t, "gemini-2.5-flash", cfg.LLMModel)
+			require.NotNil(t, cfg.GeminiAPIKey)
+			assert.Equal(t, "gm-key", *cfg.GeminiAPIKey)
+			assert.Nil(t, cfg.AnthropicAPIKey)
+			assert.Nil(t, cfg.OpenAIAPIKey)
+		})
+
+		t.Run("gemini llm_provider missing api_key", func(t *testing.T) {
+			config := geminiBase()
+			delete(config, "gemini_api_key")
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "gemini_api_key is required")
 		})
 
 		t.Run("minimal no-LLM config", func(t *testing.T) {
@@ -582,6 +611,26 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			_, errs := database.ParseMCPServiceConfig(config, false)
 			require.NotEmpty(t, errs)
 			assert.Contains(t, joinedErr(errs).Error(), `embedding_api_key is required when embedding_provider is "openai"`)
+		})
+
+		t.Run("gemini embedding with embedding_api_key", func(t *testing.T) {
+			config := anthropicBase()
+			config["embedding_provider"] = "gemini"
+			config["embedding_model"] = "gemini-embedding-001"
+			config["embedding_api_key"] = "gm-key"
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.EmbeddingProvider)
+			assert.Equal(t, "gemini", *cfg.EmbeddingProvider)
+		})
+
+		t.Run("gemini embedding without embedding_api_key", func(t *testing.T) {
+			config := anthropicBase()
+			config["embedding_provider"] = "gemini"
+			config["embedding_model"] = "gemini-embedding-001"
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), `embedding_api_key is required when embedding_provider is "gemini"`)
 		})
 
 		t.Run("unknown embedding_provider", func(t *testing.T) {
@@ -1138,6 +1187,30 @@ func TestParseMCPServiceConfig(t *testing.T) {
 				require.NotEmpty(t, errs)
 				assert.Contains(t, joinedErr(errs).Error(), `kb_embedding_api_key is required when kb_embedding_provider is "openai"`)
 			})
+
+			t.Run("gemini with kb_embedding_api_key", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "gemini",
+					"kb_embedding_model":    "gemini-embedding-001",
+					"kb_embedding_api_key":  "gm-key",
+				}
+				cfg, errs := database.ParseMCPServiceConfig(config, false)
+				require.Empty(t, errs)
+				require.NotNil(t, cfg.KBEmbeddingProvider)
+				assert.Equal(t, "gemini", *cfg.KBEmbeddingProvider)
+			})
+
+			t.Run("gemini without kb_embedding_api_key", func(t *testing.T) {
+				config := map[string]any{
+					"kb_enabled":            true,
+					"kb_embedding_provider": "gemini",
+					"kb_embedding_model":    "gemini-embedding-001",
+				}
+				_, errs := database.ParseMCPServiceConfig(config, false)
+				require.NotEmpty(t, errs)
+				assert.Contains(t, joinedErr(errs).Error(), `kb_embedding_api_key is required when kb_embedding_provider is "gemini"`)
+			})
 		})
 
 		t.Run("provider restrictions", func(t *testing.T) {
@@ -1429,6 +1502,45 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			_, errs := database.ParseMCPServiceConfig(config, false)
 			require.NotEmpty(t, errs)
 			assert.Contains(t, joinedErr(errs).Error(), "llm_max_tokens must be an integer")
+		})
+	})
+
+	t.Run("audit trace", func(t *testing.T) {
+		t.Run("enabled with explicit metadata_only", func(t *testing.T) {
+			config := noLLMBase()
+			config["audit_trace_enabled"] = true
+			config["audit_trace_metadata_only"] = false
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.AuditTraceEnabled)
+			assert.True(t, *cfg.AuditTraceEnabled)
+			require.NotNil(t, cfg.AuditTraceMetadataOnly)
+			assert.False(t, *cfg.AuditTraceMetadataOnly)
+		})
+
+		t.Run("enabled without metadata_only", func(t *testing.T) {
+			config := noLLMBase()
+			config["audit_trace_enabled"] = true
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.AuditTraceEnabled)
+			assert.True(t, *cfg.AuditTraceEnabled)
+			assert.Nil(t, cfg.AuditTraceMetadataOnly)
+		})
+
+		t.Run("metadata_only without enabled is rejected", func(t *testing.T) {
+			config := noLLMBase()
+			config["audit_trace_metadata_only"] = true
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "audit_trace_metadata_only must not be set unless audit_trace_enabled is true")
+		})
+
+		t.Run("not set", func(t *testing.T) {
+			cfg, errs := database.ParseMCPServiceConfig(noLLMBase(), false)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.AuditTraceEnabled)
+			assert.Nil(t, cfg.AuditTraceMetadataOnly)
 		})
 	})
 }

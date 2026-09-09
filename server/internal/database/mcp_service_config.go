@@ -26,6 +26,7 @@ type MCPServiceConfig struct {
 	LLMModel        string  `json:"llm_model"`
 	AnthropicAPIKey *string `json:"anthropic_api_key,omitempty"`
 	OpenAIAPIKey    *string `json:"openai_api_key,omitempty"`
+	GeminiAPIKey    *string `json:"gemini_api_key,omitempty"`
 	OllamaURL       *string `json:"ollama_url,omitempty"`
 
 	// Optional - security
@@ -60,6 +61,13 @@ type MCPServiceConfig struct {
 	KBEmbeddingModel    *string `json:"kb_embedding_model,omitempty"`
 	KBEmbeddingAPIKey   *string `json:"kb_embedding_api_key,omitempty"`
 	KBDatabaseHostPath  *string `json:"kb_database_host_path,omitempty"`
+
+	// Optional - audit trace logging. When enabled, the server writes a
+	// per-request audit trail to a file inside its existing data mount.
+	// AuditTraceMetadataOnly defaults to true (query text and result rows
+	// are not written) unless explicitly set to false.
+	AuditTraceEnabled      *bool `json:"audit_trace_enabled,omitempty"`
+	AuditTraceMetadataOnly *bool `json:"audit_trace_metadata_only,omitempty"`
 }
 
 // mcpKnownKeys is the set of all valid config keys for MCP service configuration.
@@ -69,6 +77,7 @@ var mcpKnownKeys = map[string]bool{
 	"llm_model":                    true,
 	"anthropic_api_key":            true,
 	"openai_api_key":               true,
+	"gemini_api_key":               true,
 	"ollama_url":                   true,
 	"allow_writes":                 true,
 	"init_token":                   true,
@@ -91,11 +100,13 @@ var mcpKnownKeys = map[string]bool{
 	"kb_embedding_model":           true,
 	"kb_embedding_api_key":         true,
 	"kb_database_host_path":        true,
+	"audit_trace_enabled":          true,
+	"audit_trace_metadata_only":    true,
 }
 
-var validLLMProviders = []string{"anthropic", "openai", "ollama"}
-var validEmbeddingProviders = []string{"voyage", "openai", "ollama"}
-var validKBEmbeddingProviders = []string{"voyage", "openai"}
+var validLLMProviders = []string{"anthropic", "openai", "gemini", "ollama"}
+var validEmbeddingProviders = []string{"voyage", "openai", "gemini", "ollama"}
+var validKBEmbeddingProviders = []string{"voyage", "openai", "gemini"}
 
 // ParseMCPServiceConfig parses and validates a config map into a typed
 // MCPServiceConfig. If isUpdate is true, bootstrap-only fields (init_token,
@@ -141,7 +152,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	// rejected when llm_enabled is false.
 	var llmProvider string
 	var llmModel string
-	var anthropicKey, openaiKey, ollamaURL *string
+	var anthropicKey, openaiKey, geminiKey, ollamaURL *string
 	var llmTemperature *float64
 	var llmMaxTokens *int
 
@@ -174,6 +185,12 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 				if key != "" {
 					openaiKey = &key
 				}
+			case "gemini":
+				key, keyErrs := requireStringForProvider(config, "gemini_api_key", "gemini", isUpdate)
+				errs = append(errs, keyErrs...)
+				if key != "" {
+					geminiKey = &key
+				}
 			case "ollama":
 				// ollama_url is not a secret (GET never strips it), so it's
 				// always required here regardless of isUpdate.
@@ -205,7 +222,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		}
 	} else {
 		// LLM is disabled — reject LLM-specific fields if present
-		llmOnlyFields := []string{"llm_provider", "llm_model", "anthropic_api_key", "openai_api_key", "llm_temperature", "llm_max_tokens"}
+		llmOnlyFields := []string{"llm_provider", "llm_model", "anthropic_api_key", "openai_api_key", "gemini_api_key", "llm_temperature", "llm_max_tokens"}
 		for _, key := range llmOnlyFields {
 			if _, ok := config[key]; ok {
 				errs = append(errs, fmt.Errorf("%s must not be set unless llm_enabled is true", key))
@@ -285,12 +302,12 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		} else {
 			// ollama is not yet supported as a KB embedding provider
 			if strings.ToLower(*kbEmbeddingProvider) == "ollama" {
-				errs = append(errs, fmt.Errorf("kb_embedding_provider %q is not yet supported; use %q or %q", "ollama", "voyage", "openai"))
+				errs = append(errs, fmt.Errorf("kb_embedding_provider %q is not yet supported; use %q, %q, or %q", "ollama", "voyage", "openai", "gemini"))
 			} else if !slices.Contains(validKBEmbeddingProviders, *kbEmbeddingProvider) {
 				errs = append(errs, fmt.Errorf("kb_embedding_provider must be one of: %s", strings.Join(validKBEmbeddingProviders, ", ")))
 			} else {
-				// voyage and openai require an API key, except on an update,
-				// where an omitted key is expected to already have been
+				// voyage, openai, and gemini require an API key, except on an
+				// update, where an omitted key is expected to already have been
 				// restored from the stored spec before validation runs.
 				if !isUpdate && kbEmbeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("kb_embedding_api_key is required when kb_embedding_provider is %q", *kbEmbeddingProvider))
@@ -346,7 +363,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 			// Provider-specific credential requirements. api_key is not
 			// required on an update — see requireStringForProvider.
 			switch *embeddingProvider {
-			case "voyage", "openai":
+			case "voyage", "openai", "gemini":
 				if !isUpdate && embeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("embedding_api_key is required when embedding_provider is %q", *embeddingProvider))
 				}
@@ -356,6 +373,17 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 				}
 			}
 		}
+	}
+
+	// Audit trace fields
+	auditTraceEnabled, ateErrs := optionalBool(config, "audit_trace_enabled")
+	errs = append(errs, ateErrs...)
+
+	auditTraceMetadataOnly, atmoErrs := optionalBool(config, "audit_trace_metadata_only")
+	errs = append(errs, atmoErrs...)
+
+	if (auditTraceEnabled == nil || !*auditTraceEnabled) && auditTraceMetadataOnly != nil {
+		errs = append(errs, fmt.Errorf("audit_trace_metadata_only must not be set unless audit_trace_enabled is true"))
 	}
 
 	if len(errs) > 0 {
@@ -368,6 +396,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		LLMModel:                   llmModel,
 		AnthropicAPIKey:            anthropicKey,
 		OpenAIAPIKey:               openaiKey,
+		GeminiAPIKey:               geminiKey,
 		OllamaURL:                  ollamaURL,
 		AllowWrites:                allowWrites,
 		InitToken:                  initToken,
@@ -390,6 +419,8 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		KBEmbeddingModel:           kbEmbeddingModel,
 		KBEmbeddingAPIKey:          kbEmbeddingAPIKey,
 		KBDatabaseHostPath:         kbDatabaseHostPath,
+		AuditTraceEnabled:          auditTraceEnabled,
+		AuditTraceMetadataOnly:     auditTraceMetadataOnly,
 	}, nil
 }
 

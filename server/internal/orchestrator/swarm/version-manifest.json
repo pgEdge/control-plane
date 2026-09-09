@@ -130,6 +130,11 @@
       {
         "version": "1.0.0",
         "image": "postgres-mcp:1.0.0",
+        "stability": "stable"
+      },
+      {
+        "version": "1.1.0",
+        "image": "postgres-mcp:1.1.0",
         "stability": "stable",
         "default": true
       }
@@ -138,6 +143,11 @@
       {
         "version": "1.0.0",
         "image": "rag-server:1.0.0",
+        "stability": "stable"
+      },
+      {
+        "version": "2.0.0",
+        "image": "rag-server:2.0.0",
         "stability": "stable",
         "default": true
       }

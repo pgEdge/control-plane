@@ -215,6 +215,126 @@ func TestGenerateRAGConfig_APIKeyPaths_SameProvider_RAGTakesPrecedence(t *testin
 	}
 }
 
+func TestGenerateRAGConfig_AllowIncludeSources(t *testing.T) {
+	params := minimalRAGParams()
+	allow := true
+	params.Config.Pipelines[0].AllowIncludeSources = &allow
+
+	data, err := GenerateRAGConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateRAGConfig() error = %v", err)
+	}
+	cfg := parseRAGYAML(t, data)
+	if !cfg.Pipelines[0].AllowIncludeSources {
+		t.Error("allow_include_sources should be true")
+	}
+}
+
+func TestGenerateRAGConfig_Rerank_OwnKeyFile(t *testing.T) {
+	rerankKey := "voy-rerank-key"
+	topK := 5
+	params := minimalRAGParams()
+	params.Config.Pipelines[0].Rerank = &database.RAGRerankConfig{
+		Provider: "voyage",
+		Model:    "rerank-2",
+		APIKey:   &rerankKey,
+		TopK:     &topK,
+	}
+
+	data, err := GenerateRAGConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateRAGConfig() error = %v", err)
+	}
+	cfg := parseRAGYAML(t, data)
+	p := cfg.Pipelines[0]
+
+	if p.Rerank == nil {
+		t.Fatal("rerank should be present")
+	}
+	if p.Rerank.Provider != "voyage" || p.Rerank.Model != "rerank-2" {
+		t.Errorf("rerank = %+v, want provider=voyage model=rerank-2", p.Rerank)
+	}
+	if p.Rerank.TopK == nil || *p.Rerank.TopK != 5 {
+		t.Errorf("rerank.top_k = %v, want 5", p.Rerank.TopK)
+	}
+	if p.APIKeys == nil || p.APIKeys.Voyage != "/app/keys/default_rerank.key" {
+		t.Errorf("api_keys.voyage = %+v, want /app/keys/default_rerank.key", p.APIKeys)
+	}
+}
+
+func TestGenerateRAGConfig_Rerank_ReusesEmbeddingVoyageKeyFile(t *testing.T) {
+	voyageKey := "voy-shared-key"
+	antKey := "sk-ant"
+	params := &RAGConfigParams{
+		Config: &database.RAGServiceConfig{
+			Pipelines: []database.RAGPipeline{
+				{
+					Name:   "search",
+					Tables: []database.RAGPipelineTable{{Table: "t", TextColumn: "c", VectorColumn: "v"}},
+					EmbeddingLLM: database.RAGPipelineLLMConfig{
+						Provider: "voyage", Model: "voyage-3", APIKey: &voyageKey,
+					},
+					RAGLLM: database.RAGPipelineLLMConfig{
+						Provider: "anthropic", Model: "claude", APIKey: &antKey,
+					},
+					Rerank: &database.RAGRerankConfig{
+						Provider: "voyage",
+						Model:    "rerank-2",
+					},
+				},
+			},
+		},
+		DatabaseName: "mydb", DatabaseHost: "host", DatabasePort: 5432,
+		Username: "u", Password: "p", KeysDir: "/app/keys",
+	}
+
+	data, err := GenerateRAGConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateRAGConfig() error = %v", err)
+	}
+	cfg := parseRAGYAML(t, data)
+	keys := cfg.Pipelines[0].APIKeys
+
+	if keys == nil || keys.Voyage != "/app/keys/search_embedding.key" {
+		t.Errorf("api_keys.voyage = %+v, want reuse of /app/keys/search_embedding.key", keys)
+	}
+}
+
+func TestGenerateRAGConfig_GeminiEmbeddingAndRAGLLM(t *testing.T) {
+	geminiKey := "gm-shared-key"
+	params := &RAGConfigParams{
+		Config: &database.RAGServiceConfig{
+			Pipelines: []database.RAGPipeline{
+				{
+					Name:   "search",
+					Tables: []database.RAGPipelineTable{{Table: "t", TextColumn: "c", VectorColumn: "v"}},
+					EmbeddingLLM: database.RAGPipelineLLMConfig{
+						Provider: "gemini", Model: "gemini-embedding-001", APIKey: &geminiKey,
+					},
+					RAGLLM: database.RAGPipelineLLMConfig{
+						Provider: "gemini", Model: "gemini-2.5-flash", APIKey: &geminiKey,
+					},
+				},
+			},
+		},
+		DatabaseName: "mydb", DatabaseHost: "host", DatabasePort: 5432,
+		Username: "u", Password: "p", KeysDir: "/app/keys",
+	}
+
+	data, err := GenerateRAGConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateRAGConfig() error = %v", err)
+	}
+	cfg := parseRAGYAML(t, data)
+	keys := cfg.Pipelines[0].APIKeys
+
+	// Same provider (gemini) on both roles with the same key -> rag_llm's
+	// path takes precedence, same as the existing openai/anthropic behavior.
+	if keys == nil || keys.Gemini != "/app/keys/search_rag.key" {
+		t.Errorf("api_keys.gemini = %+v, want rag key path %q", keys, "/app/keys/search_rag.key")
+	}
+}
+
 func TestGenerateRAGConfig_OllamaNoAPIKey(t *testing.T) {
 	// ollama providers have no API key — api_keys section must be absent.
 	params := &RAGConfigParams{
