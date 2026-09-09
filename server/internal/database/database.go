@@ -48,6 +48,11 @@ type Database struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	State            DatabaseState
+	// RawState is the state as persisted in storage, before any derived
+	// adjustments (e.g. degrading State based on instance health). Callers
+	// that need to perform a guarded transition against the stored state
+	// (e.g. a compare-and-swap) should use this instead of State.
+	RawState         DatabaseState
 	Spec             *Spec
 	Instances        []*Instance
 	ServiceInstances []*ServiceInstance
@@ -71,13 +76,32 @@ func databaseToStored(d *Database) *StoredDatabase {
 	}
 }
 
+var degradedInstanceStates = ds.NewSet(
+	InstanceStateDegraded,
+	InstanceStateFailed,
+	InstanceStateUnknown,
+	InstanceStateStopped,
+)
+
 func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*Instance, serviceInstances []*ServiceInstance) *Database {
+	state := d.State
+
+	if state == DatabaseStateAvailable {
+		for _, instance := range instances {
+			if degradedInstanceStates.Has(instance.State) {
+				state = DatabaseStateDegraded
+				break
+			}
+		}
+	}
+
 	return &Database{
 		DatabaseID:       d.DatabaseID,
 		TenantID:         d.TenantID,
 		CreatedAt:        d.CreatedAt,
 		UpdatedAt:        d.UpdatedAt,
-		State:            d.State,
+		State:            state,
+		RawState:         d.State,
 		Spec:             storedSpec.Spec,
 		Instances:        instances,
 		ServiceInstances: serviceInstances,
@@ -95,7 +119,6 @@ func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, a
 	for _, instance := range allInstances {
 		instancesByID[instance.DatabaseID] = append(instancesByID[instance.DatabaseID], instance)
 	}
-
 	serviceInstancesByID := make(map[string][]*ServiceInstance, len(allServiceInstances))
 	for _, serviceInstance := range allServiceInstances {
 		serviceInstancesByID[serviceInstance.DatabaseID] = append(serviceInstancesByID[serviceInstance.DatabaseID], serviceInstance)

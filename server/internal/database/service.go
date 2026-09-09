@@ -77,6 +77,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 		CreatedAt:  now,
 		UpdatedAt:  now,
 		State:      DatabaseStateCreating,
+		RawState:   DatabaseStateCreating,
 		Spec:       spec,
 		NotCreated: true,
 	}

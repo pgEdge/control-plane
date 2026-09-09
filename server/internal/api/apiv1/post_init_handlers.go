@@ -493,7 +493,8 @@ func (s *PostInitHandlers) DeleteDatabase(ctx context.Context, req *api.DeleteDa
 		return nil, ErrDatabaseNotModifiable
 	}
 
-	prevState := db.State
+	// Use the raw stored state as the guard for this transition.
+	prevState := db.RawState
 	err = s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, prevState, database.DatabaseStateDeleting)
 	if err != nil {
 		return nil, apiErr(err)
