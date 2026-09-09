@@ -256,6 +256,7 @@ func waitForServiceRunning(
 	t.Helper()
 
 	deadline := time.Now().Add(maxWait)
+	var lastRunning *controlplane.ServiceInstance
 	for time.Now().Before(deadline) {
 		require.NoError(t, db.Refresh(ctx), "failed to refresh database")
 		for _, si := range db.ServiceInstances {
@@ -263,7 +264,17 @@ func waitForServiceRunning(
 				continue
 			}
 			if si.State == "running" {
-				return si
+				// State is flipped to "running" deterministically by the
+				// deploying resource as soon as the container starts, before
+				// ServiceInstanceMonitor's async health-check loop (which
+				// runs on its own ~10s cycle) has populated Status. Keep
+				// polling until Status/ImageVersion actually shows up so
+				// callers can rely on it being present rather than silently
+				// skipping checks that depend on it.
+				if si.Status != nil && si.Status.ImageVersion != nil {
+					return si
+				}
+				lastRunning = si
 			}
 			if si.State == "failed" {
 				var errMsg string
@@ -276,6 +287,9 @@ func waitForServiceRunning(
 		time.Sleep(5 * time.Second)
 	}
 
+	if lastRunning != nil {
+		t.Fatalf("service instance %s reached running state but status/image version was never populated within %s", serviceInstanceID, maxWait)
+	}
 	t.Fatalf("service instance %s did not reach running state within %s", serviceInstanceID, maxWait)
 	return nil
 }
@@ -823,9 +837,9 @@ func TestProvisionRAGServicePinnedVersion200(t *testing.T) {
 
 	t.Log("Waiting for RAG service to be running")
 	si = waitForServiceRunning(ctx, t, db, si.ServiceInstanceID, 8*time.Minute)
-	if si.Status != nil && si.Status.ImageVersion != nil {
-		assert.Contains(t, *si.Status.ImageVersion, "2.0.0", "running container should use the pinned 2.0.0 image")
-	}
+	require.NotNil(t, si.Status, "service instance status should be populated once running")
+	require.NotNil(t, si.Status.ImageVersion, "service instance image version should be populated once running")
+	assert.Contains(t, *si.Status.ImageVersion, "2.0.0", "running container should use the pinned 2.0.0 image")
 }
 
 // TestUpdateRAGServiceVersion is the PLAT-715 regression test for RAG: it
@@ -939,7 +953,7 @@ func TestUpdateRAGServiceVersion(t *testing.T) {
 
 	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
 	si := waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 8*time.Minute)
-	if si.Status != nil && si.Status.ImageVersion != nil {
-		assert.Contains(t, *si.Status.ImageVersion, "2.0.0", "service should be running the new pinned version after update")
-	}
+	require.NotNil(t, si.Status, "service instance status should be populated once running")
+	require.NotNil(t, si.Status.ImageVersion, "service instance image version should be populated once running")
+	assert.Contains(t, *si.Status.ImageVersion, "2.0.0", "service should be running the new pinned version after update")
 }

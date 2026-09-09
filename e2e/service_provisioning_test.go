@@ -1052,9 +1052,9 @@ func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
 	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance")
 
 	si := waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 5*time.Minute)
-	if si.Status != nil && si.Status.ImageVersion != nil {
-		assert.Contains(t, *si.Status.ImageVersion, "1.1.0", "running container should use the pinned 1.1.0 image")
-	}
+	require.NotNil(t, si.Status, "service instance status should be populated once running")
+	require.NotNil(t, si.Status.ImageVersion, "service instance image version should be populated once running")
+	assert.Contains(t, *si.Status.ImageVersion, "1.1.0", "running container should use the pinned 1.1.0 image")
 }
 
 // TestUpdateMCPServiceVersion is the PLAT-715 regression test: it fetches a
@@ -1137,7 +1137,7 @@ func TestUpdateMCPServiceVersion(t *testing.T) {
 
 	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
 	si := waitForServiceRunning(ctx, t, db, db.ServiceInstances[0].ServiceInstanceID, 5*time.Minute)
-	if si.Status != nil && si.Status.ImageVersion != nil {
-		assert.Contains(t, *si.Status.ImageVersion, "1.1.0", "service should be running the new pinned version after update")
-	}
+	require.NotNil(t, si.Status, "service instance status should be populated once running")
+	require.NotNil(t, si.Status.ImageVersion, "service instance image version should be populated once running")
+	assert.Contains(t, *si.Status.ImageVersion, "1.1.0", "service should be running the new pinned version after update")
 }
