@@ -92,6 +92,7 @@ nav:
   - API:
       - OpenAPI: api/openapi.md
       - API Reference: api/reference.md
+      - Using Restish as a CLI: api/restish.md
   - Development:
       - Development Process: development/development.md
       - Automated End-to-End tests: development/e2e-tests.md
