@@ -1088,6 +1088,21 @@ func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 	if oldPgMajor != newPgMajor {
 		return fmt.Errorf("major version changed from %d to %d", oldPgMajor, newPgMajor)
 	}
+
+	oldSpockMajor, ok := old.SpockVersion.Major()
+	if !ok {
+		return errors.New("current spock version is missing its major component")
+	}
+	newSpockMajor, ok := new.SpockVersion.Major()
+	if !ok {
+		return errors.New("updated spock version is missing its major component")
+	}
+	if oldSpockMajor != newSpockMajor {
+		return fmt.Errorf(
+			"spock major version changed from %d to %d: changing the spock major version on an existing database is not supported",
+			oldSpockMajor, newSpockMajor,
+		)
+	}
 	return nil
 }
 
