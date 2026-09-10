@@ -61,7 +61,58 @@ func TestDnf(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expected, installed)
 	})
+
+	t.Run("installed packages with spock 6", func(t *testing.T) {
+		dnf := systemd.Dnf{
+			ExecCommand: systemd.MockExecCommand(t, testDnfPackageListSpock60, "", nil),
+		}
+		expected := []*systemd.InstalledPostgres{
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "17",
+					Version:       ds.MustParseVersion("17.9"),
+					Name:          "pgedge-postgresql17",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "17",
+						Version:       ds.MustParseVersion("5.0.7"),
+						Name:          "pgedge-spock50_17",
+					},
+					{
+						PostgresMajor: "17",
+						Version:       ds.MustParseVersion("6.0.0"),
+						Name:          "pgedge-spock60_17",
+					},
+				},
+			},
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "18",
+					Version:       ds.MustParseVersion("18.3"),
+					Name:          "pgedge-postgresql18",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "18",
+						Version:       ds.MustParseVersion("6.0.0"),
+						Name:          "pgedge-spock60_18",
+					},
+				},
+			},
+		}
+		installed, err := dnf.InstalledPostgresVersions(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, expected, installed)
+	})
 }
+
+const testDnfPackageListSpock60 = `pgedge-postgresql17 17.9-1.el9
+pgedge-spock50_17 5.0.7-1.el9
+pgedge-spock60_17 6.0.0-1.el9
+pgedge-postgresql18 18.3-1.el9
+pgedge-spock60_18 6.0.0-1.el9
+`
 
 const testDnfPackageList = `gawk-all-langpacks 5.1.0
 setup 2.13.7

@@ -266,18 +266,17 @@ value in `orchestrator_opts.swarm.image` when creating the database:
 
 ### Spock 6 Preview Images
 
-Spock 6 is available as a preview manifest entry (`"stability": "dev"`
-in the version manifest), currently paired with Postgres 18.6. Spock 6
-itself supports Postgres 15 through 19; the version manifest currently
-offers only this one Postgres 18.6 pairing as a preview. This preview
-is available for Docker Swarm deployments only; the systemd
-orchestrator does not currently support Spock 6 packages.
+Spock 6 is available as a preview on both Docker Swarm and systemd
+deployments. Spock 6 itself supports Postgres 15 through 19.
 
-Preview entries are excluded from image upgrades (see below) and are
-never chosen for a database that omits `postgres_version` and
-`spock_version`. To create a new database on the Spock 6 preview
-image, set `postgres_version` and `spock_version` to match the
-manifest entry:
+On Docker Swarm, Spock 6 is available as a preview manifest entry
+(`"stability": "dev"` in the version manifest), currently paired with
+Postgres 18.6; the version manifest currently offers only this one
+Postgres 18.6 pairing as a preview. Preview entries are excluded from
+image upgrades (see below) and are never chosen for a database that
+omits `postgres_version` and `spock_version`. To create a new database
+on the Spock 6 preview image, set `postgres_version` and
+`spock_version` to match the manifest entry:
 
 === "curl"
 
@@ -309,6 +308,20 @@ Overriding `orchestrator_opts.swarm.image` is only necessary if you need
 an image other than the manifest default for that version pair, such as
 pinning a specific build. See
 [Using a Custom Image](#using-a-custom-image).
+
+On systemd, there's no version manifest or image to pin — install the
+Spock 6 packages (`pgedge-spock60_<postgres-major>` on RPM-based
+distributions, `pgedge-postgresql-<postgres-major>-spock60` on
+Debian/Ubuntu) from the pgEdge repositories alongside the matching
+`pgedge-postgresql*` package, following the same steps as
+[Installing via systemd](../installation/systemd-installation.md).
+Once installed, request the preview the same way, setting
+`spock_version` to `"6"`. Unlike the Swarm manifest, systemd has no
+automatic exclusion of preview versions from a database that omits
+`spock_version` — a host advertises whatever Spock major/Postgres
+major combinations it has packages installed for, and the highest
+combination becomes that host's default. Only install the Spock 6
+packages on hosts where you intend to opt into the preview.
 
 !!! note
 

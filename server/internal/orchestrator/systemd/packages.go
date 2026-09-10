@@ -13,7 +13,7 @@ import (
 
 var (
 	supportedPostgresVersions = []string{"16", "17", "18"}
-	supportedSpockVersions    = []string{"50"}
+	supportedSpockVersions    = []string{"50", "60"}
 )
 
 type InstalledPackage struct {

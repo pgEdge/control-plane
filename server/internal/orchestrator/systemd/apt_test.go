@@ -62,7 +62,58 @@ func TestApt(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expected, installed)
 	})
+
+	t.Run("installed packages with spock 6", func(t *testing.T) {
+		apt := systemd.Apt{
+			ExecCommand: systemd.MockExecCommand(t, testAptPackageListSpock60, "", nil),
+		}
+		expected := []*systemd.InstalledPostgres{
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "17",
+					Version:       ds.MustParseVersion("17.9"),
+					Name:          "pgedge-postgresql-17",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "17",
+						Version:       ds.MustParseVersion("5.0.7"),
+						Name:          "pgedge-postgresql-17-spock50",
+					},
+					{
+						PostgresMajor: "17",
+						Version:       ds.MustParseVersion("6.0.0"),
+						Name:          "pgedge-postgresql-17-spock60",
+					},
+				},
+			},
+			{
+				Postgres: &systemd.InstalledPackage{
+					PostgresMajor: "18",
+					Version:       ds.MustParseVersion("18.3"),
+					Name:          "pgedge-postgresql-18",
+				},
+				Spock: []*systemd.InstalledPackage{
+					{
+						PostgresMajor: "18",
+						Version:       ds.MustParseVersion("6.0.0"),
+						Name:          "pgedge-postgresql-18-spock60",
+					},
+				},
+			},
+		}
+		installed, err := apt.InstalledPostgresVersions(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, expected, installed)
+	})
 }
+
+const testAptPackageListSpock60 = `pgedge-postgresql-17 17.9-1.noble
+pgedge-postgresql-17-spock50 5.0.7-1.noble
+pgedge-postgresql-17-spock60 6.0.0~beta1-1.noble
+pgedge-postgresql-18 18.3-1.noble
+pgedge-postgresql-18-spock60 6.0.0~beta1-1.noble
+`
 
 const testAptPackageList = `adduser 3.137ubuntu1
 apparmor 4.0.1really4.0.1-0ubuntu0.24.04.5

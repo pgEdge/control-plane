@@ -50,12 +50,23 @@
     replace: release
   when: not (use_staging_packages | bool)
   register: repo_reconfigured_to_release
+- name: Track configured Spock major for reinstall detection
+  ansible.builtin.copy:
+    content: "{{ spock_major | default('50') }}"
+    dest: /etc/pgedge-control-plane-dev-spock-major
+  register: spock_major_reconfigured
+- name: Remove all known Spock packages before switching Spock major
+  ansible.builtin.package:
+    name: '{{ item }}'
+    state: absent
+  loop: '{{ pgedge_all_spock_packages }}'
+  when: spock_major_reconfigured.changed
 - name: Remove pgEdge packages for reinstall
   ansible.builtin.package:
     name: '{{ item }}'
     state: absent
   loop: '{{ pgedge_packages }}'
-  when: repo_reconfigured_to_staging.changed or repo_reconfigured_to_release.changed
+  when: repo_reconfigured_to_staging.changed or repo_reconfigured_to_release.changed or spock_major_reconfigured.changed
 - name: Install pgEdge packages
   ansible.builtin.package:
     name: '{{ item }}'
