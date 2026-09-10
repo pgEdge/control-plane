@@ -1,10 +1,16 @@
 DEV_LIMA_OS ?= rocky-9
 DEV_LIMA_USE_STAGING_PACKAGES ?= false
+# Spock major installed on the fixture (e.g. "50" or "60"). Spock major
+# packages conflict with each other at the package-manager level (a host can
+# only have one Spock major installed per Postgres major), so this selects
+# one for the whole fixture rather than installing every major side-by-side.
+DEV_LIMA_SPOCK_MAJOR ?= 50
 
 ansible_playbook=ansible-playbook \
 	--extra-vars='@vars.yaml' \
 	--extra-vars='os=$(DEV_LIMA_OS)' \
-	--extra-vars='use_staging_packages=$(DEV_LIMA_USE_STAGING_PACKAGES)'
+	--extra-vars='use_staging_packages=$(DEV_LIMA_USE_STAGING_PACKAGES)' \
+	--extra-vars='spock_major=$(DEV_LIMA_SPOCK_MAJOR)'
 
 .PHONY: quit
 quit:
