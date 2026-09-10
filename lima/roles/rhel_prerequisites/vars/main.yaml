@@ -14,9 +14,9 @@ pgedge_packages:
   - pgedge-postgresql18
   - pgedge-postgresql17
   - pgedge-postgresql16
-  - pgedge-spock50_18
-  - pgedge-spock50_17
-  - pgedge-spock50_16
+  - "pgedge-spock{{ spock_major | default('50') }}_18"
+  - "pgedge-spock{{ spock_major | default('50') }}_17"
+  - "pgedge-spock{{ spock_major | default('50') }}_16"
   - pgedge-snowflake_18
   - pgedge-snowflake_17
   - pgedge-snowflake_16
@@ -28,3 +28,15 @@ pgedge_packages:
   - pgedge-postgresql16-contrib
   - pgedge-patroni
   - pgedge-pgbackrest
+# Every known Spock major's packages, regardless of which one spock_major
+# currently selects. Spock majors conflict with each other at the
+# package-manager level, so switching spock_major on an already-provisioned
+# host requires uninstalling every other major first (see "Remove all known
+# Spock packages" in tasks/main.yaml) -- add new majors here as they ship.
+pgedge_all_spock_packages:
+  - pgedge-spock50_18
+  - pgedge-spock50_17
+  - pgedge-spock50_16
+  - pgedge-spock60_18
+  - pgedge-spock60_17
+  - pgedge-spock60_16

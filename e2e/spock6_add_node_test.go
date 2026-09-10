@@ -20,12 +20,18 @@ import (
 const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
 
 // TestSpock6AddNode validates the add-node workflow end-to-end against a
-// real Spock 6 cluster: creates a 2-node database pinned to a Spock 6 dev
-// image via orchestrator_opts.swarm.image (bypassing manifest version
-// constraints, since spock6 manifest entries are deliberately "dev"
-// stability and never auto-selected), adds a 3rd node, and confirms the
-// full mesh reaches "replicating" — exercising the Spock-major-gated
-// spock.progress query (PeerCatchupResource).
+// real Spock 6 cluster, adds a 3rd node, and confirms the full mesh reaches
+// "replicating" — exercising the Spock-major-gated spock.progress query
+// (PeerCatchupResource).
+//
+// On Docker Swarm, Spock 6 is only available as a "dev" stability manifest
+// entry that's never auto-selected, so the database is pinned to a Spock 6
+// dev image via orchestrator_opts.swarm.image, bypassing manifest version
+// constraints. On systemd there's no manifest or per-node image pin — the
+// Spock 6 packages just need to be installed on the host, discovered by
+// version, and requested via spock_version; postgres_version is left for the
+// server to default so the test doesn't need to track exact installed
+// package versions.
 func TestSpock6AddNode(t *testing.T) {
 	t.Parallel()
 
@@ -40,13 +46,20 @@ func TestSpock6AddNode(t *testing.T) {
 
 	hostIDs := fixture.HostIDs()
 
+	var postgresVersion *string
+	var orchestratorOpts *controlplane.OrchestratorOpts
+	if fixture.Orchestrator() != "systemd" {
+		postgresVersion = pointerTo("18.6")
+		orchestratorOpts = &controlplane.OrchestratorOpts{
+			Swarm: &controlplane.SwarmOpts{Image: pointerTo(spock6DevImage)},
+		}
+	}
+
 	nodeSpec := func(name, hostID string) *controlplane.DatabaseNodeSpec {
 		return &controlplane.DatabaseNodeSpec{
-			Name:    name,
-			HostIds: []controlplane.Identifier{controlplane.Identifier(hostID)},
-			OrchestratorOpts: &controlplane.OrchestratorOpts{
-				Swarm: &controlplane.SwarmOpts{Image: pointerTo(spock6DevImage)},
-			},
+			Name:             name,
+			HostIds:          []controlplane.Identifier{controlplane.Identifier(hostID)},
+			OrchestratorOpts: orchestratorOpts,
 		}
 	}
 
@@ -54,7 +67,7 @@ func TestSpock6AddNode(t *testing.T) {
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
 			DatabaseName:    dbName,
-			PostgresVersion: pointerTo("18.6"),
+			PostgresVersion: postgresVersion,
 			SpockVersion:    pointerTo("6"),
 			Port:            pointerTo(0),
 			PatroniPort:     pointerTo(0),
