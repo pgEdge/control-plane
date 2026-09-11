@@ -286,6 +286,35 @@ func (o *OrchestratorOpts) Clone() *OrchestratorOpts {
 	}
 }
 
+// swarmImage returns the swarm image override configured in o, or "" if none
+// is set.
+func (o *OrchestratorOpts) swarmImage() string {
+	if o == nil || o.Swarm == nil {
+		return ""
+	}
+	return o.Swarm.Image
+}
+
+// versionsFromImage parses the Postgres and Spock versions encoded in a
+// pgEdge image tag (e.g. "16.14-spock5.0.10-standard-1"), normalized to the
+// major.minor / major format used elsewhere in the API (e.g. "16.14" / "5").
+// Returns ok=false if the image is empty or doesn't follow the recognized
+// pgEdge tag format (e.g. a dev build).
+func versionsFromImage(image string) (postgresVersion, spockVersion string, ok bool) {
+	if image == "" {
+		return "", "", false
+	}
+	pgVer, spockVer, ok := ds.ParseImageTag(image)
+	if !ok {
+		return "", "", false
+	}
+	normalized, err := (&ds.PgEdgeVersion{PostgresVersion: pgVer, SpockVersion: spockVer}).Normalize()
+	if err != nil {
+		return "", "", false
+	}
+	return normalized.PostgresVersion.String(), normalized.SpockVersion.String(), true
+}
+
 func (d *SwarmOpts) Clone() *SwarmOpts {
 	if d == nil {
 		return nil
