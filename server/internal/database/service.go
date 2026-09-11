@@ -585,6 +585,19 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	if err != nil {
 		return fmt.Errorf("unable to find greatest common default version among specified hosts: %w", err)
 	}
+	// If the user supplied an image override, prefer the versions encoded in
+	// its tag over the host default so the image and spec version don't end
+	// up in conflict.
+	if spec.PostgresVersion == "" || spec.SpockVersion == "" {
+		if pgVer, spockVer, ok := versionsFromImage(spec.OrchestratorOpts.swarmImage()); ok {
+			if spec.PostgresVersion == "" {
+				spec.PostgresVersion = pgVer
+			}
+			if spec.SpockVersion == "" {
+				spec.SpockVersion = spockVer
+			}
+		}
+	}
 	if spec.PostgresVersion == "" {
 		spec.PostgresVersion = defaultVersion.PostgresVersion.String()
 	}
@@ -605,6 +618,13 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	}
 	// Second pass on nodes to validate node-level overrides
 	for idx, node := range spec.Nodes {
+		// A node-level image override similarly implies its own Postgres
+		// version if one isn't otherwise specified for the node.
+		if node.PostgresVersion == "" {
+			if pgVer, _, ok := versionsFromImage(node.OrchestratorOpts.swarmImage()); ok {
+				node.PostgresVersion = pgVer
+			}
+		}
 		for _, hostID := range node.HostIDs {
 			h, ok := hostsByID[hostID]
 			if !ok {
