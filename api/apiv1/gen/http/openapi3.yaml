@@ -3190,6 +3190,7 @@ paths:
                 default_pgedge_version:
                   postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 etcd_mode: server
                 id: 76f9b8c0-4958-11f0-a489-3bb29577c696
                 memory: 16GiB
@@ -3210,8 +3211,10 @@ paths:
                 supported_pgedge_versions:
                   - postgres_version: "17.6"
                     spock_version: "5"
+                    stability: stable
                   - postgres_version: "17.6"
                     spock_version: "5"
+                    stability: stable
         "400":
           description: 'invalid_input: Bad Request response.'
           content:
@@ -19002,10 +19005,13 @@ components:
           example:
             - postgres_version: "17.6"
               spock_version: "5"
+              stability: stable
             - postgres_version: "17.6"
               spock_version: "5"
+              stability: stable
             - postgres_version: "17.6"
               spock_version: "5"
+              stability: stable
       example:
         client_addresses:
           - 10.24.34.2
@@ -19019,6 +19025,7 @@ components:
         default_pgedge_version:
           postgres_version: "17.6"
           spock_version: "5"
+          stability: stable
         etcd_mode: server
         id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         memory: 16GiB
@@ -19045,12 +19052,16 @@ components:
         supported_pgedge_versions:
           - postgres_version: "17.6"
             spock_version: "5"
+            stability: stable
           - postgres_version: "17.6"
             spock_version: "5"
+            stability: stable
           - postgres_version: "17.6"
             spock_version: "5"
+            stability: stable
           - postgres_version: "17.6"
             spock_version: "5"
+            stability: stable
       required:
         - id
         - orchestrator
@@ -19905,6 +19916,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               etcd_mode: server
               id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               memory: 16GiB
@@ -19931,10 +19943,13 @@ components:
               supported_pgedge_versions:
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
             - client_addresses:
                 - 10.24.34.2
                 - i-0123456789abcdef.ec2.internal
@@ -19947,6 +19962,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               etcd_mode: server
               id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               memory: 16GiB
@@ -19973,10 +19989,13 @@ components:
               supported_pgedge_versions:
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
             - client_addresses:
                 - 10.24.34.2
                 - i-0123456789abcdef.ec2.internal
@@ -19989,6 +20008,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               etcd_mode: server
               id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               memory: 16GiB
@@ -20015,10 +20035,13 @@ components:
               supported_pgedge_versions:
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
                 - postgres_version: "17.6"
                   spock_version: "5"
+                  stability: stable
       description: Response containing the list of hosts
       example:
         hosts:
@@ -20034,6 +20057,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+              stability: stable
             etcd_mode: server
             id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             memory: 16GiB
@@ -20060,10 +20084,13 @@ components:
             supported_pgedge_versions:
               - postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               - postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               - postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
           - client_addresses:
               - 10.24.34.2
               - i-0123456789abcdef.ec2.internal
@@ -20076,6 +20103,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+              stability: stable
             etcd_mode: server
             id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             memory: 16GiB
@@ -20102,10 +20130,13 @@ components:
             supported_pgedge_versions:
               - postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               - postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
               - postgres_version: "17.6"
                 spock_version: "5"
+                stability: stable
       required:
         - hosts
     ListTasksResponse:
@@ -20203,9 +20234,20 @@ components:
           type: string
           description: The Spock major version.
           example: "5"
+        stability:
+          type: string
+          description: Release stability of the manifest image backing this version. Only `stable` is selected automatically for a new database; `stable`, `rc`, and `deprecated` may be applied as an explicit image upgrade; `beta` and `dev` are opt-in for new databases only. `dev` is a mutable tag whose contents can change under a running deployment. May be absent for hosts that do not report it.
+          example: stable
+          enum:
+            - stable
+            - rc
+            - beta
+            - dev
+            - deprecated
       example:
         postgres_version: "17.6"
         spock_version: "5"
+        stability: stable
       required:
         - postgres_version
         - spock_version

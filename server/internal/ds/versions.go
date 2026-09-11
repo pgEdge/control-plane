@@ -206,15 +206,77 @@ func ParseVersion(s string) (*Version, error) {
 	return &Version{Components: components, PreRelease: m[2]}, nil
 }
 
+// Stability indicates the release stability of a manifest image entry.
+//
+// From least to most mature:
+//
+//   - StabilityDev: a mutable channel tag. Its contents can change under a
+//     running deployment and its declared postgres_version can drift from what
+//     the tag resolves to.
+//   - StabilityBeta: a feature-complete pre-release, immutable build. Defined
+//     for completeness.
+//   - StabilityRC: a release candidate, immutable build believed to be
+//     GA-quality.
+//   - StabilityStable: generally available.
+//   - StabilityDeprecated: still resolvable and still supported for existing
+//     databases, but should not be chosen for a new database.
+type Stability string
+
+const (
+	StabilityDev        Stability = "dev"
+	StabilityBeta       Stability = "beta"
+	StabilityRC         Stability = "rc"
+	StabilityStable     Stability = "stable"
+	StabilityDeprecated Stability = "deprecated"
+)
+
+func (s Stability) Normalized() Stability {
+	if s == "" {
+		return StabilityStable
+	}
+	return s
+}
+
+// AllowedAsDefault reports whether an entry with this stability may be the
+// manifest default (the image chosen when a create request omits the version).
+// Only stable entries qualify.
+func (s Stability) AllowedAsDefault() bool {
+	return s.Normalized() == StabilityStable
+}
+
+// OfferedForUpgrade reports whether an entry with this stability is surfaced in
+// a database's available_upgrades list. Only stable entries are.
+func (s Stability) OfferedForUpgrade() bool {
+	return s.Normalized() == StabilityStable
+}
+
+// AllowedAsUpgradeTarget reports whether an operator may apply an image upgrade
+// to an entry with this stability when they name it explicitly. Stable and rc
+// qualify (an rc is the exact bits intended for GA), as does deprecated (so a
+// database can be moved along a sunset line). Dev and beta do not.
+func (s Stability) AllowedAsUpgradeTarget() bool {
+	switch s.Normalized() {
+	case StabilityStable, StabilityRC, StabilityDeprecated:
+		return true
+	default:
+		return false
+	}
+}
+
 type PgEdgeVersion struct {
 	PostgresVersion *Version `json:"postgres_version"`
 	SpockVersion    *Version `json:"spock_version"`
+	// Stability is the release stability of the manifest image backing this
+	// version. Empty when the host does not report one (eg. the systemd
+	// orchestrator); treat empty as stable.
+	Stability Stability `json:"stability,omitempty"`
 }
 
 func (v *PgEdgeVersion) Clone() *PgEdgeVersion {
 	return &PgEdgeVersion{
 		PostgresVersion: v.PostgresVersion.Clone(),
 		SpockVersion:    v.SpockVersion.Clone(),
+		Stability:       v.Stability,
 	}
 }
 
