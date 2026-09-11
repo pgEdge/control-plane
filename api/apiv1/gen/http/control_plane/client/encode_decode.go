@@ -4365,6 +4365,7 @@ func unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v *PgEdgeVers
 	res := &controlplane.PgEdgeVersion{
 		PostgresVersion: *v.PostgresVersion,
 		SpockVersion:    *v.SpockVersion,
+		Stability:       v.Stability,
 	}
 
 	return res

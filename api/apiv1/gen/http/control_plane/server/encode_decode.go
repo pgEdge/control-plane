@@ -3699,6 +3699,7 @@ func marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(v *controlplane
 	res := &PgEdgeVersionResponseBody{
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
+		Stability:       v.Stability,
 	}
 
 	return res

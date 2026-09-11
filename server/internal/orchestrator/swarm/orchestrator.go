@@ -333,8 +333,8 @@ func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string
 	if !ok {
 		return nil, fmt.Errorf("%w: image not found in manifest: %s", database.ErrUpgradeNotAvailable, targetImage)
 	}
-	if img.Stability != "" && img.Stability != "stable" {
-		return nil, fmt.Errorf("%w: target image stability is %q, must be stable", database.ErrUpgradeNotAvailable, img.Stability)
+	if !ds.Stability(img.Stability).AllowedAsUpgradeTarget() {
+		return nil, fmt.Errorf("%w: target image stability %q is not eligible as an upgrade target", database.ErrUpgradeNotAvailable, img.Stability)
 	}
 
 	currentPGMajor, ok := current.PostgresVersion.Major()

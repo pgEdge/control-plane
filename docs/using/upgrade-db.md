@@ -234,11 +234,15 @@ asynchronously.
 
 !!! note
 
-    The target image must be a stable manifest entry in the same Postgres major
-    and Spock major bucket as the database’s current version, and must be
-    strictly newer than the currently running image. Same-version or downgrade
-    requests are rejected. To upgrade to a different Postgres major version,
-    see [Major Version Upgrades](#major-version-upgrades).
+    The target image must be a manifest entry whose
+    [stability](./image-management.md#image-stability) allows it as an upgrade
+    target - `stable`, `rc`, or `deprecated` - in the same Postgres major and
+    Spock major bucket as the database’s current version, and must be strictly
+    newer than the currently running image. `beta` and `dev` entries, and
+    same-version or downgrade requests, are rejected. Only `stable` entries
+    appear in `available_upgrades`; to apply an `rc` or `deprecated` target you
+    supply its image reference yourself. To upgrade to a different Postgres
+    major version, see [Major Version Upgrades](#major-version-upgrades).
 
 ## Which Versions Are Available
 
