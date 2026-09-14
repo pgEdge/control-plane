@@ -131,10 +131,6 @@ nfpms:
     formats: [deb]
     release: "1.noble"
   - <<: *nfpm_defaults
-    id: bullseye
-    formats: [deb]
-    release: "1.bullseye"
-  - <<: *nfpm_defaults
     id: bookworm
     formats: [deb]
     release: "1.bookworm"
