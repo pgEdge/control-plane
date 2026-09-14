@@ -278,12 +278,10 @@ where committing it (or `git add -A`, or a stray backup) could leak one.
       tmpfile=$(mktemp)
       trap 'rm -f "$tmpfile"' EXIT
       restish pgedge get-database example | jq '{ id, spec }' > "$tmpfile"
-      jq empty "$tmpfile"
       mv "$tmpfile" databases/example.json
     )
     ```
 
     The redirect writes to a tmpfile first; `databases/example.json` is
-    replaced only after `get-database` succeeds (`set -e` plus
-    `pipefail`) and `jq empty` confirms the output parses as JSON, and the
-    `mv` swaps it in atomically.
+    replaced only after `get-database` and `jq` both succeed (`set -e`
+    plus `pipefail`), and the `mv` swaps it in atomically.
