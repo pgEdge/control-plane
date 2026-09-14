@@ -380,6 +380,10 @@ func buildVersions(cfg config.Config, mf *versionManifest) (*Versions, error) {
 			return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: %w",
 				e.PostgresVersion, e.SpockVersion, err)
 		}
+		if !ds.Stability(e.Stability).Valid() {
+			return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: unrecognized stability %q",
+				e.PostgresVersion, e.SpockVersion, e.Stability)
+		}
 		pv.Stability = ds.Stability(e.Stability).Normalized()
 		img := &Images{
 			PgEdgeImage: serviceImageTag(cfg, e.Image),

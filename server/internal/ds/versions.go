@@ -237,6 +237,15 @@ func (s Stability) Normalized() Stability {
 	return s
 }
 
+func (s Stability) Valid() bool {
+	switch s.Normalized() {
+	case StabilityDev, StabilityBeta, StabilityRC, StabilityStable, StabilityDeprecated:
+		return true
+	default:
+		return false
+	}
+}
+
 // AllowedAsDefault reports whether an entry with this stability may be the
 // manifest default (the image chosen when a create request omits the version).
 // Only stable entries qualify.
