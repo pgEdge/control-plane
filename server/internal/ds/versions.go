@@ -328,6 +328,7 @@ func (v *PgEdgeVersion) Normalize() (*PgEdgeVersion, error) {
 	return &PgEdgeVersion{
 		PostgresVersion: pv,
 		SpockVersion:    sv,
+		Stability:       v.Stability,
 	}, nil
 }
 

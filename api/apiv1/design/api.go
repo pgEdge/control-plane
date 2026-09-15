@@ -310,7 +310,7 @@ var _ = g.Service("control-plane", func() {
 	})
 
 	g.Method("apply-upgrade", func() {
-		g.Description("Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.")
+		g.Description("Applies a minor-version upgrade to a database. The target image must be a manifest entry whose stability allows it as an upgrade target (stable, rc, or deprecated) in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.")
 		g.Meta("openapi:summary", "Apply database upgrade")
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {

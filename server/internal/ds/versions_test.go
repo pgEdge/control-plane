@@ -380,6 +380,15 @@ func TestPgEdgeVersion(t *testing.T) {
 			SpockVersion:    &ds.Version{Components: []uint64{5, 0, 0}},
 		}, out)
 	})
+
+	t.Run("Normalize preserves stability", func(t *testing.T) {
+		version := ds.MustParsePgEdgeVersion("17.6.3", "5.0.0")
+		version.Stability = ds.StabilityRC
+
+		normalized, err := version.Normalize()
+		assert.NoError(t, err)
+		assert.Equal(t, ds.StabilityRC, normalized.Stability)
+	})
 }
 
 func TestVersionConstraint_IsSatisfied(t *testing.T) {

@@ -40,7 +40,8 @@ type Service interface {
 	// Updates a database with the given specification.
 	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *UpdateDatabaseResponse, err error)
 	// Applies a minor-version upgrade to a database. The target image must be a
-	// stable manifest entry in the same Postgres major / Spock major bucket as the
+	// manifest entry whose stability allows it as an upgrade target (stable, rc,
+	// or deprecated) in the same Postgres major / Spock major bucket as the
 	// current version and strictly newer. Container pull and restart happen
 	// asynchronously; this endpoint returns once redeployment is triggered.
 	ApplyUpgrade(context.Context, *ApplyUpgradePayload) (res *ApplyUpgradeResponse, err error)
@@ -116,8 +117,9 @@ type ApplyUpgradePayload struct {
 
 type ApplyUpgradeRequest struct {
 	// Full container image reference of the upgrade target. Must match the image
-	// field of a stable manifest entry in the same Postgres major / Spock major
-	// bucket as the current version and be strictly newer.
+	// field of a manifest entry whose stability allows it as an upgrade target
+	// (stable, rc, or deprecated) in the same Postgres major / Spock major bucket
+	// as the current version and be strictly newer.
 	Image string `json:"image"`
 }
 

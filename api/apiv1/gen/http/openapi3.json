@@ -4210,7 +4210,7 @@
           "Database"
         ],
         "summary": "Apply database upgrade",
-        "description": "Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.",
+        "description": "Applies a minor-version upgrade to a database. The target image must be a manifest entry whose stability allows it as an upgrade target (stable, rc, or deprecated) in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.",
         "operationId": "apply-upgrade",
         "parameters": [
           {
@@ -5728,7 +5728,7 @@
         "properties": {
           "image": {
             "type": "string",
-            "description": "Full container image reference of the upgrade target. Must match the image field of a stable manifest entry in the same Postgres major / Spock major bucket as the current version and be strictly newer.",
+            "description": "Full container image reference of the upgrade target. Must match the image field of a manifest entry whose stability allows it as an upgrade target (stable, rc, or deprecated) in the same Postgres major / Spock major bucket as the current version and be strictly newer.",
             "example": "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1",
             "minLength": 1
           }

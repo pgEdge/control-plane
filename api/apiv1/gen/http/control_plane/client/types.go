@@ -60,8 +60,9 @@ type UpdateDatabaseRequestBody struct {
 // "apply-upgrade" endpoint HTTP request body.
 type ApplyUpgradeRequestBody struct {
 	// Full container image reference of the upgrade target. Must match the image
-	// field of a stable manifest entry in the same Postgres major / Spock major
-	// bucket as the current version and be strictly newer.
+	// field of a manifest entry whose stability allows it as an upgrade target
+	// (stable, rc, or deprecated) in the same Postgres major / Spock major bucket
+	// as the current version and be strictly newer.
 	Image string `json:"image"`
 }
 
