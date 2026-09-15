@@ -1027,6 +1027,16 @@ func ValidateChangedSpec(current, updated *Spec) error {
 		errs = append(errs, errors.New("database name cannot be changed"))
 	}
 
+	// Spock version is a database-wide property (every node inherits
+	// Spec.SpockVersion; there's no per-node override), so it's checked once
+	// here rather than per-instance. Checking it per-instance would miss a
+	// major version change submitted alongside a HostIDs change, since that
+	// changes the instance ID and would no longer match between current and
+	// updated.
+	if err := spockMajorVersionChanged(current.SpockVersion, updated.SpockVersion); err != nil {
+		errs = append(errs, err)
+	}
+
 	currentInstances, err := instancesByID(current)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed to compute instances from current spec: %w", err))
@@ -1076,33 +1086,56 @@ func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 	if old == nil || new == nil {
 		return errors.New("expected both current and updated versions to be defined")
 	}
-	oldPgMajor, ok := old.PostgresVersion.Major()
-	if !ok {
-		return errors.New("current postgres version is missing its major component")
+	oldMajor, newMajor, err := extractMajors("postgres", old.PostgresVersion, new.PostgresVersion)
+	if err != nil {
+		return err
 	}
-	newPgMajor, ok := new.PostgresVersion.Major()
-	if !ok {
-		return errors.New("updated postgres version is missing its major component")
+	if oldMajor != newMajor {
+		return fmt.Errorf("major version changed from %d to %d", oldMajor, newMajor)
 	}
-	if oldPgMajor != newPgMajor {
-		return fmt.Errorf("major version changed from %d to %d", oldPgMajor, newPgMajor)
-	}
+	return nil
+}
 
-	oldSpockMajor, ok := old.SpockVersion.Major()
-	if !ok {
-		return errors.New("current spock version is missing its major component")
+// spockMajorVersionChanged rejects a Spock major version change on an
+// existing database. A Spock N subscription cannot sync from a Spock N-1
+// peer, so this must be caught here rather than left to fail at replication
+// time. It does not apply to a dedicated Spock upgrade workflow (PLAT-720),
+// which is expected to have its own validation.
+func spockMajorVersionChanged(current, updated string) error {
+	oldVersion, err := ds.ParseVersion(current)
+	if err != nil {
+		return fmt.Errorf("failed to parse current spock version: %w", err)
 	}
-	newSpockMajor, ok := new.SpockVersion.Major()
-	if !ok {
-		return errors.New("updated spock version is missing its major component")
+	newVersion, err := ds.ParseVersion(updated)
+	if err != nil {
+		return fmt.Errorf("failed to parse updated spock version: %w", err)
 	}
-	if oldSpockMajor != newSpockMajor {
+	oldMajor, newMajor, err := extractMajors("spock", oldVersion, newVersion)
+	if err != nil {
+		return err
+	}
+	if oldMajor != newMajor {
 		return fmt.Errorf(
 			"spock major version changed from %d to %d: changing the spock major version on an existing database is not supported",
-			oldSpockMajor, newSpockMajor,
+			oldMajor, newMajor,
 		)
 	}
 	return nil
+}
+
+// extractMajors returns the major version components of old and new, using
+// label to identify the version kind (e.g. "postgres", "spock") in error
+// messages if either is missing its major component.
+func extractMajors(label string, old, new *ds.Version) (uint64, uint64, error) {
+	oldMajor, ok := old.Major()
+	if !ok {
+		return 0, 0, fmt.Errorf("current %s version is missing its major component", label)
+	}
+	newMajor, ok := new.Major()
+	if !ok {
+		return 0, 0, fmt.Errorf("updated %s version is missing its major component", label)
+	}
+	return oldMajor, newMajor, nil
 }
 
 func tenantIDsMatch(a, b *string) bool {
