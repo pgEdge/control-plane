@@ -66,6 +66,17 @@ var PgEdgeVersion = g.Type("PgEdgeVersion", func() {
 		g.Example("5")
 		g.Meta("struct:tag:json", "spock_version")
 	})
+	g.Attribute("stability", g.String, func() {
+		g.Description("Release stability of the manifest image backing this version. " +
+			"Only `stable` is selected automatically for a new database; `stable`, " +
+			"`rc`, and `deprecated` may be applied as an explicit image upgrade; " +
+			"`beta` and `dev` are opt-in for new databases only. `dev` is a mutable " +
+			"tag whose contents can change under a running deployment. May be absent " +
+			"for hosts that do not report it.")
+		g.Enum("stable", "rc", "beta", "dev", "deprecated")
+		g.Example("stable")
+		g.Meta("struct:tag:json", "stability,omitempty")
+	})
 
 	g.Required("postgres_version", "spock_version")
 })

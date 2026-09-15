@@ -108,7 +108,7 @@ func (v *Versions) AvailableUpgrades(current *ds.PgEdgeVersion) []*database.Avai
 		if err != nil {
 			continue
 		}
-		if img.Stability != "" && img.Stability != "stable" {
+		if !ds.Stability(img.Stability).OfferedForUpgrade() {
 			continue
 		}
 		upgrades = append(upgrades, &database.AvailableUpgrade{

@@ -89,6 +89,7 @@ func hostToAPI(h *host.Host) *api.Host {
 		supportedVersions[i] = &api.PgEdgeVersion{
 			PostgresVersion: v.PostgresVersion.String(),
 			SpockVersion:    v.SpockVersion.String(),
+			Stability:       utils.NillablePointerTo(string(v.Stability)),
 		}
 	}
 	return &api.Host{
@@ -104,6 +105,7 @@ func hostToAPI(h *host.Host) *api.Host {
 		DefaultPgedgeVersion: &api.PgEdgeVersion{
 			PostgresVersion: h.DefaultPgEdgeVersion.PostgresVersion.String(),
 			SpockVersion:    h.DefaultPgEdgeVersion.SpockVersion.String(),
+			Stability:       utils.NillablePointerTo(string(h.DefaultPgEdgeVersion.Stability)),
 		},
 		SupportedPgedgeVersions: supportedVersions,
 		Status: &api.HostStatus{

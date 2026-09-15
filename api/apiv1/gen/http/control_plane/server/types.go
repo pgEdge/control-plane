@@ -60,8 +60,9 @@ type UpdateDatabaseRequestBody struct {
 // "apply-upgrade" endpoint HTTP request body.
 type ApplyUpgradeRequestBody struct {
 	// Full container image reference of the upgrade target. Must match the image
-	// field of a stable manifest entry in the same Postgres major / Spock major
-	// bucket as the current version and be strictly newer.
+	// field of a manifest entry whose stability allows it as an upgrade target
+	// (stable, rc, or deprecated) in the same Postgres major / Spock major bucket
+	// as the current version and be strictly newer.
 	Image *string `json:"image"`
 }
 
@@ -1765,6 +1766,13 @@ type PgEdgeVersionResponseBody struct {
 	PostgresVersion string `json:"postgres_version"`
 	// The Spock major version.
 	SpockVersion string `json:"spock_version"`
+	// Release stability of the manifest image backing this version. Only `stable`
+	// is selected automatically for a new database; `stable`, `rc`, and
+	// `deprecated` may be applied as an explicit image upgrade; `beta` and `dev`
+	// are opt-in for new databases only. `dev` is a mutable tag whose contents can
+	// change under a running deployment. May be absent for hosts that do not
+	// report it.
+	Stability *string `json:"stability,omitempty"`
 }
 
 // TaskResponseBody is used to define fields on response body types.

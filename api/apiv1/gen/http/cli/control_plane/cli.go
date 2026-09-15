@@ -467,7 +467,7 @@ func controlPlaneUsage() {
 	fmt.Fprintln(os.Stderr, `    create-database: Creates a new database in the cluster.`)
 	fmt.Fprintln(os.Stderr, `    get-database: Returns information about a particular database in the cluster.`)
 	fmt.Fprintln(os.Stderr, `    update-database: Updates a database with the given specification.`)
-	fmt.Fprintln(os.Stderr, `    apply-upgrade: Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.`)
+	fmt.Fprintln(os.Stderr, `    apply-upgrade: Applies a minor-version upgrade to a database. The target image must be a manifest entry whose stability allows it as an upgrade target (stable, rc, or deprecated) in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.`)
 	fmt.Fprintln(os.Stderr, `    delete-database: Deletes a database from the cluster.`)
 	fmt.Fprintln(os.Stderr, `    backup-database-node: Initiates a backup for a database node.`)
 	fmt.Fprintln(os.Stderr, `    switchover-database-node: Performs a planned switchover for a node's primary to a replica candidate.`)
@@ -718,7 +718,7 @@ func controlPlaneApplyUpgradeUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Applies a minor-version upgrade to a database. The target image must be a stable manifest entry in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.`)
+	fmt.Fprintln(os.Stderr, `Applies a minor-version upgrade to a database. The target image must be a manifest entry whose stability allows it as an upgrade target (stable, rc, or deprecated) in the same Postgres major / Spock major bucket as the current version and strictly newer. Container pull and restart happen asynchronously; this endpoint returns once redeployment is triggered.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -body JSON: `)

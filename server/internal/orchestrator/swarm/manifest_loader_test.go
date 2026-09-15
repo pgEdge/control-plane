@@ -638,6 +638,41 @@ func TestBuildVersions_RejectsDevDefault(t *testing.T) {
 	}
 }
 
+// TestBuildVersions_RejectsUnknownStability verifies that a manifest entry
+// carrying a stability value outside the declared enum fails loading
+func TestBuildVersions_RejectsUnknownStability(t *testing.T) {
+	m := &ManifestLoader{logger: testutils.Logger(t), cfg: config.Config{
+		DockerSwarm: config.DockerSwarm{ImageRepositoryHost: "ghcr.io/pgedge"},
+	}}
+	data, err := json.Marshal(map[string]any{
+		"schema_version": 1,
+		"images": map[string]any{
+			"postgres": []map[string]any{
+				{
+					"postgres_version": "18.4",
+					"spock_version":    "5",
+					"image":            "pgedge-postgres:18.4-spock5.0.10-standard-1",
+					"stability":        "stable",
+					"default":          true,
+				},
+				{
+					"postgres_version": "18.5",
+					"spock_version":    "5",
+					"image":            "pgedge-postgres:18.5-spock5.0.10-standard-1",
+					"stability":        "preview",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := m.parseManifestData(data); err == nil {
+		t.Fatal("expected error for an unrecognized stability value")
+	}
+}
+
 // TestBuildVersions_FallbackDefaultSkipsNonStable verifies that when no entry
 // is explicitly marked default, the implicit "last entry" fallback still
 // never selects a non-stable entry.

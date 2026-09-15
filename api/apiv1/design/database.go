@@ -1329,7 +1329,7 @@ var DeleteDatabaseResponse = g.Type("DeleteDatabaseResponse", func() {
 
 var ApplyUpgradeRequest = g.Type("ApplyUpgradeRequest", func() {
 	g.Attribute("image", g.String, func() {
-		g.Description("Full container image reference of the upgrade target. Must match the image field of a stable manifest entry in the same Postgres major / Spock major bucket as the current version and be strictly newer.")
+		g.Description("Full container image reference of the upgrade target. Must match the image field of a manifest entry whose stability allows it as an upgrade target (stable, rc, or deprecated) in the same Postgres major / Spock major bucket as the current version and be strictly newer.")
 		g.Example("ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.8-standard-1")
 		g.MinLength(1)
 		g.Meta("struct:tag:json", "image")

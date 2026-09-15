@@ -61,6 +61,36 @@ The following table describes each component of the image tag format:
 | `variant` | Image variant | `standard` |
 | `build` | Optional build number | `1`, `2` |
 
+### Image Stability
+
+Every manifest entry carries a `stability` value that tells the Control Plane
+how far along its release cycle the image is and what the Control Plane may do
+with it. The `/v1/hosts` response reports the `stability` of each entry in
+`supported_pgedge_versions` and `default_pgedge_version`.
+
+| Value | Meaning |
+| :--- | :--- |
+| `dev` | A mutable channel tag. Its contents can change under a running deployment, and its declared `postgres_version` can drift from what the tag actually resolves to. For evaluation only. |
+| `beta` | A feature-complete pre-release, immutable build. Behaviour may still change before general availability. |
+| `rc` | A release candidate: an immutable build believed to be production quality, published to catch last regressions. Promoted to `stable` unchanged if no blocker is found. |
+| `stable` | Generally available. |
+| `deprecated` | Still resolvable and still supported for existing databases, but should not be chosen for a new database. |
+
+An empty `stability` is treated as `stable`.
+
+The value controls three things:
+
+| Behaviour | Allowed for |
+| :--- | :--- |
+| Chosen automatically when a create request omits `postgres_version` / `spock_version` (the manifest default) | `stable` only |
+| Listed in a database's `available_upgrades` | `stable` only |
+| Accepted as the target of an explicit [image upgrade](./upgrade-db.md#image-upgrades) | `stable`, `rc`, `deprecated` |
+
+Any non-`stable` version is opt-in: it is never selected for you. To use one,
+set `postgres_version` and `spock_version` on the create request to match the
+manifest entry, or pin the image directly with
+[`orchestrator_opts.swarm.image`](#using-a-custom-image).
+
 ## Checking Available Images
 
 This section explains how to query the Control Plane for available Postgres
@@ -78,7 +108,8 @@ the `/v1/hosts` endpoint:
     ```
 
 The response includes a `supported_pgedge_versions` field for each host that
-lists the Postgres and Spock version combinations available on that host.
+lists the Postgres and Spock version combinations available on that host. Each
+entry carries a `stability` value (see [Image Stability](#image-stability)).
 
 ### Available Image Upgrades
 
@@ -266,8 +297,9 @@ value in `orchestrator_opts.swarm.image` when creating the database:
 
 ### Spock 6 Preview Images
 
-Spock 6 is available as a preview manifest entry (`"stability": "dev"`
-in the version manifest), currently paired with Postgres 18.6. Spock 6
+Spock 6 is available as a preview manifest entry with
+[`"stability": "dev"`](#image-stability), currently paired with Postgres
+18.6. Spock 6
 itself supports Postgres 15 through 19; the version manifest currently
 offers only this one Postgres 18.6 pairing as a preview. This preview
 is available for Docker Swarm deployments only; the systemd
