@@ -163,6 +163,10 @@ func (o *Orchestrator) FindUpgrade(_ *ds.PgEdgeVersion, _ string) (*database.Ava
 	return nil, fmt.Errorf("%w: install the target package via your OS package manager before applying an upgrade on systemd-managed databases", database.ErrUpgradeNotAvailable)
 }
 
+func (o *Orchestrator) FindMajorUpgrade(_ *ds.PgEdgeVersion, _, _ string) (*database.AvailableUpgrade, error) {
+	return nil, fmt.Errorf("%w: install the target package via your OS package manager before applying a major-version upgrade on systemd-managed databases", database.ErrUpgradeNotAvailable)
+}
+
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResources, error) {
 	paths, err := o.InstancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
 	if err != nil {

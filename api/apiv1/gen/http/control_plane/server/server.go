@@ -33,6 +33,7 @@ type Server struct {
 	GetDatabase            http.Handler
 	UpdateDatabase         http.Handler
 	ApplyUpgrade           http.Handler
+	ApplyMajorUpgrade      http.Handler
 	DeleteDatabase         http.Handler
 	BackupDatabaseNode     http.Handler
 	SwitchoverDatabaseNode http.Handler
@@ -98,6 +99,7 @@ func New(
 			{"GetDatabase", "GET", "/v1/databases/{database_id}"},
 			{"UpdateDatabase", "POST", "/v1/databases/{database_id}"},
 			{"ApplyUpgrade", "POST", "/v1/databases/{database_id}/upgrade"},
+			{"ApplyMajorUpgrade", "POST", "/v1/databases/{database_id}/upgrade-major"},
 			{"DeleteDatabase", "DELETE", "/v1/databases/{database_id}"},
 			{"BackupDatabaseNode", "POST", "/v1/databases/{database_id}/nodes/{node_name}/backups"},
 			{"SwitchoverDatabaseNode", "POST", "/v1/databases/{database_id}/nodes/{node_name}/switchover"},
@@ -130,6 +132,7 @@ func New(
 		GetDatabase:            NewGetDatabaseHandler(e.GetDatabase, mux, decoder, encoder, errhandler, formatter),
 		UpdateDatabase:         NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
 		ApplyUpgrade:           NewApplyUpgradeHandler(e.ApplyUpgrade, mux, decoder, encoder, errhandler, formatter),
+		ApplyMajorUpgrade:      NewApplyMajorUpgradeHandler(e.ApplyMajorUpgrade, mux, decoder, encoder, errhandler, formatter),
 		DeleteDatabase:         NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
 		BackupDatabaseNode:     NewBackupDatabaseNodeHandler(e.BackupDatabaseNode, mux, decoder, encoder, errhandler, formatter),
 		SwitchoverDatabaseNode: NewSwitchoverDatabaseNodeHandler(e.SwitchoverDatabaseNode, mux, decoder, encoder, errhandler, formatter),
@@ -169,6 +172,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetDatabase = m(s.GetDatabase)
 	s.UpdateDatabase = m(s.UpdateDatabase)
 	s.ApplyUpgrade = m(s.ApplyUpgrade)
+	s.ApplyMajorUpgrade = m(s.ApplyMajorUpgrade)
 	s.DeleteDatabase = m(s.DeleteDatabase)
 	s.BackupDatabaseNode = m(s.BackupDatabaseNode)
 	s.SwitchoverDatabaseNode = m(s.SwitchoverDatabaseNode)
@@ -206,6 +210,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetDatabaseHandler(mux, h.GetDatabase)
 	MountUpdateDatabaseHandler(mux, h.UpdateDatabase)
 	MountApplyUpgradeHandler(mux, h.ApplyUpgrade)
+	MountApplyMajorUpgradeHandler(mux, h.ApplyMajorUpgrade)
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
 	MountBackupDatabaseNodeHandler(mux, h.BackupDatabaseNode)
 	MountSwitchoverDatabaseNodeHandler(mux, h.SwitchoverDatabaseNode)
@@ -876,6 +881,59 @@ func NewApplyUpgradeHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "apply-upgrade")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountApplyMajorUpgradeHandler configures the mux to serve the
+// "control-plane" service "apply-major-upgrade" endpoint.
+func MountApplyMajorUpgradeHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/databases/{database_id}/upgrade-major", f)
+}
+
+// NewApplyMajorUpgradeHandler creates a HTTP handler which loads the HTTP
+// request and calls the "control-plane" service "apply-major-upgrade" endpoint.
+func NewApplyMajorUpgradeHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeApplyMajorUpgradeRequest(mux, decoder)
+		encodeResponse = EncodeApplyMajorUpgradeResponse(encoder)
+		encodeError    = EncodeApplyMajorUpgradeError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "apply-major-upgrade")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

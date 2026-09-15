@@ -69,6 +69,10 @@ type Client struct {
 	// apply-upgrade endpoint.
 	ApplyUpgradeDoer goahttp.Doer
 
+	// ApplyMajorUpgrade Doer is the HTTP client used to make requests to the
+	// apply-major-upgrade endpoint.
+	ApplyMajorUpgradeDoer goahttp.Doer
+
 	// DeleteDatabase Doer is the HTTP client used to make requests to the
 	// delete-database endpoint.
 	DeleteDatabaseDoer goahttp.Doer
@@ -171,6 +175,7 @@ func NewClient(
 		GetDatabaseDoer:            doer,
 		UpdateDatabaseDoer:         doer,
 		ApplyUpgradeDoer:           doer,
+		ApplyMajorUpgradeDoer:      doer,
 		DeleteDatabaseDoer:         doer,
 		BackupDatabaseNodeDoer:     doer,
 		SwitchoverDatabaseNodeDoer: doer,
@@ -483,6 +488,30 @@ func (c *Client) ApplyUpgrade() goa.Endpoint {
 		resp, err := c.ApplyUpgradeDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "apply-upgrade", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ApplyMajorUpgrade returns an endpoint that makes HTTP requests to the
+// control-plane service apply-major-upgrade server.
+func (c *Client) ApplyMajorUpgrade() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeApplyMajorUpgradeRequest(c.encoder)
+		decodeResponse = DecodeApplyMajorUpgradeResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildApplyMajorUpgradeRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ApplyMajorUpgradeDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "apply-major-upgrade", err)
 		}
 		return decodeResponse(resp)
 	}

@@ -1332,6 +1332,157 @@ func EncodeApplyUpgradeError(encoder func(context.Context, http.ResponseWriter) 
 	}
 }
 
+// EncodeApplyMajorUpgradeResponse returns an encoder for responses returned by
+// the control-plane apply-major-upgrade endpoint.
+func EncodeApplyMajorUpgradeResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ApplyMajorUpgradeResponse)
+		enc := encoder(ctx, w)
+		body := NewApplyMajorUpgradeResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeApplyMajorUpgradeRequest returns a decoder for requests sent to the
+// control-plane apply-major-upgrade endpoint.
+func DecodeApplyMajorUpgradeRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.ApplyMajorUpgradePayload, error) {
+	return func(r *http.Request) (*controlplane.ApplyMajorUpgradePayload, error) {
+		var (
+			body ApplyMajorUpgradeRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateApplyMajorUpgradeRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			databaseID string
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 36 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewApplyMajorUpgradePayload(&body, databaseID)
+
+		return payload, nil
+	}
+}
+
+// EncodeApplyMajorUpgradeError returns an encoder for errors returned by the
+// apply-major-upgrade control-plane endpoint.
+func EncodeApplyMajorUpgradeError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyMajorUpgradeClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyMajorUpgradeDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyMajorUpgradeOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyMajorUpgradeInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyMajorUpgradeNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewApplyMajorUpgradeServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeDeleteDatabaseResponse returns an encoder for responses returned by
 // the control-plane delete-database endpoint.
 func EncodeDeleteDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -3972,6 +4123,7 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
@@ -4600,6 +4752,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 	res := &DatabaseNodeSpecResponseBody{
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
@@ -5094,6 +5247,7 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
 		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,

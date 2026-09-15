@@ -674,6 +674,20 @@ func TestValidateNode(t *testing.T) {
 				`"spock" must be included in shared_preload_libraries`,
 			},
 		},
+		{
+			name:         "invalid per-node spock_version",
+			orchestrator: config.OrchestratorSwarm,
+			db:           &api.DatabaseSpec{},
+			node: &api.DatabaseNodeSpec{
+				HostIds: []api.Identifier{
+					api.Identifier("host-1"),
+				},
+				SpockVersion: utils.PointerTo("6"),
+			},
+			expected: []string{
+				"spock_version cannot be set per-node through create-database or update-database",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := errors.Join(validateNode(tc.orchestrator, tc.db, tc.node, nil)...)

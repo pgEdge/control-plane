@@ -257,6 +257,10 @@ func (s *PreInitHandlers) ApplyUpgrade(ctx context.Context, req *api.ApplyUpgrad
 	return nil, ErrUninitialized
 }
 
+func (s *PreInitHandlers) ApplyMajorUpgrade(ctx context.Context, req *api.ApplyMajorUpgradePayload) (*api.ApplyMajorUpgradeResponse, error) {
+	return nil, ErrUninitialized
+}
+
 func (s *PreInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
 	return nil, ErrUninitialized
 }

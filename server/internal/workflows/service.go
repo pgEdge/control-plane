@@ -118,6 +118,34 @@ func (s *Service) UpgradeDatabase(ctx context.Context, db *database.Database) (*
 	return t, nil
 }
 
+// UpgradeDatabaseMajorVersion kicks off a dedicated Spock major-version
+// upgrade, rolling through result.NodeOrder one node at a time. Separate
+// from UpgradeDatabase (which reuses the plain UpdateDatabase workflow for
+// same-major minor/patch bumps) since a major bump needs its own dedicated
+// per-node workflow, not a single uniform redeploy.
+func (s *Service) UpgradeDatabaseMajorVersion(ctx context.Context, result *database.ApplyMajorUpgradeResult) (*task.Task, error) {
+	databaseID := result.Database.DatabaseID
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
+		DatabaseID: databaseID,
+		Type:       task.TypeMajorUpgrade,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create major-version upgrade task: %w", err)
+	}
+	input := &MajorVersionUpgradeInput{
+		TaskID:             t.TaskID,
+		Spec:               result.Database.Spec,
+		TargetSpockVersion: result.TargetSpockVersion,
+		Image:              result.Image,
+		NodeOrder:          result.NodeOrder,
+	}
+	if err := s.createWorkflow(ctx, t, s.workflows.MajorVersionUpgrade, input); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 func (s *Service) DeleteDatabase(ctx context.Context, db *database.Database) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		Scope:      task.ScopeDatabase,

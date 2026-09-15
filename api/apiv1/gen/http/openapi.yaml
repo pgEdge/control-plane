@@ -1282,6 +1282,66 @@ paths:
             $ref: '#/definitions/APIError'
       schemes:
         - http
+  /v1/databases/{database_id}/upgrade-major:
+    post:
+      tags:
+        - Database
+      summary: Apply Spock major-version upgrade
+      description: Applies a dedicated Spock major-version upgrade (e.g. 5.x to 6.x) to a database, rolling through each node one at a time rather than redeploying uniformly. Independent of apply-upgrade, which is restricted to same-major minor/patch bumps and cannot reach a different Spock major.
+      operationId: control-plane#apply-major-upgrade
+      parameters:
+        - name: database_id
+          in: path
+          description: A user-specified identifier. Must be 1-36 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          required: true
+          type: string
+        - name: Apply-Major-UpgradeRequestBody
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ApplyMajorUpgradeRequest'
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/ApplyMajorUpgradeResponse'
+            required:
+              - task
+              - database
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+        "404":
+          description: Not Found response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+        "409":
+          description: Conflict response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+        default:
+          description: Unexpected error response
+          schema:
+            $ref: '#/definitions/APIError'
+      schemes:
+        - http
   /v1/hosts:
     get:
       tags:
@@ -1779,6 +1839,167 @@ definitions:
     required:
       - name
       - message
+  ApplyMajorUpgradeRequest:
+    title: ApplyMajorUpgradeRequest
+    type: object
+    properties:
+      image:
+        type: string
+        description: Full container image reference of the upgrade target. Must match the image field of a manifest entry whose spock_version is target_spock_version and whose postgres_version matches the database's current postgres_version. Unlike ApplyUpgradeRequest, the target entry is not required to have stability "stable" — a Spock major version is expected to still be in a "dev" stability window while this action is in use for it.
+        example: ghcr.io/pgedge/pgedge-postgres:18.4-spock6.0.0-standard-1
+        minLength: 1
+      node_order:
+        type: array
+        items:
+          type: string
+          example: Explicabo culpa eos natus aperiam excepturi consectetur.
+        description: Explicit order (by node name) in which nodes are upgraded, one at a time. Defaults to the order nodes appear in the database spec if omitted. Every node in the database must appear exactly once.
+        example:
+          - n2
+          - n1
+          - n3
+      target_spock_version:
+        type: string
+        description: The Spock major version to upgrade to.
+        example: "6"
+        pattern: ^\d{1}$
+    description: 'Request to upgrade a database across a Spock major version boundary (e.g. 5.x to 6.x). Deliberately separate from ApplyUpgradeRequest: a major-version bump changes replication protocol behavior and is executed one node at a time (rolling), not redeployed uniformly like a minor/patch bump.'
+    example:
+      image: ghcr.io/pgedge/pgedge-postgres:18.4-spock6.0.0-standard-1
+      node_order:
+        - n2
+        - n1
+        - n3
+      target_spock_version: "6"
+    required:
+      - target_spock_version
+      - image
+  ApplyMajorUpgradeResponse:
+    title: ApplyMajorUpgradeResponse
+    type: object
+    properties:
+      database:
+        $ref: '#/definitions/Database'
+      task:
+        $ref: '#/definitions/Task'
+    example:
+      database:
+        created_at: "2025-06-18T16:52:05Z"
+        id: storefront
+        instances:
+          - connection_info:
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
+              port: 5432
+            created_at: "2025-06-18T16:52:22Z"
+            host_id: us-east-1
+            id: storefront-n1-689qacsi
+            node_name: n1
+            postgres:
+              patroni_state: running
+              role: primary
+              version: "18.1"
+            spock:
+              read_only: "off"
+              subscriptions:
+                - name: sub_n1n3
+                  provider_node: n3
+                  status: replicating
+                - name: sub_n1n2
+                  provider_node: n2
+                  status: replicating
+              version: 4.0.10
+            state: available
+            status_updated_at: "2025-06-18T17:58:56Z"
+            updated_at: "2025-06-18T17:54:36Z"
+          - connection_info:
+              addresses:
+                - 10.24.35.2
+                - i-058731542fee493f.ec2.internal
+              port: 5432
+            created_at: "2025-06-18T16:52:22Z"
+            host_id: ap-south-1
+            id: storefront-n2-9ptayhma
+            node_name: n2
+            postgres:
+              patroni_state: running
+              role: primary
+              version: "18.1"
+            spock:
+              read_only: "off"
+              subscriptions:
+                - name: sub_n2n1
+                  provider_node: n1
+                  status: replicating
+                - name: sub_n2n3
+                  provider_node: n3
+                  status: replicating
+              version: 4.0.10
+            state: available
+            status_updated_at: "2025-06-18T17:58:56Z"
+            updated_at: "2025-06-18T17:54:01Z"
+          - connection_info:
+              addresses:
+                - 10.24.36.2
+                - i-494027b7b53f6a23.ec2.internal
+              port: 5432
+            created_at: "2025-06-18T16:52:22Z"
+            host_id: eu-central-1
+            id: storefront-n3-ant97dj4
+            node_name: n3
+            postgres:
+              patroni_state: running
+              role: primary
+              version: "18.1"
+            spock:
+              read_only: "off"
+              subscriptions:
+                - name: sub_n3n1
+                  provider_node: n1
+                  status: replicating
+                - name: sub_n3n2
+                  provider_node: n2
+                  status: replicating
+              version: 4.0.10
+            state: available
+            status_updated_at: "2025-06-18T17:58:56Z"
+            updated_at: "2025-06-18T17:54:01Z"
+        spec:
+          database_name: storefront
+          database_users:
+            - attributes:
+                - SUPERUSER
+                - LOGIN
+              db_owner: true
+              username: admin
+          nodes:
+            - host_ids:
+                - us-east-1
+              name: n1
+            - host_ids:
+                - ap-south-1
+              name: n2
+            - host_ids:
+                - eu-central-1
+              name: n3
+          port: 5432
+          postgres_version: "17.6"
+          spock_version: "5"
+        state: restoring
+        updated_at: "2025-06-18T17:58:59Z"
+      task:
+        completed_at: "2025-06-18T16:52:35Z"
+        created_at: "2025-06-18T16:52:05Z"
+        database_id: storefront
+        entity_id: storefront
+        scope: database
+        status: completed
+        task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+        type: create
+    required:
+      - task
+      - database
   ApplyUpgradeRequest:
     title: ApplyUpgradeRequest
     type: object
@@ -2027,7 +2248,7 @@ definitions:
           key: value
         additionalProperties:
           type: string
-          example: Explicabo culpa eos natus aperiam excepturi consectetur.
+          example: Ut aperiam.
       backup_options:
         type: object
         description: Options for the backup.
@@ -2035,7 +2256,7 @@ definitions:
           archive-check: "n"
         additionalProperties:
           type: string
-          example: Ut aperiam.
+          example: Sed quis architecto magnam temporibus ipsa et.
       type:
         type: string
         description: The type of backup.
@@ -3051,6 +3272,11 @@ definitions:
         type: string
         description: The name of the source node to use for sync. This is typically the node (like 'n1') from which the data will be copied to initialize this new node.
         example: n1
+      spock_version:
+        type: string
+        description: The major version of the Spock extension for this node. Overrides the Spock version set in the DatabaseSpec. Only settable through the dedicated major-version upgrade action — rejected on create-database and on the general update-database path, since a per-node major mismatch is only ever a deliberate, transient state during a rolling major-version upgrade, never a steady-state topology choice.
+        example: "6"
+        pattern: ^\d{1}$
     example:
       backup_config:
         repositories:
@@ -3177,6 +3403,7 @@ definitions:
         source_database_name: northwind
         source_node_name: n1
       source_node: n1
+      spock_version: "6"
     required:
       - name
       - host_ids
@@ -3410,6 +3637,7 @@ definitions:
               source_database_name: northwind
               source_node_name: n1
             source_node: n1
+            spock_version: "6"
           - backup_config:
               repositories:
                 - azure_account: pgedge-backups
@@ -3537,6 +3765,7 @@ definitions:
               source_database_name: northwind
               source_node_name: n1
             source_node: n1
+            spock_version: "6"
           - backup_config:
               repositories:
                 - azure_account: pgedge-backups
@@ -3664,6 +3893,7 @@ definitions:
               source_database_name: northwind
               source_node_name: n1
             source_node: n1
+            spock_version: "6"
         minItems: 1
         maxItems: 9
       orchestrator_opts:
@@ -4040,6 +4270,7 @@ definitions:
             source_database_name: northwind
             source_node_name: n1
           source_node: n1
+          spock_version: "6"
         - backup_config:
             repositories:
               - azure_account: pgedge-backups
@@ -4167,6 +4398,7 @@ definitions:
             source_database_name: northwind
             source_node_name: n1
           source_node: n1
+          spock_version: "6"
       orchestrator_opts:
         swarm:
           extra_labels:
@@ -6165,7 +6397,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Et reprehenderit et nam quo qui.
+          example: Qui veniam exercitationem.
         description: The nodes to restore. Defaults to all nodes if empty or unspecified.
         example:
           - n1
@@ -6994,16 +7226,6 @@ definitions:
           $ref: '#/definitions/TaskLogEntry'
         description: Entries in the task log.
         example:
-          - fields:
-              option.enabled: true
-              status: creating
-            message: task started
-            timestamp: "2025-05-29T15:43:13Z"
-          - fields:
-              option.enabled: true
-              status: creating
-            message: task started
-            timestamp: "2025-05-29T15:43:13Z"
           - fields:
               option.enabled: true
               status: creating

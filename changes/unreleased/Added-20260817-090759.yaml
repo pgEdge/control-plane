@@ -1,0 +1,3 @@
+kind: Added
+body: Add a dedicated major-version upgrade workflow for rolling a database from Spock 5.x to Spock 6.x one node at a time, independent of the existing patch/minor upgrade path
+time: 2026-08-17T09:07:59.436316+05:00
