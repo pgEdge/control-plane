@@ -1202,7 +1202,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 			},
 			expected: []string{
 				"services[0].config: llm_model is required",
-				"services[0].config: llm_provider must be one of: anthropic, openai, ollama",
+				"services[0].config: llm_provider must be one of: anthropic, openai, gemini, ollama",
 			},
 		},
 		{
@@ -1815,7 +1815,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config: llm_provider must be one of: anthropic, openai, ollama",
+				"config: llm_provider must be one of: anthropic, openai, gemini, ollama",
 			},
 		},
 		{

@@ -12,7 +12,7 @@ import (
 // ragYAMLConfig mirrors the pgedge-rag-server Config struct for YAML generation.
 // Only the fields the control plane needs to set are included.
 type ragYAMLConfig struct {
-	Server    ragServerYAML    `yaml:"server"`
+	Server    ragServerYAML     `yaml:"server"`
 	Pipelines []ragPipelineYAML `yaml:"pipelines"`
 	Defaults  *ragDefaultsYAML  `yaml:"defaults,omitempty"`
 }
@@ -23,17 +23,19 @@ type ragServerYAML struct {
 }
 
 type ragPipelineYAML struct {
-	Name         string          `yaml:"name"`
-	Description  string          `yaml:"description,omitempty"`
-	Database     ragDatabaseYAML `yaml:"database"`
-	Tables       []ragTableYAML  `yaml:"tables"`
-	EmbeddingLLM ragLLMYAML      `yaml:"embedding_llm"`
-	RAGLLM       ragLLMYAML      `yaml:"rag_llm"`
-	APIKeys      *ragAPIKeysYAML `yaml:"api_keys,omitempty"`
-	TokenBudget  *int            `yaml:"token_budget,omitempty"`
-	TopN         *int            `yaml:"top_n,omitempty"`
-	SystemPrompt string          `yaml:"system_prompt,omitempty"`
-	Search       *ragSearchYAML  `yaml:"search,omitempty"`
+	Name                string          `yaml:"name"`
+	Description         string          `yaml:"description,omitempty"`
+	Database            ragDatabaseYAML `yaml:"database"`
+	Tables              []ragTableYAML  `yaml:"tables"`
+	EmbeddingLLM        ragLLMYAML      `yaml:"embedding_llm"`
+	RAGLLM              ragLLMYAML      `yaml:"rag_llm"`
+	APIKeys             *ragAPIKeysYAML `yaml:"api_keys,omitempty"`
+	TokenBudget         *int            `yaml:"token_budget,omitempty"`
+	TopN                *int            `yaml:"top_n,omitempty"`
+	SystemPrompt        string          `yaml:"system_prompt,omitempty"`
+	Search              *ragSearchYAML  `yaml:"search,omitempty"`
+	Rerank              *ragRerankYAML  `yaml:"rerank,omitempty"`
+	AllowIncludeSources bool            `yaml:"allow_include_sources,omitempty"`
 }
 
 type ragDatabaseYAML struct {
@@ -63,11 +65,20 @@ type ragAPIKeysYAML struct {
 	Anthropic string `yaml:"anthropic,omitempty"`
 	OpenAI    string `yaml:"openai,omitempty"`
 	Voyage    string `yaml:"voyage,omitempty"`
+	Gemini    string `yaml:"gemini,omitempty"`
 }
 
 type ragSearchYAML struct {
 	HybridEnabled *bool    `yaml:"hybrid_enabled,omitempty"`
 	VectorWeight  *float64 `yaml:"vector_weight,omitempty"`
+}
+
+// ragRerankYAML has no api_key field: the rerank stage draws its Voyage key
+// from the same api_keys.voyage slot embedding_llm uses (see ragAPIKeysYAML).
+type ragRerankYAML struct {
+	Provider string `yaml:"provider"`
+	Model    string `yaml:"model"`
+	TopK     *int   `yaml:"top_k,omitempty"`
 }
 
 type ragDefaultsYAML struct {
@@ -194,6 +205,16 @@ func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) (ragP
 			VectorWeight:  p.Search.VectorWeight,
 		}
 	}
+	if p.Rerank != nil {
+		pipeline.Rerank = &ragRerankYAML{
+			Provider: p.Rerank.Provider,
+			Model:    p.Rerank.Model,
+			TopK:     p.Rerank.TopK,
+		}
+	}
+	if p.AllowIncludeSources != nil {
+		pipeline.AllowIncludeSources = *p.AllowIncludeSources
+	}
 
 	return pipeline, nil
 }
@@ -202,8 +223,12 @@ func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) (ragP
 // corresponding bind-mounted key file path inside the container.
 // Embedding key: {keysDir}/{pipeline}_embedding.key
 // RAG key:       {keysDir}/{pipeline}_rag.key
+// Rerank key:    {keysDir}/{pipeline}_rerank.key (only when embedding_llm
+//
+//	isn't already using the same provider — see extractRAGAPIKeys)
+//
 // If embedding and RAG use the same provider, the RAG key path takes precedence
-// (both files contain the same value). Returns an error if both LLMs share a
+// (both files contain the same value). Returns an error if two roles share a
 // provider but were configured with different API keys.
 func buildRAGAPIKeysYAML(p database.RAGPipeline, keysDir string) (*ragAPIKeysYAML, error) {
 	// Reject mismatched keys for the same provider — the RAG server has a
@@ -215,19 +240,27 @@ func buildRAGAPIKeysYAML(p database.RAGPipeline, keysDir string) (*ragAPIKeysYAM
 		return nil, fmt.Errorf("pipeline %q: embedding_llm and rag_llm share provider %q but have different API keys",
 			p.Name, p.EmbeddingLLM.Provider)
 	}
+	if p.Rerank != nil && p.EmbeddingLLM.Provider == p.Rerank.Provider &&
+		p.EmbeddingLLM.APIKey != nil && *p.EmbeddingLLM.APIKey != "" &&
+		p.Rerank.APIKey != nil && *p.Rerank.APIKey != "" &&
+		*p.EmbeddingLLM.APIKey != *p.Rerank.APIKey {
+		return nil, fmt.Errorf("pipeline %q: embedding_llm and rerank share provider %q but have different API keys",
+			p.Name, p.EmbeddingLLM.Provider)
+	}
 
 	keys := &ragAPIKeysYAML{}
 
-	// Embedding provider key
+	// Embedding provider key. Anthropic has no embeddings API, so it is
+	// intentionally not handled here even though it is for rag_llm below.
 	if p.EmbeddingLLM.APIKey != nil && *p.EmbeddingLLM.APIKey != "" {
 		keyPath := path.Join(keysDir, p.Name+"_embedding.key")
 		switch p.EmbeddingLLM.Provider {
-		case "anthropic":
-			keys.Anthropic = keyPath
 		case "openai":
 			keys.OpenAI = keyPath
 		case "voyage":
 			keys.Voyage = keyPath
+		case "gemini":
+			keys.Gemini = keyPath
 		}
 	}
 
@@ -239,10 +272,20 @@ func buildRAGAPIKeysYAML(p database.RAGPipeline, keysDir string) (*ragAPIKeysYAM
 			keys.Anthropic = keyPath
 		case "openai":
 			keys.OpenAI = keyPath
+		case "gemini":
+			keys.Gemini = keyPath
 		}
 	}
 
-	if keys.Anthropic == "" && keys.OpenAI == "" && keys.Voyage == "" {
+	// Rerank provider key. Only voyage is supported. If embedding_llm already
+	// uses voyage, keys.Voyage already points at its key file and is reused
+	// as-is; otherwise the rerank stage gets its own key file.
+	if p.Rerank != nil && p.Rerank.Provider == "voyage" && keys.Voyage == "" &&
+		p.Rerank.APIKey != nil && *p.Rerank.APIKey != "" {
+		keys.Voyage = path.Join(keysDir, p.Name+"_rerank.key")
+	}
+
+	if keys.Anthropic == "" && keys.OpenAI == "" && keys.Voyage == "" && keys.Gemini == "" {
 		return nil, nil
 	}
 	return keys, nil
