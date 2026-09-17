@@ -1082,18 +1082,18 @@ func instancesByID(spec *Spec) (map[string]*InstanceSpec, error) {
 	return byID, nil
 }
 
+// majorVersionChanged rejects a Postgres major version change for a matched
+// instance. Unlike Spock, Postgres supports a per-node major-version override
+// (Node.PostgresVersion), so this intentionally only checks instances that
+// persist across the update: replacing an instance via a HostIDs change
+// (which produces a new instance ID) is exempt, since that's the supported
+// path for moving a node to a new Postgres major version during a rolling
+// upgrade.
 func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 	if old == nil || new == nil {
 		return errors.New("expected both current and updated versions to be defined")
 	}
-	oldMajor, newMajor, err := extractMajors("postgres", old.PostgresVersion, new.PostgresVersion)
-	if err != nil {
-		return err
-	}
-	if oldMajor != newMajor {
-		return fmt.Errorf("major version changed from %d to %d", oldMajor, newMajor)
-	}
-	return nil
+	return checkMajorUnchanged("postgres", old.PostgresVersion, new.PostgresVersion, "")
 }
 
 // spockMajorVersionChanged rejects a Spock major version change on an
@@ -1110,32 +1110,29 @@ func spockMajorVersionChanged(current, updated string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse updated spock version: %w", err)
 	}
-	oldMajor, newMajor, err := extractMajors("spock", oldVersion, newVersion)
-	if err != nil {
-		return err
-	}
-	if oldMajor != newMajor {
-		return fmt.Errorf(
-			"spock major version changed from %d to %d: changing the spock major version on an existing database is not supported",
-			oldMajor, newMajor,
-		)
-	}
-	return nil
+	return checkMajorUnchanged(
+		"spock", oldVersion, newVersion,
+		": changing the spock major version on an existing database is not supported",
+	)
 }
 
-// extractMajors returns the major version components of old and new, using
-// label to identify the version kind (e.g. "postgres", "spock") in error
-// messages if either is missing its major component.
-func extractMajors(label string, old, new *ds.Version) (uint64, uint64, error) {
+// checkMajorUnchanged returns an error if old and new have different major
+// version components. label identifies the version kind (e.g. "postgres",
+// "spock") in every error message, and detail is appended verbatim to the
+// mismatch error so callers can add version-kind-specific context.
+func checkMajorUnchanged(label string, old, new *ds.Version, detail string) error {
 	oldMajor, ok := old.Major()
 	if !ok {
-		return 0, 0, fmt.Errorf("current %s version is missing its major component", label)
+		return fmt.Errorf("current %s version is missing its major component", label)
 	}
 	newMajor, ok := new.Major()
 	if !ok {
-		return 0, 0, fmt.Errorf("updated %s version is missing its major component", label)
+		return fmt.Errorf("updated %s version is missing its major component", label)
 	}
-	return oldMajor, newMajor, nil
+	if oldMajor != newMajor {
+		return fmt.Errorf("%s major version changed from %d to %d%s", label, oldMajor, newMajor, detail)
+	}
+	return nil
 }
 
 func tenantIDsMatch(a, b *string) bool {
