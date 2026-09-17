@@ -192,6 +192,99 @@ func TestValidateChangedSpec(t *testing.T) {
 			},
 			expectedErr: "major version changed from 17 to 18",
 		},
+		{
+			name: "valid postgres major version change alongside a host reassignment",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "17.6",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					// Unlike Spock, moving a node to a new host is the
+					// supported way to bump its Postgres major version
+					// during a rolling upgrade, so this is intentionally
+					// exempt from the major-version check.
+					{Name: "n1", HostIDs: []string{"host-2"}},
+				},
+			},
+		},
+		{
+			name: "valid spock minor version change",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5.0.6",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5.0.9",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+		},
+		{
+			name: "invalid spock major version change",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "6",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "spock major version changed from 5 to 6",
+		},
+		{
+			name: "invalid spock major version change alongside a host reassignment",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "6",
+				Nodes: []*database.Node{
+					// Reassigning the node to a new host changes its
+					// instance ID, so this must still be caught even though
+					// no instance ID matches between current and updated.
+					{Name: "n1", HostIDs: []string{"host-2"}},
+				},
+			},
+			expectedErr: "spock major version changed from 5 to 6",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := database.ValidateChangedSpec(tc.current, tc.updated)
