@@ -382,52 +382,29 @@ func (p *PatroniConfigGenerator) authentication() *patroni.Authentication {
 
 func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []hba.Entry, passwordAuthMethod hba.AuthMethod) *[]string {
 	entries := []string{
-		// Trust local connections
+		// The only local (Unix socket) rule: peer, mapped to pgedge for
+		// whichever OS-level tooling runs as the same user as Postgres itself
+		// (e.g. pgBackRest). Every other local OS account has no matching
+		// local rule and is denied by default.
 		hba.Entry{
-			Type:       hba.EntryTypeLocal,
-			Database:   "all",
-			User:       "all",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "all",
-			User:       "all",
-			Address:    "127.0.0.1/32",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "all",
-			User:       "all",
-			Address:    "::1/128",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeLocal,
-			Database:   "replication",
-			User:       "all",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "replication",
-			User:       "all",
-			Address:    "127.0.0.1/32",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "replication",
-			User:       "all",
-			Address:    "::1/128",
-			AuthMethod: hba.AuthMethodTrust,
+			Type:        hba.EntryTypeLocal,
+			Database:    "all",
+			User:        "pgedge",
+			AuthMethod:  hba.AuthMethodPeer,
+			AuthOptions: "map=pgbackrest",
 		}.String(),
 	}
 
+	// Certificate-authenticated addresses for the system roles: the given
+	// system addresses plus loopback. Loopback is required in addition to
+	// systemAddresses because Patroni's own self-connection (heartbeat,
+	// REST API) and the control plane's own admin connection under systemd
+	// both dial localhost rather than a system address.
+	certAddresses := append([]string{"127.0.0.1/32", "::1/128"}, systemAddresses...)
+
 	// Reject connections for system users except for SSL connections from the
-	// given system addresses.
-	for _, address := range systemAddresses {
+	// given system or loopback addresses.
+	for _, address := range certAddresses {
 		entries = append(entries,
 			hba.Entry{
 				Type:        hba.EntryTypeHostSSL,
@@ -497,13 +474,18 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 	return &entries
 }
 
-// pgIdent returns the user-supplied pg_ident.conf entries, or nil when there
-// are none. The CP writes no pg_ident entries of its own.
+// pgIdent returns the pg_ident.conf entries: the CP-authored map backing the
+// "local" peer rule in pgHba(), followed by any user-supplied entries.
 func (p *PatroniConfigGenerator) pgIdent() *[]string {
-	if len(p.PgIdentConf) == 0 {
-		return nil
+	entries := []string{
+		hba.IdentEntry{
+			MapName:          "pgbackrest",
+			SystemUsername:   "postgres",
+			PostgresUsername: "pgedge",
+		}.String(),
 	}
-	return &p.PgIdentConf
+	entries = append(entries, p.PgIdentConf...)
+	return &entries
 }
 
 // mapIPv4Addresses return IPv4-mapped IPv6 (aka 4in6) versions of every IPv4
