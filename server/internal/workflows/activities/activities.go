@@ -22,6 +22,7 @@ type Activities struct {
 func (a *Activities) Register(work *worker.Worker) error {
 	errs := []error{
 		work.RegisterActivity(a.ApplyEvent),
+		work.RegisterActivity(a.CancelRestart),
 		work.RegisterActivity(a.CancelSwitchover),
 		work.RegisterActivity(a.CheckClusterHealth),
 		work.RegisterActivity(a.CreatePgBackRestBackup),
@@ -47,6 +48,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.UpdatePlannedInstanceStates),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
+		work.RegisterActivity(a.WaitForRestartComplete),
 	}
 	return errors.Join(errs...)
 }

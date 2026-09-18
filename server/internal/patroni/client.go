@@ -102,7 +102,7 @@ type InstanceStatus struct {
 	// Postgres state
 	State *State `json:"state,omitempty"`
 	// pg_postmaster_start_time()
-	PostmasterStartTime *string `json:"pg_postmaster_start_time,omitempty"`
+	PostmasterStartTime *string `json:"postmaster_start_time,omitempty"`
 	// Based on pg_is_in_recovery() output
 	Role *InstanceRole `json:"role,omitempty"`
 	// Postgres version without periods, e.g. '150002' for Postgres 15.2
