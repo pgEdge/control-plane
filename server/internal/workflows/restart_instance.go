@@ -29,20 +29,24 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 	)
 	logger.Info("restarting instance")
 
+	var restartScheduled bool
+
 	defer func() {
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
 
-			cancelIn := &activities.CancelRestartInput{
-				DatabaseID: input.DatabaseID,
-				InstanceID: input.InstanceID,
-				TaskID:     input.TaskID,
-			}
-			if _, err := w.Activities.ExecuteCancelRestart(cleanupCtx, input.HostID, cancelIn).Get(cleanupCtx); err != nil {
-				logger.Warn("cancel restart activity failed", "err", err)
-			} else {
-				logger.Info("cancel restart activity dispatched")
+			if restartScheduled {
+				cancelIn := &activities.CancelRestartInput{
+					DatabaseID: input.DatabaseID,
+					InstanceID: input.InstanceID,
+					TaskID:     input.TaskID,
+				}
+				if _, err := w.Activities.ExecuteCancelRestart(cleanupCtx, input.HostID, cancelIn).Get(cleanupCtx); err != nil {
+					logger.Warn("cancel restart activity failed", "err", err)
+				} else {
+					logger.Info("cancel restart activity dispatched")
+				}
 			}
 
 			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
@@ -90,6 +94,7 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		}
 		return nil, handleError(err)
 	}
+	restartScheduled = !input.ScheduledAt.IsZero()
 
 	if !input.ScheduledAt.IsZero() {
 		if d := input.ScheduledAt.Sub(workflow.Now(ctx)); d > 0 {

@@ -60,12 +60,14 @@ func (a *Activities) RestartInstance(ctx context.Context, input *RestartInstance
 
 	patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
 
-	var baselinePostmasterStartTime string
-	if status, err := patroniClient.GetInstanceStatus(ctx); err != nil {
-		logger.With("error", err).Warn("failed to get baseline instance status before restart")
-	} else if status.PostmasterStartTime != nil {
-		baselinePostmasterStartTime = *status.PostmasterStartTime
+	status, err := patroniClient.GetInstanceStatus(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get baseline instance status: %w", err)
 	}
+	if status.PostmasterStartTime == nil {
+		return nil, errors.New("baseline instance status has no postmaster start time")
+	}
+	baselinePostmasterStartTime := *status.PostmasterStartTime
 
 	restartReq := &patroni.Restart{}
 	if !input.ScheduledAt.IsZero() {
@@ -171,6 +173,7 @@ func (a *Activities) WaitForRestartComplete(ctx context.Context, input *WaitForR
 				}
 				continue
 			}
+			errCount = 0
 			if status.InErrorState() {
 				return nil, fmt.Errorf("instance entered error state %q while waiting for restart", *status.State)
 			}
