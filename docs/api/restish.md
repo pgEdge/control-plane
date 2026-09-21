@@ -21,13 +21,14 @@ First, install Restish [via Restish's official website](https://rest.sh/docs/get
 
 ### 2. Connection
 
-Note: 
-    Only connect this way to clusters and databases you're okay with experimenting on. See [Managing Multiple Environments](#managing-multiple-environments)
-    before connecting Restish to anything production.
+!!! note
+
+    See [Managing Multiple Environments](#managing-multiple-environments)
+    if you need to connect to multiple Control Plane clusters from one machine.
 
 Connect Restish to your cluster:
 
-
+<!-- markdownlint-disable-next-line MD046 -->
 ```sh
 restish api connect pgedge http://localhost:3000
 ```
@@ -217,16 +218,6 @@ needed, since it's omitted from the request entirely:
 ```sh
 restish pgedge update-database example < databases/example.json
 ```
-
-!!! note
-
-    Restish retries network errors and transient server errors (`408`,
-    `429`, `500`, `502`, `503`, `504`) automatically, but not `create-database`,
-    `update-database`, or `delete-database` themselves — POST/PUT/PATCH/DELETE
-    requests are only retried if you explicitly pass `--rsh-retry-unsafe`,
-    which prints a warning when used. Leave that flag off for database
-    operations: retrying a request that already partially succeeded on the
-    server can double-process it.
 
 To apply the same file to a specific environment instead of your default
 cluster, add the profile you set up in
