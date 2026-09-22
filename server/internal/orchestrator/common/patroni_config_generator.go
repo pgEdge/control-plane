@@ -70,7 +70,7 @@ type PatroniConfigGenerator struct {
 	// inserted in the user zone after the CP rules and before the catch-all.
 	PgHbaConf []string `json:"pg_hba_conf,omitempty"`
 	// PgIdentConf are user-supplied pg_ident.conf entries (one mapping per
-	// element). The CP writes no pg_ident entries of its own.
+	// element), appended after the CP-authored map (see pgIdent()).
 	PgIdentConf []string `json:"pg_ident_conf,omitempty"`
 	// PostgresCertsDir is the Postgres certificates directory.
 	PostgresCertsDir string `json:"postgres_certs_dir"`
@@ -382,16 +382,32 @@ func (p *PatroniConfigGenerator) authentication() *patroni.Authentication {
 
 func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []hba.Entry, passwordAuthMethod hba.AuthMethod) *[]string {
 	entries := []string{
-		// The only local (Unix socket) rule: peer, mapped to pgedge for
+		// Local (Unix socket): peer-authenticated for pgedge, mapped to
 		// whichever OS-level tooling runs as the same user as Postgres itself
-		// (e.g. pgBackRest). Every other local OS account has no matching
-		// local rule and is denied by default.
+		// (e.g. pgBackRest — the map is named for the OS user, not the tool,
+		// since anything running as that user qualifies). Every other local
+		// combination for the system roles is explicitly rejected below, and
+		// every other OS account has no matching local rule at all, so it's
+		// denied by default. Database "all" does not match replication
+		// connections in pg_hba.conf, so replication needs its own line.
 		hba.Entry{
 			Type:        hba.EntryTypeLocal,
 			Database:    "all",
 			User:        "pgedge",
 			AuthMethod:  hba.AuthMethodPeer,
-			AuthOptions: "map=pgbackrest",
+			AuthOptions: "map=local_superuser",
+		}.String(),
+		hba.Entry{
+			Type:       hba.EntryTypeLocal,
+			Database:   "all",
+			User:       "patroni_replicator",
+			AuthMethod: hba.AuthMethodReject,
+		}.String(),
+		hba.Entry{
+			Type:       hba.EntryTypeLocal,
+			Database:   "replication",
+			User:       "pgedge,patroni_replicator",
+			AuthMethod: hba.AuthMethodReject,
 		}.String(),
 	}
 
@@ -446,8 +462,14 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 	}
 
 	// User-supplied pg_hba entries form a zone after the CP's system-user rules
-	// and before the catch-all. By this point system users are already matched
-	// or rejected, so user rules cannot affect CP-internal connectivity.
+	// and before the catch-all. By this point every combination of the system
+	// roles (pgedge, patroni_replicator) with either connection type (local,
+	// host) and either database selector (all, replication) has already been
+	// matched or rejected above, so user rules in this zone cannot affect
+	// CP-internal connectivity. This protection only applies when Patroni is
+	// managing pg_hba.conf at all — the hba_file/ident_file postgresql_conf
+	// GUCs let an operator replace the generated file entirely, bypassing
+	// this zone (and everything else here) if they choose to.
 	// p.PgHbaConf already has node-level entries prepended ahead of the
 	// database-level entries.
 	entries = append(entries, p.PgHbaConf...)
@@ -479,7 +501,7 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 func (p *PatroniConfigGenerator) pgIdent() *[]string {
 	entries := []string{
 		hba.IdentEntry{
-			MapName:          "pgbackrest",
+			MapName:          "local_superuser",
 			SystemUsername:   "postgres",
 			PostgresUsername: "pgedge",
 		}.String(),
