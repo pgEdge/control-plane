@@ -108,6 +108,8 @@ postgresql:
   - hostssl replication     pgedge,patroni_replicator 10.10.0.4/32            cert clientcert=verify-full
   - host    all             pgedge,patroni_replicator 0.0.0.0/0               reject
   - host    all             pgedge,patroni_replicator ::/0                    reject
+  - host    replication     pgedge,patroni_replicator 0.0.0.0/0               reject
+  - host    replication     pgedge,patroni_replicator ::/0                    reject
   - host    all             all             0.0.0.0/0               scram-sha-256
   - host    all             all             ::/0                    scram-sha-256
   pg_ident:

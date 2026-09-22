@@ -455,6 +455,23 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 			Address:    "::/0",
 			AuthMethod: hba.AuthMethodReject,
 		}.String(),
+		// "all" does not match replication connections, so it needs its own
+		// reject pair too -- otherwise a user-supplied host replication entry
+		// for these roles would go unmatched by anything above it.
+		hba.Entry{
+			Type:       hba.EntryTypeHost,
+			Database:   "replication",
+			User:       "pgedge,patroni_replicator",
+			Address:    "0.0.0.0/0",
+			AuthMethod: hba.AuthMethodReject,
+		}.String(),
+		hba.Entry{
+			Type:       hba.EntryTypeHost,
+			Database:   "replication",
+			User:       "pgedge,patroni_replicator",
+			Address:    "::/0",
+			AuthMethod: hba.AuthMethodReject,
+		}.String(),
 	)
 
 	for _, entry := range extraEntries {
