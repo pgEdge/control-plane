@@ -22,10 +22,44 @@ type RestartInstanceInput struct {
 }
 
 type RestartInstanceOutput struct {
-	// PostmasterStartTime is pg_postmaster_start_time() as reported by Patroni
-	// right before the restart was scheduled. It's used as a baseline to
-	// detect when the restart has actually happened.
-	PostmasterStartTime string `json:"postmaster_start_time,omitempty"`
+	// BaselinePostmasterStartTime is pg_postmaster_start_time() as reported by
+	// Patroni right before the restart was scheduled. It's used as a baseline
+	// to detect when the restart has actually happened.
+	BaselinePostmasterStartTime string `json:"baseline_postmaster_start_time,omitempty"`
+}
+
+// baselineStatusMaxAttempts and baselineStatusRetryDelay bound how hard we
+// try to read the instance's status before scheduling a restart. A transient
+// Patroni blip here shouldn't fail the whole operation the way a single
+// failed attempt would.
+const (
+	baselineStatusMaxAttempts = 3
+	baselineStatusRetryDelay  = 2 * time.Second
+)
+
+func getBaselineStatus(ctx context.Context, patroniClient *patroni.Client) (*patroni.InstanceStatus, error) {
+	var lastErr error
+	for attempt := 1; attempt <= baselineStatusMaxAttempts; attempt++ {
+		status, err := patroniClient.GetInstanceStatus(ctx)
+		if err == nil {
+			return status, nil
+		}
+		lastErr = err
+		if attempt < baselineStatusMaxAttempts {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(baselineStatusRetryDelay):
+			}
+		}
+	}
+	return nil, lastErr
+}
+
+// parsePatroniTimestamp parses a timestamp as reported by Patroni's REST API
+// (e.g. "2026-09-18 05:03:40.251655+00:00").
+func parsePatroniTimestamp(s string) (time.Time, error) {
+	return time.Parse("2006-01-02 15:04:05.999999999Z07:00", s)
 }
 
 func (a *Activities) ExecuteRestartInstance(
@@ -60,7 +94,7 @@ func (a *Activities) RestartInstance(ctx context.Context, input *RestartInstance
 
 	patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
 
-	status, err := patroniClient.GetInstanceStatus(ctx)
+	status, err := getBaselineStatus(ctx, patroniClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get baseline instance status: %w", err)
 	}
@@ -82,7 +116,7 @@ func (a *Activities) RestartInstance(ctx context.Context, input *RestartInstance
 	}
 
 	logger.Info("restart requested")
-	return &RestartInstanceOutput{PostmasterStartTime: baselinePostmasterStartTime}, nil
+	return &RestartInstanceOutput{BaselinePostmasterStartTime: baselinePostmasterStartTime}, nil
 }
 
 type WaitForRestartCompleteInput struct {
@@ -90,6 +124,12 @@ type WaitForRestartCompleteInput struct {
 	InstanceID                  string    `json:"instance_id"`
 	TaskID                      uuid.UUID `json:"task_id"`
 	BaselinePostmasterStartTime string    `json:"baseline_postmaster_start_time,omitempty"`
+	// ScheduledAt is the time the restart was scheduled for, if any. When
+	// set, a postmaster start time change alone isn't enough to consider the
+	// restart complete: it must also be at or after this time, so that an
+	// unrelated restart (e.g. a failover) occurring while we wait doesn't get
+	// mistaken for the restart we're waiting on.
+	ScheduledAt time.Time `json:"scheduled_at,omitempty"`
 }
 
 type WaitForRestartCompleteOutput struct{}
@@ -112,6 +152,15 @@ const (
 	waitForRestartCompleteTimeout      = 10 * time.Minute
 	waitForRestartCompletePollInterval = 5 * time.Second
 	waitForRestartCompleteMaxErrors    = 5
+
+	// restartTimeSkewTolerance absorbs ordinary clock skew between the
+	// control plane and the Patroni node when comparing an observed restart
+	// time against ScheduledAt: without it, a Patroni clock that's even
+	// slightly behind would make a genuinely successful scheduled restart
+	// look like it happened "too early" on every single poll (the observed
+	// timestamp never changes again), hanging the activity until it times
+	// out instead of recognizing the restart completed.
+	restartTimeSkewTolerance = 30 * time.Second
 )
 
 func (a *Activities) WaitForRestartComplete(ctx context.Context, input *WaitForRestartCompleteInput) (*WaitForRestartCompleteOutput, error) {
@@ -182,6 +231,18 @@ func (a *Activities) WaitForRestartComplete(ctx context.Context, input *WaitForR
 			}
 			if *status.PostmasterStartTime == input.BaselinePostmasterStartTime {
 				continue
+			}
+			if !input.ScheduledAt.IsZero() {
+				restartedAt, parseErr := parsePatroniTimestamp(*status.PostmasterStartTime)
+				if parseErr != nil {
+					logger.Warn("failed to parse postmaster start time; accepting restart as complete",
+						"error", parseErr, "value", *status.PostmasterStartTime)
+				} else if restartedAt.Before(input.ScheduledAt.Add(-restartTimeSkewTolerance)) {
+					// The instance restarted before our scheduled time (e.g. an
+					// unrelated failover) -- keep waiting for the actual
+					// scheduled restart.
+					continue
+				}
 			}
 			logger.Info("restart completed")
 			return &WaitForRestartCompleteOutput{}, nil

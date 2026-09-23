@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -43,10 +44,21 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 					TaskID:     input.TaskID,
 				}
 				if _, err := w.Activities.ExecuteCancelRestart(cleanupCtx, input.HostID, cancelIn).Get(cleanupCtx); err != nil {
-					logger.Warn("cancel restart activity failed", "err", err)
-				} else {
-					logger.Info("cancel restart activity dispatched")
+					logger.With("error", err).Error("cancel restart activity failed; the scheduled restart may still occur")
+
+					failInput := &activities.UpdateTaskInput{
+						Scope:    task.ScopeDatabase,
+						EntityID: input.DatabaseID,
+						TaskID:   input.TaskID,
+						UpdateOptions: task.UpdateFail(fmt.Errorf(
+							"task was cancelled, but failed to cancel the scheduled restart in Patroni; it may still occur: %w", err,
+						)),
+					}
+					_ = w.updateTask(cleanupCtx, logger, failInput)
+					return
 				}
+
+				logger.Info("cancel restart activity dispatched")
 			}
 
 			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
@@ -112,7 +124,8 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		DatabaseID:                  input.DatabaseID,
 		InstanceID:                  input.InstanceID,
 		TaskID:                      input.TaskID,
-		BaselinePostmasterStartTime: restartOut.PostmasterStartTime,
+		BaselinePostmasterStartTime: restartOut.BaselinePostmasterStartTime,
+		ScheduledAt:                 input.ScheduledAt,
 	}
 	if _, err := w.Activities.ExecuteWaitForRestartComplete(ctx, input.HostID, waitIn).Get(ctx); err != nil {
 		if errors.Is(err, workflow.Canceled) {
