@@ -712,19 +712,11 @@
             "minLength": 1
           },
           {
-            "name": "object",
+            "name": "Restart-InstanceRequestBody",
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object",
-              "properties": {
-                "scheduled_at": {
-                  "type": "string",
-                  "description": "The time at which the restart is scheduled.",
-                  "example": "2025-06-18T16:52:05Z",
-                  "format": "date-time"
-                }
-              }
+              "$ref": "#/definitions/ControlPlaneRestartInstanceRequestBody"
             }
           }
         ],
@@ -3510,6 +3502,21 @@
       "required": [
         "healthy"
       ]
+    },
+    "ControlPlaneRestartInstanceRequestBody": {
+      "title": "ControlPlaneRestartInstanceRequestBody",
+      "type": "object",
+      "properties": {
+        "scheduled_at": {
+          "type": "string",
+          "description": "The time at which the restart is scheduled.",
+          "example": "2025-06-18T16:52:05Z",
+          "format": "date-time"
+        }
+      },
+      "example": {
+        "scheduled_at": "2025-06-18T16:52:05Z"
+      }
     },
     "ControlPlaneSwitchoverDatabaseNodeRequestBody": {
       "title": "ControlPlaneSwitchoverDatabaseNodeRequestBody",

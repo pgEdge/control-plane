@@ -817,11 +817,6 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/instances/{instance_id}/restart")
-			g.Param("database_id")
-			g.Param("instance_id")
-			g.Body(func() {
-				g.Attribute("scheduled_at")
-			})
 			g.Meta("openapi:tag:Database")
 		})
 	})

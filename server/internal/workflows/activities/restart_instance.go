@@ -25,7 +25,14 @@ type RestartInstanceOutput struct {
 	// BaselinePostmasterStartTime is pg_postmaster_start_time() as reported by
 	// Patroni right before the restart was scheduled. It's used as a baseline
 	// to detect when the restart has actually happened.
-	BaselinePostmasterStartTime string `json:"baseline_postmaster_start_time,omitempty"`
+	//
+	// The JSON tag intentionally keeps the pre-rename wire name
+	// (postmaster_start_time): this is an activity result that go-workflows
+	// persists durably and replays. A workflow already past this activity
+	// when a rolling deploy lands would otherwise decode an empty baseline
+	// from its recorded history and could report an immediate restart as
+	// complete before it actually happens.
+	BaselinePostmasterStartTime string `json:"postmaster_start_time,omitempty"`
 }
 
 // baselineStatusMaxAttempts and baselineStatusRetryDelay bound how hard we
