@@ -105,7 +105,7 @@ func TestScheduledRestartInstance(t *testing.T) {
 		require.Containsf(t, []string{client.TaskStatusPending, client.TaskStatusRunning}, immediate.Status,
 			"task closed (%s) immediately after scheduling; it should stay open until the restart completes", immediate.Status)
 
-		waitBudget := time.Until(scheduledAt.Add(skew)) + 4*time.Minute
+		waitBudget := time.Until(scheduledAt.Add(-skew)) + 4*time.Minute
 		if waitBudget < 4*time.Minute {
 			waitBudget = 4 * time.Minute
 		}
@@ -153,7 +153,7 @@ func TestScheduledRestartInstance(t *testing.T) {
 		// close out without Patroni ever actually dropping the schedule.
 		// Wait past the original scheduled time (plus a buffer) and confirm
 		// Postgres never restarted.
-		deadline := scheduledAt.Add(skew).Add(20 * time.Second)
+		deadline := scheduledAt.Add(-skew).Add(20 * time.Second)
 		if remaining := time.Until(deadline); remaining > 0 {
 			time.Sleep(remaining)
 		}
