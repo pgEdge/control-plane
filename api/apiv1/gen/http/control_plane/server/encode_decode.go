@@ -3055,11 +3055,8 @@ func EncodeRestartInstanceResponse(encoder func(context.Context, http.ResponseWr
 func DecodeRestartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.RestartInstancePayload, error) {
 	return func(r *http.Request) (*controlplane.RestartInstancePayload, error) {
 		var (
-			body struct {
-				// The time at which the restart is scheduled.
-				ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
-			}
-			err error
+			body RestartInstanceRequestBody
+			err  error
 		)
 		err = decoder(r).Decode(&body)
 		if err != nil {
@@ -3072,9 +3069,7 @@ func DecodeRestartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request)
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		if body.ScheduledAt != nil {
-			err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
-		}
+		err = ValidateRestartInstanceRequestBody(&body)
 		if err != nil {
 			return nil, err
 		}
@@ -3102,7 +3097,7 @@ func DecodeRestartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		if err != nil {
 			return nil, err
 		}
-		payload := NewRestartInstancePayload(body, databaseID, instanceID)
+		payload := NewRestartInstancePayload(&body, databaseID, instanceID)
 
 		return payload, nil
 	}

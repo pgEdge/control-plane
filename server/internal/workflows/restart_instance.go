@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -29,10 +30,36 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 	)
 	logger.Info("restarting instance")
 
+	var restartScheduled bool
+
 	defer func() {
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+
+			if restartScheduled {
+				cancelIn := &activities.CancelRestartInput{
+					DatabaseID: input.DatabaseID,
+					InstanceID: input.InstanceID,
+					TaskID:     input.TaskID,
+				}
+				if _, err := w.Activities.ExecuteCancelRestart(cleanupCtx, input.HostID, cancelIn).Get(cleanupCtx); err != nil {
+					logger.With("error", err).Error("cancel restart activity failed; the scheduled restart may still occur")
+
+					failInput := &activities.UpdateTaskInput{
+						Scope:    task.ScopeDatabase,
+						EntityID: input.DatabaseID,
+						TaskID:   input.TaskID,
+						UpdateOptions: task.UpdateFail(fmt.Errorf(
+							"task was cancelled, but failed to cancel the scheduled restart in Patroni; it may still occur: %w", err,
+						)),
+					}
+					_ = w.updateTask(cleanupCtx, logger, failInput)
+					return
+				}
+
+				logger.Info("cancel restart activity dispatched")
+			}
 
 			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
 		}
@@ -61,6 +88,9 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		UpdateOptions: task.UpdateStart(),
 	}
 	if _, err := w.Activities.ExecuteUpdateTask(ctx, updateTaskInput).Get(ctx); err != nil {
+		if errors.Is(err, workflow.Canceled) {
+			return nil, err
+		}
 		return nil, handleError(err)
 	}
 	req := activities.RestartInstanceInput{
@@ -69,8 +99,38 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		TaskID:      input.TaskID,
 		ScheduledAt: input.ScheduledAt,
 	}
-	_, err := w.Activities.ExecuteRestartInstance(ctx, input.HostID, &req).Get(ctx)
+	restartOut, err := w.Activities.ExecuteRestartInstance(ctx, input.HostID, &req).Get(ctx)
 	if err != nil {
+		if errors.Is(err, workflow.Canceled) {
+			return nil, err
+		}
+		return nil, handleError(err)
+	}
+	restartScheduled = !input.ScheduledAt.IsZero()
+
+	if !input.ScheduledAt.IsZero() {
+		if d := input.ScheduledAt.Sub(workflow.Now(ctx)); d > 0 {
+			logger.Info("sleeping until scheduled restart time", "duration", d.String())
+			if err := workflow.Sleep(ctx, d); err != nil {
+				if errors.Is(err, workflow.Canceled) {
+					return nil, err
+				}
+				return nil, handleError(err)
+			}
+		}
+	}
+
+	waitIn := &activities.WaitForRestartCompleteInput{
+		DatabaseID:                  input.DatabaseID,
+		InstanceID:                  input.InstanceID,
+		TaskID:                      input.TaskID,
+		BaselinePostmasterStartTime: restartOut.BaselinePostmasterStartTime,
+		ScheduledAt:                 input.ScheduledAt,
+	}
+	if _, err := w.Activities.ExecuteWaitForRestartComplete(ctx, input.HostID, waitIn).Get(ctx); err != nil {
+		if errors.Is(err, workflow.Canceled) {
+			return nil, err
+		}
 		return nil, handleError(err)
 	}
 
@@ -81,9 +141,12 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		UpdateOptions: task.UpdateComplete(),
 	}
 	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		if errors.Is(err, workflow.Canceled) {
+			return nil, err
+		}
 		return nil, handleError(err)
 	}
 
-	logger.Info("successfully requested a restart")
+	logger.Info("instance restart completed")
 	return &RestartInstanceOutput{}, nil
 }

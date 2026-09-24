@@ -2238,18 +2238,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "scheduled_at": {
-                    "type": "string",
-                    "description": "The time at which the restart is scheduled.",
-                    "example": "2025-06-18T16:52:05Z",
-                    "format": "date-time"
-                  }
-                },
-                "example": {
-                  "scheduled_at": "2025-06-18T16:52:05Z"
-                }
+                "$ref": "#/components/schemas/RestartInstanceRequestBody"
               },
               "example": {
                 "scheduled_at": "2025-06-18T16:52:05Z"
@@ -28973,6 +28962,20 @@
           "task",
           "update_database_tasks"
         ]
+      },
+      "RestartInstanceRequestBody": {
+        "type": "object",
+        "properties": {
+          "scheduled_at": {
+            "type": "string",
+            "description": "The time at which the restart is scheduled.",
+            "example": "2025-06-18T16:52:05Z",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "scheduled_at": "2025-06-18T16:52:05Z"
+        }
       },
       "RestartInstanceResponse": {
         "type": "object",

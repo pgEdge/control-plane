@@ -1073,14 +1073,17 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 // restart-instance endpoint from CLI flags.
 func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, controlPlaneRestartInstanceDatabaseID string, controlPlaneRestartInstanceInstanceID string) (*controlplane.RestartInstancePayload, error) {
 	var err error
-	var body struct {
-		// The time at which the restart is scheduled.
-		ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
-	}
+	var body RestartInstanceRequestBody
 	{
 		err = json.Unmarshal([]byte(controlPlaneRestartInstanceBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"scheduled_at\": \"2025-06-18T16:52:05Z\"\n   }'")
+		}
+		if body.ScheduledAt != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	var databaseID string
