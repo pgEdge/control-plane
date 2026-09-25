@@ -4,6 +4,8 @@ package e2e
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,8 +23,9 @@ import (
 // applied with a reload rather than a restart.
 //
 // The exact position of the user zone within pg_hba.conf is covered by the
-// generator golden tests; connection allow/deny behavior and replication are
-// covered elsewhere, so this test stays intentionally small.
+// generator golden tests; local-access allow/deny enforcement is covered by
+// TestPgHbaLocalAccessEnforcement below, so this test stays intentionally
+// small.
 func TestPgHbaPgIdentUserConfig(t *testing.T) {
 	t.Parallel()
 
@@ -154,6 +157,95 @@ func TestPgHbaPgIdentUserConfig(t *testing.T) {
 		require.True(t, postmasterStartTime.Equal(after),
 			"Postgres should reload, not restart (start time changed)")
 	})
+}
+
+// TestPgHbaLocalAccessEnforcement verifies that the local-access defaults are
+// actually enforced at connection time, not just reflected in the generated
+// file (which the golden tests already cover). It runs psql as two different
+// local OS users, directly on the instance itself: the OS user Postgres runs
+// as, which must still reach the pgedge role over the Unix socket, and an
+// unrelated OS user, which must be denied outright.
+func TestPgHbaLocalAccessEnforcement(t *testing.T) {
+	t.Parallel()
+
+	host1 := fixture.HostIDs()[0]
+	username := "admin"
+	password := "password"
+
+	ctx := t.Context()
+
+	tLog(t, "creating a single-node database")
+	db := fixture.NewDatabaseFixture(ctx, t, &api.CreateDatabaseRequest{
+		Spec: &api.DatabaseSpec{
+			DatabaseName: "test_pg_hba_enforce",
+			DatabaseUsers: []*api.DatabaseUserSpec{
+				{
+					Username:   username,
+					Password:   pointerTo(password),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
+			Nodes: []*api.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []api.Identifier{api.Identifier(host1)},
+				},
+			},
+		},
+	})
+
+	instance := db.Instances[0]
+
+	host, err := fixture.Client.GetHost(ctx, &api.GetHostPayload{
+		HostID: api.Identifier(instance.HostID),
+	})
+	require.NoError(t, err)
+
+	tLog(t, "confirming an unrelated local OS account is denied over the socket")
+	_, err = runLocalPsql(t, host, instance, "nobody", "select 1;")
+	require.Error(t, err,
+		"an unrelated local OS account should not be able to connect as pgedge")
+
+	tLog(t, "confirming the OS user Postgres runs as still reaches pgedge over the socket")
+	out, err := runLocalPsql(t, host, instance, "postgres", "select current_user;")
+	require.NoError(t, err,
+		"the postgres OS user should still authenticate as pgedge via peer")
+	require.Contains(t, out, "pgedge")
+}
+
+// runLocalPsql runs `psql -U pgedge -d postgres -c <sql>` as the given local
+// OS user, directly against the instance's own Postgres process over the
+// Unix socket -- the same path pgBackRest and manual local psql use. Works
+// for both orchestrators: swarm execs into the instance's own container;
+// systemd execs on the host directly, since Postgres runs there natively.
+func runLocalPsql(t testing.TB, host *api.Host, instance *api.Instance, osUser, sql string) (string, error) {
+	t.Helper()
+
+	psqlCmd := fmt.Sprintf("psql -U pgedge -d postgres -c %q", sql)
+
+	switch host.Orchestrator {
+	case "swarm":
+		containerName, err := fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf(
+			"docker ps --filter label=pgedge.instance.id=%s --format '{{.Names}}'", instance.ID))
+		if err != nil {
+			return "", fmt.Errorf("failed to find postgres container: %w", err)
+		}
+		containerName = strings.TrimSpace(containerName)
+		if containerName == "" {
+			return "", fmt.Errorf("no postgres container found for instance %s", instance.ID)
+		}
+		return fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf(
+			"docker exec --user %s %s %s", osUser, containerName, psqlCmd))
+	case "systemd":
+		// RunCmdOnHost already runs as root on systemd hosts (it's SSH-based),
+		// so this becomes a (harmless) nested sudo, re-execing as osUser.
+		return fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf("sudo -u %s %s", osUser, psqlCmd))
+	default:
+		return "", fmt.Errorf("unsupported orchestrator %q", host.Orchestrator)
+	}
 }
 
 // userRuleAddresses returns the addresses of the active pg_hba rules for

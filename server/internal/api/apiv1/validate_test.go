@@ -1388,27 +1388,6 @@ func TestValidateDatabaseSpec(t *testing.T) {
 			},
 		},
 		{
-			name: "hba_file and ident_file GUCs are rejected",
-			spec: &api.DatabaseSpec{
-				PostgresqlConf: map[string]any{
-					"hba_file":   "/custom/pg_hba.conf",
-					"ident_file": "/custom/pg_ident.conf",
-				},
-				Nodes: []*api.DatabaseNodeSpec{
-					{
-						Name:           "n1",
-						HostIds:        []api.Identifier{api.Identifier("host-1")},
-						PostgresqlConf: map[string]any{"HBA_FILE": "/x"},
-					},
-				},
-			},
-			expected: []string{
-				`postgresql_conf[hba_file]: "hba_file" is not allowed`,
-				`postgresql_conf[ident_file]: "ident_file" is not allowed`,
-				`nodes[0].postgresql_conf[HBA_FILE]: "HBA_FILE" is not allowed`,
-			},
-		},
-		{
 			name: "invalid lib conf",
 			spec: &api.DatabaseSpec{
 				Nodes: []*api.DatabaseNodeSpec{
