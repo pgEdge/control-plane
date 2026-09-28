@@ -712,11 +712,12 @@ func TestBuildVersions_FallbackDefaultSkipsNonStable(t *testing.T) {
 	}
 }
 
-// TestEmbeddedManifestValid_Spock6DevEntryNotDefault verifies the real,
-// shipped version-manifest.json's Spock 6 dev entry is loaded (so it's
-// reachable via an explicit postgres_version/spock_version request or an
-// orchestrator_opts image override) but never selected as the default.
-func TestEmbeddedManifestValid_Spock6DevEntryNotDefault(t *testing.T) {
+// TestEmbeddedManifestValid_Spock6BetaEntryNotDefault verifies the real,
+// shipped version-manifest.json's Spock 6 beta entries are loaded (so
+// they're reachable via an explicit postgres_version/spock_version request
+// or an orchestrator_opts image override) but never selected as the
+// default.
+func TestEmbeddedManifestValid_Spock6BetaEntryNotDefault(t *testing.T) {
 	m := &ManifestLoader{logger: testutils.Logger(t)}
 	v, _, err := m.parseManifestData(embeddedManifest)
 	if err != nil {
@@ -728,12 +729,12 @@ func TestEmbeddedManifestValid_Spock6DevEntryNotDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected embedded manifest to have a spock6 entry: %v", err)
 	}
-	if imgs.Stability != "dev" {
-		t.Errorf("spock6 entry Stability = %q, want %q", imgs.Stability, "dev")
+	if imgs.Stability != "beta" {
+		t.Errorf("spock6 entry Stability = %q, want %q", imgs.Stability, "beta")
 	}
 
 	if major, _ := v.Default().SpockVersion.Major(); major != 5 {
-		t.Errorf("default spock major = %d, want 5 (spock6 dev entry must never be default)", major)
+		t.Errorf("default spock major = %d, want 5 (spock6 beta entry must never be default)", major)
 	}
 }
 
