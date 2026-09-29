@@ -1,0 +1,3 @@
+kind: Added
+body: Added RAG service configuration support for an optional reranking stage (`pipelines[].rerank`, Voyage AI provider) that reorders search results by relevance before context building, and a per-pipeline `allow_include_sources` flag that must be explicitly enabled before clients can request the raw content of retrieved documents. Adopted MCP v1.1.0 and RAG v2.0.0, which is now the default RAG version and fixes a hybrid-search bug where BM25 keyword results were not correctly fused with vector results.
+time: 2026-09-16T11:14:38.000000+00:00

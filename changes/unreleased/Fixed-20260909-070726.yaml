@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed a database's state not reflecting degraded instance health; the database's state is now derived from its instances' states instead of only being set on create.
+time: 2026-09-09T07:07:26.000000+00:00
