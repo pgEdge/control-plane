@@ -35,7 +35,7 @@
       {
         "postgres_version": "16.15",
         "spock_version": "5",
-        "image": "pgedge-postgres:16.15-spock5.0.11-standard-2",
+        "image": "pgedge-postgres:16.15-spock5.0.11-standard-4",
         "stability": "stable"
       },
       {
@@ -71,7 +71,7 @@
       {
         "postgres_version": "17.11",
         "spock_version": "5",
-        "image": "pgedge-postgres:17.11-spock5.0.11-standard-2",
+        "image": "pgedge-postgres:17.11-spock5.0.11-standard-4",
         "stability": "stable"
       },
       {
@@ -107,26 +107,26 @@
       {
         "postgres_version": "18.6",
         "spock_version": "5",
-        "image": "pgedge-postgres:18.6-spock5.0.11-standard-2",
+        "image": "pgedge-postgres:18.6-spock5.0.11-standard-4",
         "stability": "stable",
         "default": true
       },
       {
         "postgres_version": "16.15",
         "spock_version": "6",
-        "image": "pgedge-postgres:16.15-spock6.0.0-beta1-standard-2",
+        "image": "pgedge-postgres:16.15-spock6.0.0-beta1-standard-4",
         "stability": "beta"
       },
       {
         "postgres_version": "17.11",
         "spock_version": "6",
-        "image": "pgedge-postgres:17.11-spock6.0.0-beta1-standard-2",
+        "image": "pgedge-postgres:17.11-spock6.0.0-beta1-standard-4",
         "stability": "beta"
       },
       {
         "postgres_version": "18.6",
         "spock_version": "6",
-        "image": "pgedge-postgres:18.6-spock6.0.0-beta1-standard-2",
+        "image": "pgedge-postgres:18.6-spock6.0.0-beta1-standard-4",
         "stability": "beta"
       }
     ],
