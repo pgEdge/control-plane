@@ -137,6 +137,9 @@ identity and data, but experiences a brief downtime during the restart.
 * The transition is: available → restarting → available.
 * Restart is blocked if no configuration changes require a restart, another
   update is in progress, or the instance is not stable.
+* The task tracking the restart stays open (pending or running) until the
+  restart actually completes, including the wait for a scheduled time, and
+  can be cancelled while it's still waiting.
 
 
 In the following example, the `curl` command restarts an instance with ID
