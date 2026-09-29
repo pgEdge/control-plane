@@ -153,7 +153,7 @@ to distinguish which node you're connecting to. Once you've identified the
 container for a particular node, you can copy its container ID and run:
 
 ```sh
-docker exec -it <container ID> psql -U admin example
+docker exec -it <container ID> env PGPASSWORD=password psql -h localhost -U admin example
 ```
 
 ## Trying out Replication
