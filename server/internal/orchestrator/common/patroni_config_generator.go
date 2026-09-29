@@ -70,7 +70,7 @@ type PatroniConfigGenerator struct {
 	// inserted in the user zone after the CP rules and before the catch-all.
 	PgHbaConf []string `json:"pg_hba_conf,omitempty"`
 	// PgIdentConf are user-supplied pg_ident.conf entries (one mapping per
-	// element). The CP writes no pg_ident entries of its own.
+	// element), appended after the CP-authored map (see pgIdent()).
 	PgIdentConf []string `json:"pg_ident_conf,omitempty"`
 	// PostgresCertsDir is the Postgres certificates directory.
 	PostgresCertsDir string `json:"postgres_certs_dir"`
@@ -382,52 +382,45 @@ func (p *PatroniConfigGenerator) authentication() *patroni.Authentication {
 
 func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []hba.Entry, passwordAuthMethod hba.AuthMethod) *[]string {
 	entries := []string{
-		// Trust local connections
+		// Local (Unix socket): peer-authenticated for pgedge, mapped to
+		// whichever OS-level tooling runs as the same user as Postgres itself
+		// (e.g. pgBackRest — the map is named for the OS user, not the tool,
+		// since anything running as that user qualifies). Every other local
+		// combination for the system roles is explicitly rejected below, and
+		// every other OS account has no matching local rule at all, so it's
+		// denied by default. Database "all" does not match replication
+		// connections in pg_hba.conf, so replication needs its own line.
 		hba.Entry{
-			Type:       hba.EntryTypeLocal,
-			Database:   "all",
-			User:       "all",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "all",
-			User:       "all",
-			Address:    "127.0.0.1/32",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "all",
-			User:       "all",
-			Address:    "::1/128",
-			AuthMethod: hba.AuthMethodTrust,
+			Type:        hba.EntryTypeLocal,
+			Database:    "all",
+			User:        "pgedge",
+			AuthMethod:  hba.AuthMethodPeer,
+			AuthOptions: "map=local_superuser",
 		}.String(),
 		hba.Entry{
 			Type:       hba.EntryTypeLocal,
-			Database:   "replication",
-			User:       "all",
-			AuthMethod: hba.AuthMethodTrust,
+			Database:   "all",
+			User:       "patroni_replicator",
+			AuthMethod: hba.AuthMethodReject,
 		}.String(),
 		hba.Entry{
-			Type:       hba.EntryTypeHost,
+			Type:       hba.EntryTypeLocal,
 			Database:   "replication",
-			User:       "all",
-			Address:    "127.0.0.1/32",
-			AuthMethod: hba.AuthMethodTrust,
-		}.String(),
-		hba.Entry{
-			Type:       hba.EntryTypeHost,
-			Database:   "replication",
-			User:       "all",
-			Address:    "::1/128",
-			AuthMethod: hba.AuthMethodTrust,
+			User:       "pgedge,patroni_replicator",
+			AuthMethod: hba.AuthMethodReject,
 		}.String(),
 	}
 
+	// Certificate-authenticated addresses for the system roles: the given
+	// system addresses plus loopback. Loopback is required in addition to
+	// systemAddresses because Patroni's own self-connection (heartbeat,
+	// REST API) and the control plane's own admin connection under systemd
+	// both dial localhost rather than a system address.
+	certAddresses := append([]string{"127.0.0.1/32", "::1/128"}, systemAddresses...)
+
 	// Reject connections for system users except for SSL connections from the
-	// given system addresses.
-	for _, address := range systemAddresses {
+	// given system or loopback addresses.
+	for _, address := range certAddresses {
 		entries = append(entries,
 			hba.Entry{
 				Type:        hba.EntryTypeHostSSL,
@@ -462,6 +455,23 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 			Address:    "::/0",
 			AuthMethod: hba.AuthMethodReject,
 		}.String(),
+		// "all" does not match replication connections, so it needs its own
+		// reject pair too -- otherwise a user-supplied host replication entry
+		// for these roles would go unmatched by anything above it.
+		hba.Entry{
+			Type:       hba.EntryTypeHost,
+			Database:   "replication",
+			User:       "pgedge,patroni_replicator",
+			Address:    "0.0.0.0/0",
+			AuthMethod: hba.AuthMethodReject,
+		}.String(),
+		hba.Entry{
+			Type:       hba.EntryTypeHost,
+			Database:   "replication",
+			User:       "pgedge,patroni_replicator",
+			Address:    "::/0",
+			AuthMethod: hba.AuthMethodReject,
+		}.String(),
 	)
 
 	for _, entry := range extraEntries {
@@ -469,8 +479,14 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 	}
 
 	// User-supplied pg_hba entries form a zone after the CP's system-user rules
-	// and before the catch-all. By this point system users are already matched
-	// or rejected, so user rules cannot affect CP-internal connectivity.
+	// and before the catch-all. By this point every combination of the system
+	// roles (pgedge, patroni_replicator) with either connection type (local,
+	// host) and either database selector (all, replication) has already been
+	// matched or rejected above, so user rules in this zone cannot affect
+	// CP-internal connectivity. This protection only applies when Patroni is
+	// managing pg_hba.conf at all — the hba_file/ident_file postgresql_conf
+	// GUCs let an operator replace the generated file entirely, bypassing
+	// this zone (and everything else here) if they choose to.
 	// p.PgHbaConf already has node-level entries prepended ahead of the
 	// database-level entries.
 	entries = append(entries, p.PgHbaConf...)
@@ -497,13 +513,18 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 	return &entries
 }
 
-// pgIdent returns the user-supplied pg_ident.conf entries, or nil when there
-// are none. The CP writes no pg_ident entries of its own.
+// pgIdent returns the pg_ident.conf entries: the CP-authored map backing the
+// "local" peer rule in pgHba(), followed by any user-supplied entries.
 func (p *PatroniConfigGenerator) pgIdent() *[]string {
-	if len(p.PgIdentConf) == 0 {
-		return nil
+	entries := []string{
+		hba.IdentEntry{
+			MapName:          "local_superuser",
+			SystemUsername:   "postgres",
+			PostgresUsername: "pgedge",
+		}.String(),
 	}
-	return &p.PgIdentConf
+	entries = append(entries, p.PgIdentConf...)
+	return &entries
 }
 
 // mapIPv4Addresses return IPv4-mapped IPv6 (aka 4in6) versions of every IPv4

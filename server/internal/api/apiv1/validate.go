@@ -24,23 +24,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/validation"
 )
 
-// validateAuthFileGUCs rejects postgresql_conf settings that would make
-// user-supplied pg_hba_conf/pg_ident_conf entries ineffective. When hba_file
-// or ident_file is set, Patroni ignores the pg_hba/pg_ident arrays it manages,
-// so the control-plane-generated file (including user entries) would never be
-// written. GUC names are case-insensitive in PostgreSQL, so we compare lower.
-func validateAuthFileGUCs(conf map[string]any, path validation.Path) []error {
-	var errs []error
-	for key := range conf {
-		switch strings.ToLower(strings.TrimSpace(key)) {
-		case "hba_file", "ident_file":
-			err := fmt.Errorf("%q is not allowed: it overrides the control-plane-managed pg_hba.conf/pg_ident.conf and would make pg_hba_conf/pg_ident_conf entries ineffective", key)
-			errs = append(errs, validation.NewError(err, path.AppendMapKey(key)))
-		}
-	}
-	return errs
-}
-
 func validateConfLibraries(conf map[string]any, path validation.Path) []error {
 	// param names are case-insensitive, so comparison is done after casting to lowercase
 	for key, val := range conf {
@@ -159,9 +142,8 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 		}
 	}
 
-	// Reject postgresql_conf GUCs that would make user-supplied pg_hba/pg_ident
-	// entries ineffective or remove spock, then validate the entries themselves.
-	errs = append(errs, validateAuthFileGUCs(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	// Reject postgresql_conf GUCs that would remove spock, then validate the
+	// pg_hba/pg_ident entries themselves.
 	errs = append(errs, validateConfLibraries(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, validation.NewPath("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, validation.NewPath("pg_ident_conf"))...)
@@ -327,7 +309,6 @@ func validateNode(
 		}
 	}
 
-	errs = append(errs, validateAuthFileGUCs(node.PostgresqlConf, path.Append("postgresql_conf"))...)
 	errs = append(errs, validateConfLibraries(node.PostgresqlConf, path.Append("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(node.PgHbaConf, path.Append("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(node.PgIdentConf, path.Append("pg_ident_conf"))...)
