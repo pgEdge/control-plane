@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed service config updates (RAG, MCP) dropping previously configured secrets (passwords, API keys, tokens) when a spec update omitted them instead of preserving the stored values.
-time: 2026-09-05T20:32:52.000000+00:00

@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.11.0 - 2026-09-30
+
+### Added
+
+- Added foundational support for Spock 6 as a preview on both Docker Swarm (via a preview image in the version manifest) and systemd (via `spock60` packages from the pgEdge repositories). Databases running Spock 6 or later on Postgres 17 or later automatically use Postgres's native replication slot failover.
+- Added RAG service configuration support for an optional reranking stage (`pipelines[].rerank`, Voyage AI provider) that reorders search results by relevance before context building, and a per-pipeline `allow_include_sources` flag that must be explicitly enabled before clients can request the raw content of retrieved documents. Adopted MCP v1.1.0 and RAG v2.0.0, which is now the default RAG version and fixes a hybrid-search bug where BM25 keyword results were not correctly fused with vector results.
+
+### Removed
+
+- Removed Debian 11 (bullseye) from the list of platforms published to on release; it had reached end of life.
+
+### Fixed
+
+- Fixed add-node correctness issues to match Spock's reference behavior.
+- Fixed service config updates (RAG, MCP) dropping previously configured secrets (passwords, API keys, tokens) when a spec update omitted them instead of preserving the stored values.
+- Fixed a database's state not reflecting degraded instance health; the database's state is now derived from its instances' states instead of only being set on create.
+- Fixed database creation and updates not inferring the Postgres and Spock versions from a custom `orchestrator_opts.swarm.image` tag, which could leave `postgres_version`/`spock_version` out of sync with the pinned image.
+- Fixed database spec updates not rejecting a change to `spock_version`'s major version, which is unsupported and can break replication.
+- Fixed the restart-instance task, including a scheduled restart, closing as soon as the request was accepted instead of once the restart actually completed; the task now stays open (pending or running) until then and remains cancellable while it's waiting.
+- Use peer/cert auth for local connections.
+
 ## v0.10.1 - 2026-08-12
 
 ### Fixed

@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed the restart-instance task, including a scheduled restart, closing as soon as the request was accepted instead of once the restart actually completed; the task now stays open (pending or running) until then and remains cancellable while it's waiting.
-time: 2026-09-24T09:25:21.000000+00:00
