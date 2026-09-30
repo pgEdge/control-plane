@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed database spec updates not rejecting a change to `spock_version`'s major version, which is unsupported and can break replication.
-time: 2026-09-17T06:07:16.000000+00:00
