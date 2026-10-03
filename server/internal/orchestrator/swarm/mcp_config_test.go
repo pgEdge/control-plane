@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/goccy/go-yaml"
@@ -207,6 +208,7 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 			LLMMaxTokens:    &maxTok,
 			PoolMaxConns:    &poolMax,
 			AllowWrites:     &allowW,
+			MetadataTTL:     strPtr("10m"),
 		},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
@@ -238,6 +240,29 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 	}
 	if !cfg.Databases[0].AllowWrites {
 		t.Error("databases[0].allow_writes should be true")
+	}
+	if cfg.Databases[0].MetadataTTL != "10m" {
+		t.Errorf("databases[0].metadata_ttl = %q, want %q", cfg.Databases[0].MetadataTTL, "10m")
+	}
+}
+
+func TestGenerateMCPConfig_MetadataTTL_Omitted(t *testing.T) {
+	params := &MCPConfigParams{
+		Config:        &database.MCPServiceConfig{},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	// Check raw YAML to verify omitempty actually omits the key.
+	if strings.Contains(string(data), "metadata_ttl:") {
+		t.Error("raw YAML should not contain metadata_ttl key when unset")
 	}
 }
 
