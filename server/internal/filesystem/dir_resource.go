@@ -108,10 +108,35 @@ func (d *DirResource) Create(ctx context.Context, rc *resource.Context) error {
 	if perm == 0 {
 		perm = 0o700
 	}
+
+	// MkdirAll creates every missing directory in the path, each owned by
+	// whoever this process runs as (root, typically), regardless of
+	// OwnerUID/OwnerGID below — only the leaf gets chowned afterward
+	// otherwise. In practice the only missing ancestor is the immediate
+	// parent (e.g. /var/lib/postgresql/<major> on the first instance of a
+	// given Postgres major on a fresh host) — package installs are expected
+	// to have created everything above that already. Check and fix
+	// ownership on just that one level, rather than walking arbitrarily far
+	// up: an unbounded walk would, on a sufficiently broken host, reach
+	// directories Control Plane doesn't own and must never chown (e.g.
+	// /var/lib/postgresql itself).
+	parentPath := filepath.Dir(d.FullPath)
+	parentExisted := true
+	if _, err := fs.Stat(parentPath); errors.Is(err, afero.ErrFileNotFound) {
+		parentExisted = false
+	} else if err != nil {
+		return fmt.Errorf("failed to stat %q: %w", parentPath, err)
+	}
+
 	if err := fs.MkdirAll(d.FullPath, perm); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
 	if d.OwnerUID != 0 && d.OwnerGID != 0 {
+		if !parentExisted {
+			if err := fs.Chown(parentPath, d.OwnerUID, d.OwnerGID); err != nil {
+				return fmt.Errorf("failed to change ownership for directory %q: %w", parentPath, err)
+			}
+		}
 		if err := fs.Chown(d.FullPath, d.OwnerUID, d.OwnerGID); err != nil {
 			return fmt.Errorf("failed to change ownership for directory %q: %w", d.FullPath, err)
 		}
