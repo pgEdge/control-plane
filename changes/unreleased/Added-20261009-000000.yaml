@@ -1,0 +1,3 @@
+kind: Added
+body: Added support for Spock 5.0.13 on Postgres 16.15, 17.11, and 18.6.
+time: 2026-10-09T00:00:00.000000+00:00
