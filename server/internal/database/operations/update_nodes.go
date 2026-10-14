@@ -33,18 +33,18 @@ func UpdateNode(start *resource.State, node *NodeResources) ([]*resource.State, 
 			replicaAdds = append(replicaAdds, state)
 		}
 	}
-	if primary == nil {
-		// TODO(PLAT-582): This is another place where we assume that a node has
-		// a primary instance. We're returning an error here so that we don't
-		// break downstream components that make the same assumption. We'll need
-		// to change this if we want workflows to handle nodes without a primary
-		// instance.
-		return nil, fmt.Errorf("node %s has no primary instance", node.NodeName)
-	}
-
 	// Existing replicas should be updated first and new replicas should be
-	// added last.
-	states := slices.Concat(replicaUpdates, []*resource.State{primary}, replicaAdds)
+	// added last. If the node has no primary, every instance is treated as a
+	// replica and there's no primary state to place between them.
+	var states []*resource.State
+	if primary != nil {
+		states = slices.Concat(replicaUpdates, []*resource.State{primary}, replicaAdds)
+	} else {
+		states = slices.Concat(replicaUpdates, replicaAdds)
+	}
+	if len(states) == 0 {
+		return nil, fmt.Errorf("node %s has no instances", node.NodeName)
+	}
 
 	nodeState, err := node.nodeResourceState()
 	if err != nil {

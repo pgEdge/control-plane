@@ -219,9 +219,8 @@ func TestUpdateNode(t *testing.T) {
 			},
 		},
 		{
-			// TODO(PLAT-582): we need to decide how to handle this case. For
-			// now, this produces an error to avoid breaking downstream
-			// components.
+			// With no primary, every instance is treated as a replica and the
+			// node resource is merged onto the last one.
 			name:  "no primary",
 			start: resource.NewState(),
 			node: &operations.NodeResources{
@@ -231,7 +230,18 @@ func TestUpdateNode(t *testing.T) {
 					instance1,
 				},
 			},
-			expectedErr: "node n1 has no primary instance",
+			expected: []*resource.State{
+				makeState(t,
+					[]resource.Resource{
+						instance1.Instance,
+						&database.NodeResource{
+							Name:        "n1",
+							InstanceIDs: []string{instance1.InstanceID()},
+						},
+					},
+					instance1.InstanceDependencies,
+				),
+			},
 		},
 		{
 			name:  "primary not created",
