@@ -14,6 +14,7 @@ import (
 var (
 	ErrExecutorNotFound = errors.New("executor not found")
 	ErrHostRemoved      = errors.New("host with the given ID has been removed")
+	ErrNoPrimary        = errors.New("node has no primary instance")
 )
 
 func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Executor) (core.Queue, error) {
@@ -32,9 +33,7 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 			return "", fmt.Errorf("failed to get node resource: %w", err)
 		}
 		if node.PrimaryInstanceID == "" {
-			// If this happens then whichever resource is using this executor
-			// is probably missing the node in its dependencies.
-			return "", fmt.Errorf("node %s has no primary instance", node.Name)
+			return "", fmt.Errorf("node %s has no primary instance: %w", node.Name, ErrNoPrimary)
 		}
 		instance, err := resource.FromState[*database.InstanceResource](state, database.InstanceResourceIdentifier(node.PrimaryInstanceID))
 		if errors.Is(err, resource.ErrNotFound) {
