@@ -54,6 +54,17 @@ func (w *Workflows) applyEvents(
 					// other types of events should produce an error.
 					return fmt.Errorf("cannot queue event type %s for %s because its host is being removed", event.Type, event.Resource.Identifier)
 				}
+			case errors.Is(err, activities.ErrNoPrimary):
+				if event.Type == resource.EventTypeDelete {
+					// There's no primary to run the delete against, but the
+					// resource is going away anyway, so just remove it from
+					// state the same way we do for ErrHostRemoved.
+					state.Remove(event.Resource)
+				} else if event.Type != resource.EventTypeRefresh {
+					return fmt.Errorf("cannot queue event type %s for %s because its node has no primary instance", event.Type, event.Resource.Identifier)
+				}
+				// Refresh events leave the state alone so the rest of the
+				// database can still be refreshed/planned.
 			case err != nil:
 				return fmt.Errorf("failed to queue apply event: %w", err)
 			}
