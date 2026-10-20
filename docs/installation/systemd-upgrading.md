@@ -51,14 +51,25 @@ packages on each machine. Follow these steps on each host in the cluster:
     sudo apt install --only-upgrade pgedge-postgresql-18
     ```
 
-1. Find the systemd unit names for your database instances by listing units that
+2. Upgrade the Spock package the same way. For example, to upgrade the
+   Spock 5 package on Postgres 18:
+
+    ```sh
+    # If your system uses dnf, run:
+    sudo dnf upgrade pgedge-spock50_18
+
+    # If your system uses apt, run:
+    sudo apt install --only-upgrade pgedge-postgresql-18-spock50
+    ```
+
+3. Find the systemd unit names for your database instances by listing units that
    have the `patroni-*` prefix:
 
     ```sh
     sudo systemctl list-units 'patroni-*'
     ```
 
-2. Restart each service:
+4. Restart each service:
 
     ```sh
     sudo systemctl try-restart <service name>
@@ -69,3 +80,69 @@ starting with hosts running replica instances.
 
 After completing the upgrade on all hosts, it may take up to 30 seconds for the
 new versions to be reflected in the database spec in the Control Plane API.
+
+### Applying output_plugin_libraries After the Upgrade
+
+Postgres 16.15, 17.11, 18.6, and later minor versions gate logical
+decoding output plugins behind the `output_plugin_libraries`
+allow-list. See
+[output_plugin_libraries and Postgres Minor Versions](../using/create-db.md#output_plugin_libraries-and-postgres-minor-versions)
+for why Spock needs this setting once a node is on a patched minor
+version.
+
+A manual package upgrade and service restart does not push
+`output_plugin_libraries` to Patroni. The Control Plane reflects the
+new Postgres version in the database spec within about 30 seconds of
+the restart, but the GUC itself is only applied to Patroni as part of
+an API-driven spec update, which this manual upgrade flow does not
+trigger. You must submit that spec update yourself to restore Spock
+replication after a manual minor version upgrade.
+
+> [!WARNING]
+> Confirm that every targeted host is running a patched minor version
+> (16.15, 17.11, 18.6, or later) before you set
+> `output_plugin_libraries`. Postgres refuses to start with
+> `unrecognized configuration parameter "output_plugin_libraries"` if
+> the setting is present on an older, unpatched minor version.
+
+Once the target host or hosts are confirmed on a patched minor
+version, submit a spec update that explicitly sets
+`postgresql_conf.output_plugin_libraries` to the full list of output
+plugins Spock and any other logical decoding consumers need:
+
+```sh
+curl -X POST http://localhost:3000/v1/databases/example \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "id": "example",
+        "spec": {
+            "postgresql_conf": {
+                "output_plugin_libraries": "pgoutput, test_decoding, spock_output"
+            }
+        }
+    }'
+```
+
+If you upgrade hosts one at a time rather than all at once, apply the
+override per node with `nodes[].postgresql_conf` instead of setting it
+database-wide, until every node in the database is confirmed on a
+patched minor version:
+
+```sh
+curl -X POST http://localhost:3000/v1/databases/example \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "id": "example",
+        "spec": {
+            "nodes": [
+                {
+                    "name": "n1",
+                    "host_ids": ["host-1"],
+                    "postgresql_conf": {
+                        "output_plugin_libraries": "pgoutput, test_decoding, spock_output"
+                    }
+                }
+            ]
+        }
+    }'
+```

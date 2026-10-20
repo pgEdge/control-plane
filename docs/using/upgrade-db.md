@@ -244,6 +244,28 @@ asynchronously.
     supply its image reference yourself. To upgrade to a different Postgres
     major version, see [Major Version Upgrades](#major-version-upgrades).
 
+## output_plugin_libraries
+
+Postgres 16.15, 17.11, 18.6, and later minor versions gate logical
+decoding output plugins behind the `output_plugin_libraries`
+allow-list. See
+[output_plugin_libraries and Postgres Minor Versions](./create-db.md#output_plugin_libraries-and-postgres-minor-versions)
+for background on why Spock needs this setting.
+
+The Control Plane applies `output_plugin_libraries` automatically as
+part of any API-driven upgrade, including the
+[minor version upgrades](#minor-version-upgrades) and
+[image upgrades](#image-upgrades) described above. No manual action is
+required; once an instance reconciles onto a patched minor version,
+the Control Plane sets the GUC for you.
+
+!!! note
+
+    This automatic handling only applies to API-driven upgrades. If you
+    upgrade a systemd cluster by installing packages manually instead,
+    see [Applying output_plugin_libraries After the Upgrade](../installation/systemd-upgrading.md#applying-output_plugin_libraries-after-the-upgrade)
+    for the manual workaround.
+
 ## Which Versions Are Available
 
 You can see the list of supported Postgres versions for each host by submitting
