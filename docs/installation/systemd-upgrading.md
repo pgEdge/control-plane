@@ -62,6 +62,16 @@ packages on each machine. Follow these steps on each host in the cluster:
     sudo apt install --only-upgrade pgedge-postgresql-18-spock50
     ```
 
+> [!NOTE]
+> Restarting Postgres after installing a new Spock package triggers
+> Spock's background worker to detect the version mismatch and migrate
+> the extension schema automatically; no manual `ALTER EXTENSION`
+> step is required. For a production cluster, disable
+> `spock.enable_ddl_replication` before upgrading and re-enable it only
+> after every node is on the new version. See
+> [Upgrading the Spock Extension](https://docs.pgedge.com/spock-v5/upgrading_spock/)
+> for the full procedure, including replication verification steps.
+
 3. Find the systemd unit names for your database instances by listing units that
    have the `patroni-*` prefix:
 
@@ -116,12 +126,26 @@ curl -X POST http://localhost:3000/v1/databases/example \
     --data '{
         "id": "example",
         "spec": {
+            "database_name": "example",
             "postgresql_conf": {
                 "output_plugin_libraries": "pgoutput, test_decoding, spock_output"
-            }
+            },
+            "nodes": [
+                { "name": "n1", "host_ids": ["host-1"] },
+                { "name": "n2", "host_ids": ["host-2"] },
+                { "name": "n3", "host_ids": ["host-3"] }
+            ]
         }
     }'
 ```
+
+> [!NOTE]
+> `database_name` and `nodes` are required on every spec update, and
+> `nodes` must list every node currently in the database; omitting a
+> node removes it. Other optional fields, such as `database_users`,
+> are preserved from the existing spec if you leave them out. See
+> [Updating a Database](../using/update-db.md) for more detail on the
+> update request format.
 
 If you upgrade hosts one at a time rather than all at once, apply the
 override per node with `nodes[].postgresql_conf` instead of setting it
@@ -134,6 +158,7 @@ curl -X POST http://localhost:3000/v1/databases/example \
     --data '{
         "id": "example",
         "spec": {
+            "database_name": "example",
             "nodes": [
                 {
                     "name": "n1",
@@ -141,8 +166,15 @@ curl -X POST http://localhost:3000/v1/databases/example \
                     "postgresql_conf": {
                         "output_plugin_libraries": "pgoutput, test_decoding, spock_output"
                     }
-                }
+                },
+                { "name": "n2", "host_ids": ["host-2"] },
+                { "name": "n3", "host_ids": ["host-3"] }
             ]
         }
     }'
 ```
+
+> [!NOTE]
+> Include every node in the `nodes` array even though only `n1` gets
+> the override; a `nodes` entry that is left out of the request is
+> removed from the database.

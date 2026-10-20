@@ -257,7 +257,10 @@ part of any API-driven upgrade, including the
 [minor version upgrades](#minor-version-upgrades) and
 [image upgrades](#image-upgrades) described above. No manual action is
 required; once an instance reconciles onto a patched minor version,
-the Control Plane sets the GUC for you.
+the Control Plane sets the GUC for you, as long as you have not set
+`postgresql_conf.output_plugin_libraries` explicitly. An explicit value
+overrides the Control Plane's default, so if you set one yourself,
+make sure `spock_output` stays on the list across upgrades.
 
 !!! note
 
