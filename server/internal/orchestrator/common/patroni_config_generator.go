@@ -304,18 +304,21 @@ func (p *PatroniConfigGenerator) etcd(hosts []string, creds *EtcdCreds) *patroni
 }
 
 func (p *PatroniConfigGenerator) restAPI(systemAddresses []string) *patroni.RestAPI {
+	loopback := []string{
+		"127.0.0.1", // Always allow local connections
+		"localhost",
+		"::1",
+	}
 	combined := utils.PointerTo(slices.Concat(
 		p.PatroniAllowlist,
 		systemAddresses,
+		loopback,
 		// Patroni doesn't properly unwrap 4In6 addresses when its comparing
 		// against this allowlist, so every IPv4 address needs to be duplicated
-		// with the ::ffff: prefix to ensure it works as intended.
-		mapIPv4Addresses(p.PatroniAllowlist, systemAddresses),
-		[]string{
-			"127.0.0.1", // Always allow local connections
-			"localhost",
-			"::1",
-		},
+		// with the ::ffff: prefix to ensure it works as intended. This also
+		// covers 127.0.0.1, since on a dual-stack listener a connection dialed
+		// to it can arrive with peer address ::ffff:127.0.0.1.
+		mapIPv4Addresses(p.PatroniAllowlist, systemAddresses, loopback),
 	))
 
 	return &patroni.RestAPI{
