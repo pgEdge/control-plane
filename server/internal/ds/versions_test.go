@@ -73,6 +73,10 @@ func TestParseVersion(t *testing.T) {
 			expected: &ds.Version{Components: []uint64{6, 0, 0}, PreRelease: "beta.1"},
 		},
 		{
+			input:    "18rc1",
+			expected: &ds.Version{Components: []uint64{18}, PreRelease: "rc1"},
+		},
+		{
 			// Still rejected: empty pre-release suffix.
 			input:       "5.0.0-",
 			expectedErr: "invalid version format",

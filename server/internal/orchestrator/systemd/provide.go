@@ -1,27 +1,18 @@
 package systemd
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/samber/do"
-)
-
-type OSFamily string
-
-const (
-	OSFamilyUnknown OSFamily = "unknown"
-	OSFamilyRedHat  OSFamily = "redhat"
-	OSFamilyDebian  OSFamily = "debian"
+	"github.com/spf13/afero"
 )
 
 func Provide(i *do.Injector) {
 	provideClient(i)
 	providePackageManager(i)
+	provideVersionsProbe(i)
 	provideOrchestrator(i)
 }
 
@@ -38,18 +29,36 @@ func provideClient(i *do.Injector) {
 
 func providePackageManager(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (PackageManager, error) {
-		osFamily, err := getOSFamily()
+		cfg, err := do.Invoke[config.Config](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to determine os family: %w", err)
+			return nil, err
 		}
-		switch osFamily {
-		case OSFamilyRedHat:
+		switch cfg.SystemD.OSFamily {
+		case config.OSFamilyRedHat:
 			return &Dnf{}, nil
-		case OSFamilyDebian:
+		case config.OSFamilyDebian:
 			return &Apt{}, nil
 		default:
-			return nil, fmt.Errorf("unrecognized os family '%s'", osFamily)
+			return nil, fmt.Errorf("unrecognized os family '%s'", cfg.SystemD.OSFamily)
 		}
+	})
+}
+
+func provideVersionsProbe(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (*InstalledVersionsProbe, error) {
+		fsys, err := do.Invoke[afero.Fs](i)
+		if err != nil {
+			return nil, err
+		}
+		cfg, err := do.Invoke[config.Config](i)
+		if err != nil {
+			return nil, err
+		}
+		packageManager, err := do.Invoke[PackageManager](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewInstalledVersionsProbe(DefaultExecCommand, fsys, cfg.SystemD.PgBinDirs, packageManager), nil
 	})
 }
 
@@ -71,32 +80,11 @@ func provideOrchestrator(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-
-		return NewOrchestrator(cfg, loggerFactory, client, packageManager)
-	})
-}
-
-func getOSFamily() (OSFamily, error) {
-	file, err := os.Open("/etc/os-release")
-	if err != nil {
-		return "", fmt.Errorf("failed to open /etc/os-release: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "ID=") || strings.HasPrefix(line, "ID_LIKE=") {
-			if strings.Contains(line, "debian") {
-				return OSFamilyDebian, nil
-			}
-			if strings.Contains(line, "rhel") || strings.Contains(line, "fedora") {
-				return OSFamilyRedHat, nil
-			}
+		versionsProbe, err := do.Invoke[*InstalledVersionsProbe](i)
+		if err != nil {
+			return nil, err
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("failed to scan /etc/os-release: %w", err)
-	}
-	return OSFamilyUnknown, nil
+
+		return NewOrchestrator(cfg, loggerFactory, client, packageManager, versionsProbe)
+	})
 }

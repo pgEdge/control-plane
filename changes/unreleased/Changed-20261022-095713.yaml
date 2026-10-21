@@ -1,0 +1,3 @@
+kind: Changed
+body: Changed systemd orchestrator to find Postgres and Spock installations using `pg_config` rather than by matching specific package names.
+time: 2026-10-22T09:57:13.951356-04:00
