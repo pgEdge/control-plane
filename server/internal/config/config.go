@@ -1,12 +1,18 @@
 package config
 
 import (
+	"bufio"
+	"cmp"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -122,10 +128,26 @@ var defaultDockerSwarm = DockerSwarm{
 	ManifestURL:                DefaultManifestURL,
 }
 
+type OSFamily string
+
+func (f OSFamily) String() string {
+	return string(f)
+}
+
+const (
+	OSFamilyUnknown OSFamily = "unknown"
+	OSFamilyRedHat  OSFamily = "redhat"
+	OSFamilyDebian  OSFamily = "debian"
+)
+
+var knownOSFamilies = ds.NewSet(OSFamilyRedHat, OSFamilyDebian)
+
 type SystemD struct {
-	InstanceDataDir string `koanf:"instance_data_dir" json:"instance_data_dir,omitempty"`
-	PgBackRestPath  string `koanf:"pgbackrest_path" json:"pgbackrest_path,omitempty"`
-	PatroniPath     string `koanf:"patroni_path" json:"patroni_path,omitempty"`
+	OSFamily        OSFamily          `koanf:"os_family" json:"os_family,omitempty"`
+	InstanceDataDir string            `koanf:"instance_data_dir" json:"instance_data_dir,omitempty"`
+	PgBackRestPath  string            `koanf:"pgbackrest_path" json:"pgbackrest_path,omitempty"`
+	PatroniPath     string            `koanf:"patroni_path" json:"patroni_path,omitempty"`
+	PgBinDirs       map[string]string `koanf:"pg_bin_dirs" json:"pg_bin_dirs,omitzero"`
 }
 
 func (s SystemD) validate() []error {
@@ -136,13 +158,34 @@ func (s SystemD) validate() []error {
 	if s.PatroniPath == "" {
 		errs = append(errs, errors.New("patroni_path cannot be empty"))
 	}
+	if !knownOSFamilies.Has(s.OSFamily) {
+		var families strings.Builder
+		for _, family := range knownOSFamilies.ToSortedSlice(cmp.Compare) {
+			if families.Len() > 0 {
+				families.WriteString(", ")
+			}
+			families.WriteString(family.String())
+		}
+		errs = append(errs, fmt.Errorf("os_family cannot be '%s', must be one of: %s", s.OSFamily, &families))
+	}
+	for _, pgMajor := range slices.Sorted(maps.Keys(s.PgBinDirs)) {
+		if _, err := strconv.ParseUint(pgMajor, 10, 64); err != nil {
+			errs = append(errs, fmt.Errorf("pg_bin_dirs: key '%s' must be a postgres major version, e.g. '17'", pgMajor))
+		}
+		if dir := s.PgBinDirs[pgMajor]; !filepath.IsAbs(dir) {
+			errs = append(errs, fmt.Errorf("pg_bin_dirs.%s: must be an absolute path, got '%s'", pgMajor, dir))
+		}
+	}
 
 	return errs
 }
 
-var defaultSystemD = SystemD{
-	PgBackRestPath: "/usr/bin/pgbackrest",
-	PatroniPath:    "/usr/bin/patroni",
+func defaultSystemD() SystemD {
+	return SystemD{
+		OSFamily:       getOSFamily(),
+		PgBackRestPath: "/usr/bin/pgbackrest",
+		PatroniPath:    "/usr/bin/patroni",
+	}
 }
 
 type HTTP struct {
@@ -315,8 +358,8 @@ func isValidHostname(hostname string) error {
 	if strings.HasPrefix(hostname, "-") || strings.HasSuffix(hostname, "-") {
 		return errors.New("cannot start or end with a hyphen")
 	}
-	labels := strings.Split(hostname, ".")
-	for _, label := range labels {
+	labels := strings.SplitSeq(hostname, ".")
+	for label := range labels {
 		if len(label) == 0 {
 			return errors.New("hostnames cannot have empty labels")
 		}
@@ -424,7 +467,7 @@ func DefaultConfig() (Config, error) {
 		EtcdServer:                      etcdServerDefault,
 		EtcdClient:                      etcdClientDefault,
 		DockerSwarm:                     defaultDockerSwarm,
-		SystemD:                         defaultSystemD,
+		SystemD:                         defaultSystemD(),
 		RandomPorts:                     defaultRandomPorts,
 		DatabasesMonitorIntervalSeconds: 30,
 	}, nil
@@ -495,4 +538,31 @@ func getShortHostname() (string, error) {
 	short, _, _ := strings.Cut(hostname, ".")
 
 	return short, nil
+}
+
+func getOSFamily() OSFamily {
+	osFamily := OSFamilyUnknown
+	file, err := os.Open("/etc/os-release")
+	if err != nil {
+		return osFamily
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "ID=") || strings.HasPrefix(line, "ID_LIKE=") {
+			if strings.Contains(line, "debian") {
+				osFamily = OSFamilyDebian
+				break
+			}
+			if strings.Contains(line, "rhel") || strings.Contains(line, "fedora") {
+				osFamily = OSFamilyRedHat
+				break
+			}
+		}
+	}
+	// We intentionally ignore scanner errors.
+	_ = scanner.Err()
+	return osFamily
 }

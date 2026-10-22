@@ -10,7 +10,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strconv"
 	"syscall"
 
@@ -37,6 +36,7 @@ type Orchestrator struct {
 	logger         zerolog.Logger
 	client         *Client
 	packageManager PackageManager
+	versionsProbe  *InstalledVersionsProbe
 	cpus           int
 	memBytes       uint64
 }
@@ -46,6 +46,7 @@ func NewOrchestrator(
 	loggerFactory *logging.Factory,
 	client *Client,
 	packageManager PackageManager,
+	versionsProbe *InstalledVersionsProbe,
 ) (*Orchestrator, error) {
 	logger := loggerFactory.Logger("systemd_orchestrator")
 	logger.Debug().Msg("initializing orchestrator")
@@ -66,6 +67,7 @@ func NewOrchestrator(
 		logger:         logger,
 		client:         client,
 		packageManager: packageManager,
+		versionsProbe:  versionsProbe,
 		cpus:           cpu,
 		memBytes:       mem,
 	}, nil
@@ -78,7 +80,7 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	o.logger.Debug().Msg("querying installed versions")
 
-	versions, err := o.packageManager.InstalledPostgresVersions(ctx)
+	versions, err := o.versionsProbe.InstalledPostgresVersions(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get installed postgres versions: %w", err)
 	}
@@ -87,57 +89,31 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		Int("version_count", len(versions)).
 		Msg("got installed versions")
 
-	var supported []*ds.PgEdgeVersion
-	for _, installed := range versions {
-		if len(installed.Spock) == 0 {
-			o.logger.Debug().
-				Str("postgres_name", installed.Postgres.Name).
-				Str("postgres_major", installed.Postgres.PostgresMajor).
-				Str("postgres_version", installed.Postgres.Version.String()).
-				Msg("missing spock for this postgres version")
-			// We need spock
-			continue
-		}
-
-		o.logger.Debug().
-			Str("postgres_name", installed.Postgres.Name).
-			Str("postgres_major", installed.Postgres.PostgresMajor).
-			Str("postgres_version", installed.Postgres.Version.String()).
-			Msg("postgres version")
-
-		for _, spock := range installed.Spock {
-			o.logger.Debug().
-				Str("spock_name", spock.Name).
-				Str("spock_postgres_major", spock.PostgresMajor).
-				Str("spock_version", spock.Version.String()).
-				Msg("spock version")
-
-			version := &ds.PgEdgeVersion{
-				PostgresVersion: installed.Postgres.Version,
-				SpockVersion:    spock.Version.MajorVersion(),
-			}
-			supported = append(supported, version)
-
-			o.logger.Debug().
-				Str("version", version.String()).
-				Msg("pgedge version")
-		}
-
-	}
-	if len(supported) == 0 {
+	if len(versions) == 0 {
+		// TODO(PLAT-752): This wording should change or the error should be
+		// removed as we work towards optional spock.
 		return errors.New("pgedge postgres not installed")
 	}
-	slices.SortFunc(supported, func(a, b *ds.PgEdgeVersion) int {
-		// Sort in reverse order
-		return -a.Compare(b)
-	})
+
+	h.SupportedPgEdgeVersions = versions
+	h.DefaultPgEdgeVersion = defaultVersion(versions)
 
 	h.CPUs = int(o.cpus)
 	h.MemBytes = o.memBytes
-	h.DefaultPgEdgeVersion = supported[0]
-	h.SupportedPgEdgeVersions = supported
 
 	return nil
+}
+
+// defaultVersion returns the most recent stable version from the given
+// versions, which must be non-empty and sorted in descending order. It falls
+// back to the most recent version if only pre-releases are available.
+func defaultVersion(versions []*ds.PgEdgeVersion) *ds.PgEdgeVersion {
+	for _, version := range versions {
+		if version.Stability.AllowedAsDefault() {
+			return version
+		}
+	}
+	return versions[0]
 }
 
 func (o *Orchestrator) PopulateHostStatus(ctx context.Context, h *host.HostStatus) error {

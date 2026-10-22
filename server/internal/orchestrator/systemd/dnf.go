@@ -1,11 +1,8 @@
 package systemd
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
-	"time"
 )
 
 var _ PackageManager = (*Dnf)(nil)
@@ -20,45 +17,4 @@ func (d *Dnf) InstanceDataBaseDir(pgMajor string) string {
 
 func (d *Dnf) BinDir(pgMajor string) string {
 	return fmt.Sprintf("/usr/pgsql-%s/bin", pgMajor)
-}
-
-func (d *Dnf) InstalledPostgresVersions(ctx context.Context) ([]*InstalledPostgres, error) {
-	execCmd := d.ExecCommand
-	if execCmd == nil {
-		execCmd = DefaultExecCommand
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	var stdout, stderr strings.Builder
-	err := execCmd(ctx, &stdout, &stderr, "rpm", "--query", "--all", "--qf", "%{NAME} %{VERSION}\n")
-	if err != nil {
-		return nil, fmt.Errorf("failed to query installed packages: %w, stderr: %s", err, stderr.String())
-	}
-
-	return processPackageList(
-		dnfPostgresPackageNames,
-		dnfSpockPackageNames,
-		stdout.String(),
-	)
-}
-
-var dnfPostgresPackageNames, dnfSpockPackageNames = dnfPackageNames()
-
-func dnfPackageNames() (map[string]string, map[string]string) {
-
-	postgresPackageNames := make(map[string]string, len(supportedPostgresVersions))
-	spockPackageNames := make(map[string]string, len(supportedPostgresVersions)*len(supportedSpockVersions))
-
-	for _, postgres := range supportedPostgresVersions {
-		postgresPackageName := fmt.Sprintf("pgedge-postgresql%s", postgres)
-		postgresPackageNames[postgresPackageName] = postgres
-		for _, spock := range supportedSpockVersions {
-			spockPackageName := fmt.Sprintf("pgedge-spock%s_%s", spock, postgres)
-			spockPackageNames[spockPackageName] = postgres
-		}
-	}
-
-	return postgresPackageNames, spockPackageNames
 }
