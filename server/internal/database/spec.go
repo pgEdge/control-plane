@@ -650,19 +650,40 @@ func (s *InstanceSpec) ValidateLocalRepositories() []string {
 	var errs []string
 	if s.BackupConfig != nil {
 		for _, repo := range s.BackupConfig.Repositories {
-			if repo.Type == pgbackrest.RepositoryTypePosix {
+			if isLocalRepository(repo) {
 				errs = append(errs, fmt.Sprintf(
 					"backup repository %q uses type %q, which is local to a single host's filesystem and not supported for a node with instances on multiple hosts",
 					repo.ID, repo.Type))
 			}
 		}
 	}
-	if s.RestoreConfig != nil && s.RestoreConfig.Repository != nil && s.RestoreConfig.Repository.Type == pgbackrest.RepositoryTypePosix {
+	if s.RestoreConfig != nil && isLocalRepository(s.RestoreConfig.Repository) {
 		errs = append(errs, fmt.Sprintf(
 			"restore repository uses type %q, which is local to a single host's filesystem and not supported for a node with instances on multiple hosts",
 			s.RestoreConfig.Repository.Type))
 	}
 	return errs
+}
+
+// isLocalRepository reports whether repo is local to a single host's
+// filesystem (type posix), and therefore unsafe to use from a node with
+// instances on other hosts. A nil repo is never local.
+func isLocalRepository(repo *pgbackrest.Repository) bool {
+	return repo != nil && repo.Type == pgbackrest.RepositoryTypePosix
+}
+
+// ValidateRestoreRepositoryForHosts returns a descriptive error if repo is a
+// local (posix) repository being used for a restore that targets a node
+// spanning more than one host. Such a repository is only visible to the
+// single host it lives on, so a restore to whichever instance is chosen as
+// primary may run against an empty or unrelated directory.
+func ValidateRestoreRepositoryForHosts(repo *pgbackrest.Repository, hostIDs []string) error {
+	if len(hostIDs) <= 1 || !isLocalRepository(repo) {
+		return nil
+	}
+	return fmt.Errorf(
+		"restore repository uses type %q, which is local to a single host's filesystem and not supported for a node with instances on multiple hosts",
+		repo.Type)
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {

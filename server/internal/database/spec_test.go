@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -717,5 +718,44 @@ func TestInstanceSpec_ValidateLocalRepositories(t *testing.T) {
 		nodes, err := s.NodeInstances()
 		assert.NoError(t, err)
 		assert.Empty(t, nodes[0].Instances[0].ValidateLocalRepositories())
+	})
+
+	t.Run("nil repository element does not panic", func(t *testing.T) {
+		s := &database.Spec{
+			DatabaseID: "test-db", DatabaseName: "testdb",
+			PostgresVersion: "17.6", SpockVersion: "5",
+			Nodes: []*database.Node{{
+				Name: "n1", HostIDs: []string{"host-1", "host-2"},
+				BackupConfig: &database.BackupConfig{Repositories: []*pgbackrest.Repository{nil}},
+			}},
+		}
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		assert.NotPanics(t, func() {
+			nodes[0].Instances[0].ValidateLocalRepositories()
+		})
+	})
+}
+
+func TestValidateRestoreRepositoryForHosts(t *testing.T) {
+	posix := &pgbackrest.Repository{Type: pgbackrest.RepositoryTypePosix, BasePath: "/restore"}
+	s3 := &pgbackrest.Repository{Type: pgbackrest.RepositoryTypeS3, S3Bucket: "my-bucket"}
+
+	t.Run("posix repo with single host is fine", func(t *testing.T) {
+		assert.NoError(t, database.ValidateRestoreRepositoryForHosts(posix, []string{"host-1"}))
+	})
+
+	t.Run("posix repo with multiple hosts is rejected", func(t *testing.T) {
+		err := database.ValidateRestoreRepositoryForHosts(posix, []string{"host-1", "host-2"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "multiple hosts")
+	})
+
+	t.Run("non-local repo with multiple hosts is fine", func(t *testing.T) {
+		assert.NoError(t, database.ValidateRestoreRepositoryForHosts(s3, []string{"host-1", "host-2"}))
+	})
+
+	t.Run("nil repo is fine", func(t *testing.T) {
+		assert.NoError(t, database.ValidateRestoreRepositoryForHosts(nil, []string{"host-1", "host-2"}))
 	})
 }

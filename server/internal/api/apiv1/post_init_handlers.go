@@ -867,6 +867,18 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 		return nil, apiErr(err)
 	}
 
+	if restoreConfig != nil {
+		for _, nodeName := range targetNodes {
+			node, err := db.Spec.Node(nodeName)
+			if err != nil {
+				return nil, apiErr(err)
+			}
+			if err := database.ValidateRestoreRepositoryForHosts(restoreConfig.Repository, node.HostIDs); err != nil {
+				return nil, makeInvalidInputErr(fmt.Errorf("invalid restore config for node %s: %w", nodeName, err))
+			}
+		}
+	}
+
 	// Remove backup configuration from nodes that are being restored and
 	// persist the updated spec.
 	db.Spec.RemoveBackupConfigFrom(targetNodes...)
