@@ -1105,17 +1105,21 @@ func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.Canc
 }
 
 func IsNodeAvailable(db *database.Database, nodeName string) (bool, error) {
+	found := false
 	for _, instance := range db.Instances {
 		if instance.NodeName != nodeName {
 			continue
 		}
+		found = true
 		if IsInstanceAvailable(instance) && instance.Status.IsPrimary() {
 			return true, nil
 		}
-		return false, makeInvalidInputErr(fmt.Errorf(
-			"node %s is in an unsupported state (%s)", instance.NodeName, instance.State))
 	}
-	return false, makeInvalidInputErr(fmt.Errorf("node %s not found", nodeName))
+	if !found {
+		return false, makeInvalidInputErr(fmt.Errorf("node %s not found", nodeName))
+	}
+	return false, makeInvalidInputErr(fmt.Errorf(
+		"node %s has no available primary instance", nodeName))
 }
 
 func IsInstanceAvailable(inst *database.Instance) bool {

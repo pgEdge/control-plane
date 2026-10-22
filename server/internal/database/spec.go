@@ -635,6 +635,36 @@ type InstanceSpec struct {
 	PeerInstanceIDs []string `json:"peer_instance_ids,omitempty"`
 }
 
+// ValidateLocalRepositories returns an error for each configured backup or
+// restore repository that is local to a single host's filesystem (type
+// posix) when this instance has peers, i.e. its node runs on more than one
+// host. Such a repository is not visible to the node's other instances, so
+// a backup or restore dispatched to whichever instance currently holds the
+// role it targets may silently operate against an unrelated, empty
+// directory on that host.
+func (s *InstanceSpec) ValidateLocalRepositories() []string {
+	if len(s.PeerInstanceIDs) == 0 {
+		return nil
+	}
+
+	var errs []string
+	if s.BackupConfig != nil {
+		for _, repo := range s.BackupConfig.Repositories {
+			if repo.Type == pgbackrest.RepositoryTypePosix {
+				errs = append(errs, fmt.Sprintf(
+					"backup repository %q uses type %q, which is local to a single host's filesystem and not supported for a node with instances on multiple hosts",
+					repo.ID, repo.Type))
+			}
+		}
+	}
+	if s.RestoreConfig != nil && s.RestoreConfig.Repository != nil && s.RestoreConfig.Repository.Type == pgbackrest.RepositoryTypePosix {
+		errs = append(errs, fmt.Sprintf(
+			"restore repository uses type %q, which is local to a single host's filesystem and not supported for a node with instances on multiple hosts",
+			s.RestoreConfig.Repository.Type))
+	}
+	return errs
+}
+
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
 	s.Port = reconcilePort(current.Port, s.Port)
 	s.PatroniPort = reconcilePort(current.PatroniPort, s.PatroniPort)
