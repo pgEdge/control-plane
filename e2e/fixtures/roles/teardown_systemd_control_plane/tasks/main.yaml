@@ -1,0 +1,39 @@
+---
+- name: Stop and disable all Patroni services
+  shell: |
+    for svc in $(systemctl list-units 'patroni-*.service' --no-legend | awk '{print $1}'); do
+      systemctl disable --now "$svc" 2>/dev/null || true
+    done
+  changed_when: false
+
+- name: Remove Patroni systemd unit files
+  shell: rm -f /etc/systemd/system/patroni-*.service
+  changed_when: false
+
+- name: Remove Postgres instance data directories (Debian)
+  file:
+    path: /var/lib/postgresql
+    state: absent
+  when: ansible_os_family == 'Debian'
+
+- name: Remove Postgres instance data directories (RPM)
+  file:
+    path: /var/lib/pgsql
+    state: absent
+  when: ansible_os_family == 'RedHat'
+
+- name: Stop and disable pgedge-control-plane
+  systemd_service:
+    name: pgedge-control-plane
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Remove CP data directory
+  file:
+    path: /var/lib/pgedge-control-plane
+    state: absent
+
+- name: Reload systemd daemon
+  systemd_service:
+    daemon_reload: true

@@ -387,6 +387,136 @@ make deploy-ec2-fixture
 make deploy-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
 ```
 
+### Systemd test fixtures
+
+The systemd test fixtures install the Control Plane as a systemd service instead
+of running it as a Docker Swarm service. This validates the systemd orchestrator
+path. Both EC2 and Lima variants are available.
+
+> [!NOTE]
+> Some tests are automatically skipped on systemd fixtures because they depend on
+> Docker Swarm services (PostgREST, RAG, MCP) or on Docker image-based minor
+> version upgrades. These tests call `SkipIfServicesUnsupported` or
+> `SkipIfUpgradesUnsupported` at the start and will appear as skipped in the
+> output.
+
+#### EC2 systemd fixture
+
+##### Prerequisites
+
+In addition to the [common prerequisites](#common-prerequisites), you need:
+
+- AWS credentials configured in your environment
+- AWS CLI v2 (`aws --version` should show `aws-cli/2.x.x`)
+
+##### EC2 systemd fixture targets
+
+```sh
+# Deploy the Control Plane as a systemd service to EC2 virtual machines.
+# Defaults: Rocky 9, PG 18, Spock 5, CP from staging repo, small variant (3 hosts).
+make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small
+
+# Redeploy the Control Plane on existing EC2 virtual machines
+make update-ec2-systemd-fixture FIXTURE_VARIANT=small
+
+# Teardown and redeploy the Control Plane on existing EC2 virtual machines
+make reset-ec2-systemd-fixture FIXTURE_VARIANT=small
+
+# Stop the EC2 virtual machines (no instance charge while stopped)
+make stop-ec2-systemd-fixture FIXTURE_VARIANT=small
+
+# Terminate the EC2 virtual machines
+make teardown-ec2-systemd-fixture FIXTURE_VARIANT=small
+```
+
+##### Configuration variables
+
+Use `FIXTURE_EXTRA_VARS` to override deployment defaults:
+
+| Variable | Default | Options |
+|---|---|---|
+| `instance_os` | `rocky-9` | `rocky-9`, `debian-12`, `debian-13` |
+| `pg_version` | `18` | `16`, `17`, `18` |
+| `spock_version` | `5` | `5`, `6` |
+| `cp_source` | `staging` | `staging`, `live`, `local` |
+
+```sh
+# Debian 13, PG 17, Spock 5, from staging
+make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small \
+  FIXTURE_EXTRA_VARS="instance_os=debian-13 pg_version=17"
+
+# Rocky 9, PG 18, Spock 5, from live repo
+make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small \
+  FIXTURE_EXTRA_VARS="cp_source=live"
+
+# Rocky 9, PG 18, Spock 5, locally built CP package
+# Run 'make goreleaser-test-release' first to build packages into dist/
+make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small \
+  FIXTURE_EXTRA_VARS="cp_source=local"
+```
+
+> [!NOTE]
+> When `cp_source=staging`, all packages (PG, Spock, Patroni, pgBackRest, and
+> the Control Plane) come from the staging repo. When `cp_source=local`, only the
+> Control Plane package comes from `dist/` — the other packages still come from
+> the live repo.
+
+##### Running the tests
+
+```sh
+make test-e2e E2E_FIXTURE=ec2-systemd
+```
+
+You can use the standard `E2E_RUN`, `E2E_DEBUG`, and `E2E_PARALLEL` options:
+
+```sh
+# Run a single test
+make test-e2e E2E_FIXTURE=ec2-systemd E2E_RUN=TestCreateSingleNodeDB
+
+# Run all tests with debug output on failure
+make test-e2e E2E_FIXTURE=ec2-systemd E2E_DEBUG=1
+```
+
+##### SSH access
+
+After deploying, you can SSH to the hosts using the key and IPs from the
+generated inventory:
+
+```sh
+ssh -i e2e/fixtures/outputs/ec2_deploy rocky@<external_ip>
+
+# Find external IPs in:
+cat e2e/fixtures/outputs/ec2.inventory.yaml
+```
+
+#### Lima systemd fixture
+
+The Lima systemd fixture runs the same systemd orchestrator on local Lima VMs,
+which is useful for development and testing without incurring AWS costs.
+
+```sh
+# Deploy
+make deploy-lima-systemd-fixture FIXTURE_VARIANT=small
+
+# Redeploy CP on existing VMs
+make update-lima-systemd-fixture FIXTURE_VARIANT=small
+
+# Teardown and redeploy
+make reset-lima-systemd-fixture FIXTURE_VARIANT=small
+
+# Stop VMs
+make stop-lima-systemd-fixture FIXTURE_VARIANT=small
+
+# Terminate VMs
+make teardown-lima-systemd-fixture FIXTURE_VARIANT=small
+```
+
+Run tests the same way:
+
+```sh
+make test-e2e E2E_FIXTURE=lima-systemd
+```
+
 ### Testing published releases
 
 If you'd like to test a published image, for example during pre-release testing,

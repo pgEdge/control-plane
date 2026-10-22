@@ -209,6 +209,7 @@
     region: '{{ aws_region }}'
     filters:
       "tag:Name": control-plane-e2e-{{ architecture }}-{{ item.name }}
+      "instance-state-name": running
   with_items: '{{ machines }}'
   register: ec2
 

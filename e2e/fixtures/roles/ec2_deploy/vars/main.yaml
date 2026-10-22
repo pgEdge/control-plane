@@ -3,8 +3,16 @@ _ami_params:
   rocky-9:
     name: Rocky-9-EC2-Base-9.6-*
     owner: 792107900819
+  debian-12:
+    name: debian-12-amd64-*
+    owner: "136693071363"
+  debian-13:
+    name: debian-13-amd64-*
+    owner: "136693071363"
 _instance_types:
   x86_64: r6i.large
   arm64: r6g.large
 _ssh_user:
   rocky-9: rocky
+  debian-12: admin
+  debian-13: admin

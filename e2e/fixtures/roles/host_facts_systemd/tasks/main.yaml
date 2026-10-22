@@ -1,0 +1,12 @@
+---
+- name: Set all host names
+  set_fact:
+    all_hosts: "{{ machines | map(attribute='name') | list }}"
+
+- name: Set first host
+  set_fact:
+    first_host: "{{ all_hosts[0] }}"
+
+- name: Set first host IP
+  set_fact:
+    first_host_ip: "{{ hostvars[all_hosts[0]].peer_ip }}"
