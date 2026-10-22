@@ -867,6 +867,18 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 		return nil, apiErr(err)
 	}
 
+	if restoreConfig != nil {
+		for _, nodeName := range targetNodes {
+			node, err := db.Spec.Node(nodeName)
+			if err != nil {
+				return nil, apiErr(err)
+			}
+			if err := database.ValidateRestoreRepositoryForHosts(restoreConfig.Repository, node.HostIDs); err != nil {
+				return nil, makeInvalidInputErr(fmt.Errorf("invalid restore config for node %s: %w", nodeName, err))
+			}
+		}
+	}
+
 	// Remove backup configuration from nodes that are being restored and
 	// persist the updated spec.
 	db.Spec.RemoveBackupConfigFrom(targetNodes...)
@@ -1105,17 +1117,21 @@ func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.Canc
 }
 
 func IsNodeAvailable(db *database.Database, nodeName string) (bool, error) {
+	found := false
 	for _, instance := range db.Instances {
 		if instance.NodeName != nodeName {
 			continue
 		}
+		found = true
 		if IsInstanceAvailable(instance) && instance.Status.IsPrimary() {
 			return true, nil
 		}
-		return false, makeInvalidInputErr(fmt.Errorf(
-			"node %s is in an unsupported state (%s)", instance.NodeName, instance.State))
 	}
-	return false, makeInvalidInputErr(fmt.Errorf("node %s not found", nodeName))
+	if !found {
+		return false, makeInvalidInputErr(fmt.Errorf("node %s not found", nodeName))
+	}
+	return false, makeInvalidInputErr(fmt.Errorf(
+		"node %s has no available primary instance", nodeName))
 }
 
 func IsInstanceAvailable(inst *database.Instance) bool {

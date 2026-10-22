@@ -108,11 +108,11 @@ type InstanceStatus struct {
 }
 
 func (s *InstanceStatus) IsPrimary() bool {
-	return s.Role != nil && *s.Role == patroni.InstanceRolePrimary
+	return s != nil && s.Role != nil && *s.Role == patroni.InstanceRolePrimary
 }
 
 func (s *InstanceStatus) IsStale() bool {
-	return s.StatusUpdatedAt == nil || s.StatusUpdatedAt.Before(time.Now().Add(-2*InstanceMonitorRefreshInterval))
+	return s == nil || s.StatusUpdatedAt == nil || s.StatusUpdatedAt.Before(time.Now().Add(-2*InstanceMonitorRefreshInterval))
 }
 
 func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *Instance {

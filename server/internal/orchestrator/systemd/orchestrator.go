@@ -494,7 +494,6 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 }
 
 func (o *Orchestrator) ValidateInstanceSpecs(_ context.Context, changes []*database.InstanceSpecChange) ([]*database.ValidationResult, error) {
-	// TODO: validate posix backup and restore repository directories
 	results := make([]*database.ValidationResult, 0)
 
 	for _, ch := range changes {
@@ -516,6 +515,10 @@ func (o *Orchestrator) ValidateInstanceSpecs(_ context.Context, changes []*datab
 		if err := validatePort(prevPatroniPort, ch.Current.PatroniPort); err != nil {
 			result.Valid = false
 			result.Errors = append(result.Errors, fmt.Sprintf("patroni port: %v", err))
+		}
+		if errs := ch.Current.ValidateLocalRepositories(); len(errs) > 0 {
+			result.Valid = false
+			result.Errors = append(result.Errors, errs...)
 		}
 
 		results = append(results, result)
