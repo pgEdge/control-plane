@@ -1,0 +1,8 @@
+---
+machines:
+  - name: host-1
+  - name: host-2
+  - name: host-3
+  - name: host-4
+  - name: host-5
+  - name: host-6

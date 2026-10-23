@@ -1,0 +1,17 @@
+---
+provider: ec2
+orchestrator: systemd
+fixture_name: ec2-systemd
+architecture: x86_64
+minio_enabled: false
+
+# Platform: rocky-9 | debian-12 | debian-13 — override via EXTRA_VARS e.g. platform=debian-13
+instance_os: rocky-9
+
+# pgEdge package versions — override via EXTRA_VARS e.g. pg_version=16
+pg_version: "18"
+spock_version: "5"
+
+# CP installation source: staging | live | local — override via EXTRA_VARS
+cp_source: staging
+

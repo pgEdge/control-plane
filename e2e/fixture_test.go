@@ -297,6 +297,25 @@ func (f *TestFixture) SkipIfUpgradesUnsupported(t testing.TB) {
 	}
 }
 
+func (f *TestFixture) SkipIfSpock6Unsupported(t testing.TB) {
+	if f.orchestrator != "systemd" {
+		return
+	}
+	ctx := t.Context()
+	hosts, err := f.Client.ListHosts(ctx)
+	if err != nil {
+		t.Fatalf("failed to list hosts: %v", err)
+	}
+	for _, h := range hosts.Hosts {
+		for _, v := range h.SupportedPgedgeVersions {
+			if strings.HasPrefix(v.SpockVersion, "6") {
+				return
+			}
+		}
+	}
+	t.Skip("skipping spock 6 test: no host has spock 6 installed")
+}
+
 func (f *TestFixture) S3BackupRepository() *controlplane.BackupRepositorySpec {
 	return f.config.S3.BackupRepository()
 }
