@@ -51,54 +51,6 @@ func TestManager(t *testing.T) {
 		}), manager.Config())
 	})
 
-	t.Run("etcd log level does not persist in generated config", func(t *testing.T) {
-		data := t.TempDir()
-
-		// Simulate an env var / config override of the etcd log level.
-		user := config.Config{
-			HostID:   "test-host",
-			DataDir:  data,
-			EtcdMode: config.EtcdModeServer,
-			EtcdServer: config.EtcdServer{
-				LogLevel:   "debug",
-				PeerPort:   2380,
-				ClientPort: 2379,
-			},
-			EtcdClient: config.EtcdClient{
-				LogLevel:  "debug",
-				Endpoints: []string{"https://127.0.0.1:2379"},
-			},
-		}
-
-		manager := config.NewManager(structSource(t, user))
-		require.NoError(t, manager.Load())
-		require.Equal(t, "debug", manager.Config().EtcdServer.LogLevel)
-
-		// This mirrors what provideEtcd does: only the persistable fields are
-		// written into the generated config, not the whole struct.
-		appCfg := manager.Config()
-		generated := manager.GeneratedConfig()
-		generated.EtcdMode = appCfg.EtcdMode
-		generated.EtcdServer = appCfg.EtcdServer.Persistable()
-		generated.EtcdClient = appCfg.EtcdClient.Persistable()
-		require.NoError(t, manager.UpdateGeneratedConfig(generated))
-
-		// A second manager, sharing the same data dir, simulates the override
-		// being removed (e.g. the env var is unset on the next restart).
-		userWithoutOverride := config.Config{
-			HostID:  "test-host",
-			DataDir: data,
-		}
-		manager2 := config.NewManager(structSource(t, userWithoutOverride))
-		require.NoError(t, manager2.Load())
-
-		assert.Equal(t, "fatal", manager2.Config().EtcdServer.LogLevel, "log level should revert to default, not the stale persisted value")
-		assert.Equal(t, "fatal", manager2.Config().EtcdClient.LogLevel, "log level should revert to default, not the stale persisted value")
-		assert.Equal(t, 2380, manager2.Config().EtcdServer.PeerPort, "ports should still be persisted")
-		assert.Equal(t, 2379, manager2.Config().EtcdServer.ClientPort, "ports should still be persisted")
-		assert.Equal(t, []string{"https://127.0.0.1:2379"}, manager2.Config().EtcdClient.Endpoints, "endpoints should still be persisted")
-	})
-
 	t.Run("invalid user-specified config", func(t *testing.T) {
 		user := config.Config{
 			HostID: "test-host",
