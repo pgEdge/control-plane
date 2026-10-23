@@ -304,7 +304,7 @@ func (f *TestFixture) SkipIfSpock6Unsupported(t testing.TB) {
 	ctx := t.Context()
 	hosts, err := f.Client.ListHosts(ctx)
 	if err != nil {
-		t.Skipf("skipping spock 6 test: failed to list hosts: %v", err)
+		t.Fatalf("failed to list hosts: %v", err)
 	}
 	for _, h := range hosts.Hosts {
 		for _, v := range h.SupportedPgedgeVersions {

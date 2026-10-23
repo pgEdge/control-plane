@@ -17,7 +17,7 @@
 - name: Start and enable pgedge-control-plane
   systemd_service:
     name: pgedge-control-plane
-    state: started
+    state: restarted
     enabled: true
     daemon_reload: true
 

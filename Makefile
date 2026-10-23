@@ -323,6 +323,7 @@ update-ec2-systemd-fixture:
 	VARIANT=$(FIXTURE_VARIANT) \
 	EXTRA_VARS='$(_fixture_extra_vars)' \
 	$(MAKE) -C e2e/fixtures \
+		setup-ec2-systemd-hosts \
 		deploy-ec2-systemd-control-plane
 
 .PHONY: update-lima-systemd-fixture
@@ -330,6 +331,7 @@ update-lima-systemd-fixture:
 	VARIANT=$(FIXTURE_VARIANT) \
 	EXTRA_VARS='$(_fixture_extra_vars)' \
 	$(MAKE) -C e2e/fixtures \
+		setup-lima-systemd-hosts \
 		deploy-lima-systemd-control-plane
 
 .PHONY: _reset-%-fixture
