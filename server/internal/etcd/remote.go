@@ -250,7 +250,7 @@ func (r *RemoteEtcd) updateEndpointsConfig(ctx context.Context, client *clientv3
 	}
 
 	generated := r.cfg.GeneratedConfig()
-	generated.EtcdClient.Endpoints = client.Endpoints()
+	generated.EtcdClient = config.EtcdClient{Endpoints: client.Endpoints()}
 	if err := r.cfg.UpdateGeneratedConfig(generated); err != nil {
 		return fmt.Errorf("failed to update generated config with client endpoints: %w", err)
 	}
@@ -312,7 +312,7 @@ func (r *RemoteEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Etcd
 	generated := r.cfg.GeneratedConfig()
 	generated.EtcdMode = config.EtcdModeServer
 	generated.EtcdClient = config.EtcdClient{}
-	generated.EtcdServer = cfg.EtcdServer
+	generated.EtcdServer = cfg.EtcdServer.Persistable()
 	if err := r.cfg.UpdateGeneratedConfig(generated); err != nil {
 		return nil, fmt.Errorf("failed to clear out etcd client settings in generated config: %w", err)
 	}

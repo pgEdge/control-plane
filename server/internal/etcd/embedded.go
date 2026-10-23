@@ -522,7 +522,7 @@ func (e *EmbeddedEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Et
 	}
 
 	generated := e.cfg.GeneratedConfig()
-	generated.EtcdClient.Endpoints = endpoints
+	generated.EtcdClient = config.EtcdClient{Endpoints: endpoints}
 	if err := e.cfg.UpdateGeneratedConfig(generated); err != nil {
 		return nil, fmt.Errorf("failed to update generated config with client endpoints: %w", err)
 	}
