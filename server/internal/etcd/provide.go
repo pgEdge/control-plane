@@ -86,8 +86,8 @@ func provideEtcd(i *do.Injector) {
 			}
 			if initialized {
 				generated.EtcdMode = appCfg.EtcdMode
-				generated.EtcdServer = appCfg.EtcdServer
-				generated.EtcdClient = appCfg.EtcdClient
+				generated.EtcdServer = appCfg.EtcdServer.Persistable()
+				generated.EtcdClient = appCfg.EtcdClient.Persistable()
 				if err := cfg.UpdateGeneratedConfig(generated); err != nil {
 					return nil, fmt.Errorf("failed to persist etcd configuration: %w", err)
 				}

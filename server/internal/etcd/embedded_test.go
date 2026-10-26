@@ -4,6 +4,8 @@ package etcd_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/uuid"
@@ -51,6 +53,9 @@ func TestEmbeddedEtcd(t *testing.T) {
 		initialized, err = server.IsInitialized()
 		require.NoError(t, err)
 		require.True(t, initialized)
+
+		// The "debug" log level set above must not be persisted to disk.
+		requireGeneratedConfigHasNoEtcdLogLevel(t, cfg.DataDir)
 
 		client, err := server.GetClient()
 		require.NotNil(t, client)
@@ -151,6 +156,9 @@ func TestEmbeddedEtcd(t *testing.T) {
 			Credentials: creds,
 		})
 		require.NoError(t, err)
+
+		// The "debug" log level set above must not be persisted to disk.
+		requireGeneratedConfigHasNoEtcdLogLevel(t, cfgB.DataDir)
 
 		clientB, err := serverB.GetClient()
 		require.NotNil(t, clientB)
@@ -418,6 +426,16 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Len(t, member.ClientURLs, 2, "Member should have both IP and hostname client URLs")
 	})
 
+}
+
+// requireGeneratedConfigHasNoEtcdLogLevel reads dataDir's generated config off disk and fails if it persisted an etcd log level.
+func requireGeneratedConfigHasNoEtcdLogLevel(t testing.TB, dataDir string) {
+	t.Helper()
+
+	raw, err := os.ReadFile(filepath.Join(dataDir, "generated.config.json"))
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), "log_level",
+		"etcd log level must not be persisted to the generated config: %s", raw)
 }
 
 func cfgMgr(t testing.TB, cfg config.Config) *config.Manager {

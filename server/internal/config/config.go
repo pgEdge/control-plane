@@ -193,6 +193,17 @@ var etcdServerDefault = EtcdServer{
 	ClientPort: 2379,
 }
 
+// Persistable returns a copy of s containing only the fields that should be
+// written to the generated config. LogLevel is intentionally excluded: it
+// must always be resolved fresh from defaults/user config/env, never pinned
+// by whatever was in effect when the config was last persisted.
+func (s EtcdServer) Persistable() EtcdServer {
+	return EtcdServer{
+		PeerPort:   s.PeerPort,
+		ClientPort: s.ClientPort,
+	}
+}
+
 type EtcdClient struct {
 	LogLevel  string   `koanf:"log_level" json:"log_level,omitempty"`
 	Endpoints []string `koanf:"endpoints" json:"endpoints,omitempty"`
@@ -208,6 +219,14 @@ func (r EtcdClient) validate() []error {
 
 var etcdClientDefault = EtcdClient{
 	LogLevel: "fatal",
+}
+
+// Persistable returns a copy of c containing only the fields that should be
+// written to the generated config (see EtcdServer.Persistable).
+func (c EtcdClient) Persistable() EtcdClient {
+	return EtcdClient{
+		Endpoints: c.Endpoints,
+	}
 }
 
 type Orchestrator string

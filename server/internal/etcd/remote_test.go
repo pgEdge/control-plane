@@ -34,6 +34,9 @@ func TestRemoteEtcd(t *testing.T) {
 
 	join(t, serverA, remote, cfg)
 
+	// The "debug" log level set above must not be persisted to disk.
+	requireGeneratedConfigHasNoEtcdLogLevel(t, cfg.DataDir)
+
 	client, err := remote.GetClient()
 	require.NoError(t, err)
 	require.NotNil(t, client)

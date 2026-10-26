@@ -61,6 +61,31 @@ func TestManager(t *testing.T) {
 	})
 }
 
+func TestEtcdServerPersistable(t *testing.T) {
+	server := config.EtcdServer{
+		LogLevel:        "debug",
+		PeerPort:        2380,
+		ClientPort:      2379,
+		ForceNewCluster: true,
+	}
+
+	assert.Equal(t, config.EtcdServer{
+		PeerPort:   2380,
+		ClientPort: 2379,
+	}, server.Persistable())
+}
+
+func TestEtcdClientPersistable(t *testing.T) {
+	client := config.EtcdClient{
+		LogLevel:  "debug",
+		Endpoints: []string{"https://127.0.0.1:2379"},
+	}
+
+	assert.Equal(t, config.EtcdClient{
+		Endpoints: []string{"https://127.0.0.1:2379"},
+	}, client.Persistable())
+}
+
 func structSource(t *testing.T, cfg config.Config) *config.Source {
 	t.Helper()
 
