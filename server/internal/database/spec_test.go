@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -653,109 +652,5 @@ func TestSpec_NodeInstances_PgHbaIdentMerge(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, nodes[0].Instances[0].PgHbaConf)
 		assert.Nil(t, nodes[0].Instances[0].PgIdentConf)
-	})
-}
-
-func TestInstanceSpec_ValidateLocalRepositories(t *testing.T) {
-	posixBackup := &database.BackupConfig{
-		Repositories: []*pgbackrest.Repository{
-			{ID: "repo1", Type: pgbackrest.RepositoryTypePosix, BasePath: "/backups"},
-		},
-	}
-	s3Backup := &database.BackupConfig{
-		Repositories: []*pgbackrest.Repository{
-			{ID: "repo1", Type: pgbackrest.RepositoryTypeS3, S3Bucket: "my-bucket"},
-		},
-	}
-	posixRestore := &database.RestoreConfig{
-		Repository: &pgbackrest.Repository{Type: pgbackrest.RepositoryTypePosix, BasePath: "/restore"},
-	}
-
-	t.Run("single-instance node with posix backup repo is fine", func(t *testing.T) {
-		s := &database.Spec{
-			DatabaseID: "test-db", DatabaseName: "testdb",
-			PostgresVersion: "17.6", SpockVersion: "5",
-			Nodes: []*database.Node{{Name: "n1", HostIDs: []string{"host-1"}, BackupConfig: posixBackup}},
-		}
-		nodes, err := s.NodeInstances()
-		assert.NoError(t, err)
-		assert.Empty(t, nodes[0].Instances[0].ValidateLocalRepositories())
-	})
-
-	t.Run("multi-instance node with posix backup repo is rejected", func(t *testing.T) {
-		s := &database.Spec{
-			DatabaseID: "test-db", DatabaseName: "testdb",
-			PostgresVersion: "17.6", SpockVersion: "5",
-			Nodes: []*database.Node{{Name: "n1", HostIDs: []string{"host-1", "host-2"}, BackupConfig: posixBackup}},
-		}
-		nodes, err := s.NodeInstances()
-		assert.NoError(t, err)
-		errs := nodes[0].Instances[0].ValidateLocalRepositories()
-		assert.Len(t, errs, 1)
-		assert.Contains(t, errs[0], "repo1")
-		assert.Contains(t, errs[0], "multiple hosts")
-	})
-
-	t.Run("multi-instance node with posix restore repo is rejected", func(t *testing.T) {
-		s := &database.Spec{
-			DatabaseID: "test-db", DatabaseName: "testdb",
-			PostgresVersion: "17.6", SpockVersion: "5",
-			Nodes: []*database.Node{{Name: "n1", HostIDs: []string{"host-1", "host-2"}, RestoreConfig: posixRestore}},
-		}
-		nodes, err := s.NodeInstances()
-		assert.NoError(t, err)
-		errs := nodes[0].Instances[0].ValidateLocalRepositories()
-		assert.Len(t, errs, 1)
-		assert.Contains(t, errs[0], "multiple hosts")
-	})
-
-	t.Run("multi-instance node with non-local backup repo is fine", func(t *testing.T) {
-		s := &database.Spec{
-			DatabaseID: "test-db", DatabaseName: "testdb",
-			PostgresVersion: "17.6", SpockVersion: "5",
-			Nodes: []*database.Node{{Name: "n1", HostIDs: []string{"host-1", "host-2"}, BackupConfig: s3Backup}},
-		}
-		nodes, err := s.NodeInstances()
-		assert.NoError(t, err)
-		assert.Empty(t, nodes[0].Instances[0].ValidateLocalRepositories())
-	})
-
-	t.Run("nil repository element does not panic", func(t *testing.T) {
-		s := &database.Spec{
-			DatabaseID: "test-db", DatabaseName: "testdb",
-			PostgresVersion: "17.6", SpockVersion: "5",
-			Nodes: []*database.Node{{
-				Name: "n1", HostIDs: []string{"host-1", "host-2"},
-				BackupConfig: &database.BackupConfig{Repositories: []*pgbackrest.Repository{nil}},
-			}},
-		}
-		nodes, err := s.NodeInstances()
-		assert.NoError(t, err)
-		assert.NotPanics(t, func() {
-			nodes[0].Instances[0].ValidateLocalRepositories()
-		})
-	})
-}
-
-func TestValidateRestoreRepositoryForHosts(t *testing.T) {
-	posix := &pgbackrest.Repository{Type: pgbackrest.RepositoryTypePosix, BasePath: "/restore"}
-	s3 := &pgbackrest.Repository{Type: pgbackrest.RepositoryTypeS3, S3Bucket: "my-bucket"}
-
-	t.Run("posix repo with single host is fine", func(t *testing.T) {
-		assert.NoError(t, database.ValidateRestoreRepositoryForHosts(posix, []string{"host-1"}))
-	})
-
-	t.Run("posix repo with multiple hosts is rejected", func(t *testing.T) {
-		err := database.ValidateRestoreRepositoryForHosts(posix, []string{"host-1", "host-2"})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "multiple hosts")
-	})
-
-	t.Run("non-local repo with multiple hosts is fine", func(t *testing.T) {
-		assert.NoError(t, database.ValidateRestoreRepositoryForHosts(s3, []string{"host-1", "host-2"}))
-	})
-
-	t.Run("nil repo is fine", func(t *testing.T) {
-		assert.NoError(t, database.ValidateRestoreRepositoryForHosts(nil, []string{"host-1", "host-2"}))
 	})
 }

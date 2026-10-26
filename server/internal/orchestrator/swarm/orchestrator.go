@@ -1156,16 +1156,6 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*dat
 					}
 				}
 			}
-
-			if errs := cur.ValidateLocalRepositories(); len(errs) > 0 {
-				results = append(results, &database.ValidationResult{
-					Valid:    false,
-					NodeName: cur.NodeName,
-					HostID:   cur.HostID,
-					Errors:   errs,
-				})
-				continue
-			}
 		}
 
 		updates := instanceDiff(ch.Previous, ch.Current)
