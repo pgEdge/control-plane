@@ -180,6 +180,36 @@ func (s SystemD) validate() []error {
 	return errs
 }
 
+func (s SystemD) PgBinDir(pgMajor string) string {
+	if dir := s.PgBinDirs[pgMajor]; dir != "" {
+		return dir
+	}
+	switch s.OSFamily {
+	case OSFamilyRedHat:
+		return fmt.Sprintf("/usr/pgsql-%s/bin", pgMajor)
+	case OSFamilyDebian:
+		return filepath.Join("/usr/lib/postgresql", pgMajor, "bin")
+	default:
+		// Not reachable as long as validate() is called
+		return ""
+	}
+}
+
+func (s SystemD) InstanceDataBaseDir(pgMajor string) string {
+	if s.InstanceDataDir != "" {
+		return filepath.Join(s.InstanceDataDir, pgMajor)
+	}
+	switch s.OSFamily {
+	case OSFamilyRedHat:
+		return filepath.Join("/var/lib/pgsql", pgMajor)
+	case OSFamilyDebian:
+		return filepath.Join("/var/lib/postgresql", pgMajor)
+	default:
+		// Not reachable as long as validate() is called
+		return ""
+	}
+}
+
 func defaultSystemD() SystemD {
 	return SystemD{
 		OSFamily:       getOSFamily(),

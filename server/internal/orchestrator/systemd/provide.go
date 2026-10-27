@@ -1,7 +1,7 @@
 package systemd
 
 import (
-	"fmt"
+	"os/user"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/logging"
@@ -11,7 +11,6 @@ import (
 
 func Provide(i *do.Injector) {
 	provideClient(i)
-	providePackageManager(i)
 	provideVersionsProbe(i)
 	provideOrchestrator(i)
 }
@@ -27,23 +26,6 @@ func provideClient(i *do.Injector) {
 	})
 }
 
-func providePackageManager(i *do.Injector) {
-	do.Provide(i, func(i *do.Injector) (PackageManager, error) {
-		cfg, err := do.Invoke[config.Config](i)
-		if err != nil {
-			return nil, err
-		}
-		switch cfg.SystemD.OSFamily {
-		case config.OSFamilyRedHat:
-			return &Dnf{}, nil
-		case config.OSFamilyDebian:
-			return &Apt{}, nil
-		default:
-			return nil, fmt.Errorf("unrecognized os family '%s'", cfg.SystemD.OSFamily)
-		}
-	})
-}
-
 func provideVersionsProbe(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*InstalledVersionsProbe, error) {
 		fsys, err := do.Invoke[afero.Fs](i)
@@ -54,11 +36,7 @@ func provideVersionsProbe(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		packageManager, err := do.Invoke[PackageManager](i)
-		if err != nil {
-			return nil, err
-		}
-		return NewInstalledVersionsProbe(DefaultExecCommand, fsys, cfg.SystemD.PgBinDirs, packageManager), nil
+		return NewInstalledVersionsProbe(DefaultExecCommand, fsys, cfg.SystemD)
 	})
 }
 
@@ -76,15 +54,11 @@ func provideOrchestrator(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		packageManager, err := do.Invoke[PackageManager](i)
-		if err != nil {
-			return nil, err
-		}
 		versionsProbe, err := do.Invoke[*InstalledVersionsProbe](i)
 		if err != nil {
 			return nil, err
 		}
 
-		return NewOrchestrator(cfg, loggerFactory, client, packageManager, versionsProbe)
+		return NewOrchestrator(cfg, loggerFactory, client, versionsProbe, user.Lookup)
 	})
 }

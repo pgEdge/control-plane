@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/systemd"
 	"github.com/spf13/afero"
@@ -30,22 +31,19 @@ func TestInstalledVersionsProbe(t *testing.T) {
 		customPg17ShareDir = "/opt/postgresql/17/share"
 	)
 
-	debian := &systemd.Apt{}
-	rhel := &systemd.Dnf{}
-
 	for _, tc := range []struct {
 		name           string
 		fsys           func() afero.Fs
+		osFamily       config.OSFamily
 		cfgBinDirs     map[string]string
-		pkgManager     systemd.PackageManager
 		outputs        map[string]mockPgConfigOutput
 		expectedOutput []*ds.PgEdgeVersion
 		expectedErr    string
 	}{
 		{
-			name:       "debian no postgres installed",
-			fsys:       testFs(nil),
-			pkgManager: debian,
+			name:     "debian no postgres installed",
+			fsys:     testFs(nil),
+			osFamily: config.OSFamilyDebian,
 		},
 		{
 			name: "debian one postgres version with spock",
@@ -53,7 +51,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				debianPg17Config: "",
 				debianPg17Spock:  spock5Control,
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {stdout: testDebianPg17ConfigOut},
 			},
@@ -72,7 +70,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				debianPg18Config: "",
 				debianPg18Spock:  spock5Control,
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {stdout: testDebianPg17ConfigOut},
 				debianPg18Config: {stdout: testDebianPg18ConfigOut},
@@ -93,7 +91,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			fsys: testFs(map[string]string{
 				debianPg17Config: "",
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {stdout: testDebianPg17ConfigOut},
 			},
@@ -106,7 +104,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				debianPg18Config: "",
 				debianPg18Spock:  spock6Control,
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {stdout: testDebianPg17ConfigOut},
 				debianPg18Config: {stdout: testDebianPg18ConfigOut},
@@ -128,7 +126,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				rhelPg17Config: "",
 				rhelPg17Spock:  spock5Control,
 			}),
-			pkgManager: rhel,
+			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
 			},
@@ -147,7 +145,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				rhelPg18Config: "",
 				rhelPg18Spock:  spock5Control,
 			}),
-			pkgManager: rhel,
+			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
 				rhelPg18Config: {stdout: testRHELPg18ConfigOut},
@@ -168,7 +166,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			fsys: testFs(map[string]string{
 				rhelPg17Config: "",
 			}),
-			pkgManager: rhel,
+			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
 			},
@@ -184,7 +182,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			cfgBinDirs: map[string]string{
 				"17": "/opt/postgresql/17/bin",
 			},
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				customPg17Config: {
 					stdout: withPgConfigValues(testDebianPg17ConfigOut, map[string]string{
@@ -215,7 +213,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				}
 				return fsys
 			},
-			pkgManager:  debian,
+			osFamily:    config.OSFamilyDebian,
 			expectedErr: "/usr/lib/postgresql/17/bin/pg_config is a directory",
 		},
 		{
@@ -223,7 +221,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			fsys: testFs(map[string]string{
 				debianPg17Config: "",
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {
 					stderr: "pg_config: could not find own program executable",
@@ -237,7 +235,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			fsys: testFs(map[string]string{
 				debianPg17Config: "",
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {
 					stdout: withoutPgConfigKey(testDebianPg17ConfigOut, "VERSION"),
@@ -250,7 +248,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			fsys: testFs(map[string]string{
 				rhelPg17Config: "",
 			}),
-			pkgManager: rhel,
+			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {
 					stdout: withoutPgConfigKey(testRHELPg17ConfigOut, "SHAREDIR"),
@@ -263,7 +261,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			fsys: testFs(map[string]string{
 				debianPg17Config: "",
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {
 					stdout: withPgConfigValues(testDebianPg17ConfigOut, map[string]string{
@@ -279,7 +277,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				debianPg18Config: "",
 				debianPg18Spock:  spock5Control,
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg18Config: {stdout: testDebianRCPgConfigOut},
 			},
@@ -299,7 +297,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 					"default_version": "'6.1.0-beta.1'",
 				}),
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg18Config: {stdout: testDebianPg18ConfigOut},
 			},
@@ -317,7 +315,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				debianPg18Config: "",
 				debianPg18Spock:  spock5Control,
 			}),
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg18Config: {
 					stdout: withPgConfigValues(testDebianPg18ConfigOut, map[string]string{
@@ -341,7 +339,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			cfgBinDirs: map[string]string{
 				"17": "/usr/lib/postgresql/18/bin",
 			},
-			pkgManager: debian,
+			osFamily: config.OSFamilyDebian,
 			outputs: map[string]mockPgConfigOutput{
 				debianPg18Config: {stdout: testDebianPg18ConfigOut},
 			},
@@ -353,7 +351,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				rhelPg17Config: "",
 				rhelPg17Spock:  withoutPgConfigKey(spock5Control, "default_version"),
 			}),
-			pkgManager: rhel,
+			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
 			},
@@ -367,7 +365,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 					"default_version": "'five'",
 				}),
 			}),
-			pkgManager: rhel,
+			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
 			},
@@ -375,12 +373,16 @@ func TestInstalledVersionsProbe(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			probe := systemd.NewInstalledVersionsProbe(
+			probe, err := systemd.NewInstalledVersionsProbe(
 				mockPgConfigExecCommand(t, tc.outputs),
 				tc.fsys(),
-				tc.cfgBinDirs,
-				tc.pkgManager,
+				config.SystemD{
+					OSFamily:  tc.osFamily,
+					PgBinDirs: tc.cfgBinDirs,
+				},
 			)
+			require.NoError(t, err)
+
 			actual, err := probe.InstalledPostgresVersions(t.Context())
 			if tc.expectedErr != "" {
 				assert.ErrorContains(t, err, tc.expectedErr)
@@ -390,6 +392,15 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewInstalledVersionsProbeUnknownOSFamily(t *testing.T) {
+	_, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, nil),
+		afero.NewMemMapFs(),
+		config.SystemD{OSFamily: config.OSFamilyUnknown},
+	)
+	assert.ErrorContains(t, err, "unrecognized os family 'unknown'")
 }
 
 func testFs(files map[string]string) func() afero.Fs {

@@ -31,22 +31,24 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+type UserLookup = func(username string) (*user.User, error)
+
 type Orchestrator struct {
-	cfg            config.Config
-	logger         zerolog.Logger
-	client         *Client
-	packageManager PackageManager
-	versionsProbe  *InstalledVersionsProbe
-	cpus           int
-	memBytes       uint64
+	cfg           config.Config
+	logger        zerolog.Logger
+	client        *Client
+	versionsProbe *InstalledVersionsProbe
+	cpus          int
+	memBytes      uint64
+	userLookup    UserLookup
 }
 
 func NewOrchestrator(
 	cfg config.Config,
 	loggerFactory *logging.Factory,
 	client *Client,
-	packageManager PackageManager,
 	versionsProbe *InstalledVersionsProbe,
+	userLookup UserLookup,
 ) (*Orchestrator, error) {
 	logger := loggerFactory.Logger("systemd_orchestrator")
 	logger.Debug().Msg("initializing orchestrator")
@@ -63,13 +65,13 @@ func NewOrchestrator(
 		Msg("got system stats")
 
 	return &Orchestrator{
-		cfg:            cfg,
-		logger:         logger,
-		client:         client,
-		packageManager: packageManager,
-		versionsProbe:  versionsProbe,
-		cpus:           cpu,
-		memBytes:       mem,
+		cfg:           cfg,
+		logger:        logger,
+		client:        client,
+		versionsProbe: versionsProbe,
+		userLookup:    userLookup,
+		cpus:          cpu,
+		memBytes:      mem,
 	}, nil
 }
 
@@ -252,13 +254,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		return nil, errors.New("got empty postgres version")
 	}
 
+	pgBinDir := o.cfg.SystemD.PgBinDir(pgMajor)
 	databaseOwnerUser := strconv.Itoa(databaseOwnerUID)
 	databaseOwnerGroup := strconv.Itoa(databaseOwnerGID)
 	patroniUnit := &UnitResource{
 		DatabaseID: spec.DatabaseID,
 		HostID:     spec.HostID,
 		Name:       patroniServiceName(spec.InstanceID),
-		Options:    PatroniUnitOptions(paths, o.packageManager.BinDir(pgMajor), spec.CPUs, spec.MemoryBytes, databaseOwnerUser, databaseOwnerGroup),
+		Options:    PatroniUnitOptions(paths, pgBinDir, spec.CPUs, spec.MemoryBytes, databaseOwnerUser, databaseOwnerGroup),
 		ExtraDependencies: []resource.Identifier{
 			patroniConfig.Identifier(),
 			instanceDir.Identifier(),
@@ -569,13 +572,7 @@ func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (
 	if !ok {
 		return database.InstancePaths{}, errors.New("got empty postgres version")
 	}
-
-	var baseDir string
-	if o.cfg.SystemD.InstanceDataDir != "" {
-		baseDir = filepath.Join(o.cfg.SystemD.InstanceDataDir, pgMajor, instanceID)
-	} else {
-		baseDir = filepath.Join(o.packageManager.InstanceDataBaseDir(pgMajor), instanceID)
-	}
+	baseDir := filepath.Join(o.cfg.SystemD.InstanceDataBaseDir(pgMajor), instanceID)
 
 	return database.InstancePaths{
 		Instance:       database.Paths{BaseDir: baseDir},
@@ -586,7 +583,7 @@ func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (
 }
 
 func (o *Orchestrator) databaseOwnerIDs() (int, int, error) {
-	u, err := user.Lookup("postgres")
+	u, err := o.userLookup("postgres")
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to lookup 'postgres' user: %w", err)
 	}

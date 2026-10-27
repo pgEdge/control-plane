@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/spf13/afero"
 )
@@ -51,14 +52,13 @@ type InstalledVersionsProbe struct {
 func NewInstalledVersionsProbe(
 	execCommand ExecCommand,
 	fsys afero.Fs,
-	cfgBinDirs map[string]string,
-	packageManager PackageManager,
-) *InstalledVersionsProbe {
+	cfg config.SystemD,
+) (*InstalledVersionsProbe, error) {
 	pgConfigPaths := make(map[string]string, len(monitoredPgVersions))
 	for _, pgMajor := range monitoredPgVersions {
-		pgBinDir := cfgBinDirs[pgMajor]
+		pgBinDir := cfg.PgBinDir(pgMajor)
 		if pgBinDir == "" {
-			pgBinDir = packageManager.BinDir(pgMajor)
+			return nil, fmt.Errorf("failed to determine bin dir for postgres %s: unrecognized os family '%s'", pgMajor, cfg.OSFamily)
 		}
 		pgConfigPaths[pgMajor] = filepath.Join(pgBinDir, "pg_config")
 	}
@@ -66,7 +66,7 @@ func NewInstalledVersionsProbe(
 		ExecCommand:   execCommand,
 		Fs:            fsys,
 		pgConfigPaths: pgConfigPaths,
-	}
+	}, nil
 }
 
 func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) ([]*ds.PgEdgeVersion, error) {
