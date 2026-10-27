@@ -305,7 +305,7 @@ Multi-source configuration with precedence: CLI flags > environment variables > 
 ## Dependencies and Tools
 
 **Core Dependencies**:
-- Go 1.24.3
+- Go 1.26.10
 - goa.design/goa/v3@v3.19.1 - API framework
 - github.com/cschleiden/go-workflows@v0.19.0 - Workflow engine
 - go.etcd.io/etcd/server/v3@v3.6.1 - Distributed state
