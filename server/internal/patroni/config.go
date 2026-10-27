@@ -190,7 +190,7 @@ type BootstrapMethodConf struct {
 type Bootstrap struct {
 	DCS           *DCS                 `json:"dcs,omitempty"`
 	Method        *BootstrapMethod     `json:"method,omitempty"`
-	InitDB        *[]string            `json:"initdb,omitempty"`
+	InitDB        *[]any               `json:"initdb,omitempty"`
 	PostBootstrap *string              `json:"post_bootstrap,omitempty"`
 	PostInit      *string              `json:"post_init,omitempty"`
 	Restore       *BootstrapMethodConf `json:"restore,omitempty"`

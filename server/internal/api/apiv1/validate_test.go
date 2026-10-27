@@ -1435,6 +1435,195 @@ func TestValidateDatabaseSpec(t *testing.T) {
 	}
 }
 
+func TestValidateLocale(t *testing.T) {
+	nodes := func(versions ...string) []*api.DatabaseNodeSpec {
+		var out []*api.DatabaseNodeSpec
+		for i, v := range append([]string{""}, versions...) {
+			out = append(out, &api.DatabaseNodeSpec{
+				Name:            "n" + string(rune('1'+i)),
+				HostIds:         []api.Identifier{api.Identifier("host-1")},
+				PostgresVersion: utils.NillablePointerTo(v),
+			})
+		}
+		return out
+	}
+
+	for _, tc := range []struct {
+		name            string
+		postgresVersion string
+		nodeVersions    []string
+		locale          *api.DatabaseLocale
+		expected        []string
+	}{
+		{
+			name: "no locale",
+		},
+		{
+			name: "icu with icu_locale",
+			locale: &api.DatabaseLocale{
+				Provider:  utils.PointerTo("icu"),
+				Encoding:  utils.PointerTo("UTF8"),
+				IcuLocale: utils.PointerTo("de-DE"),
+			},
+		},
+		{
+			name: "icu with libc lc_collate and lc_ctype",
+			locale: &api.DatabaseLocale{
+				Provider:  utils.PointerTo("icu"),
+				IcuLocale: utils.PointerTo("de-DE"),
+				Encoding:  utils.PointerTo("UTF8"),
+				LcCollate: utils.PointerTo("C"),
+				LcCtype:   utils.PointerTo("C.UTF-8"),
+			},
+		},
+		{
+			name: "icu without icu_locale",
+			locale: &api.DatabaseLocale{
+				Provider: utils.PointerTo("icu"),
+				Locale:   utils.PointerTo("C.UTF-8"),
+			},
+			expected: []string{"locale.icu_locale: icu_locale is required when provider is 'icu'"},
+		},
+		{
+			name: "libc without provider",
+			locale: &api.DatabaseLocale{
+				LcCollate: utils.PointerTo("C"),
+				LcCtype:   utils.PointerTo("C.UTF-8"),
+			},
+		},
+		{
+			name: "icu_locale without icu provider",
+			locale: &api.DatabaseLocale{
+				Provider:  utils.PointerTo("libc"),
+				IcuLocale: utils.PointerTo("de-DE"),
+			},
+			expected: []string{"locale.icu_locale: icu_locale can only be set when provider is 'icu'"},
+		},
+		{
+			name: "icu_locale with unset provider",
+			locale: &api.DatabaseLocale{
+				IcuLocale: utils.PointerTo("de-DE"),
+			},
+			expected: []string{"locale.icu_locale: icu_locale can only be set when provider is 'icu'"},
+		},
+		{
+			name:            "builtin on postgres 17",
+			postgresVersion: "17.6",
+			locale: &api.DatabaseLocale{
+				Provider: utils.PointerTo("builtin"),
+				Locale:   utils.PointerTo("C.UTF-8"),
+			},
+		},
+		{
+			name: "builtin without locale",
+			locale: &api.DatabaseLocale{
+				Provider: utils.PointerTo("builtin"),
+			},
+			expected: []string{"locale.locale: locale is required when provider is 'builtin'"},
+		},
+		{
+			name:            "builtin on postgres 16",
+			postgresVersion: "16.10",
+			locale: &api.DatabaseLocale{
+				Provider: utils.PointerTo("builtin"),
+				Locale:   utils.PointerTo("C.UTF-8"),
+			},
+			expected: []string{"locale.provider: the 'builtin' provider requires Postgres 17 or later, got 16.10"},
+		},
+		{
+			name:            "builtin with a postgres 16 node override",
+			postgresVersion: "18.1",
+			nodeVersions:    []string{"16.10"},
+			locale: &api.DatabaseLocale{
+				Provider: utils.PointerTo("builtin"),
+				Locale:   utils.PointerTo("C.UTF-8"),
+			},
+			expected: []string{"locale.provider: the 'builtin' provider requires Postgres 17 or later, got 16.10"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := &api.DatabaseSpec{
+				PostgresVersion: utils.NillablePointerTo(tc.postgresVersion),
+				Nodes:           nodes(tc.nodeVersions...),
+				Locale:          tc.locale,
+			}
+			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", spec, nil)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateDatabaseCreate(t *testing.T) {
+	restoreConfig := &api.RestoreConfigSpec{
+		SourceDatabaseID:   "source-db",
+		SourceNodeName:     "n1",
+		SourceDatabaseName: "app",
+		Repository: &api.RestoreRepositorySpec{
+			Type: "posix",
+		},
+	}
+	locale := &api.DatabaseLocale{
+		Provider:  utils.PointerTo("icu"),
+		IcuLocale: utils.PointerTo("de-DE"),
+	}
+
+	for _, tc := range []struct {
+		name     string
+		spec     *api.DatabaseSpec
+		expected string
+	}{
+		{
+			name: "locale without restore",
+			spec: &api.DatabaseSpec{
+				Locale: locale,
+				Nodes:  []*api.DatabaseNodeSpec{{Name: "n1"}},
+			},
+		},
+		{
+			name: "restore without locale",
+			spec: &api.DatabaseSpec{
+				RestoreConfig: restoreConfig,
+				Nodes:         []*api.DatabaseNodeSpec{{Name: "n1"}},
+			},
+		},
+		{
+			name: "locale with spec-level restore",
+			spec: &api.DatabaseSpec{
+				Locale:        locale,
+				RestoreConfig: restoreConfig,
+				Nodes:         []*api.DatabaseNodeSpec{{Name: "n1"}},
+			},
+			expected: "locale: locale cannot be combined with restore_config",
+		},
+		{
+			name: "locale with node-level restore",
+			spec: &api.DatabaseSpec{
+				Locale: locale,
+				Nodes: []*api.DatabaseNodeSpec{
+					{Name: "n1"},
+					{Name: "n2", RestoreConfig: restoreConfig},
+				},
+			},
+			expected: "locale: locale cannot be combined with restore_config",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDatabaseCreate(tc.spec)
+			if tc.expected == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, tc.expected)
+			}
+		})
+	}
+}
+
 func TestValidateServiceSpec(t *testing.T) {
 	for _, tc := range []struct {
 		name               string

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
@@ -652,5 +653,58 @@ func TestSpec_NodeInstances_PgHbaIdentMerge(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, nodes[0].Instances[0].PgHbaConf)
 		assert.Nil(t, nodes[0].Instances[0].PgIdentConf)
+	})
+}
+
+func TestSpec_Locale(t *testing.T) {
+	locale := &database.Locale{Provider: "icu", Encoding: "UTF8", ICULocale: "de-DE"}
+
+	t.Run("every instance on every node gets the database locale", func(t *testing.T) {
+		s := &database.Spec{
+			DatabaseID:      "test-db",
+			DatabaseName:    "testdb",
+			PostgresVersion: "17.6",
+			SpockVersion:    "5",
+			Locale:          locale,
+			Nodes: []*database.Node{
+				{Name: "n1", HostIDs: []string{"host-1", "host-2"}},
+				{Name: "n2", HostIDs: []string{"host-3"}},
+			},
+		}
+		nodes, err := s.NodeInstances()
+		assert.NoError(t, err)
+		for _, node := range nodes {
+			for _, instance := range node.Instances {
+				assert.Equal(t, locale, instance.Locale)
+			}
+		}
+	})
+
+	t.Run("clone copies the locale", func(t *testing.T) {
+		s := &database.Spec{Locale: locale.Clone()}
+		clone := s.Clone()
+		assert.Equal(t, s.Locale, clone.Locale)
+		assert.NotSame(t, s.Locale, clone.Locale)
+
+		instance := &database.InstanceSpec{
+			PgEdgeVersion: ds.MustParsePgEdgeVersion("17.6", "5"),
+			Locale:        locale.Clone(),
+		}
+		instanceClone := instance.Clone()
+		assert.Equal(t, instance.Locale, instanceClone.Locale)
+		assert.NotSame(t, instance.Locale, instanceClone.Locale)
+	})
+
+	t.Run("omitted locale defaults from the previous spec", func(t *testing.T) {
+		s := &database.Spec{}
+		s.DefaultOptionalFieldsFrom(&database.Spec{Locale: locale})
+		assert.Equal(t, locale, s.Locale)
+	})
+
+	t.Run("specified locale is not overwritten by the previous spec", func(t *testing.T) {
+		updated := &database.Locale{Provider: "icu", ICULocale: "fr-FR"}
+		s := &database.Spec{Locale: updated}
+		s.DefaultOptionalFieldsFrom(&database.Spec{Locale: locale})
+		assert.Equal(t, updated, s.Locale)
 	})
 }

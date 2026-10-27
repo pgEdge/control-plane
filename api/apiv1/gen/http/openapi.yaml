@@ -2973,6 +2973,55 @@ definitions:
         - n1
         - n2
       target_session_attrs: primary
+  DatabaseLocale:
+    title: DatabaseLocale
+    type: object
+    properties:
+      encoding:
+        type: string
+        description: The character set encoding for the database.
+        example: UTF8
+        pattern: ^[A-Za-z0-9_-]+$
+        maxLength: 32
+      icu_locale:
+        type: string
+        description: The ICU locale for the database, e.g. 'de-DE'. Required when provider is 'icu', and only valid with that provider.
+        example: de-DE
+        pattern: ^[A-Za-z0-9_.@=-]+$
+        maxLength: 64
+      lc_collate:
+        type: string
+        description: The collation order (LC_COLLATE) for the database. Overrides 'locale'.
+        example: C
+        pattern: ^[A-Za-z0-9_.@=-]+$
+        maxLength: 64
+      lc_ctype:
+        type: string
+        description: The character classification (LC_CTYPE) for the database. Overrides 'locale'.
+        example: C.UTF-8
+        pattern: ^[A-Za-z0-9_.@=-]+$
+        maxLength: 64
+      locale:
+        type: string
+        description: The default locale for the database. Sets the default for lc_collate and lc_ctype, and is used as the locale for the 'builtin' provider.
+        example: C.UTF-8
+        pattern: ^[A-Za-z0-9_.@=-]+$
+        maxLength: 64
+      provider:
+        type: string
+        description: The locale provider to use for the database. The 'builtin' provider requires Postgres 17 or later.
+        example: icu
+        enum:
+          - libc
+          - icu
+          - builtin
+    example:
+      encoding: UTF8
+      icu_locale: de-DE
+      lc_collate: C
+      lc_ctype: C.UTF-8
+      locale: C.UTF-8
+      provider: icu
   DatabaseNodeSpec:
     title: DatabaseNodeSpec
     type: object
@@ -3277,6 +3326,8 @@ definitions:
               - pgedge_superuser
             username: admin
         maxItems: 16
+      locale:
+        $ref: '#/definitions/DatabaseLocale'
       memory:
         type: string
         description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit is enforced depends on the orchestrator.
@@ -3916,6 +3967,13 @@ definitions:
           roles:
             - pgedge_superuser
           username: admin
+      locale:
+        encoding: UTF8
+        icu_locale: de-DE
+        lc_collate: C
+        lc_ctype: C.UTF-8
+        locale: C.UTF-8
+        provider: icu
       memory: 500M
       nodes:
         - backup_config:

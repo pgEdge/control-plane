@@ -1048,6 +1048,13 @@ func ValidateChangedSpec(current, updated *Spec) error {
 		errs = append(errs, errors.New("database name cannot be changed"))
 	}
 
+	// Immutable: locale is only applied by initdb when an instance is first
+	// bootstrapped, so a change would silently diverge from the actual
+	// database locale.
+	if !localesMatch(current.Locale, updated.Locale) {
+		errs = append(errs, errors.New("locale cannot be changed"))
+	}
+
 	// Spock version is a database-wide property (every node inherits
 	// Spec.SpockVersion; there's no per-node override), so it's checked once
 	// here rather than per-instance. Checking it per-instance would miss a
@@ -1157,6 +1164,17 @@ func checkMajorUnchanged(label string, old, new *ds.Version, detail string) erro
 }
 
 func tenantIDsMatch(a, b *string) bool {
+	switch {
+	case a == nil && b == nil:
+		return true
+	case a != nil && b != nil:
+		return *a == *b
+	default:
+		return false
+	}
+}
+
+func localesMatch(a, b *Locale) bool {
 	switch {
 	case a == nil && b == nil:
 		return true

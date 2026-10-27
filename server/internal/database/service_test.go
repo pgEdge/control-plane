@@ -285,6 +285,91 @@ func TestValidateChangedSpec(t *testing.T) {
 			},
 			expectedErr: "spock major version changed from 5 to 6",
 		},
+		{
+			name: "valid unchanged locale",
+			current: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Locale:          &database.Locale{Provider: "icu", ICULocale: "de-DE"},
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Locale:          &database.Locale{Provider: "icu", ICULocale: "de-DE"},
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+		},
+		{
+			name: "invalid locale change",
+			current: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Locale:          &database.Locale{Provider: "icu", ICULocale: "de-DE"},
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Locale:          &database.Locale{Provider: "icu", ICULocale: "fr-FR"},
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "locale cannot be changed",
+		},
+		{
+			name: "invalid locale added",
+			current: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Locale:          &database.Locale{Provider: "icu", ICULocale: "de-DE"},
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "locale cannot be changed",
+		},
+		{
+			name: "invalid locale removed",
+			current: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Locale:          &database.Locale{Provider: "icu", ICULocale: "de-DE"},
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "locale cannot be changed",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := database.ValidateChangedSpec(tc.current, tc.updated)

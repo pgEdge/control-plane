@@ -194,6 +194,64 @@ Updating these fields applies with a Postgres reload, not a restart. The applica
 
     On the Swarm orchestrator, write IP rules against the client's real address. The bridge gateway address is only the source for connections that originate on the host running the instance.
 
+### Locale and Collation
+
+By default, every database uses the Postgres image's default locale and
+encoding. You can choose a different locale provider, locale, or encoding with
+the `locale` object in the `spec`. The Control Plane passes these settings to
+`initdb` when each instance is created, so they apply identically on every
+node. All nodes of a Spock database must use the same collation, so `locale`
+can only be set for the whole database, not per node.
+
+The following fields are available; all are optional:
+
+| Field | Description |
+|-------|-------------|
+| `provider` | The locale provider: `libc`, `icu`, or `builtin`. The `builtin` provider requires Postgres 17 or later. |
+| `encoding` | The character set encoding, such as `UTF8`. |
+| `locale` | The default locale for `lc_collate` and `lc_ctype`. Required when `provider` is `builtin`. |
+| `lc_collate` | The collation order. Overrides `locale`. |
+| `lc_ctype` | The character classification. Overrides `locale`. |
+| `icu_locale` | The ICU locale, such as `de-DE`. Required when `provider` is `icu`, and only valid with that provider. |
+
+We recommend the `icu` provider for language-specific sorting. ICU locales are
+built into Postgres, whereas `libc` locales depend on the locale packages
+installed in the image or on the host. This example creates a database that
+sorts German text correctly:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "locale": {
+                    "provider": "icu",
+                    "encoding": "UTF8",
+                    "icu_locale": "de-DE"
+                },
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { "name": "n2", "host_ids": ["host-2"] },
+                    { "name": "n3", "host_ids": ["host-3"] }
+                ]
+            }
+        }'
+    ```
+
+!!! warning
+
+    The locale is set when the database is created and cannot be changed afterward. An update that adds, changes, or removes the `locale` object is rejected. Omitting `locale` from an update keeps the existing value.
+
+!!! note
+
+    You can't combine `locale` with `restore_config` when creating a database, because a restored database keeps the locale of its backup.
+
+    The Control Plane only checks the format of each field. If the image doesn't support the locale or encoding you request, `initdb` fails and the error is reported in the database creation task's logs.
+
 ## Extension Support
 
 The Control Plane supports all extensions included in the standard flavor of the [pgEdge Enterprise Postgres Image](https://github.com/pgedge/postgres-images?tab=readme-ov-file#standard-images). You can configure extension-related settings using the `postgresql_conf` object in your database specification.

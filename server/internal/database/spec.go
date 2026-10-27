@@ -355,6 +355,26 @@ func (s *ScriptStatements) Clone() *ScriptStatements {
 	}
 }
 
+// Locale holds the locale and encoding options that are passed to initdb when
+// an instance is bootstrapped. Locale settings are immutable once the database
+// has been created.
+type Locale struct {
+	Provider  string `json:"provider,omitempty"`
+	Encoding  string `json:"encoding,omitempty"`
+	Locale    string `json:"locale,omitempty"`
+	LCCollate string `json:"lc_collate,omitempty"`
+	LCCtype   string `json:"lc_ctype,omitempty"`
+	ICULocale string `json:"icu_locale,omitempty"`
+}
+
+func (l *Locale) Clone() *Locale {
+	if l == nil {
+		return nil
+	}
+	clone := *l
+	return &clone
+}
+
 type Spec struct {
 	DatabaseID       string            `json:"database_id"`
 	TenantID         *string           `json:"tenant_id,omitempty"`
@@ -375,6 +395,7 @@ type Spec struct {
 	PgIdentConf      []string          `json:"pg_ident_conf,omitempty"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	Scripts          *ScriptStatements `json:"scripts,omitempty"`
+	Locale           *Locale           `json:"locale,omitempty"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -465,6 +486,7 @@ func (s *Spec) Clone() *Spec {
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
 		Scripts:          s.Scripts.Clone(),
+		Locale:           s.Locale.Clone(),
 	}
 }
 
@@ -476,6 +498,9 @@ func (s *Spec) DefaultOptionalFieldsFrom(other *Spec) {
 	}
 	if s.SpockVersion == "" && other.SpockVersion != "" {
 		s.SpockVersion = other.SpockVersion
+	}
+	if s.Locale == nil && other.Locale != nil {
+		s.Locale = other.Locale.Clone()
 	}
 
 	s.defaultOptionalFieldFromNodes(other.Nodes)
@@ -633,6 +658,7 @@ type InstanceSpec struct {
 	// PeerInstanceIDs are this instance's physical HA peers in the same
 	// node, excluding itself. See postgres.DefaultGUCs.
 	PeerInstanceIDs []string `json:"peer_instance_ids,omitempty"`
+	Locale          *Locale  `json:"locale,omitempty"`
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
@@ -689,6 +715,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
 		AllHostIDs:       slices.Clone(s.AllHostIDs),
 		PeerInstanceIDs:  slices.Clone(s.PeerInstanceIDs),
+		Locale:           s.Locale.Clone(),
 	}
 }
 
@@ -791,6 +818,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				NodeSize:         nodeSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
 				AllHostIDs:       allHostIDs,
+				Locale:           s.Locale,
 			}
 		}
 

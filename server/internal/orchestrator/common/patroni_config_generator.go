@@ -39,6 +39,9 @@ type PatroniConfigGenerator struct {
 	FQDN string `json:"fqdn"`
 	// InstanceID is this instance's ID.
 	InstanceID string `json:"instance_id"`
+	// Locale holds the locale and encoding options passed to initdb when this
+	// instance is bootstrapped.
+	Locale *database.Locale `json:"locale,omitempty"`
 	// LogType sets the Patroni log type.
 	LogType patroni.LogType `json:"log_type"`
 	// MemoryBytes is the amount of memory that is allocated for this instance.
@@ -144,6 +147,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		EtcdCertsDir:           opts.Paths.Instance.EtcdCertificates(),
 		FQDN:                   opts.FQDN,
 		InstanceID:             opts.Instance.InstanceID,
+		Locale:                 opts.Instance.Locale,
 		LogType:                opts.LogType,
 		MemoryBytes:            memoryBytes,
 		NodeName:               opts.Instance.NodeName,
@@ -255,7 +259,7 @@ func (p *PatroniConfigGenerator) bootstrap(dcsParameters map[string]any) *patron
 			RetryTimeout: utils.PointerTo(10),
 			FailsafeMode: utils.PointerTo(p.NodeSize == 1),
 		},
-		InitDB: utils.PointerTo([]string{"data-checksums"}),
+		InitDB: utils.PointerTo(p.initDB()),
 	}
 
 	if p.RestoreCommand != "" {
@@ -268,6 +272,35 @@ func (p *PatroniConfigGenerator) bootstrap(dcsParameters map[string]any) *patron
 	}
 
 	return bootstrap
+}
+
+// initDB returns the initdb options for this instance. Each entry is either a
+// plain flag or a single-key map, which Patroni renders as --key=value. Locale
+// options are only used when Patroni bootstraps a new cluster with initdb, so
+// they have no effect on an existing data directory, a restore, or a replica.
+func (p *PatroniConfigGenerator) initDB() []any {
+	options := []any{"data-checksums"}
+	if p.Locale == nil {
+		return options
+	}
+
+	for _, opt := range []struct {
+		name  string
+		value string
+	}{
+		{name: "locale-provider", value: p.Locale.Provider},
+		{name: "encoding", value: p.Locale.Encoding},
+		{name: "locale", value: p.Locale.Locale},
+		{name: "lc-collate", value: p.Locale.LCCollate},
+		{name: "lc-ctype", value: p.Locale.LCCtype},
+		{name: "icu-locale", value: p.Locale.ICULocale},
+	} {
+		if opt.value != "" {
+			options = append(options, map[string]string{opt.name: opt.value})
+		}
+	}
+
+	return options
 }
 
 func (p *PatroniConfigGenerator) log() *patroni.Log {

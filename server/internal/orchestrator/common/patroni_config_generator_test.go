@@ -101,6 +101,50 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 		},
 		{
+			name: "with locale",
+			options: common.PatroniConfigGeneratorOptions{
+				Instance: &database.InstanceSpec{
+					InstanceID:    "storefront-n1-689qacsi",
+					DatabaseID:    "storefront",
+					HostID:        "host-1",
+					DatabaseName:  "app",
+					NodeName:      "n1",
+					NodeOrdinal:   1,
+					NodeSize:      1,
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("18.1", "5.0.4"),
+					ClusterSize:   3,
+					Locale: &database.Locale{
+						Provider:  "icu",
+						Encoding:  "UTF8",
+						Locale:    "C.UTF-8",
+						LCCollate: "C",
+						LCCtype:   "C.UTF-8",
+						ICULocale: "de-DE",
+					},
+				},
+				HostCPUs:        4,
+				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
+				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				LogType:         patroni.LogTypeJson,
+				PatroniPort:     8888,
+				PostgresPort:    5432,
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+					PgBackRestPath: "/usr/bin/pgbackrest",
+					PatroniPath:    "/usr/local/bin/patroni",
+				},
+			},
+			etcdHosts: []string{"i-0123456789abcdef.ec2.internal:2379"},
+			etcdCreds: &common.EtcdCreds{
+				Username: "instance.storefront-n1-689qacsi",
+				Password: "password",
+			},
+			generateOptions: common.GenerateOptions{
+				SystemAddresses: []string{"172.17.0.1", "10.128.165.128/26"},
+			},
+		},
+		{
 			name: "with backup config",
 			options: common.PatroniConfigGeneratorOptions{
 				Instance: &database.InstanceSpec{

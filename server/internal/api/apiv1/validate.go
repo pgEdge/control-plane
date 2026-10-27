@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/valkdb/postgresparser"
@@ -147,6 +148,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 	errs = append(errs, validateConfLibraries(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, validation.NewPath("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, validation.NewPath("pg_ident_conf"))...)
+	errs = append(errs, validateLocale(spec, validation.NewPath("locale"))...)
 
 	if spec.BackupConfig != nil {
 		errs = append(errs, validateBackupConfig(spec.BackupConfig, validation.NewPath("backup_config"))...)
@@ -188,6 +190,82 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 	}
 
 	return errors.Join(errs...)
+}
+
+// validateLocale performs basic validation of the locale fields. It
+// intentionally does not check whether the image or host has the requested
+// locale or encoding available; initdb reports that at bootstrap.
+func validateLocale(spec *api.DatabaseSpec, path validation.Path) []error {
+	locale := spec.Locale
+	if locale == nil {
+		return nil
+	}
+
+	var errs []error
+
+	provider := utils.FromPointer(locale.Provider)
+	if utils.FromPointer(locale.IcuLocale) != "" && provider != "icu" {
+		err := errors.New("icu_locale can only be set when provider is 'icu'")
+		errs = append(errs, validation.NewError(err, path.Append("icu_locale")))
+	}
+
+	switch provider {
+	case "icu":
+		if utils.FromPointer(locale.IcuLocale) == "" {
+			err := errors.New("icu_locale is required when provider is 'icu'")
+			errs = append(errs, validation.NewError(err, path.Append("icu_locale")))
+		}
+	case "builtin":
+		if utils.FromPointer(locale.Locale) == "" {
+			err := errors.New("locale is required when provider is 'builtin'")
+			errs = append(errs, validation.NewError(err, path.Append("locale")))
+		}
+		errs = append(errs, validateBuiltinLocaleVersions(spec, path.Append("provider"))...)
+	}
+
+	return errs
+}
+
+// validateBuiltinLocaleVersions rejects the builtin locale provider for any
+// Postgres version older than 17, where it does not exist.
+func validateBuiltinLocaleVersions(spec *api.DatabaseSpec, path validation.Path) []error {
+	versions := []string{utils.FromPointer(spec.PostgresVersion)}
+	for _, node := range spec.Nodes {
+		versions = append(versions, utils.FromPointer(node.PostgresVersion))
+	}
+
+	for _, version := range versions {
+		if version == "" {
+			continue
+		}
+		major, _, _ := strings.Cut(version, ".")
+		if n, err := strconv.Atoi(major); err == nil && n < 17 {
+			err := fmt.Errorf("the 'builtin' provider requires Postgres 17 or later, got %s", version)
+			return []error{validation.NewError(err, path)}
+		}
+	}
+	return nil
+}
+
+// validateDatabaseCreate performs validation that only applies when a database
+// is first created.
+func validateDatabaseCreate(spec *api.DatabaseSpec) error {
+	if spec.Locale == nil || !hasRestoreConfig(spec) {
+		return nil
+	}
+	// A restored database keeps the locale of the backup it was restored
+	// from, so the requested locale would be silently ignored.
+	err := errors.New("locale cannot be combined with restore_config; a restored database keeps the locale of its backup")
+	return validation.NewError(err, validation.NewPath("locale"))
+}
+
+func hasRestoreConfig(spec *api.DatabaseSpec) bool {
+	if spec.RestoreConfig != nil {
+		return true
+	}
+	return slices.ContainsFunc(spec.Nodes, func(node *api.DatabaseNodeSpec) bool {
+		return node.RestoreConfig != nil
+	})
 }
 
 func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {

@@ -316,6 +316,9 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
+	if err := validateDatabaseCreate(req.Spec); err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
 
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
 	if err != nil {
