@@ -21,7 +21,8 @@ func breakSharedPreloadLibraries(t *testing.T, db *DatabaseFixture, host1 string
 		DatabaseUsers: []*api.DatabaseUserSpec{
 			{Username: "admin", DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
 		},
-		Port: pointerTo(0),
+		Port:        pointerTo(0),
+		PatroniPort: pointerTo(0),
 		Nodes: []*api.DatabaseNodeSpec{
 			{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
 		},
@@ -57,7 +58,8 @@ func TestUpdateDatabaseRecoversNodeWithNoPrimary(t *testing.T) {
 			DatabaseUsers: []*api.DatabaseUserSpec{
 				{Username: "admin", Password: pointerTo("password"), DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*api.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
 			},
@@ -98,7 +100,8 @@ func TestDeleteDatabaseWithNoPrimaryNode(t *testing.T) {
 			DatabaseUsers: []*api.DatabaseUserSpec{
 				{Username: "admin", Password: pointerTo("password"), DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*api.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
 			},
