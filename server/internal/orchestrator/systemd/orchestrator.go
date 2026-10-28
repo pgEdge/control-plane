@@ -10,7 +10,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strconv"
 	"syscall"
 
@@ -32,20 +31,24 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+type UserLookup = func(username string) (*user.User, error)
+
 type Orchestrator struct {
-	cfg            config.Config
-	logger         zerolog.Logger
-	client         *Client
-	packageManager PackageManager
-	cpus           int
-	memBytes       uint64
+	cfg           config.Config
+	logger        zerolog.Logger
+	client        *Client
+	versionsProbe *InstalledVersionsProbe
+	cpus          int
+	memBytes      uint64
+	userLookup    UserLookup
 }
 
 func NewOrchestrator(
 	cfg config.Config,
 	loggerFactory *logging.Factory,
 	client *Client,
-	packageManager PackageManager,
+	versionsProbe *InstalledVersionsProbe,
+	userLookup UserLookup,
 ) (*Orchestrator, error) {
 	logger := loggerFactory.Logger("systemd_orchestrator")
 	logger.Debug().Msg("initializing orchestrator")
@@ -62,12 +65,13 @@ func NewOrchestrator(
 		Msg("got system stats")
 
 	return &Orchestrator{
-		cfg:            cfg,
-		logger:         logger,
-		client:         client,
-		packageManager: packageManager,
-		cpus:           cpu,
-		memBytes:       mem,
+		cfg:           cfg,
+		logger:        logger,
+		client:        client,
+		versionsProbe: versionsProbe,
+		userLookup:    userLookup,
+		cpus:          cpu,
+		memBytes:      mem,
 	}, nil
 }
 
@@ -78,7 +82,7 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	o.logger.Debug().Msg("querying installed versions")
 
-	versions, err := o.packageManager.InstalledPostgresVersions(ctx)
+	versions, err := o.versionsProbe.InstalledPostgresVersions(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get installed postgres versions: %w", err)
 	}
@@ -87,57 +91,31 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		Int("version_count", len(versions)).
 		Msg("got installed versions")
 
-	var supported []*ds.PgEdgeVersion
-	for _, installed := range versions {
-		if len(installed.Spock) == 0 {
-			o.logger.Debug().
-				Str("postgres_name", installed.Postgres.Name).
-				Str("postgres_major", installed.Postgres.PostgresMajor).
-				Str("postgres_version", installed.Postgres.Version.String()).
-				Msg("missing spock for this postgres version")
-			// We need spock
-			continue
-		}
-
-		o.logger.Debug().
-			Str("postgres_name", installed.Postgres.Name).
-			Str("postgres_major", installed.Postgres.PostgresMajor).
-			Str("postgres_version", installed.Postgres.Version.String()).
-			Msg("postgres version")
-
-		for _, spock := range installed.Spock {
-			o.logger.Debug().
-				Str("spock_name", spock.Name).
-				Str("spock_postgres_major", spock.PostgresMajor).
-				Str("spock_version", spock.Version.String()).
-				Msg("spock version")
-
-			version := &ds.PgEdgeVersion{
-				PostgresVersion: installed.Postgres.Version,
-				SpockVersion:    spock.Version.MajorVersion(),
-			}
-			supported = append(supported, version)
-
-			o.logger.Debug().
-				Str("version", version.String()).
-				Msg("pgedge version")
-		}
-
-	}
-	if len(supported) == 0 {
+	if len(versions) == 0 {
+		// TODO(PLAT-752): This wording should change or the error should be
+		// removed as we work towards optional spock.
 		return errors.New("pgedge postgres not installed")
 	}
-	slices.SortFunc(supported, func(a, b *ds.PgEdgeVersion) int {
-		// Sort in reverse order
-		return -a.Compare(b)
-	})
+
+	h.SupportedPgEdgeVersions = versions
+	h.DefaultPgEdgeVersion = defaultVersion(versions)
 
 	h.CPUs = int(o.cpus)
 	h.MemBytes = o.memBytes
-	h.DefaultPgEdgeVersion = supported[0]
-	h.SupportedPgEdgeVersions = supported
 
 	return nil
+}
+
+// defaultVersion returns the most recent stable version from the given
+// versions, which must be non-empty and sorted in descending order. It falls
+// back to the most recent version if only pre-releases are available.
+func defaultVersion(versions []*ds.PgEdgeVersion) *ds.PgEdgeVersion {
+	for _, version := range versions {
+		if version.Stability.AllowedAsDefault() {
+			return version
+		}
+	}
+	return versions[0]
 }
 
 func (o *Orchestrator) PopulateHostStatus(ctx context.Context, h *host.HostStatus) error {
@@ -276,13 +254,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 		return nil, errors.New("got empty postgres version")
 	}
 
+	pgBinDir := o.cfg.SystemD.PgBinDir(pgMajor)
 	databaseOwnerUser := strconv.Itoa(databaseOwnerUID)
 	databaseOwnerGroup := strconv.Itoa(databaseOwnerGID)
 	patroniUnit := &UnitResource{
 		DatabaseID: spec.DatabaseID,
 		HostID:     spec.HostID,
 		Name:       patroniServiceName(spec.InstanceID),
-		Options:    PatroniUnitOptions(paths, o.packageManager.BinDir(pgMajor), spec.CPUs, spec.MemoryBytes, databaseOwnerUser, databaseOwnerGroup),
+		Options:    PatroniUnitOptions(paths, pgBinDir, spec.CPUs, spec.MemoryBytes, databaseOwnerUser, databaseOwnerGroup),
 		ExtraDependencies: []resource.Identifier{
 			patroniConfig.Identifier(),
 			instanceDir.Identifier(),
@@ -593,13 +572,7 @@ func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (
 	if !ok {
 		return database.InstancePaths{}, errors.New("got empty postgres version")
 	}
-
-	var baseDir string
-	if o.cfg.SystemD.InstanceDataDir != "" {
-		baseDir = filepath.Join(o.cfg.SystemD.InstanceDataDir, pgMajor, instanceID)
-	} else {
-		baseDir = filepath.Join(o.packageManager.InstanceDataBaseDir(pgMajor), instanceID)
-	}
+	baseDir := filepath.Join(o.cfg.SystemD.InstanceDataBaseDir(pgMajor), instanceID)
 
 	return database.InstancePaths{
 		Instance:       database.Paths{BaseDir: baseDir},
@@ -610,7 +583,7 @@ func (o *Orchestrator) InstancePaths(pgVersion *ds.Version, instanceID string) (
 }
 
 func (o *Orchestrator) databaseOwnerIDs() (int, int, error) {
-	u, err := user.Lookup("postgres")
+	u, err := o.userLookup("postgres")
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to lookup 'postgres' user: %w", err)
 	}

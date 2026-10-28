@@ -93,6 +93,10 @@ func (v *Version) MajorMinorVersion() *Version {
 	}
 }
 
+func (v *Version) IsPrerelease() bool {
+	return v.PreRelease != ""
+}
+
 func (v *Version) String() string {
 	components := make([]string, len(v.Components))
 	for i, c := range v.Components {
@@ -179,7 +183,9 @@ func (v *Version) Compare(other *Version) int {
 // semverRegexp matches "<major>[.<minor>[.<patch>]][-<prerelease>]". The
 // pre-release group accepts dot/hyphen-separated alphanumeric identifiers
 // (e.g. "beta", "beta.1", "rc.2") but not SemVer build metadata ("+...").
-var semverRegexp = regexp.MustCompile(`^(\d+(?:\.\d+){0,2})(?:-([0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*))?$`)
+// The hyphen before the pre-release group is optional to support the Postgres
+// convention, e.g. 19rc1.
+var semverRegexp = regexp.MustCompile(`^(\d+(?:\.\d+){0,2})(?:-?([0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*))?$`)
 
 func MustParseVersion(s string) *Version {
 	v, err := ParseVersion(s)
