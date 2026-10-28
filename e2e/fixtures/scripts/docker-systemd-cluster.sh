@@ -112,6 +112,9 @@ RUN dnf install -y systemd systemd-sysv && \
           /lib/systemd/system/sockets.target.wants/*initctl* \
           /lib/systemd/system/basic.target.wants/* && \
     dnf install -y jq sudo && \
+    # The E2E fixture runs commands as root via sudo, which can fail PAM's
+    # account check in this container, so let root skip it.
+    sed -i '1a account    sufficient   pam_rootok.so' /etc/pam.d/sudo && \
     dnf clean all
 
 VOLUME ["/sys/fs/cgroup"]
@@ -340,6 +343,16 @@ if [[ "$HEALTHY" -lt "${#CONTAINERS[@]}" ]]; then
   echo "ERROR: Not all hosts became healthy in time."
   exit 1
 fi
+
+# ── Verify sudo ────────────────────────────────────────────────────────────────
+# The E2E fixture runs host commands through sudo, so fail fast if it's broken.
+echo "==> Verifying sudo works in containers..."
+for c in "${CONTAINERS[@]}"; do
+  if ! docker exec "$c" sh -c "sudo -u postgres true"; then
+    echo "ERROR: sudo failed in $c"
+    exit 1
+  fi
+done
 
 # ── Write E2E test config ──────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
