@@ -483,8 +483,17 @@ ci-compose-down:
 # rocky-9 or debian-13
 SYSTEMD_OS ?= rocky-9
 
+# The packages bundle a signed SBOM that's only generated in the release job.
+# Test packages don't need a real one, but nfpm requires the files to exist.
+.PHONY: ci-sbom-placeholder
+ci-sbom-placeholder:
+	mkdir -p .sbom
+	test -f .sbom/sbom.json || echo '{}' > .sbom/sbom.json
+	touch .sbom/sbom.rpm.asc .sbom/sbom.deb.asc
+
 .PHONY: ci-systemd-up
-ci-systemd-up: goreleaser-test-release
+ci-systemd-up: ci-sbom-placeholder
+	$(MAKE) goreleaser-test-release
 	./e2e/fixtures/scripts/docker-systemd-cluster.sh --os $(SYSTEMD_OS) up
 
 .PHONY: ci-systemd-down
