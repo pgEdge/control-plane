@@ -480,6 +480,17 @@ ci-compose-detached: ci-compose-build docker-swarm-init
 ci-compose-down:
 	$(docker_compose_ci) down
 
+# rocky-9 or debian-13
+SYSTEMD_OS ?= rocky-9
+
+.PHONY: ci-systemd-up
+ci-systemd-up: goreleaser-test-release
+	./e2e/fixtures/scripts/docker-systemd-cluster.sh --os $(SYSTEMD_OS) up
+
+.PHONY: ci-systemd-down
+ci-systemd-down:
+	./e2e/fixtures/scripts/docker-systemd-cluster.sh --os $(SYSTEMD_OS) down
+
 #################################
 # 		  documentation 	    #
 #################################
