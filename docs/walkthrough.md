@@ -29,9 +29,11 @@ with three nodes, each accepting reads and writes.
 > **The pgEdge package repository needs a client certificate**
 > Before creating the Codespace, add two Codespaces secrets for this
 > repository, `PGEDGE_CLIENT_CERT` and `PGEDGE_CLIENT_KEY`, holding the PEM
-> contents of your client certificate and its matching key. The repositories
-> authenticate clients with mutual TLS, so without both secrets the setup
-> leaves them disabled and the Postgres client will not install.
+> contents of your client certificate and its matching key. The certificate
+> must be the full chain -- your leaf certificate first, followed by the
+> issuing intermediate -- because the leaf alone cannot authenticate. The
+> repositories authenticate clients with mutual TLS, so without both secrets
+> the setup leaves them disabled and the Postgres client will not install.
 
 ## Prerequisites
 

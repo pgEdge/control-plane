@@ -1,4 +1,14 @@
 ---
+# Retired: see the matching comment in deb_prerequisites. Reused VMs still
+# carry these repo definitions and the endpoint is gone, so remove them before
+# the first dnf operation.
+- name: Remove the retired pgEdge old repositories
+  ansible.builtin.yum_repository:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - pgedge-old
+    - pgedge-noarch-old
 - name: Install base prerequisites
   ansible.builtin.package:
     name: '{{ item }}'
@@ -74,7 +84,9 @@
     msg: >-
       No pgEdge client certificate supplied for this run. Any existing
       repository configuration is left as it is, and installing pgEdge packages
-      may fail. Set pgedge_client_cert and pgedge_client_key.
+      may fail. Put the certificate and key at ~/.pgedge/client.crt and
+      ~/.pgedge/client.key, or point PGEDGE_CLIENT_CERT_FILE and
+      PGEDGE_CLIENT_KEY_FILE at them.
   when: not (pgedge_client_cert | default('') | length > 0
              and pgedge_client_key | default('') | length > 0)
 
