@@ -14,10 +14,12 @@ sudo dpkg -i /tmp/pgedge-release.deb
 if [ -n "${PGEDGE_CLIENT_CERT:-}" ] && [ -n "${PGEDGE_CLIENT_KEY:-}" ]; then
     echo "Installing the pgEdge client certificate..."
     sudo install -d -m 0755 /etc/pgedge
+    # Create the key empty at 0600 first: writing it and then chmod'ing would
+    # leave it world-readable for the interval in between.
+    sudo install -m 0600 /dev/null /etc/pgedge/client.key
+    sudo install -m 0644 /dev/null /etc/pgedge/client.crt
     printf '%s\n' "$PGEDGE_CLIENT_CERT" | sudo tee /etc/pgedge/client.crt >/dev/null
     printf '%s\n' "$PGEDGE_CLIENT_KEY"  | sudo tee /etc/pgedge/client.key >/dev/null
-    sudo chmod 0644 /etc/pgedge/client.crt
-    sudo chmod 0600 /etc/pgedge/client.key
     sudo pgedge-subscription-manager install \
         /etc/pgedge/client.crt /etc/pgedge/client.key --force
 else

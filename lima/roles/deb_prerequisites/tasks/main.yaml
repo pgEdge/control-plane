@@ -20,10 +20,6 @@
   ansible.builtin.apt:
     deb: https://downloads.pgedge.com/repodeb/pgedge-release_latest_all.deb
     state: present
-- name: Install pgEdge old repository
-  template:
-    src: pgedge-old.sources.tmpl
-    dest: /etc/apt/sources.list.d/pgedge-old.sources
 - name: Reconfigure pgEdge repository for staging packages
   ansible.builtin.replace:
     path: /etc/apt/sources.list.d/pgedge.sources
@@ -38,10 +34,6 @@
     replace: release
   when: not (use_staging_packages | bool)
   register: repo_reconfigured_to_release
-- name: Update apt cache again
-  ansible.builtin.apt:
-    update_cache: yes
-  changed_when: false
 - name: Install the pgEdge client certificate and enable the repositories
   when: pgedge_client_cert | default('') | length > 0
         and pgedge_client_key | default('') | length > 0
@@ -80,11 +72,16 @@
 - name: Warn when no pgEdge client certificate was supplied
   ansible.builtin.debug:
     msg: >-
-      No pgEdge client certificate supplied: the repositories stay disabled and
-      pgEdge packages will not install. Set pgedge_client_cert and
-      pgedge_client_key.
+      No pgEdge client certificate supplied for this run. Any existing
+      repository configuration is left as it is, and installing pgEdge packages
+      may fail. Set pgedge_client_cert and pgedge_client_key.
   when: not (pgedge_client_cert | default('') | length > 0
              and pgedge_client_key | default('') | length > 0)
+
+- name: Update apt cache again
+  ansible.builtin.apt:
+    update_cache: yes
+  changed_when: false
 
 - name: Track configured Spock major for reinstall detection
   ansible.builtin.copy:

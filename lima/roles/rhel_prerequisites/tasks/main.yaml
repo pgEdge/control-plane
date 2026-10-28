@@ -20,24 +20,6 @@
     name: https://downloads.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
     state: present
     disable_gpg_check: true
-- name: Add pgEdge old repository
-  ansible.builtin.yum_repository:
-    name: pgedge-old
-    description: pgEdge Old RPM Repository
-    baseurl: "https://dnf.pgedge.com/release_old/{{ansible_facts['distribution_major_version']}}/RPMS/{{ansible_facts['architecture']}}/"
-    # We only host one version of our GPG keys and its invalid for these old
-    # packages.
-    gpgcheck: no
-    enabled: yes
-    sslverify: yes
-- name: Add pgEdge noarch old repository
-  ansible.builtin.yum_repository:
-    name: pgedge-noarch-old
-    description: pgEdge Old RPM Repository (noarch)
-    baseurl: "https://dnf.pgedge.com/release_old/{{ansible_facts['distribution_major_version']}}/RPMS/noarch/"
-    gpgcheck: no
-    enabled: yes
-    sslverify: yes
 - name: Reconfigure pgEdge repository for staging packages
   ansible.builtin.replace:
     path: /etc/yum.repos.d/pgedge.repo
@@ -90,9 +72,9 @@
 - name: Warn when no pgEdge client certificate was supplied
   ansible.builtin.debug:
     msg: >-
-      No pgEdge client certificate supplied: the repositories stay disabled and
-      pgEdge packages will not install. Set pgedge_client_cert and
-      pgedge_client_key.
+      No pgEdge client certificate supplied for this run. Any existing
+      repository configuration is left as it is, and installing pgEdge packages
+      may fail. Set pgedge_client_cert and pgedge_client_key.
   when: not (pgedge_client_cert | default('') | length > 0
              and pgedge_client_key | default('') | length > 0)
 

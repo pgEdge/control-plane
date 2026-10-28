@@ -25,6 +25,14 @@ with three nodes, each accepting reads and writes.
 > [Runme extension](https://marketplace.visualstudio.com/items?itemName=stateful.runme)
 > in VS Code and click **Execute Cell** on each block.
 
+> [!IMPORTANT]
+> **The pgEdge package repository needs a client certificate**
+> Before creating the Codespace, add two Codespaces secrets for this
+> repository, `PGEDGE_CLIENT_CERT` and `PGEDGE_CLIENT_KEY`, holding the PEM
+> contents of your client certificate and its matching key. The repositories
+> authenticate clients with mutual TLS, so without both secrets the setup
+> leaves them disabled and the Postgres client will not install.
+
 ## Prerequisites
 
 - [Docker Engine](https://docs.docker.com/engine/install/) (Linux) or [Docker Desktop](https://docs.docker.com/desktop/) (macOS)
