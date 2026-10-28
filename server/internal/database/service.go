@@ -642,6 +642,12 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 		}
 	}
 
+	// This must run after the version defaults above, since an omitted
+	// version can resolve to one that doesn't support the locale provider.
+	if err := validateLocaleVersions(spec); err != nil {
+		return err
+	}
+
 	// Validate that all service host IDs refer to registered hosts
 	for _, svc := range spec.Services {
 		for _, hostID := range svc.HostIDs {
@@ -1172,6 +1178,32 @@ func tenantIDsMatch(a, b *string) bool {
 	default:
 		return false
 	}
+}
+
+// validateLocaleVersions rejects the builtin locale provider when the spec or
+// any node uses a Postgres version older than 17, where it does not exist.
+func validateLocaleVersions(spec *Spec) error {
+	if spec.Locale == nil || spec.Locale.Provider != "builtin" {
+		return nil
+	}
+
+	versions := []string{spec.PostgresVersion}
+	for _, node := range spec.Nodes {
+		if node.PostgresVersion != "" {
+			versions = append(versions, node.PostgresVersion)
+		}
+	}
+
+	for _, v := range versions {
+		version, err := ds.ParseVersion(v)
+		if err != nil {
+			return fmt.Errorf("failed to parse postgres version %q: %w", v, err)
+		}
+		if major, ok := version.Major(); ok && major < 17 {
+			return fmt.Errorf("the 'builtin' locale provider requires Postgres 17 or later, got %s", v)
+		}
+	}
+	return nil
 }
 
 func localesMatch(a, b *Locale) bool {

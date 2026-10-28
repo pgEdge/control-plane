@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/valkdb/postgresparser"
@@ -220,31 +219,11 @@ func validateLocale(spec *api.DatabaseSpec, path validation.Path) []error {
 			err := errors.New("locale is required when provider is 'builtin'")
 			errs = append(errs, validation.NewError(err, path.Append("locale")))
 		}
-		errs = append(errs, validateBuiltinLocaleVersions(spec, path.Append("provider"))...)
+		// The Postgres 17+ requirement for builtin is checked in
+		// database.Service.PopulateSpecDefaults, after versions are defaulted.
 	}
 
 	return errs
-}
-
-// validateBuiltinLocaleVersions rejects the builtin locale provider for any
-// Postgres version older than 17, where it does not exist.
-func validateBuiltinLocaleVersions(spec *api.DatabaseSpec, path validation.Path) []error {
-	versions := []string{utils.FromPointer(spec.PostgresVersion)}
-	for _, node := range spec.Nodes {
-		versions = append(versions, utils.FromPointer(node.PostgresVersion))
-	}
-
-	for _, version := range versions {
-		if version == "" {
-			continue
-		}
-		major, _, _ := strings.Cut(version, ".")
-		if n, err := strconv.Atoi(major); err == nil && n < 17 {
-			err := fmt.Errorf("the 'builtin' provider requires Postgres 17 or later, got %s", version)
-			return []error{validation.NewError(err, path)}
-		}
-	}
-	return nil
 }
 
 // validateDatabaseCreate performs validation that only applies when a database

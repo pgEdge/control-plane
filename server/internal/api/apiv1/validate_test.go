@@ -1436,24 +1436,10 @@ func TestValidateDatabaseSpec(t *testing.T) {
 }
 
 func TestValidateLocale(t *testing.T) {
-	nodes := func(versions ...string) []*api.DatabaseNodeSpec {
-		var out []*api.DatabaseNodeSpec
-		for i, v := range append([]string{""}, versions...) {
-			out = append(out, &api.DatabaseNodeSpec{
-				Name:            "n" + string(rune('1'+i)),
-				HostIds:         []api.Identifier{api.Identifier("host-1")},
-				PostgresVersion: utils.NillablePointerTo(v),
-			})
-		}
-		return out
-	}
-
 	for _, tc := range []struct {
-		name            string
-		postgresVersion string
-		nodeVersions    []string
-		locale          *api.DatabaseLocale
-		expected        []string
+		name     string
+		locale   *api.DatabaseLocale
+		expected []string
 	}{
 		{
 			name: "no locale",
@@ -1507,8 +1493,7 @@ func TestValidateLocale(t *testing.T) {
 			expected: []string{"locale.icu_locale: icu_locale can only be set when provider is 'icu'"},
 		},
 		{
-			name:            "builtin on postgres 17",
-			postgresVersion: "17.6",
+			name: "builtin with locale",
 			locale: &api.DatabaseLocale{
 				Provider: utils.PointerTo("builtin"),
 				Locale:   utils.PointerTo("C.UTF-8"),
@@ -1521,31 +1506,13 @@ func TestValidateLocale(t *testing.T) {
 			},
 			expected: []string{"locale.locale: locale is required when provider is 'builtin'"},
 		},
-		{
-			name:            "builtin on postgres 16",
-			postgresVersion: "16.10",
-			locale: &api.DatabaseLocale{
-				Provider: utils.PointerTo("builtin"),
-				Locale:   utils.PointerTo("C.UTF-8"),
-			},
-			expected: []string{"locale.provider: the 'builtin' provider requires Postgres 17 or later, got 16.10"},
-		},
-		{
-			name:            "builtin with a postgres 16 node override",
-			postgresVersion: "18.1",
-			nodeVersions:    []string{"16.10"},
-			locale: &api.DatabaseLocale{
-				Provider: utils.PointerTo("builtin"),
-				Locale:   utils.PointerTo("C.UTF-8"),
-			},
-			expected: []string{"locale.provider: the 'builtin' provider requires Postgres 17 or later, got 16.10"},
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			spec := &api.DatabaseSpec{
-				PostgresVersion: utils.NillablePointerTo(tc.postgresVersion),
-				Nodes:           nodes(tc.nodeVersions...),
-				Locale:          tc.locale,
+				Nodes: []*api.DatabaseNodeSpec{
+					{Name: "n1", HostIds: []api.Identifier{api.Identifier("host-1")}},
+				},
+				Locale: tc.locale,
 			}
 			err := validateDatabaseSpec(config.OrchestratorSwarm, "test-db", spec, nil)
 			if len(tc.expected) < 1 {

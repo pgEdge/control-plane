@@ -37,3 +37,58 @@ func TestOrchestratorOptsSwarmImage(t *testing.T) {
 	assert.Equal(t, "", (&OrchestratorOpts{}).swarmImage())
 	assert.Equal(t, "my-image", (&OrchestratorOpts{Swarm: &SwarmOpts{Image: "my-image"}}).swarmImage())
 }
+
+func TestValidateLocaleVersions(t *testing.T) {
+	builtin := &Locale{Provider: "builtin", Locale: "C.UTF-8"}
+
+	for _, tc := range []struct {
+		name        string
+		spec        *Spec
+		expectedErr string
+	}{
+		{
+			name: "no locale on postgres 16",
+			spec: &Spec{PostgresVersion: "16.10", Nodes: []*Node{{Name: "n1"}}},
+		},
+		{
+			name: "icu on postgres 16",
+			spec: &Spec{
+				PostgresVersion: "16.10",
+				Locale:          &Locale{Provider: "icu", ICULocale: "de-DE"},
+				Nodes:           []*Node{{Name: "n1"}},
+			},
+		},
+		{
+			name: "builtin on postgres 17",
+			spec: &Spec{PostgresVersion: "17.6", Locale: builtin, Nodes: []*Node{{Name: "n1"}}},
+		},
+		{
+			name:        "builtin on postgres 16",
+			spec:        &Spec{PostgresVersion: "16.10", Locale: builtin, Nodes: []*Node{{Name: "n1"}}},
+			expectedErr: "the 'builtin' locale provider requires Postgres 17 or later, got 16.10",
+		},
+		{
+			// e.g. a node version that was defaulted from a node-level image
+			// override by PopulateSpecDefaults.
+			name: "builtin with a postgres 16 node",
+			spec: &Spec{
+				PostgresVersion: "18.1",
+				Locale:          builtin,
+				Nodes: []*Node{
+					{Name: "n1"},
+					{Name: "n2", PostgresVersion: "16.10"},
+				},
+			},
+			expectedErr: "the 'builtin' locale provider requires Postgres 17 or later, got 16.10",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateLocaleVersions(tc.spec)
+			if tc.expectedErr != "" {
+				assert.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
