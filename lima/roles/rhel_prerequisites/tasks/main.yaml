@@ -23,8 +23,16 @@
   community.general.dnf_config_manager:
     name: crb
     state: enabled
+# Imported explicitly rather than left to dnf's auto-import from the repo's
+# gpgkey=. The RPM and DEB repositories are signed with different keys, so this
+# is keys/dnf specifically.
+- name: Install the pgEdge package signing key
+  ansible.builtin.rpm_key:
+    key: https://downloads.pgedge.com/keys/dnf/pgedge-rsa.pub
+    state: present
 # downloads.pgedge.com, not dnf.pgedge.com: the gated repository cannot serve
-# the package that configures access to it.
+# the package that configures access to it. The repo package itself is
+# unsigned, hence disable_gpg_check here and nowhere else.
 - name: Install pgEdge repository
   ansible.builtin.package:
     name: https://downloads.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
