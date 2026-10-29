@@ -20,13 +20,6 @@
   roles:
     - role: deploy_systemd_control_plane
 
-- name: Initialize and join cluster
-  hosts: all
-  roles:
-    - role: join_systemd_cluster
-      vars:
-        first_host: "{{ hostvars['localhost'].first_host }}"
-
 - name: Write test configs
   hosts: localhost
   gather_facts: false
