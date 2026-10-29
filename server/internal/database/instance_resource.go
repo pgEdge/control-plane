@@ -107,15 +107,24 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
+	// Patroni can take a loop cycle after a reload to report pending_restart,
+	// so we also force a restart when the Postgres port has changed from the
+	// previous instance state. Otherwise, we'd try to connect on the new port
+	// before Postgres is listening on it.
+	var portChanged bool
+	previous, prevErr := resource.FromContext[*InstanceResource](rc, r.Identifier())
 	if err := r.updateConnectionInfo(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
+	}
+	if prevErr == nil && previous.ConnectionInfo != nil {
+		portChanged = previous.ConnectionInfo.AdminPort != r.ConnectionInfo.AdminPort
 	}
 	patroniClient := r.patroniClient()
 	if err := WaitForPatroniRunning(ctx, patroniClient, 0); err != nil {
 		err = fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
 		return r.recordError(ctx, rc, err)
 	}
-	if err := r.restartIfNeeded(ctx, patroniClient); err != nil {
+	if err := r.restartIfNeeded(ctx, patroniClient, portChanged); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
 	if err := r.initializeInstance(ctx, rc); err != nil {
@@ -427,12 +436,12 @@ func (r *InstanceResource) createRolesFromSpec(ctx context.Context, tx pgx.Tx) e
 	return nil
 }
 
-func (r *InstanceResource) restartIfNeeded(ctx context.Context, client *patroni.Client) error {
+func (r *InstanceResource) restartIfNeeded(ctx context.Context, client *patroni.Client, force bool) error {
 	status, err := client.GetInstanceStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get patroni instance status: %w", err)
 	}
-	if status.PendingRestart == nil || !*status.PendingRestart {
+	if !force && (status.PendingRestart == nil || !*status.PendingRestart) {
 		return nil
 	}
 	if err := client.ScheduleRestart(ctx, &patroni.Restart{}); err != nil {
