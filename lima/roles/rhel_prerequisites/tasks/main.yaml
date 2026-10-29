@@ -13,9 +13,19 @@
   community.general.dnf_config_manager:
     name: crb
     state: enabled
+# Imported explicitly rather than left to dnf's auto-import from the repo's
+# gpgkey=. The RPM and DEB repositories are signed with different keys, so this
+# is keys/dnf specifically.
+- name: Install the pgEdge package signing key
+  ansible.builtin.rpm_key:
+    key: https://downloads.pgedge.com/keys/dnf/pgedge-rsa.pub
+    state: present
+# downloads.pgedge.com, not dnf.pgedge.com: the gated repository cannot serve
+# the package that configures access to it. The repo package itself is
+# unsigned, hence disable_gpg_check here and nowhere else.
 - name: Install pgEdge repository
   ansible.builtin.package:
-    name: https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
+    name: https://downloads.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
     state: present
     disable_gpg_check: true
 - name: Reconfigure pgEdge repository for staging packages
@@ -32,6 +42,52 @@
     replace: release
   when: not (use_staging_packages | bool)
   register: repo_reconfigured_to_release
+- name: Install the pgEdge client certificate and enable the repositories
+  when: pgedge_client_cert | default('') | length > 0
+        and pgedge_client_key | default('') | length > 0
+  block:
+  - name: Create the pgEdge configuration directory
+    ansible.builtin.file:
+      path: "/etc/pki/pgedge"
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+  - name: Write the client certificate
+    ansible.builtin.copy:
+      content: "{{ pgedge_client_cert | trim }}\n"
+      dest: "/etc/pki/pgedge/client.crt"
+      owner: root
+      group: root
+      mode: '0644'
+    no_log: true
+  # Ownership and mode are left to pgedge-subscription-manager: apt reads the
+  # key as _apt, dnf as root.
+  - name: Write the client key
+    ansible.builtin.copy:
+      content: "{{ pgedge_client_key | trim }}\n"
+      dest: "/etc/pki/pgedge/client.key"
+      owner: root
+      group: root
+      mode: '0600'
+    no_log: true
+  - name: Validate the certificate and enable the pgEdge repositories
+    ansible.builtin.command: >-
+      pgedge-subscription-manager install
+      /etc/pki/pgedge/client.crt /etc/pki/pgedge/client.key --force
+    changed_when: true
+
+- name: Warn when no pgEdge client certificate was supplied
+  ansible.builtin.debug:
+    msg: >-
+      No pgEdge client certificate supplied for this run. Any existing
+      repository configuration is left as it is, and installing pgEdge packages
+      may fail. Put the certificate and key at ~/.pgedge/client.crt and
+      ~/.pgedge/client.key, or point PGEDGE_CLIENT_CERT_FILE and
+      PGEDGE_CLIENT_KEY_FILE at them.
+  when: not (pgedge_client_cert | default('') | length > 0
+             and pgedge_client_key | default('') | length > 0)
+
 - name: Track configured Spock major for reinstall detection
   ansible.builtin.copy:
     content: "{{ spock_major | default('50') }}"

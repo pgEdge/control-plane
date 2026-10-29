@@ -1,5 +1,13 @@
 ---
 use_staging_packages: false
+# Client certificate for the gated pgEdge repositories. Read from files on the
+# controller rather than passed on the command line, so the PEM never lands in
+# argv. Override the paths with PGEDGE_CLIENT_CERT_FILE / PGEDGE_CLIENT_KEY_FILE.
+pgedge_client_cert_file: "{{ lookup('env', 'PGEDGE_CLIENT_CERT_FILE') | default('~/.pgedge/client.crt', true) }}"
+pgedge_client_key_file: "{{ lookup('env', 'PGEDGE_CLIENT_KEY_FILE') | default('~/.pgedge/client.key', true) }}"
+pgedge_client_cert: "{{ lookup('file', pgedge_client_cert_file | expanduser, errors='ignore') | default('', true) }}"
+pgedge_client_key: "{{ lookup('file', pgedge_client_key_file | expanduser, errors='ignore') | default('', true) }}"
+
 os: rocky-9
 machines:
   - name: control-plane-dev-1
