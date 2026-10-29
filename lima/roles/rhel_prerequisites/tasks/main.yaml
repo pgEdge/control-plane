@@ -1,14 +1,4 @@
 ---
-# Retired: see the matching comment in deb_prerequisites. Reused VMs still
-# carry these repo definitions and the endpoint is gone, so remove them before
-# the first dnf operation.
-- name: Remove the retired pgEdge old repositories
-  ansible.builtin.yum_repository:
-    name: '{{ item }}'
-    state: absent
-  loop:
-    - pgedge-old
-    - pgedge-noarch-old
 - name: Install base prerequisites
   ansible.builtin.package:
     name: '{{ item }}'

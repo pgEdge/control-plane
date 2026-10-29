@@ -1,12 +1,4 @@
 ---
-# Retired: release_old existed only because an old GPG key made those packages
-# unverifiable. Lima reuses existing VMs, so a VM provisioned before this was
-# removed still carries the source, and the endpoint is gone -- which fails
-# every apt operation, not just pgEdge's. Remove it before the first one.
-- name: Remove the retired pgEdge old repository
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/pgedge-old.sources
-    state: absent
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: yes
