@@ -73,7 +73,7 @@ func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) g
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "cluster_already_initialized":
+		case "host_already_in_cluster":
 			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
@@ -81,7 +81,7 @@ func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) g
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInitClusterClusterAlreadyInitializedResponseBody(res)
+				body = NewInitClusterHostAlreadyInClusterResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -166,7 +166,7 @@ func EncodeJoinClusterError(encoder func(context.Context, http.ResponseWriter) g
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "cluster_already_initialized":
+		case "host_already_in_cluster":
 			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
@@ -174,7 +174,7 @@ func EncodeJoinClusterError(encoder func(context.Context, http.ResponseWriter) g
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewJoinClusterClusterAlreadyInitializedResponseBody(res)
+				body = NewJoinClusterHostAlreadyInClusterResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)

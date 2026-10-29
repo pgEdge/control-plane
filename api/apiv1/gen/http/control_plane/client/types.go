@@ -480,10 +480,10 @@ type CancelDatabaseTaskResponseBody struct {
 	Error *string `json:"error,omitempty"`
 }
 
-// InitClusterClusterAlreadyInitializedResponseBody is the type of the
+// InitClusterHostAlreadyInClusterResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
-// "cluster_already_initialized" error.
-type InitClusterClusterAlreadyInitializedResponseBody struct {
+// "host_already_in_cluster" error.
+type InitClusterHostAlreadyInClusterResponseBody struct {
 	// The name of the error.
 	Name *string `json:"name"`
 	// The error message.
@@ -510,10 +510,10 @@ type InitClusterServerErrorResponseBody struct {
 	Message *string `json:"message"`
 }
 
-// JoinClusterClusterAlreadyInitializedResponseBody is the type of the
+// JoinClusterHostAlreadyInClusterResponseBody is the type of the
 // "control-plane" service "join-cluster" endpoint HTTP response body for the
-// "cluster_already_initialized" error.
-type JoinClusterClusterAlreadyInitializedResponseBody struct {
+// "host_already_in_cluster" error.
+type JoinClusterHostAlreadyInClusterResponseBody struct {
 	// The name of the error.
 	Name *string `json:"name"`
 	// The error message.
@@ -3289,9 +3289,9 @@ func NewInitClusterClusterJoinTokenOK(body *InitClusterResponseBody) *controlpla
 	return v
 }
 
-// NewInitClusterClusterAlreadyInitialized builds a control-plane service
-// init-cluster endpoint cluster_already_initialized error.
-func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInitializedResponseBody) *controlplane.APIError {
+// NewInitClusterHostAlreadyInCluster builds a control-plane service
+// init-cluster endpoint host_already_in_cluster error.
+func NewInitClusterHostAlreadyInCluster(body *InitClusterHostAlreadyInClusterResponseBody) *controlplane.APIError {
 	v := &controlplane.APIError{
 		Name:    *body.Name,
 		Message: *body.Message,
@@ -3322,9 +3322,9 @@ func NewInitClusterServerError(body *InitClusterServerErrorResponseBody) *contro
 	return v
 }
 
-// NewJoinClusterClusterAlreadyInitialized builds a control-plane service
-// join-cluster endpoint cluster_already_initialized error.
-func NewJoinClusterClusterAlreadyInitialized(body *JoinClusterClusterAlreadyInitializedResponseBody) *controlplane.APIError {
+// NewJoinClusterHostAlreadyInCluster builds a control-plane service
+// join-cluster endpoint host_already_in_cluster error.
+func NewJoinClusterHostAlreadyInCluster(body *JoinClusterHostAlreadyInClusterResponseBody) *controlplane.APIError {
 	v := &controlplane.APIError{
 		Name:    *body.Name,
 		Message: *body.Message,
@@ -5260,9 +5260,9 @@ func ValidateCancelDatabaseTaskResponseBody(body *CancelDatabaseTaskResponseBody
 	return
 }
 
-// ValidateInitClusterClusterAlreadyInitializedResponseBody runs a no-op
-// validation on init-cluster_cluster_already_initialized_response_body
-func ValidateInitClusterClusterAlreadyInitializedResponseBody(body *InitClusterClusterAlreadyInitializedResponseBody) (err error) {
+// ValidateInitClusterHostAlreadyInClusterResponseBody runs a no-op validation
+// on init-cluster_host_already_in_cluster_response_body
+func ValidateInitClusterHostAlreadyInClusterResponseBody(body *InitClusterHostAlreadyInClusterResponseBody) (err error) {
 	return
 }
 
@@ -5278,9 +5278,9 @@ func ValidateInitClusterServerErrorResponseBody(body *InitClusterServerErrorResp
 	return
 }
 
-// ValidateJoinClusterClusterAlreadyInitializedResponseBody runs a no-op
-// validation on join-cluster_cluster_already_initialized_response_body
-func ValidateJoinClusterClusterAlreadyInitializedResponseBody(body *JoinClusterClusterAlreadyInitializedResponseBody) (err error) {
+// ValidateJoinClusterHostAlreadyInClusterResponseBody runs a no-op validation
+// on join-cluster_host_already_in_cluster_response_body
+func ValidateJoinClusterHostAlreadyInClusterResponseBody(body *JoinClusterHostAlreadyInClusterResponseBody) (err error) {
 	return
 }
 

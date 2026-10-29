@@ -916,11 +916,11 @@ func (s *PostInitHandlers) GetVersion(context.Context) (res *api.VersionInfo, er
 }
 
 func (s *PostInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
-	return nil, ErrAlreadyInitialized
+	return nil, ErrHostAlreadyInCluster
 }
 
 func (s *PostInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
-	return ErrAlreadyInitialized
+	return ErrHostAlreadyInCluster
 }
 
 func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error) {

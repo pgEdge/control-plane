@@ -23,7 +23,7 @@ var _ = g.API("control-plane", func() {
 	g.Meta("openapi:json:indent", "  ")
 
 	// Common errors
-	g.Error("cluster_already_initialized", APIError)
+	g.Error("host_already_in_cluster", APIError)
 	g.Error("cluster_not_initialized", APIError)
 	g.Error("database_not_modifiable", APIError)
 	g.Error("invalid_input", APIError)
@@ -33,7 +33,7 @@ var _ = g.API("control-plane", func() {
 	g.Error("server_error", APIError)
 	g.Error("operation_not_supported", APIError)
 	g.HTTP(func() {
-		g.Response("cluster_already_initialized", http.StatusConflict)
+		g.Response("host_already_in_cluster", http.StatusConflict)
 		g.Response("cluster_not_initialized", http.StatusConflict)
 		g.Response("database_not_modifiable", http.StatusConflict)
 		g.Response("invalid_input", http.StatusBadRequest)
@@ -72,7 +72,7 @@ var _ = g.Service("control-plane", func() {
 
 		g.Payload(InitClusterRequest)
 		g.Result(ClusterJoinToken)
-		g.Error("cluster_already_initialized")
+		g.Error("host_already_in_cluster")
 		g.Error("operation_not_supported")
 
 		g.HTTP(func() {
@@ -88,7 +88,7 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Joins this host to an existing cluster.")
 		g.Meta("openapi:summary", "Join cluster")
 		g.Payload(ClusterJoinToken)
-		g.Error("cluster_already_initialized")
+		g.Error("host_already_in_cluster")
 		g.Error("invalid_join_token")
 		g.Error("invalid_input")
 

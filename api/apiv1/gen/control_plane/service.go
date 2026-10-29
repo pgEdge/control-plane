@@ -1302,9 +1302,9 @@ func MakeServerError(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "server_error", false, false, false)
 }
 
-// MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.
-func MakeClusterAlreadyInitialized(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "cluster_already_initialized", false, false, false)
+// MakeHostAlreadyInCluster builds a goa.ServiceError from an error.
+func MakeHostAlreadyInCluster(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "host_already_in_cluster", false, false, false)
 }
 
 // MakeOperationNotSupported builds a goa.ServiceError from an error.

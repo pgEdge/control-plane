@@ -285,7 +285,7 @@
             }
           },
           "409": {
-            "description": "cluster_already_initialized: Conflict response.",
+            "description": "host_already_in_cluster: Conflict response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -386,7 +386,7 @@
             }
           },
           "409": {
-            "description": "cluster_already_initialized: Conflict response.",
+            "description": "host_already_in_cluster: Conflict response.",
             "content": {
               "application/json": {
                 "schema": {
