@@ -27,14 +27,14 @@ func breakSharedPreloadLibraries(t *testing.T, db *DatabaseFixture, host1 string
 			{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
 		},
 		PostgresqlConf: map[string]any{
-			"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+			"shared_preload_libraries": "pg_stat_statements,spock",
 		},
 	}
 
 	badSpec := &api.DatabaseSpec{}
 	*badSpec = *goodSpec
 	badSpec.PostgresqlConf = map[string]any{
-		"shared_preload_libraries": "pg_stat_statements,snowflake,spock,definitely_not_installed",
+		"shared_preload_libraries": "pg_stat_statements,spock,definitely_not_installed",
 	}
 
 	err := db.Update(t.Context(), UpdateOptions{Spec: badSpec})
@@ -64,7 +64,7 @@ func TestUpdateDatabaseRecoversNodeWithNoPrimary(t *testing.T) {
 				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
 			},
 			PostgresqlConf: map[string]any{
-				"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+				"shared_preload_libraries": "pg_stat_statements,spock",
 			},
 		},
 	})
@@ -106,7 +106,7 @@ func TestDeleteDatabaseWithNoPrimaryNode(t *testing.T) {
 				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
 			},
 			PostgresqlConf: map[string]any{
-				"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+				"shared_preload_libraries": "pg_stat_statements,spock",
 			},
 		},
 	})

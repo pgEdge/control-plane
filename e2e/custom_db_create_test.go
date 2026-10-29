@@ -102,6 +102,16 @@ func TestCreateDbWithVersions(t *testing.T) {
 				verifyPrimaryNodes(ctx, db, primaryOpts, t)
 			}
 
+			// The database is created on each primary after its replicas have
+			// been provisioned, so wait for the replicas to replay it before
+			// connecting to them.
+			for _, node := range db.Spec.Nodes {
+				nodeReplicas := slices.Collect(db.GetInstances(And(WithNode(node.Name), WithRole("replica"))))
+				if len(nodeReplicas) > 0 {
+					waitForReplicaReplay(ctx, db, node.Name, len(nodeReplicas), t)
+				}
+			}
+
 			for _, instance := range replicas {
 				// verify replicas
 				// establish replica connection, verify pg version, read-only status etc
@@ -118,6 +128,32 @@ func TestCreateDbWithVersions(t *testing.T) {
 			validateReplication(ctx, db, t)
 		})
 	}
+}
+
+// Wait until every streaming replica of the given node has replayed the
+// primary's current WAL position.
+func waitForReplicaReplay(ctx context.Context, db *DatabaseFixture,
+	nodeName string, expectedReplicas int, t testing.TB) {
+	primaryOpts := ConnectionOptions{
+		Matcher:  And(WithNode(nodeName), WithRole("primary")),
+		Username: username,
+		Password: password,
+	}
+	db.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
+		var currentLSN string
+		require.NoError(t, conn.QueryRow(ctx, "SELECT pg_current_wal_lsn()::text").Scan(&currentLSN))
+
+		require.Eventually(t, func() bool {
+			var replayed int
+			err := conn.QueryRow(ctx, `
+				SELECT count(*)
+				FROM pg_stat_replication r
+				JOIN pg_replication_slots s ON s.active_pid = r.pid
+				WHERE s.slot_type = 'physical' AND r.replay_lsn >= $1::pg_lsn`,
+				currentLSN).Scan(&replayed)
+			return err == nil && replayed >= expectedReplicas
+		}, time.Minute, time.Second, "replicas of node %s did not replay up to %s", nodeName, currentLSN)
+	})
 }
 
 // Verify primary nodes functionality e.g. not in recovery mode,
