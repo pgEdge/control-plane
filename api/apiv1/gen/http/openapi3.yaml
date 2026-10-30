@@ -193,7 +193,7 @@ paths:
                 message: A longer description of the error.
                 name: error_name
         "409":
-          description: 'cluster_already_initialized: Conflict response.'
+          description: 'host_already_in_cluster: Conflict response.'
           content:
             application/json:
               schema:
@@ -258,7 +258,7 @@ paths:
                 message: A longer description of the error.
                 name: error_name
         "409":
-          description: 'cluster_already_initialized: Conflict response.'
+          description: 'host_already_in_cluster: Conflict response.'
           content:
             application/json:
               schema:

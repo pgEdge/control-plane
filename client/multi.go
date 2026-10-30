@@ -95,7 +95,7 @@ func (c *MultiServerClient) InitCluster(ctx context.Context, req *api.InitCluste
 func (c *MultiServerClient) JoinCluster(ctx context.Context, req *api.ClusterJoinToken) (err error) {
 	for hostID, server := range c.servers {
 		err := server.JoinCluster(ctx, req)
-		if err != nil && !errors.Is(err, ErrClusterAlreadyInitialized) {
+		if err != nil && !errors.Is(err, ErrHostAlreadyInCluster) {
 			return fmt.Errorf("unexpected error from server %s: %w", hostID, err)
 		}
 	}

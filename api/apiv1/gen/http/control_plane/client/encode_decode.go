@@ -55,7 +55,7 @@ func EncodeInitClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // control-plane init-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeInitClusterResponse may return the following errors:
-//   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "host_already_in_cluster" (type *controlplane.APIError): http.StatusConflict
 //   - "operation_not_supported" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
@@ -91,18 +91,18 @@ func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 			return res, nil
 		case http.StatusConflict:
 			var (
-				body InitClusterClusterAlreadyInitializedResponseBody
+				body InitClusterHostAlreadyInClusterResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "init-cluster", err)
 			}
-			err = ValidateInitClusterClusterAlreadyInitializedResponseBody(&body)
+			err = ValidateInitClusterHostAlreadyInClusterResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
 			}
-			return nil, NewInitClusterClusterAlreadyInitialized(&body)
+			return nil, NewInitClusterHostAlreadyInCluster(&body)
 		case http.StatusBadRequest:
 			var (
 				body InitClusterOperationNotSupportedResponseBody
@@ -173,7 +173,7 @@ func EncodeJoinClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // control-plane join-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeJoinClusterResponse may return the following errors:
-//   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "host_already_in_cluster" (type *controlplane.APIError): http.StatusConflict
 //   - "invalid_join_token" (type *controlplane.APIError): http.StatusUnauthorized
 //   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
@@ -197,18 +197,18 @@ func DecodeJoinClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 			return nil, nil
 		case http.StatusConflict:
 			var (
-				body JoinClusterClusterAlreadyInitializedResponseBody
+				body JoinClusterHostAlreadyInClusterResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "join-cluster", err)
 			}
-			err = ValidateJoinClusterClusterAlreadyInitializedResponseBody(&body)
+			err = ValidateJoinClusterHostAlreadyInClusterResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
 			}
-			return nil, NewJoinClusterClusterAlreadyInitialized(&body)
+			return nil, NewJoinClusterHostAlreadyInCluster(&body)
 		case http.StatusUnauthorized:
 			var (
 				body JoinClusterInvalidJoinTokenResponseBody

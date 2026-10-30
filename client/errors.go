@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	errorNameClusterAlreadyInitialized  = "cluster_already_initialized"
+	errorNameHostAlreadyInCluster       = "host_already_in_cluster"
 	errorNameClusterNotInitialized      = "cluster_not_initialized"
 	errorNameDatabaseAlreadyExists      = "database_already_exists"
 	errorNameDatabaseNotModifiable      = "database_not_modifiable"
@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	ErrClusterAlreadyInitialized  = errors.New(errorNameClusterAlreadyInitialized)
+	ErrHostAlreadyInCluster       = errors.New(errorNameHostAlreadyInCluster)
 	ErrClusterNotInitialized      = errors.New(errorNameClusterNotInitialized)
 	ErrDatabaseAlreadyExists      = errors.New(errorNameDatabaseAlreadyExists)
 	ErrDatabaseNotModifiable      = errors.New(errorNameDatabaseNotModifiable)
@@ -39,8 +39,8 @@ var (
 
 func errorByName(name string) error {
 	switch name {
-	case errorNameClusterAlreadyInitialized:
-		return ErrClusterAlreadyInitialized
+	case errorNameHostAlreadyInCluster:
+		return ErrHostAlreadyInCluster
 	case errorNameClusterNotInitialized:
 		return ErrClusterNotInitialized
 	case errorNameDatabaseAlreadyExists:

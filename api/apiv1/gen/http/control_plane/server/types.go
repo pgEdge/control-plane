@@ -480,10 +480,10 @@ type CancelDatabaseTaskResponseBody struct {
 	Error *string `json:"error,omitempty"`
 }
 
-// InitClusterClusterAlreadyInitializedResponseBody is the type of the
+// InitClusterHostAlreadyInClusterResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
-// "cluster_already_initialized" error.
-type InitClusterClusterAlreadyInitializedResponseBody struct {
+// "host_already_in_cluster" error.
+type InitClusterHostAlreadyInClusterResponseBody struct {
 	// The name of the error.
 	Name string `json:"name"`
 	// The error message.
@@ -510,10 +510,10 @@ type InitClusterServerErrorResponseBody struct {
 	Message string `json:"message"`
 }
 
-// JoinClusterClusterAlreadyInitializedResponseBody is the type of the
+// JoinClusterHostAlreadyInClusterResponseBody is the type of the
 // "control-plane" service "join-cluster" endpoint HTTP response body for the
-// "cluster_already_initialized" error.
-type JoinClusterClusterAlreadyInitializedResponseBody struct {
+// "host_already_in_cluster" error.
+type JoinClusterHostAlreadyInClusterResponseBody struct {
 	// The name of the error.
 	Name string `json:"name"`
 	// The error message.
@@ -3745,11 +3745,11 @@ func NewCancelDatabaseTaskResponseBody(res *controlplane.Task) *CancelDatabaseTa
 	return body
 }
 
-// NewInitClusterClusterAlreadyInitializedResponseBody builds the HTTP response
-// body from the result of the "init-cluster" endpoint of the "control-plane"
+// NewInitClusterHostAlreadyInClusterResponseBody builds the HTTP response body
+// from the result of the "init-cluster" endpoint of the "control-plane"
 // service.
-func NewInitClusterClusterAlreadyInitializedResponseBody(res *controlplane.APIError) *InitClusterClusterAlreadyInitializedResponseBody {
-	body := &InitClusterClusterAlreadyInitializedResponseBody{
+func NewInitClusterHostAlreadyInClusterResponseBody(res *controlplane.APIError) *InitClusterHostAlreadyInClusterResponseBody {
+	body := &InitClusterHostAlreadyInClusterResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
@@ -3777,11 +3777,11 @@ func NewInitClusterServerErrorResponseBody(res *controlplane.APIError) *InitClus
 	return body
 }
 
-// NewJoinClusterClusterAlreadyInitializedResponseBody builds the HTTP response
-// body from the result of the "join-cluster" endpoint of the "control-plane"
+// NewJoinClusterHostAlreadyInClusterResponseBody builds the HTTP response body
+// from the result of the "join-cluster" endpoint of the "control-plane"
 // service.
-func NewJoinClusterClusterAlreadyInitializedResponseBody(res *controlplane.APIError) *JoinClusterClusterAlreadyInitializedResponseBody {
-	body := &JoinClusterClusterAlreadyInitializedResponseBody{
+func NewJoinClusterHostAlreadyInClusterResponseBody(res *controlplane.APIError) *JoinClusterHostAlreadyInClusterResponseBody {
+	body := &JoinClusterHostAlreadyInClusterResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
