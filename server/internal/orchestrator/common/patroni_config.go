@@ -104,7 +104,9 @@ func (c *PatroniConfig) Update(
 		return err
 	}
 
-	wait := patroni.DefaultLoopWaitSeconds * time.Second
+	// We add a second to account for the time the Patroni loop takes to
+	// execute.
+	wait := (patroni.DefaultLoopWaitSeconds + 1) * time.Second
 	if client := c.client(rc); client != nil {
 		w, isPrimary := c.getStatusInfo(ctx, client)
 		if w > 0 {
@@ -267,5 +269,7 @@ func (c *PatroniConfig) getStatusInfo(ctx context.Context, client *patroni.Clien
 		}
 	}
 
-	return wait, status.IsPrimary()
+	// We add a second to account for the time the Patroni loop takes to
+	// execute.
+	return wait + time.Second, status.IsPrimary()
 }
