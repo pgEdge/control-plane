@@ -11,6 +11,9 @@
 #   - Docker installed and running
 #   - CP packages built: make goreleaser-test-release
 #
+# The hosts are left uninitialized; the E2E tests initialize and join the
+# cluster on startup.
+#
 # Rocky 9 cluster runs on localhost ports 3000-3002.
 # Debian 13 cluster runs on localhost ports 3010-3012.
 # E2E tests:
@@ -111,7 +114,7 @@ RUN dnf install -y systemd systemd-sysv && \
           /lib/systemd/system/sockets.target.wants/*udev* \
           /lib/systemd/system/sockets.target.wants/*initctl* \
           /lib/systemd/system/basic.target.wants/* && \
-    dnf install -y jq sudo && \
+    dnf install -y sudo && \
     # The E2E fixture runs commands as root via sudo, which can fail PAM's
     # account check in this container, so let root skip it.
     sed -i '1a account    sufficient   pam_rootok.so' /etc/pam.d/sudo && \
@@ -132,7 +135,7 @@ ENV container=docker
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends systemd systemd-sysv jq curl sudo && \
+    apt-get install -y --no-install-recommends systemd systemd-sysv sudo && \
     rm -f /lib/systemd/system/multi-user.target.wants/* \
           /etc/systemd/system/*.wants/* \
           /lib/systemd/system/local-fs.target.wants/* \
@@ -294,55 +297,28 @@ done
 
 # ── Wait for CP APIs ───────────────────────────────────────────────────────────
 echo "==> Waiting for CP APIs..."
-for port in "${API_PORTS[@]}"; do
+for i in "${!CONTAINERS[@]}"; do
+  port="${API_PORTS[$i]}"
   echo -n "  localhost:${port}..."
+  ready=0
   for _ in $(seq 1 40); do
     if curl -sf "http://localhost:${port}/v1/version" > /dev/null 2>&1; then
+      ready=1
       echo " ready"
       break
     fi
     sleep 3
     echo -n "."
   done
-done
-
-# ── Initialize cluster ─────────────────────────────────────────────────────────
-echo "==> Initializing cluster on host-1..."
-RESPONSE=$(curl -sf "http://localhost:${API_PORTS[0]}/v1/cluster/init")
-TOKEN=$(echo "$RESPONSE" | jq -r '.token')
-URLS=$(echo "$RESPONSE" | jq -c '.server_urls')
-
-if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
-  echo "ERROR: Cluster init failed. Response: $RESPONSE"
-  exit 1
-fi
-
-echo "==> Joining host-2 and host-3..."
-for i in 1 2; do
-  curl -sf -X POST "http://localhost:${API_PORTS[$i]}/v1/cluster/join" \
-    -H "Content-Type: application/json" \
-    -d "{\"token\":\"$TOKEN\",\"server_urls\":$URLS}" > /dev/null
-  echo "  ${HOST_IDS[$i]} joined"
-done
-
-# ── Wait for all hosts healthy ─────────────────────────────────────────────────
-echo "==> Waiting for all hosts to be healthy..."
-HEALTHY=0
-for _ in $(seq 1 60); do
-  HEALTHY=$(curl -sf "http://localhost:${API_PORTS[0]}/v1/hosts" \
-    | jq '[.hosts[] | select(.status.state == "healthy")] | length' 2>/dev/null || echo 0)
-  if [[ "$HEALTHY" -eq "${#CONTAINERS[@]}" ]]; then
-    echo "  All ${#CONTAINERS[@]} hosts healthy."
-    break
+  if [[ "$ready" -ne 1 ]]; then
+    echo " FAILED"
+    docker exec "${CONTAINERS[$i]}" journalctl -u pgedge-control-plane --no-pager -n 50 || true
+    echo "ERROR: CP API on localhost:${port} did not become ready in time."
+    exit 1
   fi
-  echo "  $HEALTHY/${#CONTAINERS[@]} healthy, waiting..."
-  sleep 5
 done
 
-if [[ "$HEALTHY" -lt "${#CONTAINERS[@]}" ]]; then
-  echo "ERROR: Not all hosts became healthy in time."
-  exit 1
-fi
+# The cluster is left uninitialized: the E2E TestMain initializes and joins it.
 
 # ── Verify sudo ────────────────────────────────────────────────────────────────
 # The E2E fixture runs host commands through sudo, so fail fast if it's broken.
@@ -375,7 +351,7 @@ mkdir -p "$OUTPUTS_DIR"
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 echo ""
-echo "$OS cluster ready!"
+echo "$OS hosts ready! The E2E tests will initialize and join the cluster."
 for i in "${!CONTAINERS[@]}"; do
   echo "  ${HOST_IDS[$i]}: http://localhost:${API_PORTS[$i]}"
 done
