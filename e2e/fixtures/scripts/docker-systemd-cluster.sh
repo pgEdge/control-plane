@@ -63,6 +63,7 @@ RPM_ARCH="$HOST_ARCH"
 [[ "$RPM_ARCH" == "arm64" ]] && RPM_ARCH="aarch64"
 DEB_ARCH="$HOST_ARCH"
 [[ "$DEB_ARCH" == "x86_64" ]] && DEB_ARCH="amd64"
+[[ "$DEB_ARCH" == "aarch64" ]] && DEB_ARCH="arm64"
 
 # ── Teardown ───────────────────────────────────────────────────────────────────
 teardown() {
@@ -176,7 +177,7 @@ for i in 1 2 3; do
     --tmpfs /run \
     --network "$NETWORK_NAME" \
     --dns 8.8.8.8 \
-    -p "${port}:3000" \
+    -p "127.0.0.1:${port}:3000" \
     "$IMAGE_TAG"
   echo "  Started $c on localhost:${port}"
 done
@@ -302,7 +303,7 @@ for i in "${!CONTAINERS[@]}"; do
   echo -n "  localhost:${port}..."
   ready=0
   for _ in $(seq 1 40); do
-    if curl -sf "http://localhost:${port}/v1/version" > /dev/null 2>&1; then
+    if curl -sf "http://127.0.0.1:${port}/v1/version" > /dev/null 2>&1; then
       ready=1
       echo " ready"
       break
