@@ -4,8 +4,6 @@ package e2e
 
 import (
 	"context"
-	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -55,17 +53,6 @@ func TestSpock6AddNode(t *testing.T) {
 		postgresVersion = pointerTo("18.6")
 		orchestratorOpts = &controlplane.OrchestratorOpts{
 			Swarm: &controlplane.SwarmOpts{Image: pointerTo(spock6DevImage)},
-		}
-	} else {
-		host, err := fixture.Client.GetHost(ctx, &controlplane.GetHostPayload{
-			HostID: controlplane.Identifier(hostIDs[0]),
-		})
-		require.NoError(t, err)
-		hasSpock6 := slices.ContainsFunc(host.SupportedPgedgeVersions, func(v *controlplane.PgEdgeVersion) bool {
-			return v.SpockVersion == "6" || strings.HasPrefix(v.SpockVersion, "6.")
-		})
-		if !hasSpock6 {
-			t.Skip("spock 6 packages are not installed on the systemd hosts")
 		}
 	}
 
