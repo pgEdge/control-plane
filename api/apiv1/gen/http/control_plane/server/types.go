@@ -2049,6 +2049,12 @@ type DatabaseSpecResponseBody struct {
 	// creation process. Once a database has been successfully created, changes to
 	// these scripts will have no effect.
 	Scripts *DatabaseScriptsResponseBody `json:"scripts,omitempty"`
+	// The locale and encoding settings used to initialize every instance of this
+	// database. These settings are applied identically on every node when the
+	// database is created and cannot be changed afterward. Cannot be combined with
+	// restore_config at creation, since a restored database keeps the locale of
+	// its backup. Defaults to the Postgres image's initdb defaults.
+	Locale *DatabaseLocaleResponseBody `json:"locale,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
@@ -2364,6 +2370,25 @@ type DatabaseScriptsResponseBody struct {
 	PostDatabaseCreate []string `json:"post_database_create,omitempty"`
 }
 
+// DatabaseLocaleResponseBody is used to define fields on response body types.
+type DatabaseLocaleResponseBody struct {
+	// The locale provider to use for the database. The 'builtin' provider requires
+	// Postgres 17 or later.
+	Provider *string `json:"provider,omitempty"`
+	// The character set encoding for the database.
+	Encoding *string `json:"encoding,omitempty"`
+	// The default locale for the database. Sets the default for lc_collate and
+	// lc_ctype, and is used as the locale for the 'builtin' provider.
+	Locale *string `json:"locale,omitempty"`
+	// The collation order (LC_COLLATE) for the database. Overrides 'locale'.
+	LcCollate *string `json:"lc_collate,omitempty"`
+	// The character classification (LC_CTYPE) for the database. Overrides 'locale'.
+	LcCtype *string `json:"lc_ctype,omitempty"`
+	// The ICU locale for the database, e.g. 'de-DE'. Required when provider is
+	// 'icu', and only valid with that provider.
+	IcuLocale *string `json:"icu_locale,omitempty"`
+}
+
 // TaskLogEntryResponseBody is used to define fields on response body types.
 type TaskLogEntryResponseBody struct {
 	// The timestamp of the log entry.
@@ -2428,6 +2453,12 @@ type DatabaseSpecRequestBody struct {
 	// creation process. Once a database has been successfully created, changes to
 	// these scripts will have no effect.
 	Scripts *DatabaseScriptsRequestBody `json:"scripts,omitempty"`
+	// The locale and encoding settings used to initialize every instance of this
+	// database. These settings are applied identically on every node when the
+	// database is created and cannot be changed afterward. Cannot be combined with
+	// restore_config at creation, since a restored database keeps the locale of
+	// its backup. Defaults to the Postgres image's initdb defaults.
+	Locale *DatabaseLocaleRequestBody `json:"locale,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
@@ -2740,6 +2771,25 @@ type DatabaseScriptsRequestBody struct {
 	PostDatabaseCreate []string `json:"post_database_create,omitempty"`
 }
 
+// DatabaseLocaleRequestBody is used to define fields on request body types.
+type DatabaseLocaleRequestBody struct {
+	// The locale provider to use for the database. The 'builtin' provider requires
+	// Postgres 17 or later.
+	Provider *string `json:"provider,omitempty"`
+	// The character set encoding for the database.
+	Encoding *string `json:"encoding,omitempty"`
+	// The default locale for the database. Sets the default for lc_collate and
+	// lc_ctype, and is used as the locale for the 'builtin' provider.
+	Locale *string `json:"locale,omitempty"`
+	// The collation order (LC_COLLATE) for the database. Overrides 'locale'.
+	LcCollate *string `json:"lc_collate,omitempty"`
+	// The character classification (LC_CTYPE) for the database. Overrides 'locale'.
+	LcCtype *string `json:"lc_ctype,omitempty"`
+	// The ICU locale for the database, e.g. 'de-DE'. Required when provider is
+	// 'icu', and only valid with that provider.
+	IcuLocale *string `json:"icu_locale,omitempty"`
+}
+
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
 type DatabaseSpecRequestBodyRequestBody struct {
@@ -2795,6 +2845,12 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	// creation process. Once a database has been successfully created, changes to
 	// these scripts will have no effect.
 	Scripts *DatabaseScriptsRequestBodyRequestBody `json:"scripts,omitempty"`
+	// The locale and encoding settings used to initialize every instance of this
+	// database. These settings are applied identically on every node when the
+	// database is created and cannot be changed afterward. Cannot be combined with
+	// restore_config at creation, since a restored database keeps the locale of
+	// its backup. Defaults to the Postgres image's initdb defaults.
+	Locale *DatabaseLocaleRequestBodyRequestBody `json:"locale,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
@@ -3117,6 +3173,26 @@ type DatabaseScriptsRequestBodyRequestBody struct {
 	// a transaction in the application database after Spock is initialized, but
 	// before subscriptions are created.
 	PostDatabaseCreate []string `json:"post_database_create,omitempty"`
+}
+
+// DatabaseLocaleRequestBodyRequestBody is used to define fields on request
+// body types.
+type DatabaseLocaleRequestBodyRequestBody struct {
+	// The locale provider to use for the database. The 'builtin' provider requires
+	// Postgres 17 or later.
+	Provider *string `json:"provider,omitempty"`
+	// The character set encoding for the database.
+	Encoding *string `json:"encoding,omitempty"`
+	// The default locale for the database. Sets the default for lc_collate and
+	// lc_ctype, and is used as the locale for the 'builtin' provider.
+	Locale *string `json:"locale,omitempty"`
+	// The collation order (LC_COLLATE) for the database. Overrides 'locale'.
+	LcCollate *string `json:"lc_collate,omitempty"`
+	// The character classification (LC_CTYPE) for the database. Overrides 'locale'.
+	LcCtype *string `json:"lc_ctype,omitempty"`
+	// The ICU locale for the database, e.g. 'de-DE'. Required when provider is
+	// 'icu', and only valid with that provider.
+	IcuLocale *string `json:"icu_locale,omitempty"`
 }
 
 // NewInitClusterResponseBody builds the HTTP response body from the result of
@@ -5584,6 +5660,11 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if body.Locale != nil {
+		if err2 := ValidateDatabaseLocaleRequestBody(body.Locale); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	return
 }
 
@@ -6259,6 +6340,57 @@ func ValidateDatabaseScriptsRequestBody(body *DatabaseScriptsRequestBody) (err e
 	return
 }
 
+// ValidateDatabaseLocaleRequestBody runs the validations defined on
+// DatabaseLocaleRequestBody
+func ValidateDatabaseLocaleRequestBody(body *DatabaseLocaleRequestBody) (err error) {
+	if body.Provider != nil {
+		if !(*body.Provider == "libc" || *body.Provider == "icu" || *body.Provider == "builtin") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"libc", "icu", "builtin"}))
+		}
+	}
+	if body.Encoding != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.encoding", *body.Encoding, "^[A-Za-z0-9_-]+$"))
+	}
+	if body.Encoding != nil {
+		if utf8.RuneCountInString(*body.Encoding) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.encoding", *body.Encoding, utf8.RuneCountInString(*body.Encoding), 32, false))
+		}
+	}
+	if body.Locale != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.locale", *body.Locale, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.Locale != nil {
+		if utf8.RuneCountInString(*body.Locale) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.locale", *body.Locale, utf8.RuneCountInString(*body.Locale), 64, false))
+		}
+	}
+	if body.LcCollate != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.lc_collate", *body.LcCollate, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.LcCollate != nil {
+		if utf8.RuneCountInString(*body.LcCollate) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.lc_collate", *body.LcCollate, utf8.RuneCountInString(*body.LcCollate), 64, false))
+		}
+	}
+	if body.LcCtype != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.lc_ctype", *body.LcCtype, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.LcCtype != nil {
+		if utf8.RuneCountInString(*body.LcCtype) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.lc_ctype", *body.LcCtype, utf8.RuneCountInString(*body.LcCtype), 64, false))
+		}
+	}
+	if body.IcuLocale != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.icu_locale", *body.IcuLocale, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.IcuLocale != nil {
+		if utf8.RuneCountInString(*body.IcuLocale) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.icu_locale", *body.IcuLocale, utf8.RuneCountInString(*body.IcuLocale), 64, false))
+		}
+	}
+	return
+}
+
 // ValidateDatabaseSpecRequestBodyRequestBody runs the validations defined on
 // DatabaseSpecRequestBodyRequestBody
 func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyRequestBody) (err error) {
@@ -6362,6 +6494,11 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 	}
 	if body.Scripts != nil {
 		if err2 := ValidateDatabaseScriptsRequestBodyRequestBody(body.Scripts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Locale != nil {
+		if err2 := ValidateDatabaseLocaleRequestBodyRequestBody(body.Locale); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -7035,6 +7172,57 @@ func ValidateDatabaseScriptsRequestBodyRequestBody(body *DatabaseScriptsRequestB
 		}
 		if utf8.RuneCountInString(e) > 1024 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.post_database_create[*]", e, utf8.RuneCountInString(e), 1024, false))
+		}
+	}
+	return
+}
+
+// ValidateDatabaseLocaleRequestBodyRequestBody runs the validations defined on
+// DatabaseLocaleRequestBodyRequestBody
+func ValidateDatabaseLocaleRequestBodyRequestBody(body *DatabaseLocaleRequestBodyRequestBody) (err error) {
+	if body.Provider != nil {
+		if !(*body.Provider == "libc" || *body.Provider == "icu" || *body.Provider == "builtin") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"libc", "icu", "builtin"}))
+		}
+	}
+	if body.Encoding != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.encoding", *body.Encoding, "^[A-Za-z0-9_-]+$"))
+	}
+	if body.Encoding != nil {
+		if utf8.RuneCountInString(*body.Encoding) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.encoding", *body.Encoding, utf8.RuneCountInString(*body.Encoding), 32, false))
+		}
+	}
+	if body.Locale != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.locale", *body.Locale, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.Locale != nil {
+		if utf8.RuneCountInString(*body.Locale) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.locale", *body.Locale, utf8.RuneCountInString(*body.Locale), 64, false))
+		}
+	}
+	if body.LcCollate != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.lc_collate", *body.LcCollate, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.LcCollate != nil {
+		if utf8.RuneCountInString(*body.LcCollate) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.lc_collate", *body.LcCollate, utf8.RuneCountInString(*body.LcCollate), 64, false))
+		}
+	}
+	if body.LcCtype != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.lc_ctype", *body.LcCtype, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.LcCtype != nil {
+		if utf8.RuneCountInString(*body.LcCtype) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.lc_ctype", *body.LcCtype, utf8.RuneCountInString(*body.LcCtype), 64, false))
+		}
+	}
+	if body.IcuLocale != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.icu_locale", *body.IcuLocale, "^[A-Za-z0-9_.@=-]+$"))
+	}
+	if body.IcuLocale != nil {
+		if utf8.RuneCountInString(*body.IcuLocale) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.icu_locale", *body.IcuLocale, utf8.RuneCountInString(*body.IcuLocale), 64, false))
 		}
 	}
 	return

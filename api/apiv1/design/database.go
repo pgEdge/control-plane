@@ -10,6 +10,8 @@ const (
 	postgresVersionPattern = `^\d{2}\.\d{1,2}$`
 	spockVersionPattern    = `^\d{1}$`
 	serviceVersionPattern  = `^(\d+\.\d+(\.\d+)?|latest)$`
+	localeNamePattern      = `^[A-Za-z0-9_.@=-]+$`
+	localeEncodingPattern  = `^[A-Za-z0-9_-]+$`
 )
 
 var HostIDs = g.ArrayOf(Identifier, func() {
@@ -597,6 +599,50 @@ var DatabaseScripts = g.Type("DatabaseScripts", func() {
 	})
 })
 
+var DatabaseLocale = g.Type("DatabaseLocale", func() {
+	g.Attribute("provider", g.String, func() {
+		g.Description("The locale provider to use for the database. The 'builtin' provider requires Postgres 17 or later.")
+		g.Enum("libc", "icu", "builtin")
+		g.Example("icu")
+		g.Meta("struct:tag:json", "provider,omitempty")
+	})
+	g.Attribute("encoding", g.String, func() {
+		g.Description("The character set encoding for the database.")
+		g.Pattern(localeEncodingPattern)
+		g.MaxLength(32)
+		g.Example("UTF8")
+		g.Meta("struct:tag:json", "encoding,omitempty")
+	})
+	g.Attribute("locale", g.String, func() {
+		g.Description("The default locale for the database. Sets the default for lc_collate and lc_ctype, and is used as the locale for the 'builtin' provider.")
+		g.Pattern(localeNamePattern)
+		g.MaxLength(64)
+		g.Example("C.UTF-8")
+		g.Meta("struct:tag:json", "locale,omitempty")
+	})
+	g.Attribute("lc_collate", g.String, func() {
+		g.Description("The collation order (LC_COLLATE) for the database. Overrides 'locale'.")
+		g.Pattern(localeNamePattern)
+		g.MaxLength(64)
+		g.Example("C")
+		g.Meta("struct:tag:json", "lc_collate,omitempty")
+	})
+	g.Attribute("lc_ctype", g.String, func() {
+		g.Description("The character classification (LC_CTYPE) for the database. Overrides 'locale'.")
+		g.Pattern(localeNamePattern)
+		g.MaxLength(64)
+		g.Example("C.UTF-8")
+		g.Meta("struct:tag:json", "lc_ctype,omitempty")
+	})
+	g.Attribute("icu_locale", g.String, func() {
+		g.Description("The ICU locale for the database, e.g. 'de-DE'. Required when provider is 'icu', and only valid with that provider.")
+		g.Pattern(localeNamePattern)
+		g.MaxLength(64)
+		g.Example("de-DE")
+		g.Meta("struct:tag:json", "icu_locale,omitempty")
+	})
+})
+
 var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Attribute("database_name", g.String, func() {
 		g.Description("The name of the Postgres database.")
@@ -697,6 +743,10 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Attribute("scripts", DatabaseScripts, func() {
 		g.Description("User-defined SQL scripts that run at different points during the database creation process. Once a database has been successfully created, changes to these scripts will have no effect.")
 		g.Meta("struct:tag:json", "scripts,omitempty")
+	})
+	g.Attribute("locale", DatabaseLocale, func() {
+		g.Description("The locale and encoding settings used to initialize every instance of this database. These settings are applied identically on every node when the database is created and cannot be changed afterward. Cannot be combined with restore_config at creation, since a restored database keeps the locale of its backup. Defaults to the Postgres image's initdb defaults.")
+		g.Meta("struct:tag:json", "locale,omitempty")
 	})
 
 	g.Required("database_name", "nodes")
