@@ -88,9 +88,26 @@ func TestCheckPrimaryNotRemoved(t *testing.T) {
 			spec:        newSpec(&database.Node{Name: "n2", HostIDs: []string{"host-3"}}),
 		},
 		{
-			name:        "unknown primary",
+			name:        "unknown primary with no instances removed",
+			primaryHost: "",
+			spec:        newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-1", "host-2"}}),
+		},
+		{
+			name:        "unknown primary with instance removed",
 			primaryHost: "",
 			spec:        newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-2"}}),
+			expectedErr: "cannot remove host host-1 from node n1 because the node's primary instance could not be determined",
+		},
+		{
+			name:        "unknown primary with instance on forcibly removed host",
+			primaryHost: "",
+			spec:        newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-2"}}),
+			removeHosts: []string{"host-1"},
+		},
+		{
+			name:        "unknown primary with whole node removed",
+			primaryHost: "",
+			spec:        newSpec(&database.Node{Name: "n2", HostIDs: []string{"host-3"}}),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
