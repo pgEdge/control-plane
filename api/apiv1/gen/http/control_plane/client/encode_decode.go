@@ -55,7 +55,7 @@ func EncodeInitClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // control-plane init-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeInitClusterResponse may return the following errors:
-//   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "host_already_in_cluster" (type *controlplane.APIError): http.StatusConflict
 //   - "operation_not_supported" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
@@ -91,18 +91,18 @@ func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 			return res, nil
 		case http.StatusConflict:
 			var (
-				body InitClusterClusterAlreadyInitializedResponseBody
+				body InitClusterHostAlreadyInClusterResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "init-cluster", err)
 			}
-			err = ValidateInitClusterClusterAlreadyInitializedResponseBody(&body)
+			err = ValidateInitClusterHostAlreadyInClusterResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
 			}
-			return nil, NewInitClusterClusterAlreadyInitialized(&body)
+			return nil, NewInitClusterHostAlreadyInCluster(&body)
 		case http.StatusBadRequest:
 			var (
 				body InitClusterOperationNotSupportedResponseBody
@@ -173,7 +173,7 @@ func EncodeJoinClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // control-plane join-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeJoinClusterResponse may return the following errors:
-//   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "host_already_in_cluster" (type *controlplane.APIError): http.StatusConflict
 //   - "invalid_join_token" (type *controlplane.APIError): http.StatusUnauthorized
 //   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
@@ -197,18 +197,18 @@ func DecodeJoinClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 			return nil, nil
 		case http.StatusConflict:
 			var (
-				body JoinClusterClusterAlreadyInitializedResponseBody
+				body JoinClusterHostAlreadyInClusterResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "join-cluster", err)
 			}
-			err = ValidateJoinClusterClusterAlreadyInitializedResponseBody(&body)
+			err = ValidateJoinClusterHostAlreadyInClusterResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
 			}
-			return nil, NewJoinClusterClusterAlreadyInitialized(&body)
+			return nil, NewJoinClusterHostAlreadyInCluster(&body)
 		case http.StatusUnauthorized:
 			var (
 				body JoinClusterInvalidJoinTokenResponseBody
@@ -4632,6 +4632,9 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 	if v.Scripts != nil {
 		res.Scripts = marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBody(v.Scripts)
 	}
+	if v.Locale != nil {
+		res.Locale = marshalControlplaneDatabaseLocaleToDatabaseLocaleRequestBody(v.Locale)
+	}
 
 	return res
 }
@@ -5053,6 +5056,25 @@ func marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBody(v *controlpl
 	return res
 }
 
+// marshalControlplaneDatabaseLocaleToDatabaseLocaleRequestBody builds a value
+// of type *DatabaseLocaleRequestBody from a value of type
+// *controlplane.DatabaseLocale.
+func marshalControlplaneDatabaseLocaleToDatabaseLocaleRequestBody(v *controlplane.DatabaseLocale) *DatabaseLocaleRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseLocaleRequestBody{
+		Provider:  v.Provider,
+		Encoding:  v.Encoding,
+		Locale:    v.Locale,
+		LcCollate: v.LcCollate,
+		LcCtype:   v.LcCtype,
+		IcuLocale: v.IcuLocale,
+	}
+
+	return res
+}
+
 // marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec builds a value of
 // type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBody.
@@ -5129,6 +5151,9 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 	}
 	if v.Scripts != nil {
 		res.Scripts = marshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts(v.Scripts)
+	}
+	if v.Locale != nil {
+		res.Locale = marshalDatabaseLocaleRequestBodyToControlplaneDatabaseLocale(v.Locale)
 	}
 
 	return res
@@ -5551,6 +5576,25 @@ func marshalDatabaseScriptsRequestBodyToControlplaneDatabaseScripts(v *DatabaseS
 	return res
 }
 
+// marshalDatabaseLocaleRequestBodyToControlplaneDatabaseLocale builds a value
+// of type *controlplane.DatabaseLocale from a value of type
+// *DatabaseLocaleRequestBody.
+func marshalDatabaseLocaleRequestBodyToControlplaneDatabaseLocale(v *DatabaseLocaleRequestBody) *controlplane.DatabaseLocale {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseLocale{
+		Provider:  v.Provider,
+		Encoding:  v.Encoding,
+		Locale:    v.Locale,
+		LcCollate: v.LcCollate,
+		LcCtype:   v.LcCtype,
+		IcuLocale: v.IcuLocale,
+	}
+
+	return res
+}
+
 // unmarshalDatabaseResponseBodyToControlplaneDatabase builds a value of type
 // *controlplane.Database from a value of type *DatabaseResponseBody.
 func unmarshalDatabaseResponseBodyToControlplaneDatabase(v *DatabaseResponseBody) *controlplane.Database {
@@ -5767,6 +5811,9 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 	}
 	if v.Scripts != nil {
 		res.Scripts = unmarshalDatabaseScriptsResponseBodyToControlplaneDatabaseScripts(v.Scripts)
+	}
+	if v.Locale != nil {
+		res.Locale = unmarshalDatabaseLocaleResponseBodyToControlplaneDatabaseLocale(v.Locale)
 	}
 
 	return res
@@ -6175,6 +6222,25 @@ func unmarshalDatabaseScriptsResponseBodyToControlplaneDatabaseScripts(v *Databa
 	return res
 }
 
+// unmarshalDatabaseLocaleResponseBodyToControlplaneDatabaseLocale builds a
+// value of type *controlplane.DatabaseLocale from a value of type
+// *DatabaseLocaleResponseBody.
+func unmarshalDatabaseLocaleResponseBodyToControlplaneDatabaseLocale(v *DatabaseLocaleResponseBody) *controlplane.DatabaseLocale {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseLocale{
+		Provider:  v.Provider,
+		Encoding:  v.Encoding,
+		Locale:    v.Locale,
+		LcCollate: v.LcCollate,
+		LcCtype:   v.LcCtype,
+		IcuLocale: v.IcuLocale,
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody builds a
 // value of type *DatabaseSpecRequestBodyRequestBody from a value of type
 // *controlplane.DatabaseSpec.
@@ -6251,6 +6317,9 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 	}
 	if v.Scripts != nil {
 		res.Scripts = marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBodyRequestBody(v.Scripts)
+	}
+	if v.Locale != nil {
+		res.Locale = marshalControlplaneDatabaseLocaleToDatabaseLocaleRequestBodyRequestBody(v.Locale)
 	}
 
 	return res
@@ -6675,6 +6744,25 @@ func marshalControlplaneDatabaseScriptsToDatabaseScriptsRequestBodyRequestBody(v
 	return res
 }
 
+// marshalControlplaneDatabaseLocaleToDatabaseLocaleRequestBodyRequestBody
+// builds a value of type *DatabaseLocaleRequestBodyRequestBody from a value of
+// type *controlplane.DatabaseLocale.
+func marshalControlplaneDatabaseLocaleToDatabaseLocaleRequestBodyRequestBody(v *controlplane.DatabaseLocale) *DatabaseLocaleRequestBodyRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseLocaleRequestBodyRequestBody{
+		Provider:  v.Provider,
+		Encoding:  v.Encoding,
+		Locale:    v.Locale,
+		LcCollate: v.LcCollate,
+		LcCtype:   v.LcCtype,
+		IcuLocale: v.IcuLocale,
+	}
+
+	return res
+}
+
 // marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec builds a
 // value of type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBodyRequestBody.
@@ -6751,6 +6839,9 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 	}
 	if v.Scripts != nil {
 		res.Scripts = marshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts(v.Scripts)
+	}
+	if v.Locale != nil {
+		res.Locale = marshalDatabaseLocaleRequestBodyRequestBodyToControlplaneDatabaseLocale(v.Locale)
 	}
 
 	return res
@@ -7170,6 +7261,25 @@ func marshalDatabaseScriptsRequestBodyRequestBodyToControlplaneDatabaseScripts(v
 		for i, val := range v.PostDatabaseCreate {
 			res.PostDatabaseCreate[i] = val
 		}
+	}
+
+	return res
+}
+
+// marshalDatabaseLocaleRequestBodyRequestBodyToControlplaneDatabaseLocale
+// builds a value of type *controlplane.DatabaseLocale from a value of type
+// *DatabaseLocaleRequestBodyRequestBody.
+func marshalDatabaseLocaleRequestBodyRequestBodyToControlplaneDatabaseLocale(v *DatabaseLocaleRequestBodyRequestBody) *controlplane.DatabaseLocale {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseLocale{
+		Provider:  v.Provider,
+		Encoding:  v.Encoding,
+		Locale:    v.Locale,
+		LcCollate: v.LcCollate,
+		LcCtype:   v.LcCtype,
+		IcuLocale: v.IcuLocale,
 	}
 
 	return res

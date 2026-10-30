@@ -1,0 +1,263 @@
+---
+# ── RPM (Rocky Linux / RHEL) ─────────────────────────────────────────────────
+
+- name: Install EPEL and CRB (RPM)
+  shell: |
+    dnf install -y epel-release
+    dnf config-manager --set-enabled crb
+  when: ansible_os_family == 'RedHat'
+  changed_when: true
+
+- name: Install pgEdge release RPM
+  dnf:
+    name: https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
+    state: present
+    disable_gpg_check: true
+  when: ansible_os_family == 'RedHat'
+
+- name: Configure staging repository (RPM)
+  ansible.builtin.replace:
+    path: /etc/yum.repos.d/pgedge.repo
+    regexp: 'release'
+    replace: 'staging'
+  when: ansible_os_family == 'RedHat' and cp_source == 'staging'
+
+- name: Install pgEdge packages (RPM)
+  dnf:
+    name: "{{ _rpm_packages }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Install awscli (RPM)
+  dnf:
+    name: awscli
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+# ── DEB (Debian) ──────────────────────────────────────────────────────────────
+
+- name: Install apt prerequisites (Debian)
+  apt:
+    name:
+      - curl
+      - gnupg2
+      - lsb-release
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'
+
+- name: Download pgEdge release package (Debian)
+  ansible.builtin.get_url:
+    url: https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
+    dest: /tmp/pgedge-release.deb
+    mode: '0644'
+  when: ansible_os_family == 'Debian'
+
+- name: Install pgEdge release package (Debian)
+  ansible.builtin.apt:
+    deb: /tmp/pgedge-release.deb
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Configure staging repository (Debian)
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list.d/pgedge.sources
+    regexp: 'release'
+    replace: 'staging'
+  when: ansible_os_family == 'Debian' and cp_source == 'staging'
+
+- name: Install pgEdge packages (DEB)
+  apt:
+    name: "{{ _deb_packages }}"
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'
+
+- name: Install awscli (DEB)
+  apt:
+    name: awscli
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Disable default PostgreSQL service (Debian)
+  systemd_service:
+    name: "postgresql@{{ pg_version }}-main"
+    state: stopped
+    enabled: false
+  when: ansible_os_family == 'Debian'
+  ignore_errors: true
+
+# ── Control Plane installation ────────────────────────────────────────────────
+
+- name: Install pgedge-control-plane from repo (staging or live)
+  package:
+    name: pgedge-control-plane
+    state: present
+  when: cp_source != 'local'
+
+- name: Find locally built CP package (RPM)
+  ansible.builtin.find:
+    paths: "{{ playbook_dir }}/../../dist"
+    patterns: "pgedge-control-plane-*.el{{ ansible_distribution_major_version }}.{{ ansible_architecture }}.rpm"
+  register: _rpm_find_result
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: cp_source == 'local' and ansible_os_family == 'RedHat'
+
+- name: Fail if no local CP RPM found
+  fail:
+    msg: "No local CP RPM found in dist/ for el{{ ansible_distribution_major_version }}.{{ ansible_architecture }} — run 'make goreleaser-test-release' first."
+  when: cp_source == 'local' and ansible_os_family == 'RedHat' and _rpm_find_result.matched == 0
+
+- name: Set local CP RPM path
+  set_fact:
+    _local_cp_rpm: "{{ (_rpm_find_result.files | sort(attribute='mtime') | last).path }}"
+  when: cp_source == 'local' and ansible_os_family == 'RedHat'
+
+- name: Get AWS caller identity (for S3 bucket name)
+  amazon.aws.aws_caller_info:
+  register: _caller_info
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: cp_source == 'local' and provider == 'ec2'
+
+- name: Get AWS region (for S3 bucket name)
+  ansible.builtin.command: >
+    {{ ansible_playbook_python | default(ansible_facts.python.executable) }}
+    -c "import boto3; print(boto3.session.Session().region_name or '')"
+  register: _boto3_region
+  changed_when: false
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: cp_source == 'local' and provider == 'ec2'
+
+- name: Set S3 bucket name
+  set_fact:
+    s3_bucket_name: "control-plane-e2e-{{ _caller_info.account }}-{{ _boto3_region.stdout | trim }}"
+  delegate_to: localhost
+  delegate_facts: true
+  become: false
+  run_once: true
+  when: cp_source == 'local' and provider == 'ec2'
+
+- name: Upload locally built CP package to S3 (RPM)
+  ansible.builtin.command:
+    argv:
+      - aws
+      - s3api
+      - put-object
+      - --bucket
+      - "{{ hostvars['localhost'].s3_bucket_name }}"
+      - --key
+      - "cp-local/{{ _local_cp_rpm | basename }}"
+      - --body
+      - "{{ _local_cp_rpm }}"
+      - --checksum-algorithm
+      - SHA256
+  delegate_to: localhost
+  become: false
+  run_once: true
+  changed_when: true
+  when: cp_source == 'local' and ansible_os_family == 'RedHat' and provider == 'ec2'
+
+- name: Generate presigned URL for CP package (RPM)
+  ansible.builtin.command:
+    cmd: "aws s3 presign s3://{{ hostvars['localhost'].s3_bucket_name }}/cp-local/{{ _local_cp_rpm | basename }} --expires-in 3600"
+  register: _rpm_presigned
+  delegate_to: localhost
+  become: false
+  run_once: true
+  changed_when: false
+  when: cp_source == 'local' and ansible_os_family == 'RedHat' and provider == 'ec2'
+
+- name: Download CP package on remote host (RPM, EC2)
+  get_url:
+    url: "{{ _rpm_presigned.stdout | trim }}"
+    dest: "/tmp/{{ _local_cp_rpm | basename }}"
+    mode: '0644'
+  when: cp_source == 'local' and ansible_os_family == 'RedHat' and provider == 'ec2'
+
+- name: Copy locally built CP package (RPM, Lima)
+  copy:
+    src: "{{ _local_cp_rpm }}"
+    dest: "/tmp/{{ _local_cp_rpm | basename }}"
+  when: cp_source == 'local' and ansible_os_family == 'RedHat' and provider != 'ec2'
+
+- name: Install locally built CP package (RPM)
+  dnf:
+    name: "/tmp/{{ _local_cp_rpm | basename }}"
+    state: present
+    disable_gpg_check: true
+  when: cp_source == 'local' and ansible_os_family == 'RedHat'
+
+- name: Find locally built CP package (DEB)
+  ansible.builtin.find:
+    paths: "{{ playbook_dir }}/../../dist"
+    patterns: "pgedge-control-plane_*.{{ ansible_distribution_release }}_{{ _arch_transform[ansible_architecture] }}.deb"
+  register: _deb_find_result
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: cp_source == 'local' and ansible_os_family == 'Debian'
+
+- name: Fail if no local CP DEB found
+  fail:
+    msg: "No local CP DEB found in dist/ for {{ ansible_distribution_release }}_{{ _arch_transform[ansible_architecture] }} — run 'make goreleaser-test-release' first."
+  when: cp_source == 'local' and ansible_os_family == 'Debian' and _deb_find_result.matched == 0
+
+- name: Set local CP DEB path
+  set_fact:
+    _local_cp_deb: "{{ (_deb_find_result.files | sort(attribute='mtime') | last).path }}"
+  when: cp_source == 'local' and ansible_os_family == 'Debian'
+
+- name: Upload locally built CP package to S3 (DEB)
+  ansible.builtin.command:
+    argv:
+      - aws
+      - s3api
+      - put-object
+      - --bucket
+      - "{{ hostvars['localhost'].s3_bucket_name }}"
+      - --key
+      - "cp-local/{{ _local_cp_deb | basename }}"
+      - --body
+      - "{{ _local_cp_deb }}"
+      - --checksum-algorithm
+      - SHA256
+  delegate_to: localhost
+  become: false
+  run_once: true
+  changed_when: true
+  when: cp_source == 'local' and ansible_os_family == 'Debian' and provider == 'ec2'
+
+- name: Generate presigned URL for CP package (DEB)
+  ansible.builtin.command:
+    cmd: "aws s3 presign s3://{{ hostvars['localhost'].s3_bucket_name }}/cp-local/{{ _local_cp_deb | basename }} --expires-in 3600"
+  register: _deb_presigned
+  delegate_to: localhost
+  become: false
+  run_once: true
+  changed_when: false
+  when: cp_source == 'local' and ansible_os_family == 'Debian' and provider == 'ec2'
+
+- name: Download CP package on remote host (DEB, EC2)
+  get_url:
+    url: "{{ _deb_presigned.stdout | trim }}"
+    dest: "/tmp/{{ _local_cp_deb | basename }}"
+    mode: '0644'
+  when: cp_source == 'local' and ansible_os_family == 'Debian' and provider == 'ec2'
+
+- name: Copy locally built CP package (DEB, Lima)
+  copy:
+    src: "{{ _local_cp_deb }}"
+    dest: "/tmp/{{ _local_cp_deb | basename }}"
+  when: cp_source == 'local' and ansible_os_family == 'Debian' and provider != 'ec2'
+
+- name: Install locally built CP package (DEB)
+  apt:
+    deb: "/tmp/{{ _local_cp_deb | basename }}"
+    state: present
+  when: cp_source == 'local' and ansible_os_family == 'Debian'

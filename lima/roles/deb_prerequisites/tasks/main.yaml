@@ -19,10 +19,6 @@
   ansible.builtin.apt:
     deb: https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
     state: present
-- name: Install pgEdge old repository
-  template:
-    src: pgedge-old.sources.tmpl
-    dest: /etc/apt/sources.list.d/pgedge-old.sources
 - name: Reconfigure pgEdge repository for staging packages
   ansible.builtin.replace:
     path: /etc/apt/sources.list.d/pgedge.sources

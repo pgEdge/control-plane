@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	errClusterAlreadyInitialized  = "cluster_already_initialized"
+	errHostAlreadyInCluster       = "host_already_in_cluster"
 	errClusterNotInitialized      = "cluster_not_initialized"
 	errDatabaseNotModifiable      = "database_not_modifiable"
 	errInvalidInput               = "invalid_input"
@@ -29,7 +29,7 @@ const (
 
 var (
 	ErrNotImplemented             = newAPIError(errServerError, "this endpoint is not yet implemented")
-	ErrAlreadyInitialized         = newAPIError(errClusterAlreadyInitialized, "this operation is invalid on an initialized cluster")
+	ErrHostAlreadyInCluster       = newAPIError(errHostAlreadyInCluster, "this host is already part of a cluster")
 	ErrUninitialized              = newAPIError(errClusterNotInitialized, "this operation is invalid on an uninitialized cluster")
 	ErrInvalidTaskID              = newAPIError(errInvalidInput, "the given task ID is invalid")
 	ErrInvalidServerURL           = newAPIError(errInvalidInput, "the given server URL is invalid")

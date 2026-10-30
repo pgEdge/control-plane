@@ -316,6 +316,9 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
+	if err := validateDatabaseCreate(req.Spec); err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
 
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
 	if err != nil {
@@ -916,11 +919,11 @@ func (s *PostInitHandlers) GetVersion(context.Context) (res *api.VersionInfo, er
 }
 
 func (s *PostInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
-	return nil, ErrAlreadyInitialized
+	return nil, ErrHostAlreadyInCluster
 }
 
 func (s *PostInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
-	return ErrAlreadyInitialized
+	return ErrHostAlreadyInCluster
 }
 
 func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error) {

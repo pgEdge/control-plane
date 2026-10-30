@@ -378,6 +378,24 @@ type DatabaseConnection struct {
 	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
 }
 
+type DatabaseLocale struct {
+	// The locale provider to use for the database. The 'builtin' provider requires
+	// Postgres 17 or later.
+	Provider *string `json:"provider,omitempty"`
+	// The character set encoding for the database.
+	Encoding *string `json:"encoding,omitempty"`
+	// The default locale for the database. Sets the default for lc_collate and
+	// lc_ctype, and is used as the locale for the 'builtin' provider.
+	Locale *string `json:"locale,omitempty"`
+	// The collation order (LC_COLLATE) for the database. Overrides 'locale'.
+	LcCollate *string `json:"lc_collate,omitempty"`
+	// The character classification (LC_CTYPE) for the database. Overrides 'locale'.
+	LcCtype *string `json:"lc_ctype,omitempty"`
+	// The ICU locale for the database, e.g. 'de-DE'. Required when provider is
+	// 'icu', and only valid with that provider.
+	IcuLocale *string `json:"icu_locale,omitempty"`
+}
+
 type DatabaseNodeSpec struct {
 	// The name of the database node.
 	Name string `json:"name"`
@@ -501,6 +519,12 @@ type DatabaseSpec struct {
 	// creation process. Once a database has been successfully created, changes to
 	// these scripts will have no effect.
 	Scripts *DatabaseScripts `json:"scripts,omitempty"`
+	// The locale and encoding settings used to initialize every instance of this
+	// database. These settings are applied identically on every node when the
+	// database is created and cannot be changed afterward. Cannot be combined with
+	// restore_config at creation, since a restored database keeps the locale of
+	// its backup. Defaults to the Postgres image's initdb defaults.
+	Locale *DatabaseLocale `json:"locale,omitempty"`
 }
 
 type DatabaseSummary struct {
@@ -1302,9 +1326,9 @@ func MakeServerError(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "server_error", false, false, false)
 }
 
-// MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.
-func MakeClusterAlreadyInitialized(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "cluster_already_initialized", false, false, false)
+// MakeHostAlreadyInCluster builds a goa.ServiceError from an error.
+func MakeHostAlreadyInCluster(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "host_already_in_cluster", false, false, false)
 }
 
 // MakeOperationNotSupported builds a goa.ServiceError from an error.

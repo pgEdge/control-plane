@@ -288,6 +288,20 @@ func scriptsToAPI(scripts *database.ScriptStatements) *api.DatabaseScripts {
 	}
 }
 
+func localeToAPI(locale *database.Locale) *api.DatabaseLocale {
+	if locale == nil {
+		return nil
+	}
+	return &api.DatabaseLocale{
+		Provider:  utils.NillablePointerTo(locale.Provider),
+		Encoding:  utils.NillablePointerTo(locale.Encoding),
+		Locale:    utils.NillablePointerTo(locale.Locale),
+		LcCollate: utils.NillablePointerTo(locale.LCCollate),
+		LcCtype:   utils.NillablePointerTo(locale.LCCtype),
+		IcuLocale: utils.NillablePointerTo(locale.ICULocale),
+	}
+}
+
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	return &api.DatabaseSpec{
 		DatabaseName:     d.DatabaseName,
@@ -307,6 +321,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		PgIdentConf:      d.PgIdentConf,
 		OrchestratorOpts: orchestratorOptsToAPI(d.OrchestratorOpts),
 		Scripts:          scriptsToAPI(d.Scripts),
+		Locale:           localeToAPI(d.Locale),
 	}
 }
 
@@ -735,6 +750,26 @@ func apiToScripts(scripts *api.DatabaseScripts) *database.ScriptStatements {
 	}
 }
 
+// apiToLocale returns nil for an unset or empty locale so that "locale": {} is
+// equivalent to omitting the field.
+func apiToLocale(locale *api.DatabaseLocale) *database.Locale {
+	if locale == nil {
+		return nil
+	}
+	converted := &database.Locale{
+		Provider:  utils.FromPointer(locale.Provider),
+		Encoding:  utils.FromPointer(locale.Encoding),
+		Locale:    utils.FromPointer(locale.Locale),
+		LCCollate: utils.FromPointer(locale.LcCollate),
+		LCCtype:   utils.FromPointer(locale.LcCtype),
+		ICULocale: utils.FromPointer(locale.IcuLocale),
+	}
+	if *converted == (database.Locale{}) {
+		return nil
+	}
+	return converted
+}
+
 // apiToDatabaseSpec validates and converts apiSpec into a database.Spec.
 // existingServiceIDs should hold the service_id of every service already
 // present in the stored spec (nil for a create, where nothing exists yet); it
@@ -824,6 +859,7 @@ func apiToDatabaseSpec(
 		RestoreConfig:    restoreConfig,
 		OrchestratorOpts: orchestratorOptsToDatabase(apiSpec.OrchestratorOpts),
 		Scripts:          apiToScripts(apiSpec.Scripts),
+		Locale:           apiToLocale(apiSpec.Locale),
 	}, nil
 }
 

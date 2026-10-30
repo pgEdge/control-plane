@@ -36,6 +36,7 @@ const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
 // package versions.
 func TestSpock6AddNode(t *testing.T) {
 	t.Parallel()
+	fixture.SkipIfSpock6Unsupported(t)
 
 	const (
 		username = "admin"

@@ -1,0 +1,3 @@
+kind: Changed
+body: Renamed the `cluster_already_initialized` error returned by the init and join cluster endpoints to `host_already_in_cluster` with a clearer message.
+time: 2026-10-29T00:00:00.000000+00:00

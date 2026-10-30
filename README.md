@@ -55,7 +55,7 @@ You can learn more about the release process in our [documentation](docs/develop
 
 The Control Plane is written in Golang, and includes a Docker Compose setup for ease of local development. To get started, you'll need to:
 
-1. Install dependencies: Ensure you have Go 1.20+ and Docker installed, with [host networking](https://docs.docker.com/engine/network/drivers/host/#docker-desktop) enabled.
+1. Install dependencies: Ensure you have Go 1.26.10+ and Docker installed, with [host networking](https://docs.docker.com/engine/network/drivers/host/#docker-desktop) enabled.
 
 2. Clone the repository:  
 
