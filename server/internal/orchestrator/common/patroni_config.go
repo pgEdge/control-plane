@@ -104,9 +104,7 @@ func (c *PatroniConfig) Update(
 		return err
 	}
 
-	// We add a second to account for the time the Patroni loop takes to
-	// execute.
-	wait := (patroni.DefaultLoopWaitSeconds + 1) * time.Second
+	wait := patroni.DefaultLoopWaitSeconds * time.Second
 	if client := c.client(rc); client != nil {
 		w, isPrimary := c.getStatusInfo(ctx, client)
 		if w > 0 {
@@ -123,6 +121,10 @@ func (c *PatroniConfig) Update(
 			}
 		}
 	}
+
+	// Add a second to the wait time to account for the time the Patroni loop
+	// takes to execute.
+	wait += time.Second
 
 	// We intentionally leave the reload implementation up to the caller rather
 	// than use the Patroni API's reload method. A process signal-based reload
@@ -269,7 +271,5 @@ func (c *PatroniConfig) getStatusInfo(ctx context.Context, client *patroni.Clien
 		}
 	}
 
-	// We add a second to account for the time the Patroni loop takes to
-	// execute.
-	return wait + time.Second, status.IsPrimary()
+	return wait, status.IsPrimary()
 }
