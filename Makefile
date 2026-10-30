@@ -84,6 +84,69 @@ golangci-lint=$(gobin)/golangci-lint \
 
 .DEFAULT_GOAL := build
 
+############
+# e2e-help #
+############
+
+.PHONY: e2e-help
+e2e-help:
+	@echo ""
+	@echo "Usage: make <target> [VARIABLE=value ...]"
+	@echo ""
+	@echo "──────────────────────────────────────────────────────────────────────"
+	@echo "E2E fixture targets"
+	@echo "──────────────────────────────────────────────────────────────────────"
+	@echo ""
+	@echo "  Swarm (Docker) fixtures:"
+	@echo "    deploy-lima-fixture          Deploy CP to Lima VMs (Docker Swarm)"
+	@echo "    deploy-ec2-fixture           Deploy CP to EC2 VMs (Docker Swarm)"
+	@echo "    update-{lima,ec2}-fixture    Redeploy CP on existing VMs"
+	@echo "    reset-{lima,ec2}-fixture     Teardown + redeploy CP"
+	@echo "    stop-{lima,ec2}-fixture      Stop VMs (keep state)"
+	@echo "    teardown-{lima,ec2}-fixture  Terminate VMs"
+	@echo ""
+	@echo "  Systemd fixtures:"
+	@echo "    deploy-ec2-systemd-fixture   Deploy CP as systemd service on EC2"
+	@echo "    deploy-lima-systemd-fixture  Deploy CP as systemd service on Lima"
+	@echo "    update-{ec2,lima}-systemd-fixture"
+	@echo "    reset-{ec2,lima}-systemd-fixture"
+	@echo "    stop-{ec2,lima}-systemd-fixture"
+	@echo "    teardown-{ec2,lima}-systemd-fixture"
+	@echo ""
+	@echo "  Common fixture variables:"
+	@echo "    FIXTURE_VARIANT=small        3-host cluster (default: large = 6 hosts)"
+	@echo "    FIXTURE_EXTRA_VARS='k=v ..'  Pass extra Ansible vars (see below)"
+	@echo ""
+	@echo "  Systemd FIXTURE_EXTRA_VARS:"
+	@echo "    instance_os=rocky-9          OS: rocky-9 | debian-12 | debian-13"
+	@echo "    pg_version=18                PostgreSQL version (default: 18)"
+	@echo "    spock_version=5              Spock major version (default: 5)"
+	@echo "    cp_source=staging            CP source: staging | live | local"
+	@echo ""
+	@echo "  Examples:"
+	@echo "    make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small"
+	@echo "    make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small FIXTURE_EXTRA_VARS='instance_os=debian-13'"
+	@echo "    make deploy-ec2-systemd-fixture FIXTURE_VARIANT=small FIXTURE_EXTRA_VARS='cp_source=local'"
+	@echo ""
+	@echo "──────────────────────────────────────────────────────────────────────"
+	@echo "E2E test targets"
+	@echo "──────────────────────────────────────────────────────────────────────"
+	@echo ""
+	@echo "    make test-e2e E2E_FIXTURE=ec2-systemd"
+	@echo "    make test-e2e E2E_FIXTURE=ec2-systemd E2E_RUN=TestCreateSingleNodeDB"
+	@echo "    make test-e2e E2E_FIXTURE=ec2-systemd E2E_DEBUG=1"
+	@echo ""
+	@echo "  E2E variables:"
+	@echo "    E2E_FIXTURE      Fixture name (lima, ec2, ec2-systemd, lima-systemd)"
+	@echo "    E2E_RUN          Test name regex filter"
+	@echo "    E2E_PARALLEL     Parallelism (default: 4)"
+	@echo "    E2E_DEBUG=1      Print debug output for failing tests"
+	@echo "    E2E_SKIP_CLEANUP=1  Skip cleanup after tests"
+	@echo ""
+	@echo "  Note: PostgREST, RAG, MCP, and minor-version-upgrade tests"
+	@echo "        auto-skip when E2E_FIXTURE is a systemd fixture."
+	@echo ""
+
 ###########
 # testing #
 ###########
@@ -221,6 +284,27 @@ deploy-lima-fixture: _deploy-lima-fixture
 .PHONY: deploy-ec2-fixture
 deploy-ec2-fixture: _deploy-ec2-fixture
 
+# ec2-systemd installs CP from the repo — no local build needed
+.PHONY: deploy-ec2-systemd-fixture
+deploy-ec2-systemd-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		deploy-ec2-systemd-machines \
+		setup-ec2-systemd-hosts \
+		deploy-ec2-systemd-control-plane
+
+# lima-systemd installs CP from the repo by default; for cp_source=local, run
+# goreleaser-test-release first to produce packages in dist/
+.PHONY: deploy-lima-systemd-fixture
+deploy-lima-systemd-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		deploy-lima-systemd-machines \
+		setup-lima-systemd-hosts \
+		deploy-lima-systemd-control-plane
+
 .PHONY: _update-%-fixture
 _update-%-fixture: $(_fixture_goreleaser_build)
 	VARIANT=$(FIXTURE_VARIANT) \
@@ -233,6 +317,22 @@ update-lima-fixture: _update-lima-fixture
 
 .PHONY: update-ec2-fixture
 update-ec2-fixture: _update-ec2-fixture
+
+.PHONY: update-ec2-systemd-fixture
+update-ec2-systemd-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		setup-ec2-systemd-hosts \
+		deploy-ec2-systemd-control-plane
+
+.PHONY: update-lima-systemd-fixture
+update-lima-systemd-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		setup-lima-systemd-hosts \
+		deploy-lima-systemd-control-plane
 
 .PHONY: _reset-%-fixture
 _reset-%-fixture: $(_fixture_goreleaser_build)
@@ -248,6 +348,22 @@ reset-lima-fixture: _reset-lima-fixture
 .PHONY: reset-ec2-fixture
 reset-ec2-fixture: _reset-ec2-fixture
 
+.PHONY: reset-ec2-systemd-fixture
+reset-ec2-systemd-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		teardown-ec2-systemd-control-plane \
+		deploy-ec2-systemd-control-plane
+
+.PHONY: reset-lima-systemd-fixture
+reset-lima-systemd-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		teardown-lima-systemd-control-plane \
+		deploy-lima-systemd-control-plane
+
 .PHONY: _stop-%-fixture
 _stop-%-fixture:
 	VARIANT=$(FIXTURE_VARIANT) \
@@ -261,6 +377,12 @@ stop-lima-fixture: _stop-lima-fixture
 .PHONY: stop-ec2-fixture
 stop-ec2-fixture: _stop-ec2-fixture
 
+.PHONY: stop-ec2-systemd-fixture
+stop-ec2-systemd-fixture: _stop-ec2-systemd-fixture
+
+.PHONY: stop-lima-systemd-fixture
+stop-lima-systemd-fixture: _stop-lima-systemd-fixture
+
 .PHONY: _teardown-%-fixture
 _teardown-%-fixture:
 	VARIANT=$(FIXTURE_VARIANT) \
@@ -273,6 +395,12 @@ teardown-lima-fixture: _teardown-lima-fixture
 
 .PHONY: teardown-ec2-fixture
 teardown-ec2-fixture: _teardown-ec2-fixture
+
+.PHONY: teardown-ec2-systemd-fixture
+teardown-ec2-systemd-fixture: _teardown-ec2-systemd-fixture
+
+.PHONY: teardown-lima-systemd-fixture
+teardown-lima-systemd-fixture: _teardown-lima-systemd-fixture
 
 ###############
 # image build #

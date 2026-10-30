@@ -1,0 +1,14 @@
+---
+provider: lima
+orchestrator: systemd
+fixture_name: lima-systemd
+architecture: "{{ ansible_facts['architecture'] }}"
+template: rocky-9
+minio_enabled: false
+
+# pgEdge package versions — override via EXTRA_VARS e.g. pg_version=16
+pg_version: "17"
+spock_version: "5"
+
+# CP installation source: staging | live | local — override via EXTRA_VARS
+cp_source: staging

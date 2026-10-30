@@ -59,7 +59,7 @@
 
 - name: Set AMI ID
   set_fact:
-    ami_id: '{{ ami_info.images[0].image_id }}'
+    ami_id: '{{ (ami_info.images | sort(attribute="creation_date", reverse=True))[0].image_id }}'
 
 - name: Generate deployment key
   community.crypto.openssh_keypair:
@@ -209,6 +209,7 @@
     region: '{{ aws_region }}'
     filters:
       "tag:Name": control-plane-e2e-{{ architecture }}-{{ item.name }}
+      "instance-state-name": running
   with_items: '{{ machines }}'
   register: ec2
 

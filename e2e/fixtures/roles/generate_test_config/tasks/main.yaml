@@ -7,4 +7,4 @@
 - name: Generate test_config
   template:
     src: test_config.yaml.tmpl
-    dest: outputs/{{ provider }}.test_config.yaml
+    dest: outputs/{{ fixture_name | default(provider) }}.test_config.yaml
