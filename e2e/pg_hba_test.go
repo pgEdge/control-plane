@@ -240,6 +240,13 @@ func runLocalPsql(t testing.TB, host *api.Host, instance *api.Instance, osUser, 
 		return fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf(
 			"docker exec --user %s %s %s", osUser, containerName, psqlCmd))
 	case "systemd":
+		// Unlike swarm's fixed in-container port, systemd instances bind
+		// directly to a dynamically assigned host port, so it must be passed
+		// explicitly rather than relying on psql's default (5432).
+		if instance.ConnectionInfo == nil || instance.ConnectionInfo.Port == nil {
+			return "", fmt.Errorf("instance %s has no connection port", instance.ID)
+		}
+		psqlCmd = fmt.Sprintf("%s -p %d", psqlCmd, *instance.ConnectionInfo.Port)
 		// RunCmdOnHost already runs as root on systemd hosts (it's SSH-based),
 		// so this becomes a (harmless) nested sudo, re-execing as osUser.
 		return fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf("sudo -u %s %s", osUser, psqlCmd))

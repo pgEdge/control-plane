@@ -122,6 +122,10 @@ func (c *PatroniConfig) Update(
 		}
 	}
 
+	// Add a second to the wait time to account for the time the Patroni loop
+	// takes to execute.
+	wait += time.Second
+
 	// We intentionally leave the reload implementation up to the caller rather
 	// than use the Patroni API's reload method. A process signal-based reload
 	// has the advantage that it will work regardless of whether the Patroni API
