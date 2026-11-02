@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -201,17 +202,17 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 		return nil, err
 	}
 
-	dbs, err := s.dbSvc.GetDatabasesByHostId(ctx, hostID)
+	dbs, err := s.dbSvc.GetDatabases(ctx)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
-	specs, err := s.prepareDatabaseUpdates(ctx, hostID, dbs)
+	updated, err := s.prepareDatabaseUpdates(ctx, hostID, dbs)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
-	output, err := s.workflowSvc.RemoveHost(ctx, hostID, specs...)
+	output, err := s.workflowSvc.RemoveHost(ctx, hostID, updated...)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -249,23 +250,44 @@ func (s *PostInitHandlers) validateHostRemoval(ctx context.Context, hostID strin
 	return nil
 }
 
-// prepareDatabaseUpdates prepares workflow inputs for all databases affected by host removal.
-func (s *PostInitHandlers) prepareDatabaseUpdates(ctx context.Context, hostID string, dbs []*database.Database) ([]*database.Spec, error) {
-	specs := make([]*database.Spec, 0, len(dbs))
+// prepareDatabaseUpdates prepares all databases in the cluster to be updated
+// by the remove host workflow. Databases with instances on the removed host
+// have the host removed from their specs. Every other database is updated with
+// its current spec so that its Patroni configuration no longer refers to the
+// removed host if it was an Etcd server.
+func (s *PostInitHandlers) prepareDatabaseUpdates(ctx context.Context, hostID string, dbs []*database.Database) ([]*database.Database, error) {
+	updated := make([]*database.Database, 0, len(dbs))
 	for _, db := range dbs {
-		if ok := db.Spec.RemoveHost(hostID); !ok {
+		if !hasInstanceOnHost(db, hostID) {
+			if !database.DatabaseStateModifiable(db.RawState) {
+				// This database will still pick up the Etcd membership change
+				// the next time it's updated.
+				s.logger.Warn().
+					Str("database_id", db.DatabaseID).
+					Str("host_id", hostID).
+					Str("state", string(db.RawState)).
+					Msg("skipping update for database that is not in a modifiable state")
+				continue
+			}
+		} else if ok := db.Spec.RemoveHost(hostID); !ok {
 			return nil, fmt.Errorf("%s host id not found/removed", hostID)
 		}
 
-		_, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
+		updatedDB, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update database: %w", err)
 		}
 
-		specs = append(specs, db.Spec)
+		updated = append(updated, updatedDB)
 	}
 
-	return specs, nil
+	return updated, nil
+}
+
+func hasInstanceOnHost(db *database.Database, hostID string) bool {
+	return slices.ContainsFunc(db.Instances, func(instance *database.Instance) bool {
+		return instance.HostID == hostID
+	})
 }
 
 // ListDatabases fetches all databases from the database service and converts them to API format.

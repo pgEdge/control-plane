@@ -73,6 +73,21 @@ func (w *Workflows) RemoveHost(ctx workflow.Context, input *RemoveHostInput) (*R
 		return nil, handleError(err)
 	}
 
+	// The host must be removed from Etcd before we update the databases so
+	// that each instance's Patroni config is regenerated without the removed
+	// Etcd server.
+	logTaskEvent(task.LogEntry{
+		Message: fmt.Sprintf("removing host '%s' from etcd", input.HostID),
+	})
+
+	etcdReq := activities.RemoveHostFromEtcdInput{
+		HostID: input.HostID,
+	}
+	_, err := w.Activities.ExecuteRemoveHostFromEtcd(ctx, &etcdReq).Get(ctx)
+	if err != nil {
+		return nil, handleError(err)
+	}
+
 	if len(input.UpdateDatabaseInputs) > 0 {
 		err := w.removeHostFromDatabases(ctx, logger, logTaskEvent, input.UpdateDatabaseInputs)
 		if err != nil {
@@ -87,7 +102,7 @@ func (w *Workflows) RemoveHost(ctx workflow.Context, input *RemoveHostInput) (*R
 	req := activities.RemoveHostInput{
 		HostID: input.HostID,
 	}
-	_, err := w.Activities.ExecuteRemoveHost(ctx, &req).Get(ctx)
+	_, err = w.Activities.ExecuteRemoveHost(ctx, &req).Get(ctx)
 	if err != nil {
 		return nil, handleError(err)
 	}
@@ -124,7 +139,7 @@ func (w *Workflows) removeHostFromDatabases(ctx workflow.Context, logger *slog.L
 		logger.Info("creating update database sub-workflow", "database_id", dbInput.Spec.DatabaseID)
 
 		logTaskEvent(task.LogEntry{
-			Message: fmt.Sprintf("removing host from database '%s'", dbInput.Spec.DatabaseID),
+			Message: fmt.Sprintf("updating database '%s'", dbInput.Spec.DatabaseID),
 		})
 
 		futures[i] = workflow.CreateSubWorkflowInstance[*UpdateDatabaseOutput](
@@ -154,7 +169,7 @@ func (w *Workflows) removeHostFromDatabases(ctx workflow.Context, logger *slog.L
 		}
 
 		logTaskEvent(task.LogEntry{
-			Message: fmt.Sprintf("successfully removing host from database '%s'", inputs[i].Spec.DatabaseID),
+			Message: fmt.Sprintf("successfully updated database '%s'", inputs[i].Spec.DatabaseID),
 		})
 	}
 

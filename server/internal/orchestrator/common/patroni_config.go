@@ -14,6 +14,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -29,6 +30,11 @@ type PatroniConfig struct {
 	ParentID   string                  `json:"parent_id"`
 	OwnerUID   int                     `json:"owner_uid"`
 	OwnerGID   int                     `json:"owner_gid"`
+	// EtcdHostsOutdated is set by Refresh when the Etcd hosts in the existing
+	// config file no longer match the Etcd cluster membership, e.g. after an
+	// Etcd server host is removed. It's never set in the desired state, so
+	// setting it produces a diff that causes the config to be rewritten.
+	EtcdHostsOutdated bool `json:"etcd_hosts_outdated,omitempty"`
 }
 
 func (c *PatroniConfig) Dependencies() []resource.Identifier {
@@ -74,7 +80,24 @@ func (c *PatroniConfig) Refresh(ctx context.Context, rc *resource.Context) error
 		return fmt.Errorf("%w: failed to unmarshal patroni config", resource.ErrNotFound)
 	}
 
+	etcdClient, err := do.Invoke[*clientv3.Client](rc.Injector)
+	if err != nil {
+		return err
+	}
+	etcdHosts, err := patroni.EtcdHosts(ctx, etcdClient)
+	if err != nil {
+		return fmt.Errorf("failed to get etcd hosts: %w", err)
+	}
+	c.EtcdHostsOutdated = etcdHostsOutdated(&config, etcdHosts)
+
 	return nil
+}
+
+func etcdHostsOutdated(config *patroni.Config, etcdHosts []string) bool {
+	if config.Etcd3 == nil || config.Etcd3.Hosts == nil {
+		return true
+	}
+	return !ds.NewSet(*config.Etcd3.Hosts...).Equal(ds.NewSet(etcdHosts...))
 }
 
 func (c *PatroniConfig) Create(
@@ -207,6 +230,7 @@ func (c *PatroniConfig) create(
 	if err := fs.Chown(configPath, c.OwnerUID, c.OwnerGID); err != nil {
 		return nil, fmt.Errorf("failed to change ownership for %s: %w", configPath, err)
 	}
+	c.EtcdHostsOutdated = false
 
 	return cfg, nil
 }

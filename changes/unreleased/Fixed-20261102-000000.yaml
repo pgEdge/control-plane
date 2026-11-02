@@ -1,0 +1,3 @@
+kind: Fixed
+body: Removing a host now updates the Patroni configuration of every database so that it no longer refers to the removed Etcd server.
+time: 2026-11-02T00:00:00.000000+00:00

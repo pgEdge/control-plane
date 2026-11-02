@@ -431,7 +431,11 @@ type RemoveHostTasks struct {
 	DatabaseTasks []*task.Task
 }
 
-func (s *Service) RemoveHost(ctx context.Context, hostID string, specs ...*database.Spec) (*RemoveHostTasks, error) {
+// RemoveHost starts a workflow to remove the given host from the cluster. Each
+// of the given databases is updated after the host is removed from Etcd, so
+// callers should include every database in the cluster, with the host already
+// removed from their specs, so that their Patroni configurations are updated.
+func (s *Service) RemoveHost(ctx context.Context, hostID string, dbs ...*database.Database) (*RemoveHostTasks, error) {
 	hostTask, err := s.taskSvc.CreateTask(ctx, task.Options{
 		Scope:  task.ScopeHost,
 		HostID: hostID,
@@ -444,10 +448,10 @@ func (s *Service) RemoveHost(ctx context.Context, hostID string, specs ...*datab
 	var databaseTasks []*task.Task
 	var databaseInputs []*UpdateDatabaseInput
 
-	for _, spec := range specs {
+	for _, db := range dbs {
 		databaseTask, err := s.taskSvc.CreateTask(ctx, task.Options{
 			Scope:      task.ScopeDatabase,
-			DatabaseID: spec.DatabaseID,
+			DatabaseID: db.DatabaseID,
 			Type:       task.TypeUpdate,
 			ParentID:   hostTask.TaskID,
 		})
@@ -459,8 +463,9 @@ func (s *Service) RemoveHost(ctx context.Context, hostID string, specs ...*datab
 		databaseTasks = append(databaseTasks, databaseTask)
 		databaseInputs = append(databaseInputs, &UpdateDatabaseInput{
 			TaskID:      databaseTask.TaskID,
-			Spec:        spec,
+			Spec:        db.Spec,
 			RemoveHosts: []string{hostID},
+			Variables:   db.Variables(),
 		})
 	}
 
