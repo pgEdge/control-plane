@@ -1,0 +1,7 @@
+{
+  "orchestrator": "systemd",
+  "data_dir": "/var/lib/pgedge-control-plane",
+  "host_id": "host-3",
+  "peer_addresses": ["172.31.0.13"],
+  "client_addresses": ["172.31.0.13"]
+}

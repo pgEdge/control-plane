@@ -25,4 +25,5 @@ dist
 control-plane
 pgedge-control-plane
 !docker/control-plane
+docker/control-plane-systemd-ci/*/pgedge-control-plane.*
 e2e/debug
