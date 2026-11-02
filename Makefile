@@ -612,6 +612,9 @@ ci-compose-down:
 SYSTEMD_OS ?= rocky-9
 systemd_ci_dir=./docker/control-plane-systemd-ci/$(SYSTEMD_OS)
 docker_compose_systemd_ci=docker compose -f $(systemd_ci_dir)/docker-compose.yaml
+# The architecture the image is built for: DOCKER_DEFAULT_PLATFORM's when it's
+# set (e.g. linux/amd64), otherwise the Docker daemon's.
+systemd_ci_arch=$(or $(word 2,$(subst /, ,$(DOCKER_DEFAULT_PLATFORM))),$(shell docker info --format '{{.Architecture}}'))
 
 # The packages bundle a signed SBOM that's only generated in the release job.
 # Test packages don't need a real one, but nfpm requires the files to exist.
@@ -625,12 +628,12 @@ ci-sbom-placeholder:
 # build context.
 .PHONY: ci-systemd-package
 ci-systemd-package:
-	@case "$(SYSTEMD_OS):$$(uname -m)" in \
-		rocky-9:x86_64) pattern='*.el9.x86_64.rpm'; ext=rpm ;; \
+	@case "$(SYSTEMD_OS):$(systemd_ci_arch)" in \
+		rocky-9:x86_64|rocky-9:amd64) pattern='*.el9.x86_64.rpm'; ext=rpm ;; \
 		rocky-9:aarch64|rocky-9:arm64) pattern='*.el9.aarch64.rpm'; ext=rpm ;; \
-		debian-13:x86_64) pattern='*.trixie_amd64.deb'; ext=deb ;; \
+		debian-13:x86_64|debian-13:amd64) pattern='*.trixie_amd64.deb'; ext=deb ;; \
 		debian-13:aarch64|debian-13:arm64) pattern='*.trixie_arm64.deb'; ext=deb ;; \
-		*) echo "unsupported SYSTEMD_OS/arch: $(SYSTEMD_OS)/$$(uname -m)"; exit 1 ;; \
+		*) echo "unsupported SYSTEMD_OS/arch: $(SYSTEMD_OS)/$(systemd_ci_arch)"; exit 1 ;; \
 	esac; \
 	pkg=$$(ls dist/pgedge-control-plane$$pattern 2>/dev/null | sort -V | tail -1); \
 	if [ -z "$$pkg" ]; then \
