@@ -7,6 +7,7 @@ import (
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -85,6 +86,9 @@ func (w *Workflows) RemoveHost(ctx workflow.Context, input *RemoveHostInput) (*R
 	}
 	_, err := w.Activities.ExecuteRemoveHostFromEtcd(ctx, &etcdReq).Get(ctx)
 	if err != nil {
+		// The databases were already marked as modifying and their tasks were
+		// created before this workflow started, so we need to release them.
+		w.failDatabaseUpdates(ctx, logger, input.UpdateDatabaseInputs, err)
 		return nil, handleError(err)
 	}
 
@@ -126,6 +130,36 @@ func (w *Workflows) RemoveHost(ctx workflow.Context, input *RemoveHostInput) (*R
 	logger.Info("successfully removed host")
 
 	return &RemoveHostOutput{}, nil
+}
+
+// failDatabaseUpdates moves each database to the failed state and fails its
+// pending update task. This mirrors the error handling in UpdateDatabase so
+// that the databases are modifiable again. Errors are logged rather than
+// returned so that the original cause is preserved.
+func (w *Workflows) failDatabaseUpdates(ctx workflow.Context, logger *slog.Logger, inputs []*UpdateDatabaseInput, cause error) {
+	for _, dbInput := range inputs {
+		if dbInput.Spec == nil {
+			continue
+		}
+		dbLogger := logger.With("database_id", dbInput.Spec.DatabaseID)
+
+		updateStateInput := &activities.UpdateDbStateInput{
+			DatabaseID: dbInput.Spec.DatabaseID,
+			State:      database.DatabaseStateFailed,
+		}
+		_, err := w.Activities.ExecuteUpdateDbState(ctx, updateStateInput).Get(ctx)
+		if err != nil {
+			dbLogger.With("error", err).Error("failed to update database state")
+		}
+
+		updateTaskInput := &activities.UpdateTaskInput{
+			Scope:         task.ScopeDatabase,
+			EntityID:      dbInput.Spec.DatabaseID,
+			TaskID:        dbInput.TaskID,
+			UpdateOptions: task.UpdateFail(fmt.Errorf("failed to remove host from etcd: %w", cause)),
+		}
+		_ = w.updateTask(ctx, dbLogger, updateTaskInput)
+	}
 }
 
 func (w *Workflows) removeHostFromDatabases(ctx workflow.Context, logger *slog.Logger, logTaskEvent func(task.LogEntry), inputs []*UpdateDatabaseInput) error {
