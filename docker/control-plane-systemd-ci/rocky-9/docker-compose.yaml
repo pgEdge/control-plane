@@ -1,0 +1,81 @@
+# 3-host Control Plane cluster running as systemd services on Rocky 9. The
+# cluster is not initialized and would be done through test execution.
+#
+#   make ci-systemd-up SYSTEMD_OS=rocky-9
+#   make test-e2e E2E_FIXTURE=docker-systemd-rocky9
+#   make ci-systemd-down SYSTEMD_OS=rocky-9
+name: cp-systemd-rocky-9
+
+x-host: &host
+  build:
+    context: .
+  image: cp-systemd-rocky-9
+  privileged: true
+  cgroup: host
+  tmpfs:
+    - /run
+    - /run/lock
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:rw
+  stop_grace_period: 30s
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:3000/v1/version >/dev/null && sudo -u postgres true"]
+    interval: 3s
+    timeout: 2s
+    retries: 40
+    start_period: 30s
+# Launch 3 services(containers)  with fixed ips and configuration
+services:
+  host-1:
+    <<: *host
+    container_name: cp-rocky9-host-1
+    hostname: host-1
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      cp:
+        ipv4_address: 172.30.0.11
+    configs:
+      - source: host-1
+        target: /etc/pgedge-control-plane/config.json
+
+  host-2:
+    <<: *host
+    container_name: cp-rocky9-host-2
+    hostname: host-2
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks:
+      cp:
+        ipv4_address: 172.30.0.12
+    configs:
+      - source: host-2
+        target: /etc/pgedge-control-plane/config.json
+
+  host-3:
+    <<: *host
+    container_name: cp-rocky9-host-3
+    hostname: host-3
+    ports:
+      - "127.0.0.1:3002:3000"
+    networks:
+      cp:
+        ipv4_address: 172.30.0.13
+    configs:
+      - source: host-3
+        target: /etc/pgedge-control-plane/config.json
+
+# mapping for each host configuration files
+configs:
+  host-1:
+    file: ./host-1.config.json
+  host-2:
+    file: ./host-2.config.json
+  host-3:
+    file: ./host-3.config.json
+
+networks:
+  cp:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

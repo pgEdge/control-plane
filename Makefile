@@ -608,6 +608,51 @@ ci-compose-detached: ci-compose-build docker-swarm-init
 ci-compose-down:
 	$(docker_compose_ci) down
 
+# rocky-9 or debian-13
+SYSTEMD_OS ?= rocky-9
+systemd_ci_dir=./docker/control-plane-systemd-ci/$(SYSTEMD_OS)
+docker_compose_systemd_ci=docker compose -f $(systemd_ci_dir)/docker-compose.yaml
+# The architecture the image is built for: DOCKER_DEFAULT_PLATFORM's when it's
+# set (e.g. linux/amd64), otherwise the Docker daemon's.
+systemd_ci_arch=$(or $(word 2,$(subst /, ,$(DOCKER_DEFAULT_PLATFORM))),$(shell docker info --format '{{.Architecture}}'))
+
+# The packages bundle a signed SBOM that's only generated in the release job.
+# Test packages don't need a real one, but nfpm requires the files to exist.
+.PHONY: ci-sbom-placeholder
+ci-sbom-placeholder:
+	mkdir -p .sbom
+	test -f .sbom/sbom.json || echo '{}' > .sbom/sbom.json
+	touch .sbom/sbom.rpm.asc .sbom/sbom.deb.asc
+
+# Copies the package for this OS and architecture from dist/ into the image's
+# build context.
+.PHONY: ci-systemd-package
+ci-systemd-package:
+	@case "$(SYSTEMD_OS):$(systemd_ci_arch)" in \
+		rocky-9:x86_64|rocky-9:amd64) pattern='*.el9.x86_64.rpm'; ext=rpm ;; \
+		rocky-9:aarch64|rocky-9:arm64) pattern='*.el9.aarch64.rpm'; ext=rpm ;; \
+		debian-13:x86_64|debian-13:amd64) pattern='*.trixie_amd64.deb'; ext=deb ;; \
+		debian-13:aarch64|debian-13:arm64) pattern='*.trixie_arm64.deb'; ext=deb ;; \
+		*) echo "unsupported SYSTEMD_OS/arch: $(SYSTEMD_OS)/$(systemd_ci_arch)"; exit 1 ;; \
+	esac; \
+	pkg=$$(ls dist/pgedge-control-plane$$pattern 2>/dev/null | sort -V | tail -1); \
+	if [ -z "$$pkg" ]; then \
+		echo "no package matching dist/pgedge-control-plane$$pattern, run 'make goreleaser-test-release'"; \
+		exit 1; \
+	fi; \
+	echo "using $$pkg"; \
+	cp "$$pkg" $(systemd_ci_dir)/pgedge-control-plane.$$ext
+
+.PHONY: ci-systemd-up
+ci-systemd-up: ci-sbom-placeholder
+	$(MAKE) goreleaser-test-release
+	$(MAKE) ci-systemd-package
+	$(docker_compose_systemd_ci) up --build --detach --wait --wait-timeout 300
+
+.PHONY: ci-systemd-down
+ci-systemd-down:
+	$(docker_compose_systemd_ci) down
+
 #################################
 # 		  documentation 	    #
 #################################

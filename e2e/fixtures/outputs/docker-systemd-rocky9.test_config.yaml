@@ -1,0 +1,14 @@
+---
+hosts:
+  host-1:
+    external_ip: 127.0.0.1
+    port: 3000
+    ssh_command: docker exec cp-rocky9-host-1 sh -c
+  host-2:
+    external_ip: 127.0.0.1
+    port: 3001
+    ssh_command: docker exec cp-rocky9-host-2 sh -c
+  host-3:
+    external_ip: 127.0.0.1
+    port: 3002
+    ssh_command: docker exec cp-rocky9-host-3 sh -c

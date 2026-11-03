@@ -33,6 +33,9 @@ const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
 // server to default so the test doesn't need to track exact installed
 // package versions.
 func TestSpock6AddNode(t *testing.T) {
+	// TODO: Remove once spock 6 beta 2 image is available
+	t.Skip("skipping until spock 6 beta 2 image is available")
+
 	t.Parallel()
 	fixture.SkipIfSpock6Unsupported(t)
 

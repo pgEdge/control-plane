@@ -162,6 +162,58 @@ jobs:
           when: always
       - store_test_results:
           path: .
+  test_e2e_systemd_rocky9:
+    executor: common
+    steps:
+      - common_setup
+      - run:
+          name: Start Rocky 9 systemd cluster
+          command: make ci-systemd-up SYSTEMD_OS=rocky-9
+      - run:
+          name: Run Rocky 9 systemd E2E tests
+          command: make test-e2e E2E_FIXTURE=docker-systemd-rocky9 E2E_DEBUG=1 TEST_RERUN_FAILS=2
+      - run:
+          name: Archive debug output
+          command: |
+            if [[ -d ./e2e/debug ]]; then
+              sudo journalctl -u docker.service > ./e2e/debug/docker-service.log
+              tar -czf e2e-debug.tar.gz -C e2e debug
+            fi
+          when: on_fail
+      - store_artifacts:
+          path: e2e-debug.tar.gz
+      - run:
+          name: Tear down cluster
+          command: make ci-systemd-down SYSTEMD_OS=rocky-9
+          when: always
+      - store_test_results:
+          path: .
+  test_e2e_systemd_debian13:
+    executor: common
+    steps:
+      - common_setup
+      - run:
+          name: Start Debian 13 systemd cluster
+          command: make ci-systemd-up SYSTEMD_OS=debian-13
+      - run:
+          name: Run Debian 13 systemd E2E tests
+          command: make test-e2e E2E_FIXTURE=docker-systemd-debian13 E2E_DEBUG=1 TEST_RERUN_FAILS=2
+      - run:
+          name: Archive debug output
+          command: |
+            if [[ -d ./e2e/debug ]]; then
+              sudo journalctl -u docker.service > ./e2e/debug/docker-service.log
+              tar -czf e2e-debug.tar.gz -C e2e debug
+            fi
+          when: on_fail
+      - store_artifacts:
+          path: e2e-debug.tar.gz
+      - run:
+          name: Tear down cluster
+          command: make ci-systemd-down SYSTEMD_OS=debian-13
+          when: always
+      - store_test_results:
+          path: .
   release:
     executor: common
     steps:
@@ -322,6 +374,8 @@ workflows:
       - basic_check
       - test_cluster
       - test_e2e
+      - test_e2e_systemd_rocky9
+      - test_e2e_systemd_debian13
 
   release:
     jobs:
