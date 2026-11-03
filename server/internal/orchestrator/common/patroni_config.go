@@ -247,29 +247,13 @@ func (c *PatroniConfig) getStatusInfo(ctx context.Context, client *patroni.Clien
 	if err != nil {
 		return 0, false
 	}
-
 	var loopWait time.Duration
-	if cfg.LoopWait == nil {
-		loopWait = patroni.DefaultLoopWaitSeconds * time.Second
-	} else {
+	if cfg.LoopWait != nil {
 		loopWait = time.Duration(*cfg.LoopWait) * time.Second
 	}
-
-	wait := loopWait
 	status, err := client.GetInstanceStatus(ctx)
 	if err != nil {
-		return wait, false
+		return loopWait, false
 	}
-	if status.DCSLastSeen != nil {
-		lastSeen := time.Unix(*status.DCSLastSeen, 0)
-		lowerBound := time.Now().Add(-2 * loopWait)
-		upperBound := time.Now()
-		// Ignore last seen if clocks are very off in either direction
-		if lastSeen.After(lowerBound) && lastSeen.Before(upperBound) {
-			// Compute the time until the next run cycle
-			wait = time.Until(lastSeen.Add(loopWait))
-		}
-	}
-
-	return wait, status.IsPrimary()
+	return loopWait, status.IsPrimary()
 }
