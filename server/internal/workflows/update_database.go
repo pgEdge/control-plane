@@ -97,6 +97,10 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	}
 	current := refreshCurrentOutput.State
 
+	if err := checkPrimaryNotRemoved(input.Spec, current, input.RemoveHosts); err != nil {
+		return nil, handleError(err)
+	}
+
 	planInput := &PlanUpdateInput{
 		Spec:    input.Spec,
 		Current: current,

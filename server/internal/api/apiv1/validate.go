@@ -323,6 +323,41 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	return errors.Join(errs...)
 }
 
+// validatePrimaryNotRemoved rejects updates that remove a node's current
+// primary instance while keeping the node. Patroni does not switch over when
+// the primary is removed, so the node would be unavailable for writes until a
+// new primary is promoted. Instances on hosts in removeHosts are exempt because
+// those hosts are being forcibly removed.
+func validatePrimaryNotRemoved(instances []*database.Instance, spec *database.Spec, removeHosts []string) error {
+	removed := ds.NewSet(removeHosts...)
+
+	var errs []error
+	for _, inst := range instances {
+		if !IsInstanceAvailable(inst) || !inst.Status.IsPrimary() {
+			continue
+		}
+		if removed.Has(inst.HostID) {
+			continue
+		}
+		for i, node := range spec.Nodes {
+			if node.Name != inst.NodeName {
+				continue
+			}
+			if slices.Contains(node.HostIDs, inst.HostID) {
+				break
+			}
+			path := validation.NewPath("nodes", validation.ArrayIndexElement(i), "host_ids")
+			errs = append(errs, validation.NewError(
+				fmt.Errorf("cannot remove host %s from node %s because it runs the node's primary instance %s; perform a switchover to another instance before removing it", inst.HostID, node.Name, inst.InstanceID),
+				path,
+			))
+			break
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
 func validateNode(
 	orchestrator config.Orchestrator,
 	db *api.DatabaseSpec,

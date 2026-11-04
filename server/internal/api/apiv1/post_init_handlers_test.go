@@ -93,3 +93,50 @@ func TestIsNodeAvailable(t *testing.T) {
 		require.False(t, available)
 	})
 }
+
+func TestValidatePrimaryNotRemoved(t *testing.T) {
+	newInstance := func(hostID string, state database.InstanceState, role patroni.InstanceRole) *database.Instance {
+		inst := newTestInstance("n1", state, role)
+		inst.HostID = hostID
+		inst.InstanceID = database.InstanceIDFor(hostID, "test-db", "n1")
+		return inst
+	}
+	instances := []*database.Instance{
+		newInstance("host-1", database.InstanceStateAvailable, patroni.InstanceRolePrimary),
+		newInstance("host-2", database.InstanceStateAvailable, patroni.InstanceRoleReplica),
+	}
+	newSpec := func(nodes ...*database.Node) *database.Spec {
+		return &database.Spec{DatabaseID: "test-db", Nodes: nodes}
+	}
+
+	t.Run("replica removed", func(t *testing.T) {
+		spec := newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-1"}})
+		require.NoError(t, validatePrimaryNotRemoved(instances, spec, nil))
+	})
+
+	t.Run("primary removed", func(t *testing.T) {
+		spec := newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-2"}})
+		err := validatePrimaryNotRemoved(instances, spec, nil)
+		require.ErrorContains(t, err, "nodes[0].host_ids")
+		require.ErrorContains(t, err, "perform a switchover")
+	})
+
+	t.Run("primary on forcibly removed host", func(t *testing.T) {
+		spec := newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-2"}})
+		require.NoError(t, validatePrimaryNotRemoved(instances, spec, []string{"host-1"}))
+	})
+
+	t.Run("whole node removed", func(t *testing.T) {
+		spec := newSpec(&database.Node{Name: "n2", HostIDs: []string{"host-3"}})
+		require.NoError(t, validatePrimaryNotRemoved(instances, spec, nil))
+	})
+
+	t.Run("unavailable primary is ignored", func(t *testing.T) {
+		unavailable := []*database.Instance{
+			newInstance("host-1", database.InstanceStateUnknown, patroni.InstanceRolePrimary),
+			newInstance("host-2", database.InstanceStateAvailable, patroni.InstanceRoleReplica),
+		}
+		spec := newSpec(&database.Node{Name: "n1", HostIDs: []string{"host-2"}})
+		require.NoError(t, validatePrimaryNotRemoved(unavailable, spec, nil))
+	})
+}

@@ -413,6 +413,9 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	if err := validateDatabaseUpdate(existing.Spec, req.Request.Spec); err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
+	if err := validatePrimaryNotRemoved(existing.Instances, spec, req.RemoveHost); err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
 	// Copy optional fields from the previous spec to the current spec if they
 	// are unset. This also restores service secrets omitted from an existing
 	// service's config (see ServiceSpec.DefaultOptionalFieldsFrom).
