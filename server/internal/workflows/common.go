@@ -26,6 +26,13 @@ func (w *Workflows) applyEvents(
 ) error {
 	for _, phase := range plan {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
+		// We must not return while any queued activity is still pending.
+		// Otherwise, go-workflows fails the workflow with a "pending futures"
+		// error that hides the actual cause. When we fail to queue an event,
+		// we stop queueing and wait for the in-flight activities to complete
+		// before returning the error.
+		var queueErr error
+	queue:
 		for i, event := range phase {
 			in := &activities.ApplyEventInput{
 				DatabaseID:  databaseID,
@@ -52,7 +59,8 @@ func (w *Workflows) applyEvents(
 					// In the case of a refresh event, we'll just leave the
 					// state alone so that we can plan dependent operations. All
 					// other types of events should produce an error.
-					return fmt.Errorf("cannot queue event type %s for %s because its host is being removed", event.Type, event.Resource.Identifier)
+					queueErr = fmt.Errorf("cannot queue event type %s for %s because its host is being removed", event.Type, event.Resource.Identifier)
+					break queue
 				}
 			case errors.Is(err, activities.ErrNoPrimary):
 				if event.Type == resource.EventTypeDelete {
@@ -61,21 +69,27 @@ func (w *Workflows) applyEvents(
 					// state the same way we do for ErrHostRemoved.
 					state.Remove(event.Resource)
 				} else if event.Type != resource.EventTypeRefresh {
-					return fmt.Errorf("cannot queue event type %s for %s because its node has no primary instance", event.Type, event.Resource.Identifier)
+					queueErr = fmt.Errorf("cannot queue event type %s for %s because its node has no primary instance", event.Type, event.Resource.Identifier)
+					break queue
 				}
 				// Refresh events leave the state alone so the rest of the
 				// database can still be refreshed/planned.
 			case err != nil:
-				return fmt.Errorf("failed to queue apply event: %w", err)
+				queueErr = fmt.Errorf("failed to queue apply event: %w", err)
+				break queue
 			}
 			futures[i] = future
 		}
 		var errs []error
+		if queueErr != nil {
+			errs = append(errs, queueErr)
+		}
 		for i, future := range futures {
 			if future == nil {
-				// This future was nil because the executor was not found. We
-				// still add the nil futures to the slice so that we can match
-				// the index to the original event.
+				// This future was nil because the executor was not found or
+				// because we stopped queueing after an error. We still add the
+				// nil futures to the slice so that we can match the index to
+				// the original event.
 				continue
 			}
 			out, err := future.Get(ctx)
