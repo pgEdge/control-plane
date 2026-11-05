@@ -371,11 +371,11 @@ func TestUpdateDatabaseService(t *testing.T) {
 	})
 }
 
-// TestProvisionMCPServiceUnsupportedVersion tests that database creation fails
-// when service provisioning fails due to an unsupported image version.
-// Version "99.99.99" passes API validation (semver pattern) but is not registered
-// in ServiceVersions, so getServiceResources fails fatally. The workflow should
-// fail and the database should be in a "failed" state.
+// TestProvisionMCPServiceUnsupportedVersion tests that database creation is
+// rejected when a service requests a version that its hosts don't support.
+// Version "99.99.99" passes the API's semver pattern but isn't supported by any
+// host, so the spec is rejected before a workflow starts and no database is
+// created.
 func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
 
@@ -424,65 +424,23 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err, "CreateDatabase API call should succeed")
-	require.NotNil(t, createResp.Task, "CreateDatabase should return a task")
-	require.NotNil(t, createResp.Database, "CreateDatabase should return a database")
+	require.Error(t, err, "CreateDatabase should reject an unsupported service version")
+	assert.ErrorIs(t, err, client.ErrInvalidInput, "Error should be invalid input")
+	assert.Nil(t, createResp, "CreateDatabase should not return a response")
+	assert.Contains(t, err.Error(), "does not support mcp version 99.99.99", "Error should name the unsupported version")
 
-	dbID := createResp.Database.ID
-
-	// Register cleanup to force-delete the database
-	t.Cleanup(func() {
-		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cleanupCancel()
-
-		t.Logf("cleaning up database %s", dbID)
-		resp, err := fixture.Client.DeleteDatabase(cleanupCtx, &controlplane.DeleteDatabasePayload{
-			DatabaseID: dbID,
-			Force:      true,
-		})
-		if err != nil {
-			if !errors.Is(err, client.ErrNotFound) {
-				t.Logf("failed to cleanup database %s: %s", dbID, err)
-			}
-			return
-		}
-		_, _ = fixture.Client.WaitForDatabaseTask(cleanupCtx, &controlplane.GetDatabaseTaskPayload{
-			DatabaseID: dbID,
-			TaskID:     resp.Task.TaskID,
-		})
-	})
-
-	t.Log("Waiting for creation task to complete")
-
-	task, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
-		DatabaseID: dbID,
-		TaskID:     createResp.Task.TaskID,
-	})
-	require.NoError(t, err, "WaitForDatabaseTask should not return a transport error")
-
-	// The task should have failed due to the unsupported service version
-	assert.Equal(t, client.TaskStatusFailed, task.Status, "Task should have failed")
-	require.NotNil(t, task.Error, "Task should have an error message")
-	assert.Contains(t, *task.Error, "unsupported version", "Task error should mention unsupported version")
-
-	t.Logf("Task failed as expected: %s", *task.Error)
-
-	// Verify the database is in a "failed" state
-	db, err := fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
-		DatabaseID: dbID,
-	})
-	require.NoError(t, err, "GetDatabase should succeed")
-	assert.Equal(t, "failed", db.State, "Database should be in failed state")
+	t.Logf("CreateDatabase rejected as expected: %s", err)
 
 	t.Log("Unsupported version test completed successfully")
 }
 
-// TestProvisionMCPServiceRecovery tests that a failed service can be recovered
-// by updating the database with a corrected service version. The sequence is:
-//  1. Create database with an unsupported service version (workflow fails, database goes to "failed")
-//  2. Verify database is in "failed" state
-//  3. Update database with a corrected service version
-//  4. Verify the database recovers to "available" and service instances are created and running
+// TestProvisionMCPServiceRecovery tests that a database can be corrected after a
+// service update with an unsupported version is rejected. The sequence is:
+//  1. Create a database without services
+//  2. Update it with an unsupported service version (rejected at submit time;
+//     the database stays "available" and nothing is applied)
+//  3. Update it with a corrected service version
+//  4. Verify the database is "available" and the service instance is created and running
 func TestProvisionMCPServiceRecovery(t *testing.T) {
 	t.Parallel()
 
@@ -493,12 +451,8 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	// --- Step 1: Create database with unsupported service version (expect failure) ---
-
-	t.Log("Creating database with MCP service using unsupported version")
-
-	createResp, err := fixture.Client.CreateDatabase(ctx, &controlplane.CreateDatabaseRequest{
-		Spec: &controlplane.DatabaseSpec{
+	baseSpec := func(services []*controlplane.ServiceSpec) *controlplane.DatabaseSpec {
+		return &controlplane.DatabaseSpec{
 			DatabaseName: "test_mcp_recovery",
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
@@ -516,22 +470,16 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
 				},
 			},
-			Services: []*controlplane.ServiceSpec{
-				{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					ConnectAs:   "admin",
-					Version:     "99.99.99", // Unsupported version - workflow will fail
-					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
-					Config: map[string]any{
-						"llm_enabled":       true,
-						"llm_provider":      "anthropic",
-						"llm_model":         "claude-sonnet-4-5",
-						"anthropic_api_key": "sk-ant-test-key-12345",
-					},
-				},
-			},
-		},
+			Services: services,
+		}
+	}
+
+	// --- Step 1: Create database without services ---
+
+	t.Log("Creating database without services")
+
+	createResp, err := fixture.Client.CreateDatabase(ctx, &controlplane.CreateDatabaseRequest{
+		Spec: baseSpec(nil),
 	})
 	require.NoError(t, err, "CreateDatabase API call should succeed")
 	require.NotNil(t, createResp.Task, "CreateDatabase should return a task")
@@ -561,27 +509,51 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 		})
 	})
 
-	t.Log("Waiting for creation task to complete (expecting failure)")
-
 	task, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
 		DatabaseID: dbID,
 		TaskID:     createResp.Task.TaskID,
 	})
 	require.NoError(t, err, "WaitForDatabaseTask should not return a transport error")
+	require.Equal(t, client.TaskStatusCompleted, task.Status, "Create task should have completed successfully")
 
-	// The task should have failed due to the unsupported service version
-	assert.Equal(t, client.TaskStatusFailed, task.Status, "Task should have failed")
-	require.NotNil(t, task.Error, "Task should have an error message")
-	t.Logf("Task failed as expected: %s", *task.Error)
+	// --- Step 2: Update with unsupported service version (expect rejection) ---
 
-	// Verify the database is in a "failed" state
+	t.Log("Updating database with MCP service using unsupported version")
+
+	_, err = fixture.Client.UpdateDatabase(ctx, &controlplane.UpdateDatabasePayload{
+		DatabaseID: dbID,
+		Request: &controlplane.UpdateDatabaseRequest{
+			Spec: baseSpec([]*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					ConnectAs:   "admin",
+					Version:     "99.99.99", // Unsupported version - rejected at submit time
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_enabled":       true,
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test-key-12345",
+					},
+				},
+			}),
+		},
+	})
+	require.Error(t, err, "UpdateDatabase should reject an unsupported service version")
+	assert.ErrorIs(t, err, client.ErrInvalidInput, "Error should be invalid input")
+	assert.Contains(t, err.Error(), "does not support mcp version 99.99.99", "Error should name the unsupported version")
+	t.Logf("UpdateDatabase rejected as expected: %s", err)
+
+	// The rejected update must not have been applied
 	db, err := fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
 		DatabaseID: dbID,
 	})
 	require.NoError(t, err, "GetDatabase should succeed")
-	assert.Equal(t, "failed", db.State, "Database should be in failed state after unsupported version")
+	assert.Equal(t, "available", db.State, "Database should still be available after a rejected update")
+	assert.Empty(t, db.ServiceInstances, "Rejected update should not create service instances")
 
-	// --- Step 2: Update database with corrected service version (expect recovery) ---
+	// --- Step 3: Update database with corrected service version (expect recovery) ---
 
 	t.Log("Updating database with corrected service version")
 

@@ -161,35 +161,36 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 
 	servicesPath := validation.NewPath("services")
 
-	switch orchestrator {
-	case config.OrchestratorSystemD:
-		if len(spec.Services) != 0 {
-			errs = append(errs, validation.NewError(errors.New("services are not yet supported for systemd clusters"), servicesPath))
+	seenServiceIDs := make(ds.Set[string], len(spec.Services))
+	for i, svc := range spec.Services {
+		svcPath := servicesPath.AppendArrayIndex(i)
+
+		if svc == nil {
+			errs = append(errs, validation.NewError(errors.New("service must not be null"), svcPath))
+			continue
 		}
-	default:
-		seenServiceIDs := make(ds.Set[string], len(spec.Services))
-		for i, svc := range spec.Services {
-			svcPath := servicesPath.AppendArrayIndex(i)
 
-			if svc == nil {
-				errs = append(errs, validation.NewError(errors.New("service must not be null"), svcPath))
-				continue
-			}
-
-			// Check for duplicate service IDs
-			if seenServiceIDs.Has(string(svc.ServiceID)) {
-				err := errors.New("service IDs must be unique within a database")
-				errs = append(errs, validation.NewError(err, svcPath))
-			}
-			seenServiceIDs.Add(string(svc.ServiceID))
-
-			isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
-			errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, databaseID, spec.DatabaseUsers, seenNodeNames)...)
+		if orchestrator == config.OrchestratorSystemD && !systemdServiceTypes.Has(svc.ServiceType) {
+			err := fmt.Errorf("service type '%s' is not yet supported for systemd clusters", svc.ServiceType)
+			errs = append(errs, validation.NewError(err, svcPath.Append("service_type")))
 		}
+
+		// Check for duplicate service IDs
+		if seenServiceIDs.Has(string(svc.ServiceID)) {
+			err := errors.New("service IDs must be unique within a database")
+			errs = append(errs, validation.NewError(err, svcPath))
+		}
+		seenServiceIDs.Add(string(svc.ServiceID))
+
+		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, databaseID, spec.DatabaseUsers, seenNodeNames)...)
 	}
 
 	return errors.Join(errs...)
 }
+
+// systemdServiceTypes are the service types that can run on systemd hosts.
+var systemdServiceTypes = ds.NewSet("postgrest")
 
 // validateLocale performs basic validation of the locale fields. It
 // intentionally does not check whether the image or host has the requested

@@ -113,6 +113,13 @@ func BuildServiceHostList(params *BuildServiceHostListParams) (*ServiceConnectio
 	}, nil
 }
 
+// ServiceDatabaseHostname returns the hostname that BuildServiceHostList uses
+// for the given database instance. Orchestrators that don't use this hostname
+// convention can use it to map host list entries back to their instances.
+func ServiceDatabaseHostname(instanceID string) string {
+	return fmt.Sprintf("postgres-%s", instanceID)
+}
+
 // containsHost returns true if any instance in the node runs on the given host.
 func containsHost(ni *NodeInstances, hostID string) bool {
 	for _, inst := range ni.Instances {
@@ -131,7 +138,7 @@ func buildNodeHosts(ni *NodeInstances, serviceHostID string) []ServiceHostEntry 
 
 	for _, inst := range ni.Instances {
 		entry := ServiceHostEntry{
-			Host: fmt.Sprintf("postgres-%s", inst.InstanceID),
+			Host: ServiceDatabaseHostname(inst.InstanceID),
 			Port: internalPostgresPort,
 		}
 		if inst.HostID == serviceHostID {

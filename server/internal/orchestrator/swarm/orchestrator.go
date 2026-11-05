@@ -150,6 +150,7 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	v := o.getVersions()
 	h.DefaultPgEdgeVersion = v.Default()
 	h.SupportedPgEdgeVersions = v.Supported()
+	h.SupportedServices, h.DefaultServiceVersions = o.getServiceVersions().HostServiceVersions()
 
 	return nil
 }
@@ -1075,6 +1076,16 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 		Ports:        ports,
 		ServiceReady: utils.PointerTo(ready),
 	}, nil
+}
+
+// ReloadServiceInstance is a no-op for now. Swarm service instances keep their
+// existing reload behavior until they're migrated to the common service
+// resources.
+//
+// TODO(PLAT-651): send signals with ContainerSignal and restart by rotating
+// the service's tasks.
+func (o *Orchestrator) ReloadServiceInstance(_ context.Context, _ string, _ database.ReloadMode) error {
+	return nil
 }
 
 func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {

@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -588,9 +587,9 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 	t.Log("Add RAG service to existing database test completed successfully")
 }
 
-// TestProvisionRAGServiceUnsupportedVersion verifies that using an unregistered
-// RAG image version causes the workflow to fail and the database to enter
-// "failed" state (mirrors TestProvisionMCPServiceUnsupportedVersion).
+// TestProvisionRAGServiceUnsupportedVersion verifies that a RAG service version
+// that no host supports is rejected when the spec is submitted, and that no
+// database is created (mirrors TestProvisionMCPServiceUnsupportedVersion).
 func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
 
@@ -662,46 +661,11 @@ func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err, "CreateDatabase API call should succeed")
-	require.NotNil(t, createResp.Task)
-	require.NotNil(t, createResp.Database)
-
-	dbID := createResp.Database.ID
-
-	t.Cleanup(func() {
-		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cleanupCancel()
-
-		t.Logf("cleaning up database %s", dbID)
-		resp, err := fixture.Client.DeleteDatabase(cleanupCtx, &controlplane.DeleteDatabasePayload{
-			DatabaseID: dbID,
-			Force:      true,
-		})
-		if err != nil {
-			if !errors.Is(err, client.ErrNotFound) {
-				t.Logf("failed to cleanup database %s: %s", dbID, err)
-			}
-			return
-		}
-		_, _ = fixture.Client.WaitForDatabaseTask(cleanupCtx, &controlplane.GetDatabaseTaskPayload{
-			DatabaseID: dbID,
-			TaskID:     resp.Task.TaskID,
-		})
-	})
-
-	task, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
-		DatabaseID: dbID,
-		TaskID:     createResp.Task.TaskID,
-	})
-	require.NoError(t, err)
-	assert.Equal(t, client.TaskStatusFailed, task.Status, "Task should have failed")
-	require.NotNil(t, task.Error)
-	assert.Contains(t, *task.Error, "unsupported version", "Task error should mention unsupported version")
-	t.Logf("Task failed as expected: %s", *task.Error)
-
-	db, err := fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{DatabaseID: dbID})
-	require.NoError(t, err)
-	assert.Equal(t, "failed", db.State, "Database should be in failed state")
+	require.Error(t, err, "CreateDatabase should reject an unsupported service version")
+	assert.ErrorIs(t, err, client.ErrInvalidInput, "Error should be invalid input")
+	assert.Nil(t, createResp, "CreateDatabase should not return a response")
+	assert.Contains(t, err.Error(), "does not support rag version 99.99.99", "Error should name the unsupported version")
+	t.Logf("CreateDatabase rejected as expected: %s", err)
 
 	t.Log("RAG unsupported version test completed successfully")
 }

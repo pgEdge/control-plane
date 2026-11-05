@@ -54,7 +54,17 @@ type Host struct {
 	Status                  *HostStatus
 	DefaultPgEdgeVersion    *ds.PgEdgeVersion
 	SupportedPgEdgeVersions []*ds.PgEdgeVersion
+	// SupportedServices maps each service type to the versions of it that
+	// this host can run.
+	SupportedServices map[string][]string
+	// DefaultServiceVersions maps each service type to the version that
+	// "latest" resolves to on this host.
+	DefaultServiceVersions map[string]string
 }
+
+// ServiceVersionLatest is the service version that resolves to the default
+// version for the service type.
+const ServiceVersionLatest = "latest"
 
 func (h *Host) Supports(pgEdgeVersion *ds.PgEdgeVersion) bool {
 	for _, v := range h.SupportedPgEdgeVersions {
@@ -63,6 +73,16 @@ func (h *Host) Supports(pgEdgeVersion *ds.PgEdgeVersion) bool {
 		}
 	}
 	return false
+}
+
+// SupportsService returns true if this host can run the given version of the
+// given service type. The literal version "latest" is supported if the host
+// has a default version for the service type.
+func (h *Host) SupportsService(serviceType, version string) bool {
+	if version == ServiceVersionLatest {
+		return h.DefaultServiceVersions[serviceType] != ""
+	}
+	return slices.Contains(h.SupportedServices[serviceType], version)
 }
 
 func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
@@ -105,6 +125,8 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 		EtcdMode:                host.EtcdMode,
 		SupportedPgEdgeVersions: host.SupportedPgEdgeVersions,
 		DefaultPgEdgeVersion:    host.DefaultPgEdgeVersion,
+		SupportedServices:       host.SupportedServices,
+		DefaultServiceVersions:  host.DefaultServiceVersions,
 		Status: &HostStatus{
 			UpdatedAt:  status.UpdatedAt,
 			State:      status.State,
@@ -154,6 +176,8 @@ func toStorage(host *Host) *StoredHost {
 		EtcdMode:                host.EtcdMode,
 		DefaultPgEdgeVersion:    host.DefaultPgEdgeVersion,
 		SupportedPgEdgeVersions: host.SupportedPgEdgeVersions,
+		SupportedServices:       host.SupportedServices,
+		DefaultServiceVersions:  host.DefaultServiceVersions,
 	}
 }
 
@@ -209,4 +233,46 @@ func GreatestCommonDefaultVersion(hosts ...*Host) (*ds.PgEdgeVersion, error) {
 		return -a.Compare(b)
 	})
 	return versions[0], nil
+}
+
+// GreatestCommonDefaultServiceVersion returns the version that "latest"
+// resolves to for the given service type across all of the given hosts. It is
+// the greatest version that is the default on at least one host and supported
+// by every host.
+func GreatestCommonDefaultServiceVersion(serviceType string, hosts ...*Host) (string, error) {
+	defaults := ds.NewSet[string]()
+	var common ds.Set[string]
+	for _, h := range hosts {
+		def := h.DefaultServiceVersions[serviceType]
+		if def == "" {
+			return "", fmt.Errorf("host '%s' does not support service type %q", h.ID, serviceType)
+		}
+		defaults.Add(def)
+		supported := ds.NewSet(h.SupportedServices[serviceType]...)
+		if common == nil {
+			common = supported
+		} else {
+			common = common.Intersection(supported)
+		}
+	}
+
+	candidates := defaults.Intersection(common).ToSlice()
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no common default version of service type %q found between the given hosts", serviceType)
+	}
+
+	parsed := make(map[string]*ds.Version, len(candidates))
+	for _, c := range candidates {
+		v, err := ds.ParseVersion(c)
+		if err != nil {
+			return "", fmt.Errorf("invalid version %q for service type %q: %w", c, serviceType, err)
+		}
+		parsed[c] = v
+	}
+	slices.SortFunc(candidates, func(a, b string) int {
+		// Sort in reverse order
+		return -parsed[a].Compare(parsed[b])
+	})
+
+	return candidates[0], nil
 }

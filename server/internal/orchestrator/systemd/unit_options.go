@@ -60,6 +60,9 @@ type UnitFile struct {
 	Unit    UnitSection
 	Service ServiceSection
 	Install InstallSection
+	// Metadata holds Control Plane bookkeeping values. They're written to an
+	// X- prefixed section, which systemd ignores.
+	Metadata map[string]string
 }
 
 func (f UnitFile) Options() []*unit.UnitOption {
@@ -67,7 +70,32 @@ func (f UnitFile) Options() []*unit.UnitOption {
 		f.Unit.Options(),
 		f.Service.Options(),
 		f.Install.Options(),
+		metadataOptions(f.Metadata),
 	)
+}
+
+func metadataOptions(metadata map[string]string) []*unit.UnitOption {
+	var opts []*unit.UnitOption
+	for _, name := range slices.Sorted(maps.Keys(metadata)) {
+		opts = append(opts, &unit.UnitOption{
+			Section: sectionNameMetadata,
+			Name:    name,
+			Value:   metadata[name],
+		})
+	}
+	return opts
+}
+
+// UnitMetadata returns the Control Plane metadata values from the given unit
+// options.
+func UnitMetadata(opts []*unit.UnitOption) map[string]string {
+	metadata := map[string]string{}
+	for _, opt := range opts {
+		if opt.Section == sectionNameMetadata {
+			metadata[opt.Name] = opt.Value
+		}
+	}
+	return metadata
 }
 
 type UnitSection struct {
@@ -93,6 +121,7 @@ type ServiceSection struct {
 	CPUs        float64
 	MemoryBytes uint64
 	Restart     ServiceRestart
+	LimitNOFILE int
 	Environment map[string]string
 }
 
@@ -128,6 +157,9 @@ func (s ServiceSection) Options() []*unit.UnitOption {
 	if s.Restart != "" {
 		opts = append(opts, ServiceRestartOption(s.Restart))
 	}
+	if s.LimitNOFILE != 0 {
+		opts = append(opts, ServiceLimitNOFILEOption(s.LimitNOFILE))
+	}
 	for _, name := range slices.Sorted(maps.Keys(s.Environment)) {
 		opts = append(opts, ServiceEnvironmentOption(name, s.Environment[name]))
 	}
@@ -150,6 +182,8 @@ const (
 	sectionNameUnit    = "Unit"
 	sectionNameService = "Service"
 	sectionNameInstall = "Install"
+	// sectionNameMetadata is ignored by systemd because of its X- prefix.
+	sectionNameMetadata = "X-pgEdge"
 )
 
 func UnitAfterOption(values ...string) *unit.UnitOption {
@@ -221,6 +255,14 @@ func ServiceRestartOption(value ServiceRestart) *unit.UnitOption {
 		Section: sectionNameService,
 		Name:    "Restart",
 		Value:   value.String(),
+	}
+}
+
+func ServiceLimitNOFILEOption(value int) *unit.UnitOption {
+	return &unit.UnitOption{
+		Section: sectionNameService,
+		Name:    "LimitNOFILE",
+		Value:   strconv.Itoa(value),
 	}
 }
 

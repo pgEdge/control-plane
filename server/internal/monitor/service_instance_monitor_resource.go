@@ -23,6 +23,10 @@ type ServiceInstanceMonitorResource struct {
 	DatabaseID        string `json:"database_id"`
 	ServiceInstanceID string `json:"service_instance_id"`
 	HostID            string `json:"host_id"`
+	// ServiceInstanceResource is the orchestrator resource that runs the
+	// service instance. It defaults to the swarm service instance resource
+	// when unset.
+	ServiceInstanceResource *resource.Identifier `json:"service_instance_resource,omitempty"`
 }
 
 func (m *ServiceInstanceMonitorResource) ResourceVersion() string {
@@ -42,6 +46,9 @@ func (m *ServiceInstanceMonitorResource) Identifier() resource.Identifier {
 }
 
 func (m *ServiceInstanceMonitorResource) Dependencies() []resource.Identifier {
+	if m.ServiceInstanceResource != nil {
+		return []resource.Identifier{*m.ServiceInstanceResource}
+	}
 	return []resource.Identifier{
 		{
 			ID:   m.ServiceInstanceID,

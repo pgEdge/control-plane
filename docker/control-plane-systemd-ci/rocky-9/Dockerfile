@@ -26,7 +26,8 @@ RUN dnf install -y --setopt=retries=10 epel-release && \
       pgedge-spock50_18 \
       pgedge-postgresql18-contrib \
       pgedge-pgbackrest \
-      pgedge-patroni && \
+      pgedge-patroni \
+      pgedge-postgrest && \
     dnf clean all
 
 # Locally built CP package, copying and installing

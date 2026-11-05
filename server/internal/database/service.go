@@ -648,11 +648,45 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 		return err
 	}
 
-	// Validate that all service host IDs refer to registered hosts
-	for _, svc := range spec.Services {
+	if err := validateServiceHosts(spec.Services, hostsByID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateServiceHosts validates that every service's host IDs refer to
+// registered hosts that can run the requested service version.
+func validateServiceHosts(services []*ServiceSpec, hostsByID map[string]*host.Host) error {
+	for _, svc := range services {
+		var knownHosts []*host.Host
 		for _, hostID := range svc.HostIDs {
-			if _, ok := hostsByID[hostID]; !ok {
+			h, ok := hostsByID[hostID]
+			if !ok {
 				return fmt.Errorf("service %q: host %s not found", svc.ServiceID, hostID)
+			}
+			if h.Orchestrator == config.OrchestratorSystemD && svc.Port == nil {
+				// systemd service instances listen on the host directly, so
+				// they're unreachable without a port.
+				return fmt.Errorf("service %q: port is required for host %s, which uses the systemd orchestrator. set it to 0 to assign a random port", svc.ServiceID, h.ID)
+			}
+			if h.SupportedServices == nil {
+				// This host's record was written by a Control Plane version
+				// that didn't report its supported services, so we can't
+				// validate against it.
+				continue
+			}
+			if !h.SupportsService(svc.ServiceType, svc.Version) {
+				return fmt.Errorf("service %q: host %s does not support %s version %s", svc.ServiceID, h.ID, svc.ServiceType, svc.Version)
+			}
+			knownHosts = append(knownHosts, h)
+		}
+		if svc.Version == host.ServiceVersionLatest && len(knownHosts) > 0 {
+			// "latest" is stored as-is so that it continues to follow the
+			// hosts' defaults, but it must resolve to the same version on
+			// every host.
+			if _, err := host.GreatestCommonDefaultServiceVersion(svc.ServiceType, knownHosts...); err != nil {
+				return fmt.Errorf("service %q: unable to resolve version %s: %w", svc.ServiceID, svc.Version, err)
 			}
 		}
 	}

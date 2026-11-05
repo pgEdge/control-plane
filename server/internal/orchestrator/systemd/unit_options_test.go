@@ -92,4 +92,42 @@ func TestUnitOptions(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("PostgRESTUnitOptions", func(t *testing.T) {
+		metadata := map[string]string{
+			"ServiceType":       "postgrest",
+			"ServiceInstanceID": "storefront-api-host-1",
+			"Port":              "3100",
+			"Version":           "14.5",
+		}
+
+		for _, tc := range []struct {
+			name        string
+			cpus        float64
+			memoryBytes uint64
+		}{
+			{
+				name: "minimal",
+			},
+			{
+				name:        "with limits",
+				cpus:        0.5,
+				memoryBytes: 536_870_912, // 512MiB in bytes
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				actual := systemd.PostgRESTUnitOptions(
+					"/usr/bin/postgrest",
+					"/etc/postgrest/storefront-api-host-1/postgrest.conf",
+					"998",
+					"997",
+					3100,
+					tc.cpus,
+					tc.memoryBytes,
+					metadata,
+				)
+				golden.Run(t, actual, update)
+			})
+		}
+	})
 }

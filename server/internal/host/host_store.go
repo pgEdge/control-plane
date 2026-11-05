@@ -27,6 +27,8 @@ type StoredHost struct {
 	EtcdMode                config.EtcdMode     `json:"etcd_mode"`
 	DefaultPgEdgeVersion    *ds.PgEdgeVersion   `json:"default_version"`
 	SupportedPgEdgeVersions []*ds.PgEdgeVersion `json:"supported_versions"`
+	SupportedServices       map[string][]string `json:"supported_services,omitempty"`
+	DefaultServiceVersions  map[string]string   `json:"default_service_versions,omitempty"`
 }
 
 type HostStore struct {
