@@ -157,9 +157,27 @@ func TestValidateServiceHosts(t *testing.T) {
 			expectedErr: `service "api": host host-3 does not support postgrest version 14.5`,
 		},
 		{
-			name:        "latest with no common default",
+			name:        "latest with different defaults",
 			service:     postgrest("latest", "host-1", "host-2"),
-			expectedErr: `service "api": unable to resolve version latest: no common default version of service type "postgrest" found between the given hosts`,
+			expectedErr: `service "api": unable to resolve version latest: hosts have different default versions of service type "postgrest": 'host-1' has 14.5 and 'host-2' has 14.10`,
+		},
+		{
+			name: "swarm image override with an unlisted version",
+			service: func() *ServiceSpec {
+				svc := postgrest("99.0", "host-1")
+				svc.OrchestratorOpts = &OrchestratorOpts{Swarm: &SwarmOpts{Image: "registry.example.com/postgrest:dev"}}
+				return svc
+			}(),
+		},
+		{
+			name: "image override doesn't bypass validation on systemd hosts",
+			service: func() *ServiceSpec {
+				svc := postgrest("99.0", "host-systemd")
+				svc.Port = utils.PointerTo(0)
+				svc.OrchestratorOpts = &OrchestratorOpts{Swarm: &SwarmOpts{Image: "registry.example.com/postgrest:dev"}}
+				return svc
+			}(),
+			expectedErr: `service "api": host host-systemd does not support postgrest version 99.0`,
 		},
 		{
 			name:    "host without supported services is not validated",

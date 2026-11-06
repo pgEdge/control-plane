@@ -47,7 +47,7 @@ func PostgRESTUnitOptions(
 			Type:      ServiceTypeSimple,
 			User:      user,
 			Group:     group,
-			ExecStart: fmt.Sprintf("%s %s", binPath, configPath),
+			ExecStart: ExecCommandLine(binPath, configPath),
 			// SIGUSR2 reloads PostgREST's configuration file. SIGUSR1 would
 			// only reload its schema cache.
 			ExecReload:  "/bin/kill -USR2 $MAINPID",
@@ -258,14 +258,16 @@ func (c *PostgRESTConfig) Update(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 	var previous *common.PostgRESTConfigResource
+	var previousFailed bool
 	if stored, ok := rc.State.Get(c.Identifier()); ok {
 		prev, err := resource.ToResource[*PostgRESTConfig](stored)
 		if err != nil {
 			return fmt.Errorf("failed to decode previous PostgREST config resource: %w", err)
 		}
 		previous = prev.Base
+		previousFailed = stored.Error != ""
 	}
-	return c.Base.UpdateFrom(ctx, rc, previous)
+	return c.Base.UpdateFrom(ctx, rc, previous, previousFailed)
 }
 
 func (c *PostgRESTConfig) Delete(ctx context.Context, rc *resource.Context) error {

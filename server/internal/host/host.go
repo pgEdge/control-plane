@@ -235,44 +235,26 @@ func GreatestCommonDefaultVersion(hosts ...*Host) (*ds.PgEdgeVersion, error) {
 	return versions[0], nil
 }
 
-// GreatestCommonDefaultServiceVersion returns the version that "latest"
-// resolves to for the given service type across all of the given hosts. It is
-// the greatest version that is the default on at least one host and supported
-// by every host.
-func GreatestCommonDefaultServiceVersion(serviceType string, hosts ...*Host) (string, error) {
-	defaults := ds.NewSet[string]()
-	var common ds.Set[string]
+// CommonDefaultServiceVersion returns the version that "latest" resolves to
+// for the given service type across all of the given hosts. Each host resolves
+// "latest" to its own default version, so the hosts must agree on it for every
+// instance of a service to run the same version.
+func CommonDefaultServiceVersion(serviceType string, hosts ...*Host) (string, error) {
+	var version, versionHost string
 	for _, h := range hosts {
 		def := h.DefaultServiceVersions[serviceType]
 		if def == "" {
 			return "", fmt.Errorf("host '%s' does not support service type %q", h.ID, serviceType)
 		}
-		defaults.Add(def)
-		supported := ds.NewSet(h.SupportedServices[serviceType]...)
-		if common == nil {
-			common = supported
-		} else {
-			common = common.Intersection(supported)
+		switch {
+		case version == "":
+			version, versionHost = def, h.ID
+		case def != version:
+			return "", fmt.Errorf("hosts have different default versions of service type %q: '%s' has %s and '%s' has %s", serviceType, versionHost, version, h.ID, def)
 		}
 	}
-
-	candidates := defaults.Intersection(common).ToSlice()
-	if len(candidates) == 0 {
-		return "", fmt.Errorf("no common default version of service type %q found between the given hosts", serviceType)
+	if version == "" {
+		return "", fmt.Errorf("no hosts given for service type %q", serviceType)
 	}
-
-	parsed := make(map[string]*ds.Version, len(candidates))
-	for _, c := range candidates {
-		v, err := ds.ParseVersion(c)
-		if err != nil {
-			return "", fmt.Errorf("invalid version %q for service type %q: %w", c, serviceType, err)
-		}
-		parsed[c] = v
-	}
-	slices.SortFunc(candidates, func(a, b string) int {
-		// Sort in reverse order
-		return -parsed[a].Compare(parsed[b])
-	})
-
-	return candidates[0], nil
+	return version, nil
 }

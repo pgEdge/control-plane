@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -82,4 +83,53 @@ func TestPostgRESTAuthenticatorIdentifier_DifferentServices(t *testing.T) {
 	id1 := PostgRESTAuthenticatorIdentifier("svc-a", "n1")
 	id2 := PostgRESTAuthenticatorIdentifier("svc-b", "n1")
 	assert.NotEqual(t, id1, id2, "different services should produce different identifiers")
+}
+
+func TestPostgRESTAuthenticatorResource_StaleAnonGrant(t *testing.T) {
+	current := &PostgRESTAuthenticatorResource{ConnectAsUsername: "app", DBAnonRole: "web_anon"}
+
+	for _, tc := range []struct {
+		name     string
+		prev     *PostgRESTAuthenticatorResource
+		expected string // expected REVOKE statement, empty for none
+	}{
+		{
+			name: "no previous state",
+		},
+		{
+			name: "unchanged",
+			prev: &PostgRESTAuthenticatorResource{ConnectAsUsername: "app", DBAnonRole: "web_anon"},
+		},
+		{
+			name:     "anon role changed",
+			prev:     &PostgRESTAuthenticatorResource{ConnectAsUsername: "app", DBAnonRole: "old_anon"},
+			expected: `REVOKE "old_anon" FROM "app";`,
+		},
+		{
+			name:     "connect_as changed",
+			prev:     &PostgRESTAuthenticatorResource{ConnectAsUsername: "old_app", DBAnonRole: "web_anon"},
+			expected: `REVOKE "web_anon" FROM "old_app";`,
+		},
+		{
+			name:     "both changed revokes from the previous user",
+			prev:     &PostgRESTAuthenticatorResource{ConnectAsUsername: "old_app", DBAnonRole: "old_anon"},
+			expected: `REVOKE "old_anon" FROM "old_app";`,
+		},
+		{
+			name: "previous without anon role",
+			prev: &PostgRESTAuthenticatorResource{ConnectAsUsername: "app"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stmt, ok := current.staleAnonGrant(tc.prev)
+			if tc.expected == "" {
+				assert.False(t, ok)
+				return
+			}
+			require.True(t, ok)
+			then, isStatement := stmt.Then.(postgres.Statement)
+			require.True(t, isStatement)
+			assert.Equal(t, tc.expected, then.SQL)
+		})
+	}
 }

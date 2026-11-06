@@ -676,6 +676,10 @@ func validateServiceHosts(services []*ServiceSpec, hostsByID map[string]*host.Ho
 				// validate against it.
 				continue
 			}
+			if h.Orchestrator != config.OrchestratorSystemD && svc.swarmImageOverride() != "" {
+				// A user-specified image bypasses the version manifest.
+				continue
+			}
 			if !h.SupportsService(svc.ServiceType, svc.Version) {
 				return fmt.Errorf("service %q: host %s does not support %s version %s", svc.ServiceID, h.ID, svc.ServiceType, svc.Version)
 			}
@@ -683,9 +687,9 @@ func validateServiceHosts(services []*ServiceSpec, hostsByID map[string]*host.Ho
 		}
 		if svc.Version == host.ServiceVersionLatest && len(knownHosts) > 0 {
 			// "latest" is stored as-is so that it continues to follow the
-			// hosts' defaults, but it must resolve to the same version on
-			// every host.
-			if _, err := host.GreatestCommonDefaultServiceVersion(svc.ServiceType, knownHosts...); err != nil {
+			// hosts' defaults, but each host resolves it to its own default,
+			// so they must agree for every instance to run the same version.
+			if _, err := host.CommonDefaultServiceVersion(svc.ServiceType, knownHosts...); err != nil {
 				return fmt.Errorf("service %q: unable to resolve version %s: %w", svc.ServiceID, svc.Version, err)
 			}
 		}

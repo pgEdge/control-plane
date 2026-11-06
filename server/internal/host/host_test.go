@@ -1,9 +1,11 @@
 package host_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -179,7 +181,7 @@ func TestSupportsService(t *testing.T) {
 	}
 }
 
-func TestGreatestCommonDefaultServiceVersion(t *testing.T) {
+func TestCommonDefaultServiceVersion(t *testing.T) {
 	newHost := func(id, def string, supported ...string) *host.Host {
 		return &host.Host{
 			ID:                     id,
@@ -198,41 +200,17 @@ func TestGreatestCommonDefaultServiceVersion(t *testing.T) {
 			name: "same defaults",
 			hosts: []*host.Host{
 				newHost("host-1", "14.5", "14.5"),
-				newHost("host-2", "14.5", "14.5"),
+				newHost("host-2", "14.5", "14.5", "14.10"),
 			},
 			expected: "14.5",
 		},
 		{
-			name: "one newer default supported by all hosts",
+			name: "different defaults supported by all hosts",
 			hosts: []*host.Host{
 				newHost("host-1", "14.10", "14.5", "14.10"),
 				newHost("host-2", "14.5", "14.5", "14.10"),
 			},
-			expected: "14.10",
-		},
-		{
-			name: "compares versions numerically",
-			hosts: []*host.Host{
-				newHost("host-1", "14.10", "14.9", "14.10"),
-				newHost("host-2", "14.9", "14.9", "14.10"),
-			},
-			expected: "14.10",
-		},
-		{
-			name: "newer default unsupported by another host",
-			hosts: []*host.Host{
-				newHost("host-1", "14.10", "14.5", "14.10"),
-				newHost("host-2", "14.5", "14.5"),
-			},
-			expected: "14.5",
-		},
-		{
-			name: "no common default",
-			hosts: []*host.Host{
-				newHost("host-1", "14.10", "14.10"),
-				newHost("host-2", "14.5", "14.5"),
-			},
-			expectedErr: `no common default version of service type "postgrest" found between the given hosts`,
+			expectedErr: `hosts have different default versions of service type "postgrest": 'host-1' has 14.10 and 'host-2' has 14.5`,
 		},
 		{
 			name: "host without the service",
@@ -242,9 +220,13 @@ func TestGreatestCommonDefaultServiceVersion(t *testing.T) {
 			},
 			expectedErr: `host 'host-2' does not support service type "postgrest"`,
 		},
+		{
+			name:        "no hosts",
+			expectedErr: `no hosts given for service type "postgrest"`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			version, err := host.GreatestCommonDefaultServiceVersion("postgrest", tc.hosts...)
+			version, err := host.CommonDefaultServiceVersion("postgrest", tc.hosts...)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {
@@ -253,4 +235,26 @@ func TestGreatestCommonDefaultServiceVersion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStoredHostServiceMaps(t *testing.T) {
+	t.Run("empty maps survive a round trip", func(t *testing.T) {
+		raw, err := json.Marshal(&host.StoredHost{
+			SupportedServices:      map[string][]string{},
+			DefaultServiceVersions: map[string]string{},
+		})
+		require.NoError(t, err)
+
+		var stored host.StoredHost
+		require.NoError(t, json.Unmarshal(raw, &stored))
+		assert.NotNil(t, stored.SupportedServices)
+		assert.NotNil(t, stored.DefaultServiceVersions)
+	})
+
+	t.Run("records without the fields decode as nil", func(t *testing.T) {
+		var stored host.StoredHost
+		require.NoError(t, json.Unmarshal([]byte(`{"id":"host-1"}`), &stored))
+		assert.Nil(t, stored.SupportedServices)
+		assert.Nil(t, stored.DefaultServiceVersions)
+	})
 }

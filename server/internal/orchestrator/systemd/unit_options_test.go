@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/coreos/go-systemd/v22/unit"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/systemd"
 	"github.com/pgEdge/control-plane/server/internal/testutils"
@@ -130,4 +132,37 @@ func TestUnitOptions(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestExecCommandLine(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		expected string
+	}{
+		{
+			name:     "plain paths are unchanged",
+			args:     []string{"/usr/bin/postgrest", "/etc/postgrest/db-api-host-1/postgrest.conf"},
+			expected: "/usr/bin/postgrest /etc/postgrest/db-api-host-1/postgrest.conf",
+		},
+		{
+			name:     "spaces are quoted",
+			args:     []string{"/opt/pg edge/bin/postgrest", "/etc/postgrest.conf"},
+			expected: `"/opt/pg edge/bin/postgrest" /etc/postgrest.conf`,
+		},
+		{
+			name:     "quotes and backslashes are escaped",
+			args:     []string{`/opt/a"b\c`},
+			expected: `"/opt/a\"b\\c"`,
+		},
+		{
+			name:     "specifiers and variables are escaped",
+			args:     []string{"/opt/100%/bin", "/opt/$HOME/conf"},
+			expected: "/opt/100%%/bin /opt/$$HOME/conf",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, systemd.ExecCommandLine(tc.args...))
+		})
+	}
 }

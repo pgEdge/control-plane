@@ -173,6 +173,15 @@ func (s *ServiceSpec) Clone() *ServiceSpec {
 	}
 }
 
+// swarmImageOverride returns the user-specified Swarm image for this service,
+// or an empty string if there isn't one.
+func (s *ServiceSpec) swarmImageOverride() string {
+	if s.OrchestratorOpts == nil || s.OrchestratorOpts.Swarm == nil {
+		return ""
+	}
+	return s.OrchestratorOpts.Swarm.Image
+}
+
 type Extension struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`

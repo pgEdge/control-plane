@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
@@ -17,12 +16,6 @@ import (
 var _ resource.Resource = (*PostgRESTAuthenticatorResource)(nil)
 
 const ResourceTypePostgRESTAuthenticator resource.Type = "common.postgrest_authenticator"
-
-// sanitizeIdentifier quotes a string for use as a PostgreSQL identifier.
-// It doubles any internal double-quotes and wraps the result in double-quotes.
-func sanitizeIdentifier(name string) string {
-	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
-}
 
 func PostgRESTAuthenticatorIdentifier(serviceID, nodeName string) resource.Identifier {
 	return resource.Identifier{
@@ -137,9 +130,9 @@ func (r *PostgRESTAuthenticatorResource) Create(ctx context.Context, rc *resourc
 
 	anonRole := r.desiredAnonRole()
 	statements := postgres.Statements{
-		postgres.Statement{SQL: fmt.Sprintf("ALTER ROLE %s WITH NOINHERIT;", sanitizeIdentifier(username))},                                           // #nosec G201 -- sanitizeIdentifier quotes all identifiers
-		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(username))}, // #nosec G201
-		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(username))},                           // #nosec G201
+		postgres.AlterRoleNoInherit(username),
+		postgres.GrantConnect(r.DatabaseName, username),
+		postgres.GrantRole(anonRole, username),
 	}
 	if err := statements.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to configure PostgREST authenticator %q: %w", username, err)
@@ -156,9 +149,9 @@ func (r *PostgRESTAuthenticatorResource) Update(ctx context.Context, rc *resourc
 	return r.reconcileGrants(ctx, rc)
 }
 
-// reconcileGrants revokes the previously-granted anon role (if changed) and
-// re-applies the desired one within a single transaction to prevent transient
-// loss of membership.
+// reconcileGrants revokes the previously-granted anon role from the
+// previously-configured user (if either changed) and re-applies the desired
+// grant within a single transaction to prevent transient loss of membership.
 func (r *PostgRESTAuthenticatorResource) reconcileGrants(ctx context.Context, rc *resource.Context) error {
 	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
@@ -178,15 +171,16 @@ func (r *PostgRESTAuthenticatorResource) reconcileGrants(ctx context.Context, rc
 
 	username := r.authenticatorUsername()
 	desiredAnon := r.desiredAnonRole()
-	previousAnon := r.previousAnonRole(rc)
 
-	if err := r.revokeStaleAnonRoles(ctx, tx, username, desiredAnon, previousAnon); err != nil {
-		return err
+	if revoke, ok := r.staleAnonGrant(r.previous(rc)); ok {
+		if err := revoke.Exec(ctx, tx); err != nil {
+			return fmt.Errorf("failed to revoke stale anon role grant: %w", err)
+		}
 	}
 
 	grants := postgres.Statements{
-		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(username))}, // #nosec G201
-		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(desiredAnon), sanitizeIdentifier(username))},                        // #nosec G201
+		postgres.GrantConnect(r.DatabaseName, username),
+		postgres.GrantRole(desiredAnon, username),
 	}
 	if err := grants.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to reconcile PostgREST grants for %q: %w", username, err)
@@ -197,34 +191,36 @@ func (r *PostgRESTAuthenticatorResource) reconcileGrants(ctx context.Context, rc
 	return nil
 }
 
-// previousAnonRole reads the previously-stored resource from rc.State and
-// returns the anon role it had applied. Returns empty string when no prior
-// state exists (first apply) so the caller can skip the revoke entirely.
-func (r *PostgRESTAuthenticatorResource) previousAnonRole(rc *resource.Context) string {
+// previous reads the previously-stored resource from rc.State. Returns nil
+// when no prior state exists (first apply).
+func (r *PostgRESTAuthenticatorResource) previous(rc *resource.Context) *PostgRESTAuthenticatorResource {
 	stored, ok := rc.State.Get(r.Identifier())
 	if !ok {
-		return ""
+		return nil
 	}
 	prev, err := resource.ToResource[*PostgRESTAuthenticatorResource](stored)
 	if err != nil {
-		return ""
-	}
-	return prev.desiredAnonRole()
-}
-
-// revokeStaleAnonRoles revokes the previously-applied anon role when it
-// differs from the desired one. Only the exact role this resource previously
-// granted is targeted — customer-managed grants on the connect_as user are
-// never touched.
-func (r *PostgRESTAuthenticatorResource) revokeStaleAnonRoles(ctx context.Context, conn postgres.Executor, username, desiredAnon, previousAnon string) error {
-	if previousAnon == "" || previousAnon == desiredAnon {
 		return nil
 	}
-	if _, err := conn.Exec(ctx, fmt.Sprintf("REVOKE %s FROM %s", // #nosec G201 -- sanitizeIdentifier quotes all identifiers
-		sanitizeIdentifier(previousAnon), sanitizeIdentifier(username))); err != nil {
-		return fmt.Errorf("failed to revoke stale anon role %q from %q: %w", previousAnon, username, err)
+	return prev
+}
+
+// staleAnonGrant returns the statement that revokes the anon role grant made
+// by the previous resource, if the user or the anon role has changed since.
+// Only the exact grant this resource previously made is targeted:
+// customer-managed grants on the connect_as user are never touched.
+func (r *PostgRESTAuthenticatorResource) staleAnonGrant(prev *PostgRESTAuthenticatorResource) (postgres.ConditionalStatement, bool) {
+	if prev == nil {
+		return postgres.ConditionalStatement{}, false
 	}
-	return nil
+	prevUser, prevAnon := prev.authenticatorUsername(), prev.desiredAnonRole()
+	if prevUser == "" || prevAnon == "" {
+		return postgres.ConditionalStatement{}, false
+	}
+	if prevUser == r.authenticatorUsername() && prevAnon == r.desiredAnonRole() {
+		return postgres.ConditionalStatement{}, false
+	}
+	return postgres.RevokeRole(prevAnon, prevUser), true
 }
 
 func (r *PostgRESTAuthenticatorResource) Delete(_ context.Context, _ *resource.Context) error {

@@ -46,7 +46,9 @@ func PostgRESTConfigResourceIdentifier(serviceInstanceID string) resource.Identi
 // On update, the running service instance is made to pick up the new file:
 // it's restarted if a setting that PostgREST only reads at startup changed,
 // and otherwise sent SIGUSR2 to reload its configuration and SIGUSR1 to
-// reload its schema cache.
+// reload its schema cache. It's also restarted when the configuration it's
+// running with is unknown: after a failed update, or after the file was
+// changed outside the Control Plane.
 type PostgRESTConfigResource struct {
 	ServiceInstanceID  string                           `json:"service_instance_id"`
 	ServiceID          string                           `json:"service_id"`
@@ -60,6 +62,9 @@ type PostgRESTConfigResource struct {
 	TargetSessionAttrs string                           `json:"target_session_attrs,omitempty"`
 	OwnerUID           int                              `json:"owner_uid"`
 	OwnerGID           int                              `json:"owner_gid"`
+	// ConfigDrifted is set by Refresh when the file on disk no longer matches
+	// this resource, so that the next plan updates it.
+	ConfigDrifted bool `json:"config_drifted,omitempty"`
 }
 
 func (r *PostgRESTConfigResource) ResourceVersion() string {
@@ -99,10 +104,15 @@ func (r *PostgRESTConfigResource) Refresh(ctx context.Context, rc *resource.Cont
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	_, err = ReadResourceFile(fs, filepath.Join(dirPath, "postgrest.conf"))
+	onDisk, err := ReadResourceFile(fs, filepath.Join(dirPath, "postgrest.conf"))
 	if err != nil {
 		return fmt.Errorf("failed to read PostgREST config: %w", err)
 	}
+	expected, err := r.generateConf()
+	if err != nil {
+		return err
+	}
+	r.ConfigDrifted = !bytes.Equal(onDisk, expected)
 
 	return nil
 }
@@ -122,35 +132,56 @@ func (r *PostgRESTConfigResource) Create(ctx context.Context, rc *resource.Conte
 }
 
 func (r *PostgRESTConfigResource) Update(ctx context.Context, rc *resource.Context) error {
-	previous, err := r.previous(rc)
-	if err != nil {
-		return err
+	var previous *PostgRESTConfigResource
+	var previousFailed bool
+	if stored, ok := rc.State.Get(r.Identifier()); ok {
+		prev, err := resource.ToResource[*PostgRESTConfigResource](stored)
+		if err != nil {
+			return fmt.Errorf("failed to decode previous PostgREST config resource: %w", err)
+		}
+		previous = prev
+		previousFailed = stored.Error != ""
 	}
-	return r.UpdateFrom(ctx, rc, previous)
+	return r.UpdateFrom(ctx, rc, previous, previousFailed)
 }
 
 // UpdateFrom writes the config file and reloads the running service instance
 // as needed to apply the change from the given previous resource. Resources
 // that wrap this one use it to pass the previous resource from their own
-// state. previous may be nil if there's no prior state.
-func (r *PostgRESTConfigResource) UpdateFrom(ctx context.Context, rc *resource.Context, previous *PostgRESTConfigResource) error {
+// state. previous may be nil if there's no prior state. previousFailed
+// indicates that the previous resource's last operation failed, so the
+// configuration that the service is running with is unknown.
+func (r *PostgRESTConfigResource) UpdateFrom(
+	ctx context.Context,
+	rc *resource.Context,
+	previous *PostgRESTConfigResource,
+	previousFailed bool,
+) error {
 	if err := r.Create(ctx, rc); err != nil {
 		return err
 	}
 
-	var previousConf []byte
-	if previous != nil {
-		var err error
-		previousConf, err = previous.generateConf()
+	var modes []database.ReloadMode
+	if previous != nil && (previousFailed || previous.ConfigDrifted) {
+		// A failed update may have written the file without applying it, and
+		// a drifted file may have been loaded, so restart to be sure that the
+		// service runs with the current file.
+		modes = []database.ReloadMode{database.ReloadModeRestart}
+	} else {
+		var previousConf []byte
+		if previous != nil {
+			var err error
+			previousConf, err = previous.generateConf()
+			if err != nil {
+				return err
+			}
+		}
+		current, err := r.generateConf()
 		if err != nil {
 			return err
 		}
+		modes = postgrestReloadModes(previousConf, current)
 	}
-	current, err := r.generateConf()
-	if err != nil {
-		return err
-	}
-	modes := postgrestReloadModes(previousConf, current)
 	if len(modes) == 0 {
 		return nil
 	}
@@ -179,20 +210,6 @@ func (r *PostgRESTConfigResource) UpdateFrom(ctx context.Context, rc *resource.C
 func (r *PostgRESTConfigResource) Delete(ctx context.Context, rc *resource.Context) error {
 	// Cleanup is handled by the parent directory resource deletion.
 	return nil
-}
-
-// previous returns the previously-stored resource from rc.State. It returns
-// nil when no prior state exists.
-func (r *PostgRESTConfigResource) previous(rc *resource.Context) (*PostgRESTConfigResource, error) {
-	stored, ok := rc.State.Get(r.Identifier())
-	if !ok {
-		return nil, nil
-	}
-	prev, err := resource.ToResource[*PostgRESTConfigResource](stored)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode previous PostgREST config resource: %w", err)
-	}
-	return prev, nil
 }
 
 func (r *PostgRESTConfigResource) generateConf() ([]byte, error) {

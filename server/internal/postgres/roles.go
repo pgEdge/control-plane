@@ -174,6 +174,42 @@ func dbConnect(dbName, role string) Statement {
 	}
 }
 
+// GrantConnect grants CONNECT on the given database to the given role.
+func GrantConnect(dbName, role string) Statement {
+	return dbConnect(dbName, role)
+}
+
+// GrantRole grants membership in role to member.
+func GrantRole(role, member string) Statement {
+	return Statement{
+		SQL: fmt.Sprintf("GRANT %s TO %s;", QuoteIdentifier(role), QuoteIdentifier(member)),
+	}
+}
+
+// RevokeRole revokes membership in role from member. It's a no-op when
+// either role no longer exists, e.g. when the member was dropped.
+func RevokeRole(role, member string) ConditionalStatement {
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL: "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @role) AND EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @member);",
+			Args: pgx.NamedArgs{
+				"role":   role,
+				"member": member,
+			},
+		},
+		Then: Statement{
+			SQL: fmt.Sprintf("REVOKE %s FROM %s;", QuoteIdentifier(role), QuoteIdentifier(member)),
+		},
+	}
+}
+
+// AlterRoleNoInherit sets NOINHERIT on the given role.
+func AlterRoleNoInherit(role string) Statement {
+	return Statement{
+		SQL: fmt.Sprintf("ALTER ROLE %s WITH NOINHERIT;", QuoteIdentifier(role)),
+	}
+}
+
 func schemaAdmin(schema, role string) Statements {
 	schema = QuoteIdentifier(schema)
 	role = QuoteIdentifier(role)

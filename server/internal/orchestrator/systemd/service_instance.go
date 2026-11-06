@@ -74,8 +74,24 @@ func (s *ServiceInstanceResource) Refresh(ctx context.Context, rc *resource.Cont
 	_, err := readUnitFile(s.UnitName)
 	if errors.Is(err, os.ErrNotExist) {
 		return resource.ErrNotFound
+	} else if err != nil {
+		return err
 	}
-	return err
+
+	// The service instance record is what makes the instance visible in the
+	// API and to the monitor, so recreate it if it's missing.
+	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
+	if err != nil {
+		return err
+	}
+	_, err = dbSvc.GetServiceInstance(ctx, s.DatabaseID, s.ServiceInstanceID)
+	if errors.Is(err, database.ErrServiceInstanceNotFound) {
+		return resource.ErrNotFound
+	} else if err != nil {
+		return fmt.Errorf("failed to get service instance: %w", err)
+	}
+
+	return nil
 }
 
 func (s *ServiceInstanceResource) Create(ctx context.Context, rc *resource.Context) error {

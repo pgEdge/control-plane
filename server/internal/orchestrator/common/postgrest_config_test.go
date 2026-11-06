@@ -1,10 +1,13 @@
 package common
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/rs/zerolog"
+	"github.com/samber/do"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -249,6 +252,104 @@ func TestPostgRESTReloadModes(t *testing.T) {
 			current := render(t, tc.modify)
 
 			assert.Equal(t, tc.expected, postgrestReloadModes(previous, current))
+		})
+	}
+}
+
+type reloadRecorder struct {
+	database.Orchestrator
+	modes []database.ReloadMode
+}
+
+func (r *reloadRecorder) ReloadServiceInstance(_ context.Context, _ string, mode database.ReloadMode) error {
+	r.modes = append(r.modes, mode)
+	return nil
+}
+
+func postgrestConfigTestContext(t *testing.T) (*resource.Context, afero.Fs, *reloadRecorder, string) {
+	t.Helper()
+	const dirID, dirPath = "inst-1-data", "/etc/postgrest/inst-1"
+	fs := afero.NewMemMapFs()
+	require.NoError(t, fs.MkdirAll(dirPath, 0o700))
+
+	orch := &reloadRecorder{}
+	injector := do.New()
+	do.ProvideValue[afero.Fs](injector, fs)
+	do.ProvideValue[database.Orchestrator](injector, orch)
+	do.ProvideValue(injector, zerolog.Nop())
+
+	dir, err := resource.ToResourceData(&filesystem.DirResource{ID: dirID, HostID: "host-1", Path: dirPath, FullPath: dirPath})
+	require.NoError(t, err)
+	state := resource.NewState()
+	state.Add(dir)
+
+	return &resource.Context{State: state, Injector: injector}, fs, orch, filepath.Join(dirPath, "postgrest.conf")
+}
+
+func testPostgRESTConfig(maxRows int) *PostgRESTConfigResource {
+	return &PostgRESTConfigResource{
+		ServiceInstanceID: "inst-1",
+		HostID:            "host-1",
+		DirResourceID:     "inst-1-data",
+		Config:            &database.PostgRESTServiceConfig{DBSchemas: "public", DBAnonRole: "web_anon", DBPool: 10, MaxRows: maxRows},
+		ConnectAsUsername: "app",
+		ConnectAsPassword: "secret",
+		DatabaseName:      "db",
+		DatabaseHosts:     []database.ServiceHostEntry{{Host: "10.0.0.1", Port: 5432}},
+	}
+}
+
+func TestPostgRESTConfigResource_RefreshDetectsDrift(t *testing.T) {
+	rc, fs, _, confPath := postgrestConfigTestContext(t)
+	r := testPostgRESTConfig(100)
+	require.NoError(t, r.Create(t.Context(), rc))
+
+	require.NoError(t, r.Refresh(t.Context(), rc))
+	assert.False(t, r.ConfigDrifted, "unchanged file should not be drifted")
+
+	require.NoError(t, afero.WriteFile(fs, confPath, []byte("db-pool = 1\n"), 0o600))
+	require.NoError(t, r.Refresh(t.Context(), rc))
+	assert.True(t, r.ConfigDrifted, "edited file should be drifted")
+}
+
+func TestPostgRESTConfigResource_UpdateFrom(t *testing.T) {
+	drifted := testPostgRESTConfig(100)
+	drifted.ConfigDrifted = true
+
+	for _, tc := range []struct {
+		name           string
+		previous       *PostgRESTConfigResource
+		previousFailed bool
+		expected       []database.ReloadMode
+	}{
+		{
+			name:     "reloadable change reloads in place",
+			previous: testPostgRESTConfig(100),
+			expected: []database.ReloadMode{database.ReloadModeSigusr2, database.ReloadModeSigusr1},
+		},
+		{
+			name:     "no change",
+			previous: testPostgRESTConfig(200),
+		},
+		{
+			name: "no previous state",
+		},
+		{
+			name:           "retry after a failed update restarts",
+			previous:       testPostgRESTConfig(200),
+			previousFailed: true,
+			expected:       []database.ReloadMode{database.ReloadModeRestart},
+		},
+		{
+			name:     "drifted file restarts",
+			previous: drifted,
+			expected: []database.ReloadMode{database.ReloadModeRestart},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rc, _, orch, _ := postgrestConfigTestContext(t)
+			require.NoError(t, testPostgRESTConfig(200).UpdateFrom(t.Context(), rc, tc.previous, tc.previousFailed))
+			assert.Equal(t, tc.expected, orch.modes)
 		})
 	}
 }

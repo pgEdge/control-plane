@@ -27,8 +27,11 @@ type StoredHost struct {
 	EtcdMode                config.EtcdMode     `json:"etcd_mode"`
 	DefaultPgEdgeVersion    *ds.PgEdgeVersion   `json:"default_version"`
 	SupportedPgEdgeVersions []*ds.PgEdgeVersion `json:"supported_versions"`
-	SupportedServices       map[string][]string `json:"supported_services,omitempty"`
-	DefaultServiceVersions  map[string]string   `json:"default_service_versions,omitempty"`
+	// SupportedServices and DefaultServiceVersions are nil in records written
+	// by Control Plane versions that didn't report services. An empty map
+	// means that no services are supported, so they must not be omitted.
+	SupportedServices      map[string][]string `json:"supported_services"`
+	DefaultServiceVersions map[string]string   `json:"default_service_versions"`
 }
 
 type HostStore struct {

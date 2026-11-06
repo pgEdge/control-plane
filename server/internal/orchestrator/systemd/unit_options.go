@@ -218,6 +218,25 @@ func ServiceGroupOption(value string) *unit.UnitOption {
 	}
 }
 
+// ExecCommandLine formats a command line for ExecStart and similar settings,
+// escaping specifiers and variables and quoting arguments that contain
+// whitespace, quotes or backslashes so that systemd passes each one through
+// unchanged.
+func ExecCommandLine(args ...string) string {
+	quoted := make([]string, len(args))
+	for i, arg := range args {
+		arg = strings.ReplaceAll(arg, "%", "%%")
+		arg = strings.ReplaceAll(arg, "$", "$$")
+		if strings.ContainsAny(arg, " \t\n\"'\\") {
+			arg = strings.ReplaceAll(arg, `\`, `\\`)
+			arg = strings.ReplaceAll(arg, `"`, `\"`)
+			arg = `"` + arg + `"`
+		}
+		quoted[i] = arg
+	}
+	return strings.Join(quoted, " ")
+}
+
 func ServiceExecStartOption(value string) *unit.UnitOption {
 	return &unit.UnitOption{
 		Section: sectionNameService,

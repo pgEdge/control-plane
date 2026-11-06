@@ -88,6 +88,14 @@ func readUnitFile(name string) ([]*unit.UnitOption, error) {
 }
 
 func (r *UnitResource) Create(ctx context.Context, rc *resource.Context) error {
+	return r.apply(ctx, rc, false)
+}
+
+// apply writes the unit file and (re)starts the unit. When RestartOnChange is
+// set, the unit is restarted if its options changed or if the previous attempt
+// failed, since that attempt may have written the new file without
+// restarting the unit.
+func (r *UnitResource) apply(ctx context.Context, rc *resource.Context, previousFailed bool) error {
 	client, err := do.Invoke[*Client](rc.Injector)
 	if err != nil {
 		return err
@@ -102,7 +110,7 @@ func (r *UnitResource) Create(ctx context.Context, rc *resource.Context) error {
 		case err != nil:
 			return err
 		default:
-			changed = !unitOptionsEqual(current, r.Options)
+			changed = previousFailed || !unitOptionsEqual(current, r.Options)
 		}
 	}
 
@@ -144,7 +152,8 @@ func unitOptionsEqual(a, b []*unit.UnitOption) bool {
 }
 
 func (r *UnitResource) Update(ctx context.Context, rc *resource.Context) error {
-	return r.Create(ctx, rc)
+	stored, ok := rc.State.Get(r.Identifier())
+	return r.apply(ctx, rc, ok && stored.Error != "")
 }
 
 func (r *UnitResource) Delete(ctx context.Context, rc *resource.Context) error {
