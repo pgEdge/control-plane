@@ -1,0 +1,22 @@
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+User=998
+Group=997
+ExecStart=/usr/bin/postgrest /etc/postgrest/storefront-api-host-1/postgrest.conf
+ExecReload=/bin/kill -USR2 $MAINPID
+Restart=on-failure
+LimitNOFILE=10000
+Environment="PGRST_SERVER_HOST=*"
+Environment="PGRST_SERVER_PORT=3100"
+
+[Install]
+WantedBy=multi-user.target
+
+[X-pgEdge]
+Port=3100
+ServiceInstanceID=storefront-api-host-1
+ServiceType=postgrest
+Version=14.5

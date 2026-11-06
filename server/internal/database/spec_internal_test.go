@@ -4,6 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 func TestVersionsFromImage(t *testing.T) {
@@ -86,6 +90,122 @@ func TestValidateLocaleVersions(t *testing.T) {
 			err := validateLocaleVersions(tc.spec)
 			if tc.expectedErr != "" {
 				assert.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateServiceHosts(t *testing.T) {
+	hostsByID := map[string]*host.Host{
+		"host-1": {
+			ID:                     "host-1",
+			SupportedServices:      map[string][]string{"postgrest": {"14.5"}},
+			DefaultServiceVersions: map[string]string{"postgrest": "14.5"},
+		},
+		"host-2": {
+			ID:                     "host-2",
+			SupportedServices:      map[string][]string{"postgrest": {"14.10"}},
+			DefaultServiceVersions: map[string]string{"postgrest": "14.10"},
+		},
+		"host-3": {
+			ID:                     "host-3",
+			SupportedServices:      map[string][]string{},
+			DefaultServiceVersions: map[string]string{},
+		},
+		// A host record from a Control Plane version that didn't report its
+		// supported services.
+		"host-4": {ID: "host-4"},
+		"host-systemd": {
+			ID:                     "host-systemd",
+			Orchestrator:           config.OrchestratorSystemD,
+			SupportedServices:      map[string][]string{"postgrest": {"14.5"}},
+			DefaultServiceVersions: map[string]string{"postgrest": "14.5"},
+		},
+	}
+	postgrest := func(version string, hostIDs ...string) *ServiceSpec {
+		return &ServiceSpec{
+			ServiceID:   "api",
+			ServiceType: "postgrest",
+			Version:     version,
+			HostIDs:     hostIDs,
+		}
+	}
+
+	for _, tc := range []struct {
+		name        string
+		service     *ServiceSpec
+		expectedErr string
+	}{
+		{
+			name:    "supported version",
+			service: postgrest("14.5", "host-1"),
+		},
+		{
+			name:    "latest",
+			service: postgrest("latest", "host-1"),
+		},
+		{
+			name:        "unsupported version",
+			service:     postgrest("14.10", "host-1"),
+			expectedErr: `service "api": host host-1 does not support postgrest version 14.10`,
+		},
+		{
+			name:        "service not installed",
+			service:     postgrest("14.5", "host-3"),
+			expectedErr: `service "api": host host-3 does not support postgrest version 14.5`,
+		},
+		{
+			name:        "latest with different defaults",
+			service:     postgrest("latest", "host-1", "host-2"),
+			expectedErr: `service "api": unable to resolve version latest: hosts have different default versions of service type "postgrest": 'host-1' has 14.5 and 'host-2' has 14.10`,
+		},
+		{
+			name: "swarm image override with an unlisted version",
+			service: func() *ServiceSpec {
+				svc := postgrest("99.0", "host-1")
+				svc.OrchestratorOpts = &OrchestratorOpts{Swarm: &SwarmOpts{Image: "registry.example.com/postgrest:dev"}}
+				return svc
+			}(),
+		},
+		{
+			name: "image override doesn't bypass validation on systemd hosts",
+			service: func() *ServiceSpec {
+				svc := postgrest("99.0", "host-systemd")
+				svc.Port = utils.PointerTo(0)
+				svc.OrchestratorOpts = &OrchestratorOpts{Swarm: &SwarmOpts{Image: "registry.example.com/postgrest:dev"}}
+				return svc
+			}(),
+			expectedErr: `service "api": host host-systemd does not support postgrest version 99.0`,
+		},
+		{
+			name:    "host without supported services is not validated",
+			service: postgrest("99.0", "host-4"),
+		},
+		{
+			name: "systemd host with port",
+			service: func() *ServiceSpec {
+				svc := postgrest("14.5", "host-systemd")
+				svc.Port = utils.PointerTo(0)
+				return svc
+			}(),
+		},
+		{
+			name:        "systemd host without port",
+			service:     postgrest("14.5", "host-systemd"),
+			expectedErr: `service "api": port is required for host host-systemd, which uses the systemd orchestrator. set it to 0 to assign a random port`,
+		},
+		{
+			name:        "unknown host",
+			service:     postgrest("14.5", "host-5"),
+			expectedErr: `service "api": host host-5 not found`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateServiceHosts([]*ServiceSpec{tc.service}, hostsByID)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}

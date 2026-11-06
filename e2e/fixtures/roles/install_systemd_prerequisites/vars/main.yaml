@@ -12,6 +12,7 @@ _rpm_packages:
   - "pgedge-postgresql{{ pg_version }}-contrib"
   - pgedge-pgbackrest
   - pgedge-patroni
+  - pgedge-postgrest
 
 # DEB package names
 _deb_packages:
@@ -19,4 +20,5 @@ _deb_packages:
   - "pgedge-postgresql-{{ pg_version }}-spock{{ spock_version }}0"
   - pgedge-pgbackrest
   - pgedge-patroni
+  - pgedge-postgrest
 

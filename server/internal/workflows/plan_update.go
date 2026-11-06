@@ -166,9 +166,10 @@ func (w *Workflows) getServiceResources(
 		Resources:         generateOutput.Resources.Resources,
 	}
 	svcResources.MonitorResource = &monitor.ServiceInstanceMonitorResource{
-		DatabaseID:        spec.DatabaseID,
-		ServiceInstanceID: serviceInstanceID,
-		HostID:            hostID,
+		DatabaseID:              spec.DatabaseID,
+		ServiceInstanceID:       serviceInstanceID,
+		HostID:                  hostID,
+		ServiceInstanceResource: generateOutput.Resources.MonitorDependency,
 	}
 	return svcResources, nil
 }

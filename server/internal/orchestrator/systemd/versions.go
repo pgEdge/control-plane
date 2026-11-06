@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"os/exec"
 	"path/filepath"
@@ -47,6 +48,9 @@ type InstalledVersionsProbe struct {
 	Fs          afero.Fs
 
 	pgConfigPaths map[string]string
+	// servicePaths maps each supported service type to the path of its
+	// binary.
+	servicePaths map[string]string
 }
 
 func NewInstalledVersionsProbe(
@@ -62,11 +66,64 @@ func NewInstalledVersionsProbe(
 		}
 		pgConfigPaths[pgMajor] = filepath.Join(pgBinDir, "pg_config")
 	}
+	servicePaths := map[string]string{}
+	if cfg.PostgRESTPath != "" {
+		servicePaths["postgrest"] = cfg.PostgRESTPath
+	}
 	return &InstalledVersionsProbe{
 		ExecCommand:   execCommand,
 		Fs:            fsys,
 		pgConfigPaths: pgConfigPaths,
+		servicePaths:  servicePaths,
 	}, nil
+}
+
+// InstalledServices returns the installed version of each supported service
+// type, keyed by service type. Service types whose binary isn't installed are
+// omitted.
+func (p *InstalledVersionsProbe) InstalledServices(ctx context.Context) (map[string]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	installed := map[string]string{}
+	for _, serviceType := range slices.Sorted(maps.Keys(p.servicePaths)) {
+		binPath := p.servicePaths[serviceType]
+		stat, err := p.Fs.Stat(binPath)
+		switch {
+		case errors.Is(err, afero.ErrFileNotFound):
+			continue
+		case err != nil:
+			return nil, fmt.Errorf("failed to stat %s: %w", binPath, err)
+		case stat.IsDir():
+			return nil, fmt.Errorf("%s is a directory", binPath)
+		}
+
+		var stdout, stderr strings.Builder
+		if err := p.ExecCommand(ctx, &stdout, &stderr, binPath, "--version"); err != nil {
+			return nil, fmt.Errorf("failed to get %s version: %w, stderr: %s", serviceType, err, &stderr)
+		}
+		version, err := parseServiceVersionOutput(stdout.String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s version: %w", serviceType, err)
+		}
+		installed[serviceType] = version
+	}
+
+	return installed, nil
+}
+
+// parseServiceVersionOutput extracts the version from a service binary's
+// --version output, e.g. "PostgREST 14.5" -> "14.5". It returns the first
+// whitespace-separated field that parses as a version, so that trailing
+// build information is ignored.
+func parseServiceVersionOutput(output string) (string, error) {
+	for field := range strings.FieldsSeq(output) {
+		field = strings.TrimPrefix(field, "v")
+		if _, err := ds.ParseVersion(field); err == nil {
+			return field, nil
+		}
+	}
+	return "", fmt.Errorf("no version found in output %q", strings.TrimSpace(output))
 }
 
 func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) ([]*ds.PgEdgeVersion, error) {

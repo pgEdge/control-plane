@@ -25,6 +25,7 @@ pgedge_packages:
   - pgedge-postgresql-16-lolor
   - pgedge-patroni
   - pgedge-pgbackrest
+  - pgedge-postgrest
 # Every known Spock major's packages, regardless of which one spock_major
 # currently selects. Spock majors conflict with each other at the
 # package-manager level, so switching spock_major on an already-provisioned

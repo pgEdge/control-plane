@@ -394,6 +394,87 @@ func TestInstalledVersionsProbe(t *testing.T) {
 	}
 }
 
+func TestInstalledServices(t *testing.T) {
+	const postgrestPath = "/usr/bin/postgrest"
+
+	for _, tc := range []struct {
+		name           string
+		fsys           func() afero.Fs
+		postgrestPath  string
+		outputs        map[string]mockPgConfigOutput
+		expectedOutput map[string]string
+		expectedErr    string
+	}{
+		{
+			name:          "postgrest installed",
+			fsys:          testFs(map[string]string{postgrestPath: ""}),
+			postgrestPath: postgrestPath,
+			outputs: map[string]mockPgConfigOutput{
+				postgrestPath: {stdout: "PostgREST 14.5\n"},
+			},
+			expectedOutput: map[string]string{"postgrest": "14.5"},
+		},
+		{
+			name:          "ignores build information",
+			fsys:          testFs(map[string]string{postgrestPath: ""}),
+			postgrestPath: postgrestPath,
+			outputs: map[string]mockPgConfigOutput{
+				postgrestPath: {stdout: "PostgREST 14.10 (a4e00ff)\n"},
+			},
+			expectedOutput: map[string]string{"postgrest": "14.10"},
+		},
+		{
+			name:           "postgrest not installed",
+			fsys:           testFs(nil),
+			postgrestPath:  postgrestPath,
+			expectedOutput: map[string]string{},
+		},
+		{
+			name:           "postgrest path not configured",
+			fsys:           testFs(map[string]string{postgrestPath: ""}),
+			expectedOutput: map[string]string{},
+		},
+		{
+			name:          "unparseable version",
+			fsys:          testFs(map[string]string{postgrestPath: ""}),
+			postgrestPath: postgrestPath,
+			outputs: map[string]mockPgConfigOutput{
+				postgrestPath: {stdout: "PostgREST dev\n"},
+			},
+			expectedErr: `failed to parse postgrest version: no version found in output "PostgREST dev"`,
+		},
+		{
+			name:          "command fails",
+			fsys:          testFs(map[string]string{postgrestPath: ""}),
+			postgrestPath: postgrestPath,
+			outputs: map[string]mockPgConfigOutput{
+				postgrestPath: {stderr: "boom", err: errors.New("exit status 1")},
+			},
+			expectedErr: "failed to get postgrest version: exit status 1, stderr: boom",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			probe, err := systemd.NewInstalledVersionsProbe(
+				mockPgConfigExecCommand(t, tc.outputs),
+				tc.fsys(),
+				config.SystemD{
+					OSFamily:      config.OSFamilyDebian,
+					PostgRESTPath: tc.postgrestPath,
+				},
+			)
+			require.NoError(t, err)
+
+			actual, err := probe.InstalledServices(t.Context())
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expectedOutput, actual)
+			}
+		})
+	}
+}
+
 func TestNewInstalledVersionsProbeUnknownOSFamily(t *testing.T) {
 	_, err := systemd.NewInstalledVersionsProbe(
 		mockPgConfigExecCommand(t, nil),

@@ -428,8 +428,9 @@ func buildVersions(cfg config.Config, mf *versionManifest) (*Versions, error) {
 // *ServiceVersions equivalent to NewServiceVersions(cfg) for the same data.
 func buildServiceVersions(cfg config.Config, mf *versionManifest) (*ServiceVersions, error) {
 	sv := &ServiceVersions{
-		cfg:    cfg,
-		images: make(map[string]map[string]*ServiceImage),
+		cfg:      cfg,
+		images:   make(map[string]map[string]*ServiceImage),
+		defaults: make(map[string]string),
 	}
 
 	type svcSection struct {
@@ -442,19 +443,24 @@ func buildServiceVersions(cfg config.Config, mf *versionManifest) (*ServiceVersi
 		{"rag", mf.Images.RAG},
 	} {
 		var defaultImage, lastImage *ServiceImage
+		var defaultVersion, lastVersion string
 		for _, e := range s.entries {
 			img := &ServiceImage{Tag: serviceImageTag(cfg, e.Image)}
 			sv.addServiceImage(s.name, e.Version, img)
 			if e.Default {
 				defaultImage = img
+				defaultVersion = e.Version
 			}
 			lastImage = img
+			lastVersion = e.Version
 		}
 		if defaultImage == nil {
 			defaultImage = lastImage
+			defaultVersion = lastVersion
 		}
 		if defaultImage != nil {
 			sv.addServiceImage(s.name, "latest", defaultImage)
+			sv.defaults[s.name] = defaultVersion
 		}
 	}
 

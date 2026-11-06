@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/samber/do"
@@ -33,6 +34,10 @@ type UnitResource struct {
 	Name              string                `json:"name"`
 	Options           []*unit.UnitOption    `json:"options"`
 	ExtraDependencies []resource.Identifier `json:"extra_dependencies"`
+	// RestartOnChange restarts the unit instead of reloading it when the unit
+	// file's contents change, e.g. for changes to Environment= that a reload
+	// wouldn't apply.
+	RestartOnChange bool `json:"restart_on_change,omitempty"`
 }
 
 func (r *UnitResource) Executor() resource.Executor {
@@ -52,18 +57,11 @@ func (r *UnitResource) TypeDependencies() []resource.Type {
 }
 
 func (r *UnitResource) Refresh(ctx context.Context, rc *resource.Context) error {
-	path := filepath.Join(unitsDir, r.Name)
-	f, err := os.Open(path)
+	options, err := readUnitFile(r.Name)
 	if errors.Is(err, os.ErrNotExist) {
 		return resource.ErrNotFound
 	} else if err != nil {
-		return fmt.Errorf("failed to open unit file '%s': %w", path, err)
-	}
-	defer f.Close()
-
-	options, err := unit.Deserialize(f)
-	if err != nil {
-		return fmt.Errorf("failed to deserialize unit file '%s': %w", path, err)
+		return err
 	}
 
 	r.Options = options
@@ -71,10 +69,49 @@ func (r *UnitResource) Refresh(ctx context.Context, rc *resource.Context) error 
 	return nil
 }
 
+// readUnitFile reads the options from the named unit file. It returns an error
+// that wraps os.ErrNotExist if the unit file does not exist.
+func readUnitFile(name string) ([]*unit.UnitOption, error) {
+	path := filepath.Join(unitsDir, name)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open unit file '%s': %w", path, err)
+	}
+	defer f.Close()
+
+	options, err := unit.Deserialize(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize unit file '%s': %w", path, err)
+	}
+
+	return options, nil
+}
+
 func (r *UnitResource) Create(ctx context.Context, rc *resource.Context) error {
+	return r.apply(ctx, rc, false)
+}
+
+// apply writes the unit file and (re)starts the unit. When RestartOnChange is
+// set, the unit is restarted if its options changed or if the previous attempt
+// failed, since that attempt may have written the new file without
+// restarting the unit.
+func (r *UnitResource) apply(ctx context.Context, rc *resource.Context, previousFailed bool) error {
 	client, err := do.Invoke[*Client](rc.Injector)
 	if err != nil {
 		return err
+	}
+
+	changed := false
+	if r.RestartOnChange {
+		current, err := readUnitFile(r.Name)
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			// The unit is new, so it gets started below rather than restarted.
+		case err != nil:
+			return err
+		default:
+			changed = previousFailed || !unitOptionsEqual(current, r.Options)
+		}
 	}
 
 	path := filepath.Join(unitsDir, r.Name)
@@ -95,6 +132,12 @@ func (r *UnitResource) Create(ctx context.Context, rc *resource.Context) error {
 	if err := client.EnableUnit(ctx, r.Name); err != nil {
 		return fmt.Errorf("failed to enable unit '%s': %w", path, err)
 	}
+	if changed {
+		if err := client.RestartUnit(ctx, r.Name); err != nil {
+			return fmt.Errorf("failed to restart unit '%s': %w", path, err)
+		}
+		return nil
+	}
 	if err := client.ReloadOrRestartUnit(ctx, r.Name); err != nil {
 		return fmt.Errorf("failed to reload or restart unit '%s': %w", path, err)
 	}
@@ -102,8 +145,15 @@ func (r *UnitResource) Create(ctx context.Context, rc *resource.Context) error {
 	return nil
 }
 
+func unitOptionsEqual(a, b []*unit.UnitOption) bool {
+	return slices.EqualFunc(a, b, func(x, y *unit.UnitOption) bool {
+		return x.Match(y)
+	})
+}
+
 func (r *UnitResource) Update(ctx context.Context, rc *resource.Context) error {
-	return r.Create(ctx, rc)
+	stored, ok := rc.State.Get(r.Identifier())
+	return r.apply(ctx, rc, ok && stored.Error != "")
 }
 
 func (r *UnitResource) Delete(ctx context.Context, rc *resource.Context) error {

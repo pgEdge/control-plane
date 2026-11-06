@@ -64,9 +64,10 @@ func postgrestBaseSpec(dbName string, nodeHosts []string, services []*controlpla
 				Attributes: []string{"NOLOGIN"},
 			},
 		},
-		Port:     pointerTo(0),
-		Nodes:    nodes,
-		Services: services,
+		Port:        pointerTo(0),
+		PatroniPort: pointerTo(0),
+		Nodes:       nodes,
+		Services:    services,
 	}
 }
 
@@ -94,7 +95,13 @@ func serviceURL(db *DatabaseFixture, hostID string) string {
 			continue
 		}
 		for _, p := range si.Status.Ports {
-			if p.Name == "http" && p.ContainerPort != nil && *p.ContainerPort == 8080 && p.HostPort != nil {
+			// Swarm reports the published port for the container's 8080,
+			// named by its protocol. systemd reports the port that PostgREST
+			// listens on directly, named "http".
+			if p.HostPort == nil {
+				continue
+			}
+			if p.Name == "http" || (p.ContainerPort != nil && *p.ContainerPort == 8080) {
 				return fmt.Sprintf("http://%s:%d", si.Status.Addresses[0], *p.HostPort)
 			}
 		}
@@ -106,8 +113,6 @@ func serviceURL(db *DatabaseFixture, hostID string) string {
 // and verifies the service reaches the running state.
 func TestProvisionPostgREST(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -145,8 +150,6 @@ func TestProvisionPostgREST(t *testing.T) {
 func TestProvisionPostgRESTWithJWT(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -176,8 +179,6 @@ func TestProvisionPostgRESTWithJWT(t *testing.T) {
 // a deployment when the configured schema does not exist.
 func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -221,8 +222,6 @@ func TestPostgRESTPreflight_MissingSchema(t *testing.T) {
 // a deployment when the configured anon role does not exist.
 func TestPostgRESTPreflight_MissingAnonRole(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -268,8 +267,6 @@ func TestPostgRESTPreflight_MissingAnonRole(t *testing.T) {
 func TestPostgRESTHealthCheck(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -305,8 +302,6 @@ func TestPostgRESTHealthCheck(t *testing.T) {
 // No svc_* auto-created roles should exist for PostgREST.
 func TestPostgRESTAuthenticatorRole(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -370,8 +365,6 @@ func TestPostgRESTAuthenticatorRole(t *testing.T) {
 func TestPostgRESTAddToExistingDatabase(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
@@ -406,8 +399,6 @@ func TestPostgRESTAddToExistingDatabase(t *testing.T) {
 // roles are dropped when the service is removed from the spec.
 func TestPostgRESTRemove(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -457,8 +448,6 @@ func TestPostgRESTRemove(t *testing.T) {
 func TestPostgRESTConfigUpdate(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
@@ -505,8 +494,6 @@ func TestPostgRESTConfigUpdate(t *testing.T) {
 func TestPostgRESTMultiHostDBURI(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	hosts := fixture.HostIDs()
 	if len(hosts) < 3 {
 		t.Skip("multi-host test requires at least 3 hosts")
@@ -531,7 +518,8 @@ func TestPostgRESTMultiHostDBURI(t *testing.T) {
 					Attributes: []string{"NOLOGIN"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(host1), controlplane.Identifier(host2), controlplane.Identifier(host3)}},
 			},
@@ -568,8 +556,6 @@ func TestPostgRESTMultiHostDBURI(t *testing.T) {
 func TestPostgRESTFailover(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	hosts := fixture.HostIDs()
 	if len(hosts) < 3 {
 		t.Skip("failover test requires at least 3 hosts")
@@ -594,7 +580,8 @@ func TestPostgRESTFailover(t *testing.T) {
 					Attributes: []string{"NOLOGIN"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(host1), controlplane.Identifier(host2), controlplane.Identifier(host3)}},
 			},

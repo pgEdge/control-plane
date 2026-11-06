@@ -1435,6 +1435,49 @@ func TestValidateDatabaseSpec(t *testing.T) {
 	}
 }
 
+func TestValidateDatabaseSpecSystemDServices(t *testing.T) {
+	spec := func(serviceType string, config map[string]any) *api.DatabaseSpec {
+		return &api.DatabaseSpec{
+			DatabaseName: "testdb",
+			Port:         utils.PointerTo(5432),
+			PatroniPort:  utils.PointerTo(8888),
+			Nodes: []*api.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []api.Identifier{"host-1"},
+				},
+			},
+			DatabaseUsers: []*api.DatabaseUserSpec{
+				{Username: "app", DbOwner: utils.PointerTo(true)},
+			},
+			Services: []*api.ServiceSpec{
+				{
+					ServiceID:   "svc",
+					ServiceType: serviceType,
+					Version:     "latest",
+					HostIds:     []api.Identifier{"host-1"},
+					ConnectAs:   "app",
+					Port:        utils.PointerTo(0),
+					Config:      config,
+				},
+			},
+		}
+	}
+
+	t.Run("postgrest is supported", func(t *testing.T) {
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("postgrest", map[string]any{"db_anon_role": "web_anon"}), nil)
+		assert.NoError(t, err)
+	})
+	t.Run("other service types are not supported", func(t *testing.T) {
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("mcp", map[string]any{}), nil)
+		assert.ErrorContains(t, err, "services[0].service_type: service type 'mcp' is not yet supported for systemd clusters")
+	})
+	t.Run("service specs are still validated", func(t *testing.T) {
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("postgrest", map[string]any{}), nil)
+		assert.ErrorContains(t, err, "db_anon_role")
+	})
+}
+
 func TestValidateLocale(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
