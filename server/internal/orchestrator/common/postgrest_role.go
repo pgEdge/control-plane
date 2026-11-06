@@ -178,7 +178,10 @@ func (r *PostgRESTAuthenticatorResource) reconcileGrants(ctx context.Context, rc
 		}
 	}
 
+	// The identifier doesn't include the username, so a connect_as change is
+	// applied here rather than by Create, and the new user needs NOINHERIT too.
 	grants := postgres.Statements{
+		postgres.AlterRoleNoInherit(username),
 		postgres.GrantConnect(r.DatabaseName, username),
 		postgres.GrantRole(desiredAnon, username),
 	}
