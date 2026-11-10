@@ -308,7 +308,7 @@ func (f *TestFixture) SkipIfSpock6Unsupported(t testing.TB) {
 	}
 	for _, h := range hosts.Hosts {
 		for _, v := range h.SupportedPgedgeVersions {
-			if strings.HasPrefix(v.SpockVersion, "6") {
+			if v.SpockVersion != nil && strings.HasPrefix(*v.SpockVersion, "6") {
 				return
 			}
 		}

@@ -30,11 +30,28 @@ or join our [Discord](https://discord.com/invite/pgedge/login).
 After creating hosts that [meet the prerequisites](../prerequisites/index.md),
 you are ready to install the Control Plane and its dependencies on each host.
 
-The pgEdge Control Plane packages are published for both `amd64` and `arm64`
-architectures and distributed through the pgEdge Enterprise Postgres package
-repositories.
+The Control Plane needs Postgres, pgBackRest, and Patroni on each host. You can
+install the Control Plane and these dependencies from the pgEdge Enterprise
+Postgres package repositories, or you can install the dependencies from the
+community Postgres package repositories and download the Control Plane package
+from our [GitHub releases](https://github.com/pgEdge/control-plane/releases).
+The Control Plane packages are published for both `amd64` and `arm64`
+architectures.
 
-### RPM Packages
+!!! note
+
+    The Spock package is optional. If Spock is not installed for a Postgres
+    version, the Control Plane can still create databases with that version,
+    but those databases are limited to a single node because Spock is required
+    for replication between nodes. These single-node databases still support
+    read replicas, which are created by adding more hosts to the node's
+    `host_ids`. Spock is only available from the pgEdge Enterprise Postgres
+    package repositories, so databases that use the community packages are
+    always limited to a single node.
+
+### pgEdge Enterprise Packages
+
+#### RPM Packages
 
 Follow the instructions from the ["Configuring the Repository" page](https://docs.pgedge.com/enterprise/el/configure-repo/)
 of the pgEdge Enterprise Postgres package repository documentation to install
@@ -66,7 +83,7 @@ The `pgedge-control-plane` package will install the following files:
 - `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json`
 - `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc`
 
-### Deb Packages
+#### Deb Packages
 
 Follow the instructions from the ["Configuring the Repository" page](https://docs.pgedge.com/enterprise/debian/configure-repo/)
 of the pgEdge Enterprise Postgres package repository documentation to install
@@ -104,6 +121,107 @@ The `pgedge-control-plane` package will install the following files:
 - `/usr/share/doc/pgedge-control-plane/copyright`
 - `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json`
 - `/usr/share/pgedge-control-plane/pgedge-control-plane-sbom.json.asc`
+
+### Community Packages
+
+The community Postgres package repositories, maintained by the PostgreSQL
+Global Development Group (PGDG), provide packages for Postgres, pgBackRest, and
+Patroni. When you use these packages, download the `pgedge-control-plane`
+package from the assets of a release on our [GitHub releases
+page](https://github.com/pgEdge/control-plane/releases).
+
+#### RPM Packages
+
+Follow the instructions from the ["Red Hat family Linux" download page](https://www.postgresql.org/download/linux/redhat/)
+of the PostgreSQL documentation to install the community repository. The
+Patroni and pgBackRest packages depend on packages from the Extra Packages for
+Enterprise Linux (EPEL) repository, so follow the [EPEL
+documentation](https://docs.fedoraproject.org/en-US/epel/getting-started/) to
+install it if you have not already.
+
+Then, use the following commands to install the Control Plane and its
+dependencies:
+
+```sh
+# Install the required packages for your Postgres version. We currently support
+# versions 16, 17, and 18. Set POSTGRES_MAJOR_VERSION to your desired version.
+POSTGRES_MAJOR_VERSION='<16|17|18>'
+sudo dnf install -y \
+      postgresql${POSTGRES_MAJOR_VERSION}-server \
+      postgresql${POSTGRES_MAJOR_VERSION}-contrib \
+      pgbackrest \
+      patroni \
+      patroni-etcd
+
+# The postgresql-server package will create and start a default database. We
+# recommend stopping and disabling that database to avoid confusion or port
+# conflicts.
+sudo systemctl disable --now postgresql-${POSTGRES_MAJOR_VERSION}.service
+
+# Download the Control Plane package for your Enterprise Linux major version and
+# architecture. Set CONTROL_PLANE_VERSION to the release you want to install,
+# without the leading 'v', e.g. '0.11.0'.
+CONTROL_PLANE_VERSION='<version>'
+EL_MAJOR_VERSION="$(rpm -E '%{rhel}')"
+ARCH="$(uname -m)"
+CONTROL_PLANE_RPM="pgedge-control-plane-${CONTROL_PLANE_VERSION}-1.el${EL_MAJOR_VERSION}.${ARCH}.rpm"
+curl -fLO "https://github.com/pgEdge/control-plane/releases/download/v${CONTROL_PLANE_VERSION}/${CONTROL_PLANE_RPM}"
+
+# Install the downloaded package
+sudo dnf install -y "./${CONTROL_PLANE_RPM}"
+```
+
+The `pgedge-control-plane` package will install the same files listed in the
+[pgEdge Enterprise RPM Packages](#rpm-packages) section.
+
+#### Deb Packages
+
+Follow the instructions from the ["Debian" download page](https://www.postgresql.org/download/linux/debian/)
+or the ["Ubuntu" download page](https://www.postgresql.org/download/linux/ubuntu/)
+of the PostgreSQL documentation to install the community repository.
+
+Then, use the following commands to install the Control Plane and its
+dependencies:
+
+```sh
+# Update the local list of available packages
+sudo apt update
+
+# Install the required packages for your Postgres version. We currently support
+# versions 16, 17, and 18. Set POSTGRES_MAJOR_VERSION to your desired version.
+POSTGRES_MAJOR_VERSION='<16|17|18>'
+sudo apt install -y \
+      postgresql-${POSTGRES_MAJOR_VERSION} \
+      pgbackrest \
+      patroni \
+      python3-etcd
+
+# The postgresql package will create and start a default database. We recommend
+# stopping and disabling that database to avoid confusion or port conflicts.
+sudo systemctl disable --now postgresql.service
+sudo systemctl disable --now postgresql@${POSTGRES_MAJOR_VERSION}-main.service
+
+# Download the Control Plane package for your distribution and architecture. Set
+# CONTROL_PLANE_VERSION to the release you want to install, without the leading
+# 'v', e.g. '0.11.0'.
+CONTROL_PLANE_VERSION='<version>'
+CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
+ARCH="$(dpkg --print-architecture)"
+CONTROL_PLANE_DEB="pgedge-control-plane_${CONTROL_PLANE_VERSION}-1.${CODENAME}_${ARCH}.deb"
+curl -fLO "https://github.com/pgEdge/control-plane/releases/download/v${CONTROL_PLANE_VERSION}/${CONTROL_PLANE_DEB}"
+
+# Install the downloaded package
+sudo apt install -y "./${CONTROL_PLANE_DEB}"
+```
+
+The `pgedge-control-plane` package will install the same files listed in the
+[pgEdge Enterprise Deb Packages](#deb-packages) section.
+
+!!! note
+
+    Packages installed from GitHub releases are not updated by `dnf upgrade` or
+    `apt upgrade`. To upgrade the Control Plane, repeat the download and install
+    steps with the new version.
 
 ## Configuration
 
@@ -245,6 +363,10 @@ instructions.
 > get by running `hostname -s`. You can get the host IDs for all hosts in the
 > cluster from the "list hosts" endpoint on any host:
 > `curl http://localhost:3000/v1/hosts`.
+
+> [!NOTE]
+> This example requires Spock because it creates a database with three nodes.
+> If you installed the community packages, specify a single node instead.
 
 > [!NOTE]
 > Unlike with the Swarm orchestrator, `patroni_port` is a required field in

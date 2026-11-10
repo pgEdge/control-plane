@@ -341,6 +341,14 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 	if err := validateDatabaseCreate(req.Spec); err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
+	if spec.DatabaseID != "" {
+		_, err = s.dbSvc.GetDatabase(ctx, spec.DatabaseID)
+		if err != nil && errors.Is(err, ErrDatabaseNotFound) {
+			return nil, apiErr(fmt.Errorf("got unexpected error while checking for existing database: %w", err))
+		} else if err == nil {
+			return nil, ErrDatabaseAlreadyExists
+		}
+	}
 
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
 	if err != nil {

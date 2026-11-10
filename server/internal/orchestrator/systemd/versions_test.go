@@ -95,6 +95,53 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			outputs: map[string]mockPgConfigOutput{
 				debianPg17Config: {stdout: testDebianPg17ConfigOut},
 			},
+			expectedOutput: []*ds.PgEdgeVersion{
+				{
+					PostgresVersion: ds.MustParseVersion("17.11"),
+				},
+			},
+		},
+		{
+			name: "debian mixed with and without spock",
+			fsys: testFs(map[string]string{
+				debianPg17Config: "",
+				debianPg18Config: "",
+				debianPg18Spock:  spock5Control,
+			}),
+			osFamily: config.OSFamilyDebian,
+			outputs: map[string]mockPgConfigOutput{
+				debianPg17Config: {stdout: testDebianPg17ConfigOut},
+				debianPg18Config: {stdout: testDebianPg18ConfigOut},
+			},
+			expectedOutput: []*ds.PgEdgeVersion{
+				{
+					PostgresVersion: ds.MustParseVersion("18.4"),
+					SpockVersion:    ds.MustParseVersion("5"),
+				},
+				{
+					PostgresVersion: ds.MustParseVersion("17.11"),
+				},
+			},
+		},
+		{
+			name: "debian unsupported spock version",
+			fsys: testFs(map[string]string{
+				debianPg17Config: "",
+				debianPg17Spock: withPgConfigValues(spock5Control, map[string]string{
+					"default_version": "'4.0.10'",
+				}),
+				debianPg18Config: "",
+			}),
+			osFamily: config.OSFamilyDebian,
+			outputs: map[string]mockPgConfigOutput{
+				debianPg17Config: {stdout: testDebianPg17ConfigOut},
+				debianPg18Config: {stdout: testDebianPg18ConfigOut},
+			},
+			expectedOutput: []*ds.PgEdgeVersion{
+				{
+					PostgresVersion: ds.MustParseVersion("18.4"),
+				},
+			},
 		},
 		{
 			name: "debian spock 6",
@@ -169,6 +216,11 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			osFamily: config.OSFamilyRedHat,
 			outputs: map[string]mockPgConfigOutput{
 				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
+			},
+			expectedOutput: []*ds.PgEdgeVersion{
+				{
+					PostgresVersion: ds.MustParseVersion("17.11"),
+				},
 			},
 		},
 		{

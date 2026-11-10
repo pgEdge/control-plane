@@ -19,6 +19,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ports"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
+	"github.com/pgEdge/control-plane/server/internal/validation"
 )
 
 var (
@@ -602,7 +603,9 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 		spec.PostgresVersion = defaultVersion.PostgresVersion.String()
 	}
 	if spec.SpockVersion == "" {
-		spec.SpockVersion = defaultVersion.SpockVersion.String()
+		// This will remain empty if the default version does not include
+		// Spock, which means that the database will not use Spock.
+		spec.SpockVersion = defaultVersion.SpockVersionString()
 	}
 	specVersion, err := ds.ParsePgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
 	if err != nil {
@@ -613,7 +616,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	for _, h := range hosts {
 		hostsByID[h.ID] = h
 		if !h.Supports(specVersion) {
-			return fmt.Errorf("host %s does not support version combination: postgres=%s, spock=%s", h.ID, specVersion.PostgresVersion, specVersion.SpockVersion)
+			return fmt.Errorf("host %s does not support version combination: %s", h.ID, describeVersion(specVersion))
 		}
 	}
 	// Second pass on nodes to validate node-level overrides
@@ -636,7 +639,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 					return fmt.Errorf("failed to parse versions from nodes[%d] spec: %w", idx, err)
 				}
 				if !h.Supports(nodeVersion) {
-					return fmt.Errorf("host %s does not support version combination: postgres=%s, spock=%s", h.ID, nodeVersion.PostgresVersion, nodeVersion.SpockVersion)
+					return fmt.Errorf("host %s does not support version combination: %s", h.ID, describeVersion(nodeVersion))
 				}
 			}
 		}
@@ -645,6 +648,12 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	// This must run after the version defaults above, since an omitted
 	// version can resolve to one that doesn't support the locale provider.
 	if err := validateLocaleVersions(spec); err != nil {
+		return err
+	}
+
+	// This must also run after the version defaults above, since an omitted
+	// version can resolve to one with or without Spock.
+	if err := validateSpockRequirements(spec, specVersion); err != nil {
 		return err
 	}
 
@@ -1134,8 +1143,17 @@ func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 // existing database. A Spock N subscription cannot sync from a Spock N-1
 // peer, so this must be caught here rather than left to fail at replication
 // time. It does not apply to a dedicated Spock upgrade workflow (PLAT-720),
-// which is expected to have its own validation.
+// which is expected to have its own validation. It also rejects adding Spock
+// to or removing Spock from an existing database.
 func spockMajorVersionChanged(current, updated string) error {
+	switch {
+	case current == "" && updated == "":
+		return nil
+	case current == "":
+		return fmt.Errorf("spock version changed from none to %s: adding spock to an existing database is not supported", updated)
+	case updated == "":
+		return fmt.Errorf("spock version changed from %s to none: removing spock from an existing database is not supported", current)
+	}
 	oldVersion, err := ds.ParseVersion(current)
 	if err != nil {
 		return fmt.Errorf("failed to parse current spock version: %w", err)
@@ -1178,6 +1196,58 @@ func tenantIDsMatch(a, b *string) bool {
 	default:
 		return false
 	}
+}
+
+// describeVersion formats the given version for use in error messages.
+func describeVersion(v *ds.PgEdgeVersion) string {
+	if !v.HasSpock() {
+		return fmt.Sprintf("postgres=%s without spock", v.PostgresVersion)
+	}
+	return fmt.Sprintf("postgres=%s, spock=%s", v.PostgresVersion, v.SpockVersion)
+}
+
+// validateSpockRequirements validates the parts of the spec that depend on
+// whether the database uses Spock. Databases without Spock are limited to a
+// single node, since there is no replication between nodes. Databases with
+// Spock must keep spock in shared_preload_libraries if it's overridden.
+func validateSpockRequirements(spec *Spec, version *ds.PgEdgeVersion) error {
+	if !version.HasSpock() {
+		if len(spec.Nodes) > 1 {
+			return errors.New("databases without spock are limited to a single node")
+		}
+		return nil
+	}
+
+	var errs []error
+	errs = append(errs, validateSpockPreloaded(spec.PostgreSQLConf, validation.NewPath("postgresql_conf"))...)
+	for i, node := range spec.Nodes {
+		path := validation.NewPath("nodes", validation.ArrayIndexElement(i), "postgresql_conf")
+		errs = append(errs, validateSpockPreloaded(node.PostgreSQLConf, path)...)
+	}
+
+	return errors.Join(errs...)
+}
+
+func validateSpockPreloaded(conf map[string]any, path validation.Path) []error {
+	// param names are case-insensitive, so comparison is done after casting to lowercase
+	for key, val := range conf {
+		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
+			continue
+		}
+		strVal, ok := val.(string)
+		if !ok {
+			// The type is validated by the API.
+			return nil
+		}
+		for lib := range strings.SplitSeq(strVal, ",") {
+			if strings.TrimSpace(lib) == "spock" {
+				return nil
+			}
+		}
+		err := errors.New(`"spock" must be included in shared_preload_libraries`)
+		return []error{validation.NewError(err, path.AppendMapKey(key))}
+	}
+	return nil // key absent; defaults will be applied, including spock
 }
 
 // validateLocaleVersions rejects the builtin locale provider when the spec or

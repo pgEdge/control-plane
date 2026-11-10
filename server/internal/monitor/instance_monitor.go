@@ -151,6 +151,16 @@ func (m *InstanceMonitor) populateFromDbConn(
 	}
 	status.PostgresVersion = utils.PointerTo(pgVersion)
 
+	// Spock is optional, so we skip the Spock-specific status fields if the
+	// extension doesn't exist in this database.
+	spockEnabled, err := postgres.IsSpockEnabled().Scalar(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to check if spock is enabled: %w", err)
+	}
+	if !spockEnabled {
+		return nil
+	}
+
 	spockVersion, err := postgres.GetSpockVersion().Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query spock version: %w", err)

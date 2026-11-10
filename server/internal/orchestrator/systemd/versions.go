@@ -102,16 +102,20 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get installed spock version for postgres %s: %w", pgMajor, err)
 		}
-		if spockVersion != nil && supportedSpockVersions.IsSatisfied(spockVersion) {
+		switch {
+		case spockVersion == nil:
+			// Spock is optional. This version will be reported without it.
+		case supportedSpockVersions.IsSatisfied(spockVersion):
 			postgres.SpockVersion = spockVersion
 			// Normalize drops the Spock pre-release, so we need to reflect it
 			// in the stability if Postgres is otherwise stable.
 			if postgres.Stability == "" {
 				postgres.Stability = prereleaseStability(spockVersion)
 			}
-		} else {
-			// TODO(PLAT-752): Remove this condition once we've made Spock
-			// optional.
+		default:
+			// An unsupported Spock version is installed. We skip this Postgres
+			// version rather than reporting it without Spock, since that would
+			// be surprising to someone who intentionally installed Spock.
 			continue
 		}
 		normalized, err := postgres.Normalize()

@@ -8,7 +8,12 @@ automatically restart the Control Plane service after the update is complete.
 
 ## Updating the Control Plane
 
-### RPM Package
+### pgEdge Enterprise Packages
+
+If you installed the Control Plane from the pgEdge Enterprise Postgres package
+repositories, use your package manager to upgrade it.
+
+#### RPM Package
 
 ```sh
 # (Optional) print the current version via the API
@@ -21,7 +26,7 @@ sudo dnf upgrade -y pgedge-control-plane
 curl http://localhost:3000/v1/version
 ```
 
-### Deb Package
+#### Deb Package
 
 ```sh
 # (Optional) print the current version via the API
@@ -29,6 +34,57 @@ curl http://localhost:3000/v1/version
 
 # Upgrade the package
 sudo apt install --only-upgrade -y pgedge-control-plane
+
+# (Optional) print the updated version via the API
+curl http://localhost:3000/v1/version
+```
+
+### Community Packages
+
+If you installed the Control Plane package from our [GitHub releases
+page](https://github.com/pgEdge/control-plane/releases), your package manager
+will not find updates for it. Instead, download the package for the new release
+and install it over the existing package.
+
+#### RPM Package
+
+```sh
+# (Optional) print the current version via the API
+curl http://localhost:3000/v1/version
+
+# Download the Control Plane package for your Enterprise Linux major version and
+# architecture. Set CONTROL_PLANE_VERSION to the release you want to upgrade
+# to, without the leading 'v', e.g. '0.11.0'.
+CONTROL_PLANE_VERSION='<version>'
+EL_MAJOR_VERSION="$(rpm -E '%{rhel}')"
+ARCH="$(uname -m)"
+CONTROL_PLANE_RPM="pgedge-control-plane-${CONTROL_PLANE_VERSION}-1.el${EL_MAJOR_VERSION}.${ARCH}.rpm"
+curl -fLO "https://github.com/pgEdge/control-plane/releases/download/v${CONTROL_PLANE_VERSION}/${CONTROL_PLANE_RPM}"
+
+# Upgrade the package
+sudo dnf upgrade -y "./${CONTROL_PLANE_RPM}"
+
+# (Optional) print the updated version via the API
+curl http://localhost:3000/v1/version
+```
+
+#### Deb Package
+
+```sh
+# (Optional) print the current version via the API
+curl http://localhost:3000/v1/version
+
+# Download the Control Plane package for your distribution and architecture. Set
+# CONTROL_PLANE_VERSION to the release you want to upgrade to, without the
+# leading 'v', e.g. '0.11.0'.
+CONTROL_PLANE_VERSION='<version>'
+CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
+ARCH="$(dpkg --print-architecture)"
+CONTROL_PLANE_DEB="pgedge-control-plane_${CONTROL_PLANE_VERSION}-1.${CODENAME}_${ARCH}.deb"
+curl -fLO "https://github.com/pgEdge/control-plane/releases/download/v${CONTROL_PLANE_VERSION}/${CONTROL_PLANE_DEB}"
+
+# Upgrade the package
+sudo apt install -y "./${CONTROL_PLANE_DEB}"
 
 # (Optional) print the updated version via the API
 curl http://localhost:3000/v1/version
@@ -44,15 +100,22 @@ packages on each machine. Follow these steps on each host in the cluster:
    `apt install --only-upgrade`. For example, to upgrade Postgres 18:
 
     ```sh
-    # If your system uses dnf, run:
+    # If you use the pgEdge Enterprise packages and your system uses dnf, run:
     sudo dnf upgrade pgedge-postgresql18
 
-    # If your system uses apt, run:
+    # If you use the pgEdge Enterprise packages and your system uses apt, run:
     sudo apt install --only-upgrade pgedge-postgresql-18
+
+    # If you use the community packages and your system uses dnf, run:
+    sudo dnf upgrade 'postgresql18*'
+
+    # If you use the community packages and your system uses apt, run:
+    sudo apt install --only-upgrade postgresql-18
     ```
 
-2. Upgrade the Spock package the same way. For example, to upgrade the
-   Spock 5 package on Postgres 18:
+2. If your databases use Spock, upgrade the Spock package the same way. Skip
+   this step if you use the community packages, which do not include Spock.
+   For example, to upgrade the Spock 5 package on Postgres 18:
 
     ```sh
     # If your system uses dnf, run:
@@ -92,6 +155,9 @@ After completing the upgrade on all hosts, it may take up to 30 seconds for the
 new versions to be reflected in the database spec in the Control Plane API.
 
 ### Applying output_plugin_libraries After the Upgrade
+
+This section only applies to databases that use Spock. You can skip it if you
+use the community packages.
 
 Postgres 16.15, 17.11, 18.6, and later minor versions gate logical
 decoding output plugins behind the `output_plugin_libraries`

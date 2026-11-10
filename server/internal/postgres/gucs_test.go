@@ -13,6 +13,23 @@ func TestDefaultGUCs(t *testing.T) {
 	assert.Equal(t, "scram-sha-256", postgres.DefaultGUCs(nil, nil)["password_encryption"])
 }
 
+func TestDefaultGUCsSharedPreloadLibraries(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		version  *ds.PgEdgeVersion
+		expected string
+	}{
+		{name: "nil version", version: nil, expected: "pg_stat_statements,snowflake,spock"},
+		{name: "with spock", version: ds.MustParsePgEdgeVersion("17.11", "5"), expected: "pg_stat_statements,snowflake,spock"},
+		{name: "without spock", version: ds.MustParsePgEdgeVersion("17.11", ""), expected: "pg_stat_statements,snowflake"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gucs := postgres.DefaultGUCs(tc.version, nil)
+			assert.Equal(t, tc.expected, gucs["shared_preload_libraries"])
+		})
+	}
+}
+
 func TestDefaultGUCsOutputPluginLibraries(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
@@ -29,6 +46,7 @@ func TestDefaultGUCsOutputPluginLibraries(t *testing.T) {
 		{name: "pg18 at gate", version: ds.MustParsePgEdgeVersion("18.6", "4"), expectedPresent: true},
 		{name: "future major", version: ds.MustParsePgEdgeVersion("19.0", "4"), expectedPresent: true},
 		{name: "older major", version: ds.MustParsePgEdgeVersion("15.10", "4"), expectedPresent: false},
+		{name: "pg17 at gate without spock", version: ds.MustParsePgEdgeVersion("17.11", ""), expectedPresent: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gucs := postgres.DefaultGUCs(tc.version, nil)
