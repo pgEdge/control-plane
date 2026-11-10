@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var defaultSchemas = []string{"public", "spock", "pg_catalog", "information_schema"}
+var defaultSchemas = []string{"public", "pg_catalog", "information_schema"}
 var builtinRoles = []string{"pgedge_superuser"}
 
 // allowedRoleAttributes is the fixed set of boolean-style PostgreSQL role

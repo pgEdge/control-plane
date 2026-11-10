@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -206,6 +207,93 @@ func TestValidateServiceHosts(t *testing.T) {
 			err := validateServiceHosts([]*ServiceSpec{tc.service}, hostsByID)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateSpockRequirements(t *testing.T) {
+	withSpock := ds.MustParsePgEdgeVersion("17.6", "5")
+	withoutSpock := ds.MustParsePgEdgeVersion("17.6", "")
+
+	for _, tc := range []struct {
+		name        string
+		spec        *Spec
+		version     *ds.PgEdgeVersion
+		expectedErr string
+	}{
+		{
+			name:    "spock with multiple nodes",
+			spec:    &Spec{Nodes: []*Node{{Name: "n1"}, {Name: "n2"}}},
+			version: withSpock,
+		},
+		{
+			name:    "no spock with a single node",
+			spec:    &Spec{Nodes: []*Node{{Name: "n1"}}},
+			version: withoutSpock,
+		},
+		{
+			name: "no spock with multiple nodes",
+			spec: &Spec{
+				Nodes: []*Node{{Name: "n1"}, {Name: "n2"}},
+			},
+			version:     withoutSpock,
+			expectedErr: "databases without spock are limited to a single node",
+		},
+		{
+			name: "spock with spock in shared_preload_libraries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "snowflake, spock"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: withSpock,
+		},
+		{
+			name: "spock with uppercase param name",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"SHARED_PRELOAD_LIBRARIES": "snowflake, spock"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: withSpock,
+		},
+		{
+			name: "spock missing from spec-level shared_preload_libraries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version:     withSpock,
+			expectedErr: `postgresql_conf[shared_preload_libraries]: "spock" must be included in shared_preload_libraries`,
+		},
+		{
+			name: "spock missing from node-level shared_preload_libraries",
+			spec: &Spec{
+				Nodes: []*Node{
+					{Name: "n1"},
+					{
+						Name:           "n2",
+						PostgreSQLConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"},
+					},
+				},
+			},
+			version:     withSpock,
+			expectedErr: `nodes[1].postgresql_conf[shared_preload_libraries]: "spock" must be included in shared_preload_libraries`,
+		},
+		{
+			name: "no spock without spock in shared_preload_libraries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: withoutSpock,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateSpockRequirements(tc.spec, tc.version)
+			if tc.expectedErr != "" {
+				assert.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}

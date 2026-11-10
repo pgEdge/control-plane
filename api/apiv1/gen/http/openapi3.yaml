@@ -9165,7 +9165,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -10213,7 +10213,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -11531,7 +11531,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -12822,7 +12822,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -14151,7 +14151,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -15424,7 +15424,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -16740,7 +16740,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -17955,7 +17955,7 @@ components:
               version: latest
         spock_version:
           type: string
-          description: The major version of the Spock extension.
+          description: The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.
           example: "5"
           pattern: ^\d{1}$
       example:
@@ -20344,7 +20344,7 @@ components:
           example: "17.6"
         spock_version:
           type: string
-          description: The Spock major version.
+          description: The Spock major version. Absent when Spock is not installed for this Postgres version.
           example: "5"
         stability:
           type: string
@@ -20362,7 +20362,6 @@ components:
         stability: stable
       required:
         - postgres_version
-        - spock_version
     PortMapping:
       type: object
       properties:

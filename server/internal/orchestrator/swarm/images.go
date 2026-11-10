@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -32,7 +33,7 @@ func (v Versions) Default() *ds.PgEdgeVersion {
 
 func (v *Versions) addImage(version *ds.PgEdgeVersion, images *Images) {
 	pgv := version.PostgresVersion.String()
-	sv := version.SpockVersion.String()
+	sv := version.SpockVersionString()
 
 	if _, ok := v.images[pgv]; !ok {
 		v.images[pgv] = make(map[string]*Images)
@@ -44,7 +45,10 @@ func (v *Versions) addImage(version *ds.PgEdgeVersion, images *Images) {
 
 func (v Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
 	pgv := version.PostgresVersion.String()
-	sv := version.SpockVersion.String()
+	sv := version.SpockVersionString()
+	if sv == "" {
+		return nil, errors.New("databases without spock are not supported by the swarm orchestrator")
+	}
 
 	m, ok := v.images[pgv]
 	if !ok {

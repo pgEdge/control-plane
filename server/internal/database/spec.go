@@ -304,6 +304,39 @@ func (o *OrchestratorOpts) swarmImage() string {
 	return o.Swarm.Image
 }
 
+// DefaultVersions fills in this spec's omitted Postgres and Spock versions,
+// preferring the versions encoded in an image override's tag over
+// hostDefault. current is the database's stored spec, or nil if the database
+// is being created.
+func (s *Spec) DefaultVersions(hostDefault *ds.PgEdgeVersion, current *Spec) {
+	// Whether a database uses Spock is decided when it's created. For an
+	// existing database, Spec.DefaultOptionalFieldsFrom has already restored
+	// the stored Spock version, so an empty version here means the database
+	// doesn't use Spock and must not be defaulted.
+	defaultSpock := current == nil && s.SpockVersion == ""
+	// If the user supplied an image override, prefer the versions encoded in
+	// its tag over the host default so the image and spec version don't end
+	// up in conflict.
+	if s.PostgresVersion == "" || defaultSpock {
+		if pgVer, spockVer, ok := versionsFromImage(s.OrchestratorOpts.swarmImage()); ok {
+			if s.PostgresVersion == "" {
+				s.PostgresVersion = pgVer
+			}
+			if defaultSpock {
+				s.SpockVersion = spockVer
+			}
+		}
+	}
+	if s.PostgresVersion == "" {
+		s.PostgresVersion = hostDefault.PostgresVersion.String()
+	}
+	if defaultSpock && s.SpockVersion == "" {
+		// This will remain empty if the default version does not include
+		// Spock, which means that the database will not use Spock.
+		s.SpockVersion = hostDefault.SpockVersionString()
+	}
+}
+
 // versionsFromImage parses the Postgres and Spock versions encoded in a
 // pgEdge image tag (e.g. "16.14-spock5.0.10-standard-1"), normalized to the
 // major.minor / major format used elsewhere in the API (e.g. "16.14" / "5").
@@ -668,6 +701,12 @@ type InstanceSpec struct {
 	// node, excluding itself. See postgres.DefaultGUCs.
 	PeerInstanceIDs []string `json:"peer_instance_ids,omitempty"`
 	Locale          *Locale  `json:"locale,omitempty"`
+}
+
+// UsesSpock returns true if this instance's database uses Spock. Instances
+// without a version predate optional Spock, so they're assumed to use it.
+func (s *InstanceSpec) UsesSpock() bool {
+	return s.PgEdgeVersion == nil || s.PgEdgeVersion.HasSpock()
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {

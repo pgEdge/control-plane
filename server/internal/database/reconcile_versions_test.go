@@ -518,6 +518,83 @@ func TestReconcileVersions(t *testing.T) {
 			},
 		},
 		{
+			name: "postgres updated without spock",
+			spec: &database.StoredSpec{
+				Spec: &database.Spec{
+					PostgresVersion: "17.4",
+					Nodes: []*database.Node{
+						{Name: "n1", HostIDs: []string{"host-1"}},
+					},
+				},
+			},
+			instances: []*database.StoredInstance{
+				{
+					InstanceID:    "n1-host-1",
+					NodeName:      "n1",
+					HostID:        "host-1",
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", ""),
+				},
+			},
+			statuses: []*database.StoredInstanceStatus{
+				{
+					InstanceID: "n1-host-1",
+					Status: &database.InstanceStatus{
+						StatusUpdatedAt: utils.PointerTo(time.Now()),
+						Role:            utils.PointerTo(patroni.InstanceRolePrimary),
+						PostgresVersion: utils.PointerTo("17.5"),
+					},
+				},
+			},
+			expectedSpec: &database.StoredSpec{
+				Spec: &database.Spec{
+					PostgresVersion: "17.5",
+					Nodes: []*database.Node{
+						{Name: "n1", HostIDs: []string{"host-1"}},
+					},
+				},
+			},
+			expectedInstances: []*database.StoredInstance{
+				{
+					InstanceID:    "n1-host-1",
+					NodeName:      "n1",
+					HostID:        "host-1",
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.5", ""),
+				},
+			},
+		},
+		{
+			// The spock version is missing from the status until the spock
+			// extension is created.
+			name: "missing spock version is skipped",
+			spec: &database.StoredSpec{
+				Spec: &database.Spec{
+					PostgresVersion: "17.4",
+					SpockVersion:    "5",
+					Nodes: []*database.Node{
+						{Name: "n1", HostIDs: []string{"host-1"}},
+					},
+				},
+			},
+			instances: []*database.StoredInstance{
+				{
+					InstanceID:    "n1-host-1",
+					NodeName:      "n1",
+					HostID:        "host-1",
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.4", "5"),
+				},
+			},
+			statuses: []*database.StoredInstanceStatus{
+				{
+					InstanceID: "n1-host-1",
+					Status: &database.InstanceStatus{
+						StatusUpdatedAt: utils.PointerTo(time.Now()),
+						Role:            utils.PointerTo(patroni.InstanceRolePrimary),
+						PostgresVersion: utils.PointerTo("17.5"),
+					},
+				},
+			},
+		},
+		{
 			name: "no instances",
 			spec: &database.StoredSpec{
 				Spec: &database.Spec{

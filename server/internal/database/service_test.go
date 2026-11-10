@@ -286,6 +286,67 @@ func TestValidateChangedSpec(t *testing.T) {
 			expectedErr: "spock major version changed from 5 to 6",
 		},
 		{
+			name: "valid unchanged without spock",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.1",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+		},
+		{
+			name: "invalid adding spock",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "adding spock to an existing database is not supported",
+		},
+		{
+			name: "invalid removing spock",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "removing spock from an existing database is not supported",
+		},
+		{
 			name: "valid unchanged locale",
 			current: &database.Spec{
 				DatabaseName:    "test",

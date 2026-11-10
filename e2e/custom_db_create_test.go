@@ -33,7 +33,12 @@ func TestCreateDbWithVersions(t *testing.T) {
 	allHostIDs := fixture.HostIDs()
 
 	for _, version := range host.SupportedPgedgeVersions {
-		name := fmt.Sprintf("postgres %s with spock %s", version.PostgresVersion, version.SpockVersion)
+		if version.SpockVersion == nil {
+			// This test creates a multi-node database, which requires Spock.
+			continue
+		}
+		spockVersion := *version.SpockVersion
+		name := fmt.Sprintf("postgres %s with spock %s", version.PostgresVersion, spockVersion)
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -60,7 +65,7 @@ func TestCreateDbWithVersions(t *testing.T) {
 					Port:            pointerTo(0),
 					PatroniPort:     pointerTo(0),
 					PostgresVersion: pointerTo(version.PostgresVersion),
-					SpockVersion:    pointerTo(version.SpockVersion),
+					SpockVersion:    pointerTo(spockVersion),
 					Nodes: []*controlplane.DatabaseNodeSpec{
 						{
 							Name: "n1",
@@ -98,7 +103,7 @@ func TestCreateDbWithVersions(t *testing.T) {
 					Password: password,
 				}
 
-				verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, version.SpockVersion, t)
+				verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, spockVersion, t)
 				verifyPrimaryNodes(ctx, db, primaryOpts, t)
 			}
 
@@ -120,7 +125,7 @@ func TestCreateDbWithVersions(t *testing.T) {
 					Username: username,
 					Password: password,
 				}
-				verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, version.SpockVersion, t)
+				verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, spockVersion, t)
 				verifyReplicasNodes(ctx, db, connOpts, t)
 			}
 

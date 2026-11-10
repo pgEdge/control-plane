@@ -471,7 +471,9 @@ type DatabaseSpec struct {
 	DatabaseName string `json:"database_name"`
 	// The Postgres version in 'major.minor' format.
 	PostgresVersion *string `json:"postgres_version,omitempty"`
-	// The major version of the Spock extension.
+	// The major version of the Spock extension. Defaults to the Spock version of
+	// the hosts' default version. Absent when the database does not use Spock,
+	// which is only supported for single-node databases.
 	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database. If the port is 0, each instance will
 	// be assigned a random port. If the port is unspecified, the database will not
@@ -911,8 +913,9 @@ type OrchestratorOpts struct {
 type PgEdgeVersion struct {
 	// The Postgres major and minor version.
 	PostgresVersion string `json:"postgres_version"`
-	// The Spock major version.
-	SpockVersion string `json:"spock_version"`
+	// The Spock major version. Absent when Spock is not installed for this
+	// Postgres version.
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// Release stability of the manifest image backing this version. Only `stable`
 	// is selected automatically for a new database; `stable`, `rc`, and
 	// `deprecated` may be applied as an explicit image upgrade; `beta` and `dev`

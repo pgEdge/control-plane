@@ -340,8 +340,16 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 	if err := validateDatabaseCreate(req.Spec); err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
+	if spec.DatabaseID != "" {
+		_, err = s.dbSvc.GetDatabase(ctx, spec.DatabaseID)
+		if err != nil && !errors.Is(err, database.ErrDatabaseNotFound) {
+			return nil, apiErr(fmt.Errorf("got unexpected error while checking for existing database: %w", err))
+		} else if err == nil {
+			return nil, ErrDatabaseAlreadyExists
+		}
+	}
 
-	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
+	err = s.dbSvc.PopulateSpecDefaults(ctx, spec, nil)
 	if err != nil {
 		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
@@ -442,7 +450,7 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	// service's config (see ServiceSpec.DefaultOptionalFieldsFrom).
 	spec.DefaultOptionalFieldsFrom(existing.Spec)
 
-	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
+	err = s.dbSvc.PopulateSpecDefaults(ctx, spec, existing.Spec)
 	if err != nil {
 		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
@@ -898,7 +906,7 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 	// persist the updated spec.
 	db.Spec.RemoveBackupConfigFrom(targetNodes...)
 
-	err = s.dbSvc.PopulateSpecDefaults(ctx, db.Spec)
+	err = s.dbSvc.PopulateSpecDefaults(ctx, db.Spec, db.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
 	}

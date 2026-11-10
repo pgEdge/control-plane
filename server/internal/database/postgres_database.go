@@ -81,6 +81,20 @@ func (p *PostgresDatabaseResource) Refresh(ctx context.Context, rc *resource.Con
 	}
 	defer conn.Close(ctx)
 
+	if primary.Spec.UsesSpock() {
+		if err := p.refreshSpockNode(ctx, conn); err != nil {
+			return err
+		}
+	}
+
+	if err := SetScriptNeedsToRun(ctx, rc, p.PostDatabaseCreate); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *PostgresDatabaseResource) refreshSpockNode(ctx context.Context, conn *pgx.Conn) error {
 	// Check that Spock is enabled and that the spock node exists
 	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, conn)
 	if err != nil {
@@ -96,10 +110,6 @@ func (p *PostgresDatabaseResource) Refresh(ctx context.Context, rc *resource.Con
 	}
 	if needsCreate {
 		return resource.ErrNotFound
-	}
-
-	if err := SetScriptNeedsToRun(ctx, rc, p.PostDatabaseCreate); err != nil {
-		return err
 	}
 
 	return nil
@@ -166,6 +176,10 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 		return err
 	}
 
+	if !primary.Spec.UsesSpock() {
+		return nil
+	}
+
 	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to check if spock is enabled: %w", err)
@@ -217,9 +231,11 @@ func (p *PostgresDatabaseResource) create(ctx context.Context, rc *resource.Cont
 		return err
 	}
 
-	err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to initialize spock: %w", err)
+	if primary.Spec.UsesSpock() {
+		err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
+		if err != nil {
+			return fmt.Errorf("failed to initialize spock: %w", err)
+		}
 	}
 	if err := ExecuteScript(ctx, rc, conn, p.PostDatabaseCreate); err != nil {
 		return fmt.Errorf("failed to execute post-database-create script: %w", err)
@@ -291,8 +307,13 @@ func (p *PostgresDatabaseResource) updateUserPrivileges(ctx context.Context, rc 
 		}
 	}
 
+	var extraSchemas []string
+	if primary.Spec.UsesSpock() {
+		extraSchemas = append(extraSchemas, "spock")
+	}
 	err = postgres.GrantBuiltinRolePrivileges(postgres.BuiltinRolePrivilegeOptions{
-		DBName: p.DatabaseName,
+		DBName:       p.DatabaseName,
+		ExtraSchemas: extraSchemas,
 	}).Exec(ctx, tx)
 	if err != nil {
 		return fmt.Errorf("failed to grant privileges to built-in roles: %w", err)

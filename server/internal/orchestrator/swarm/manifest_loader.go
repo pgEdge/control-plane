@@ -380,6 +380,10 @@ func buildVersions(cfg config.Config, mf *versionManifest) (*Versions, error) {
 			return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: %w",
 				e.PostgresVersion, e.SpockVersion, err)
 		}
+		if !pv.HasSpock() {
+			return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: missing spock version",
+				e.PostgresVersion, e.SpockVersion)
+		}
 		if !ds.Stability(e.Stability).Valid() {
 			return nil, fmt.Errorf("invalid version entry {postgres:%s spock:%s}: unrecognized stability %q",
 				e.PostgresVersion, e.SpockVersion, e.Stability)

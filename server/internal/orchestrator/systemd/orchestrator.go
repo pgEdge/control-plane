@@ -92,9 +92,7 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		Msg("got installed versions")
 
 	if len(versions) == 0 {
-		// TODO(PLAT-752): This wording should change or the error should be
-		// removed as we work towards optional spock.
-		return errors.New("pgedge postgres not installed")
+		return errors.New("no supported postgres installations found")
 	}
 
 	h.SupportedPgEdgeVersions = versions
@@ -130,6 +128,15 @@ func defaultVersion(versions []*ds.PgEdgeVersion) *ds.PgEdgeVersion {
 		}
 	}
 	return versions[0]
+}
+
+// sharedPreloadLibraries omits snowflake, which is not available outside of
+// the pgEdge packages, and only includes spock when the version uses it.
+func sharedPreloadLibraries(version *ds.PgEdgeVersion) string {
+	if version.HasSpock() {
+		return "pg_stat_statements,spock"
+	}
+	return "pg_stat_statements"
 }
 
 func (o *Orchestrator) PopulateHostStatus(ctx context.Context, h *host.HostStatus) error {
@@ -252,7 +259,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 				PatroniPort:     patroniPort,
 				PostgresPort:    postgresPort,
 				OrchestratorParameters: map[string]any{
-					"shared_preload_libraries": "pg_stat_statements,spock",
+					"shared_preload_libraries": sharedPreloadLibraries(spec.PgEdgeVersion),
 				},
 				FQDN:  o.cfg.PeerAddress(),
 				Paths: paths,
