@@ -88,7 +88,7 @@ func hostToAPI(h *host.Host) *api.Host {
 	for i, v := range h.SupportedPgEdgeVersions {
 		supportedVersions[i] = &api.PgEdgeVersion{
 			PostgresVersion: v.PostgresVersion.String(),
-			SpockVersion:    v.SpockVersion.String(),
+			SpockVersion:    utils.NillablePointerTo(v.SpockVersionString()),
 			Stability:       utils.NillablePointerTo(string(v.Stability)),
 		}
 	}
@@ -104,7 +104,7 @@ func hostToAPI(h *host.Host) *api.Host {
 		EtcdMode:        utils.NillablePointerTo(string(h.EtcdMode)),
 		DefaultPgedgeVersion: &api.PgEdgeVersion{
 			PostgresVersion: h.DefaultPgEdgeVersion.PostgresVersion.String(),
-			SpockVersion:    h.DefaultPgEdgeVersion.SpockVersion.String(),
+			SpockVersion:    utils.NillablePointerTo(h.DefaultPgEdgeVersion.SpockVersionString()),
 			Stability:       utils.NillablePointerTo(string(h.DefaultPgEdgeVersion.Stability)),
 		},
 		SupportedPgedgeVersions: supportedVersions,
@@ -487,7 +487,8 @@ func instancePostgresStatusToAPI(status *database.InstanceStatus) *api.InstanceP
 }
 
 func instanceSpockStatusToAPI(status *database.InstanceStatus) *api.InstanceSpockStatus {
-	if status == nil || !status.IsPrimary() {
+	// SpockVersion is nil for databases that don't use Spock.
+	if status == nil || !status.IsPrimary() || status.SpockVersion == nil {
 		return nil
 	}
 	subs := make([]*api.InstanceSubscription, len(status.Subscriptions))

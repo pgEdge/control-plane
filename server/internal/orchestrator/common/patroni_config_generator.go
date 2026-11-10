@@ -221,7 +221,9 @@ func (p *PatroniConfigGenerator) AuthMethod() hba.AuthMethod {
 
 func (p *PatroniConfigGenerator) parameters() map[string]any {
 	parameters := postgres.DefaultGUCs(p.PgEdgeVersion, p.PeerInstanceIDs)
-	maps.Copy(parameters, postgres.SpockDefaultGUCs())
+	if p.PgEdgeVersion == nil || p.PgEdgeVersion.HasSpock() {
+		maps.Copy(parameters, postgres.SpockDefaultGUCs())
+	}
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{
 		"ssl":           "on",

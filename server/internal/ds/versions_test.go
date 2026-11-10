@@ -283,6 +283,13 @@ func TestNewPgEdgeVersion(t *testing.T) {
 		},
 		{
 			postgresVersion: "17.6",
+			spockVersion:    "",
+			expected: &ds.PgEdgeVersion{
+				PostgresVersion: &ds.Version{Components: []uint64{17, 6}},
+			},
+		},
+		{
+			postgresVersion: "17.6",
 			spockVersion:    "6.0.0-beta.1",
 			expected: &ds.PgEdgeVersion{
 				PostgresVersion: &ds.Version{Components: []uint64{17, 6}},
@@ -307,6 +314,26 @@ func TestPgEdgeVersion(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		version := ds.MustParsePgEdgeVersion("17.6", "5.0.0")
 		assert.Equal(t, "17.6_5.0.0", version.String())
+	})
+
+	t.Run("String without spock", func(t *testing.T) {
+		version := ds.MustParsePgEdgeVersion("17.6", "")
+		assert.Equal(t, "17.6", version.String())
+	})
+
+	t.Run("HasSpock", func(t *testing.T) {
+		assert.True(t, ds.MustParsePgEdgeVersion("17.6", "5").HasSpock())
+		assert.False(t, ds.MustParsePgEdgeVersion("17.6", "").HasSpock())
+	})
+
+	t.Run("SpockVersionString", func(t *testing.T) {
+		assert.Equal(t, "5", ds.MustParsePgEdgeVersion("17.6", "5").SpockVersionString())
+		assert.Equal(t, "", ds.MustParsePgEdgeVersion("17.6", "").SpockVersionString())
+	})
+
+	t.Run("Clone without spock", func(t *testing.T) {
+		version := ds.MustParsePgEdgeVersion("17.6", "")
+		assert.Equal(t, version, version.Clone())
 	})
 
 	t.Run("Compare", func(t *testing.T) {
@@ -338,6 +365,26 @@ func TestPgEdgeVersion(t *testing.T) {
 			{
 				a:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
 				b:        ds.MustParsePgEdgeVersion("17.6", "4.10.0"),
+				expected: 1,
+			},
+			{
+				a:        ds.MustParsePgEdgeVersion("17.6", ""),
+				b:        ds.MustParsePgEdgeVersion("17.6", ""),
+				expected: 0,
+			},
+			{
+				a:        ds.MustParsePgEdgeVersion("17.6", ""),
+				b:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
+				expected: -1,
+			},
+			{
+				a:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
+				b:        ds.MustParsePgEdgeVersion("17.6", ""),
+				expected: 1,
+			},
+			{
+				a:        ds.MustParsePgEdgeVersion("18.0", ""),
+				b:        ds.MustParsePgEdgeVersion("17.6", "5.0.0"),
 				expected: 1,
 			},
 		} {
@@ -374,6 +421,21 @@ func TestPgEdgeVersion(t *testing.T) {
 		assert.Equal(t, version, out)
 	})
 
+	t.Run("json marshal and unmarshal without spock", func(t *testing.T) {
+		version := &ds.PgEdgeVersion{
+			PostgresVersion: &ds.Version{Components: []uint64{17, 6}},
+		}
+
+		raw, err := json.Marshal(version)
+		assert.NoError(t, err)
+		assert.Equal(t, `{"postgres_version":"17.6","spock_version":null}`, string(raw))
+
+		var out *ds.PgEdgeVersion
+		err = json.Unmarshal(raw, &out)
+		assert.NoError(t, err)
+		assert.Equal(t, version, out)
+	})
+
 	t.Run("backwards compatibility", func(t *testing.T) {
 		// Make sure that we can unmarshal old values from storage
 		var out *ds.PgEdgeVersion
@@ -392,6 +454,16 @@ func TestPgEdgeVersion(t *testing.T) {
 		normalized, err := version.Normalize()
 		assert.NoError(t, err)
 		assert.Equal(t, ds.StabilityRC, normalized.Stability)
+	})
+
+	t.Run("Normalize without spock", func(t *testing.T) {
+		version := ds.MustParsePgEdgeVersion("17.6.3", "")
+
+		normalized, err := version.Normalize()
+		assert.NoError(t, err)
+		assert.Equal(t, &ds.PgEdgeVersion{
+			PostgresVersion: &ds.Version{Components: []uint64{17, 6}},
+		}, normalized)
 	})
 }
 

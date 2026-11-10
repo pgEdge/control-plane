@@ -24,26 +24,23 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/validation"
 )
 
+// validateConfLibraries validates the type of shared_preload_libraries. The
+// requirement to include spock depends on the database's version, so it's
+// checked in database.Service.PopulateSpecDefaults after versions are
+// defaulted.
 func validateConfLibraries(conf map[string]any, path validation.Path) []error {
 	// param names are case-insensitive, so comparison is done after casting to lowercase
 	for key, val := range conf {
 		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
 			continue
 		}
-		strVal, ok := val.(string)
-		if !ok {
+		if _, ok := val.(string); !ok {
 			err := fmt.Errorf("%q must be a string", key)
 			return []error{validation.NewError(err, path.AppendMapKey(key))}
 		}
-		for _, lib := range strings.Split(strVal, ",") {
-			if strings.TrimSpace(lib) == "spock" {
-				return nil
-			}
-		}
-		err := errors.New(`"spock" must be included in shared_preload_libraries`)
-		return []error{validation.NewError(err, path.AppendMapKey(key))}
+		return nil
 	}
-	return nil // key absent; defaults will be applied, including spock
+	return nil
 }
 
 // validatePgHbaConf checks that every non-comment pg_hba_conf entry parses.
@@ -142,8 +139,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 		}
 	}
 
-	// Reject postgresql_conf GUCs that would remove spock, then validate the
-	// pg_hba/pg_ident entries themselves.
+	// Validate the postgresql_conf GUCs and the pg_hba/pg_ident entries.
 	errs = append(errs, validateConfLibraries(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, validation.NewPath("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, validation.NewPath("pg_ident_conf"))...)
@@ -312,8 +308,8 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, old.DatabaseID, new.DatabaseUsers, newNodeNames)...)
 	}
 
-	// Validate that shared_preload_libraries, if explicitly set, still includes
-	// "spock" — both at the spec level and on individual nodes.
+	// Validate shared_preload_libraries, if explicitly set, both at the spec
+	// level and on individual nodes.
 	errs = append(errs, validateConfLibraries(new.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	for i, n := range new.Nodes {
 		nodePath := validation.NewPath("nodes", validation.ArrayIndexElement(i))

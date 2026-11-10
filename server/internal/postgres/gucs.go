@@ -23,7 +23,7 @@ var minOutputPluginLibrariesVersions = map[uint64]*ds.Version{
 // requires output_plugin_libraries to be set in order to allow spock_output
 // to create replication slots.
 func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
-	if version == nil || version.PostgresVersion == nil {
+	if version == nil || version.PostgresVersion == nil || !version.HasSpock() {
 		return false
 	}
 	pgVersion := version.PostgresVersion.MajorMinorVersion()
@@ -64,6 +64,9 @@ func DefaultGUCs(version *ds.PgEdgeVersion, peerInstanceIDs []string) map[string
 		"wal_level":                    "logical",
 		"wal_log_hints":                "on",
 		"wal_sender_timeout":           "5s",
+	}
+	if version != nil && !version.HasSpock() {
+		gucs["shared_preload_libraries"] = "pg_stat_statements,snowflake"
 	}
 	if needsOutputPluginLibraries(version) {
 		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
