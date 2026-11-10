@@ -55,7 +55,7 @@ type Version struct {
 }
 
 func (v *Version) Major() (uint64, bool) {
-	if len(v.Components) == 0 {
+	if v == nil || len(v.Components) == 0 {
 		return 0, false
 	}
 	return v.Components[0], true
@@ -110,6 +110,9 @@ func (v *Version) String() string {
 }
 
 func (v *Version) Clone() *Version {
+	if v == nil {
+		return nil
+	}
 	return &Version{
 		Components: slices.Clone(v.Components),
 		PreRelease: v.PreRelease,
@@ -280,7 +283,8 @@ func (s Stability) AllowedAsUpgradeTarget() bool {
 
 type PgEdgeVersion struct {
 	PostgresVersion *Version `json:"postgres_version"`
-	SpockVersion    *Version `json:"spock_version"`
+	// SpockVersion is nil when Spock is not installed or not used.
+	SpockVersion *Version `json:"spock_version"`
 	// Stability is the release stability of the manifest image backing this
 	// version. Empty when the host does not report one (eg. the systemd
 	// orchestrator); treat empty as stable.
@@ -295,13 +299,40 @@ func (v *PgEdgeVersion) Clone() *PgEdgeVersion {
 	}
 }
 
+// HasSpock returns true if this version includes Spock.
+func (v *PgEdgeVersion) HasSpock() bool {
+	return v.SpockVersion != nil
+}
+
+// SpockVersionString returns the Spock version as a string, or an empty string
+// if this version does not include Spock.
+func (v *PgEdgeVersion) SpockVersionString() string {
+	if !v.HasSpock() {
+		return ""
+	}
+	return v.SpockVersion.String()
+}
+
 func (v *PgEdgeVersion) String() string {
+	if !v.HasSpock() {
+		return v.PostgresVersion.String()
+	}
 	return fmt.Sprintf("%s_%s", v.PostgresVersion, v.SpockVersion)
 }
 
+// Compare compares the Postgres versions first, then the Spock versions. A
+// version without Spock sorts before a version with Spock.
 func (v *PgEdgeVersion) Compare(other *PgEdgeVersion) int {
 	if c := v.PostgresVersion.Compare(other.PostgresVersion); c != 0 {
 		return c
+	}
+	switch {
+	case !v.HasSpock() && !other.HasSpock():
+		return 0
+	case !v.HasSpock():
+		return -1
+	case !other.HasSpock():
+		return 1
 	}
 	return v.SpockVersion.Compare(other.SpockVersion)
 }
@@ -320,15 +351,18 @@ func (v *PgEdgeVersion) GreaterThan(other *PgEdgeVersion) bool {
 
 // Normalize returns the Postgres version in major.minor format and the Spock
 // version in major format. This matches the way that versions are currently
-// provided in our API.
+// provided in our API. A nil Spock version is left as-is.
 func (v *PgEdgeVersion) Normalize() (*PgEdgeVersion, error) {
 	pv := v.PostgresVersion.MajorMinorVersion()
 	if len(pv.Components) != 2 {
 		return nil, fmt.Errorf("expected at least a major and minor version for postgres, got '%s'", pv)
 	}
-	sv := v.SpockVersion.MajorVersion()
-	if len(sv.Components) != 1 {
-		return nil, fmt.Errorf("expected at least a major version for spock, got '%s'", sv)
+	var sv *Version
+	if v.HasSpock() {
+		sv = v.SpockVersion.MajorVersion()
+		if len(sv.Components) != 1 {
+			return nil, fmt.Errorf("expected at least a major version for spock, got '%s'", sv)
+		}
 	}
 
 	return &PgEdgeVersion{
@@ -346,14 +380,19 @@ func MustParsePgEdgeVersion(postgresVersion, spockVersion string) *PgEdgeVersion
 	return v
 }
 
+// ParsePgEdgeVersion parses the given Postgres and Spock versions. An empty
+// Spock version produces a version without Spock.
 func ParsePgEdgeVersion(postgresVersion, spockVersion string) (*PgEdgeVersion, error) {
 	pv, err := ParseVersion(postgresVersion)
 	if err != nil {
 		return nil, fmt.Errorf("invalid postgres version: '%s'", postgresVersion)
 	}
-	sv, err := ParseVersion(spockVersion)
-	if err != nil {
-		return nil, fmt.Errorf("invalid spock version: '%s'", spockVersion)
+	var sv *Version
+	if spockVersion != "" {
+		sv, err = ParseVersion(spockVersion)
+		if err != nil {
+			return nil, fmt.Errorf("invalid spock version: '%s'", spockVersion)
+		}
 	}
 	return &PgEdgeVersion{
 		PostgresVersion: pv,

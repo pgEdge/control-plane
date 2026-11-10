@@ -54,7 +54,7 @@ func (s *Service) ReconcileAllDatabaseVersions(ctx context.Context) error {
 				Str("host_id", instance.HostID).
 				Str("instance_id", instance.InstanceID).
 				Stringer("postgres_version", instance.PgEdgeVersion.PostgresVersion).
-				Stringer("spock_version", instance.PgEdgeVersion.SpockVersion).
+				Str("spock_version", instance.PgEdgeVersion.SpockVersionString()).
 				Msg("detected updated instance version")
 
 			instanceSpec, err := s.store.InstanceSpec.
@@ -137,7 +137,17 @@ func reconcileInstanceVersions(
 			continue
 		}
 		postgresVersion := utils.FromPointer(status.Status.PostgresVersion)
-		spockVersion := utils.FromPointer(status.Status.SpockVersion)
+		// We only observe the Spock version for instances that use Spock. The
+		// Spock version can be missing from the status before the extension
+		// is created, and we don't want to mistake that for an instance
+		// without Spock.
+		var spockVersion string
+		if instance.PgEdgeVersion.HasSpock() {
+			spockVersion = utils.FromPointer(status.Status.SpockVersion)
+			if spockVersion == "" {
+				continue
+			}
+		}
 		pgEdgeVersion, err := ds.ParsePgEdgeVersion(postgresVersion, spockVersion)
 		if err != nil {
 			continue
@@ -195,7 +205,7 @@ func reconcileNodeVersions(
 			continue
 		}
 		observedPostgresVersion := observed.PostgresVersion.String()
-		observedSpockVersion := observed.SpockVersion.String()
+		observedSpockVersion := observed.SpockVersionString()
 
 		if observedPostgresVersion != currentPostgresVersion {
 			node.PostgresVersion = observedPostgresVersion

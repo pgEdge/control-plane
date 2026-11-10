@@ -661,6 +661,12 @@ type InstanceSpec struct {
 	Locale          *Locale  `json:"locale,omitempty"`
 }
 
+// UsesSpock returns true if this instance's database uses Spock. Instances
+// without a version predate optional Spock, so they're assumed to use it.
+func (s *InstanceSpec) UsesSpock() bool {
+	return s.PgEdgeVersion == nil || s.PgEdgeVersion.HasSpock()
+}
+
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
 	s.Port = reconcilePort(current.Port, s.Port)
 	s.PatroniPort = reconcilePort(current.PatroniPort, s.PatroniPort)

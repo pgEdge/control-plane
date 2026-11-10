@@ -658,7 +658,7 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Meta("struct:tag:json", "postgres_version,omitempty")
 	})
 	g.Attribute("spock_version", g.String, func() {
-		g.Description("The major version of the Spock extension.")
+		g.Description("The major version of the Spock extension. Defaults to the Spock version of the hosts' default version. Absent when the database does not use Spock, which is only supported for single-node databases.")
 		g.Pattern(spockVersionPattern)
 		g.Example("5")
 		g.Meta("struct:tag:json", "spock_version,omitempty")

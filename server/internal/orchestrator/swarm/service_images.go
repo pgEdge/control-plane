@@ -24,6 +24,9 @@ func (s *ServiceImage) ValidateCompatibility(postgres, spock *ds.Version) error 
 		return fmt.Errorf("postgres version %s does not satisfy constraint %s",
 			postgres, s.PostgresConstraint)
 	}
+	if s.SpockConstraint != nil && spock == nil {
+		return fmt.Errorf("spock is required to satisfy constraint %s", s.SpockConstraint)
+	}
 	if s.SpockConstraint != nil && !s.SpockConstraint.IsSatisfied(spock) {
 		return fmt.Errorf("spock version %s does not satisfy constraint %s",
 			spock, s.SpockConstraint)
