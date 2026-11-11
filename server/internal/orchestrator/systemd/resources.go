@@ -6,4 +6,6 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PatroniConfig](registry, ResourceTypePatroniConfig)
 	resource.RegisterResourceType[*UnitResource](registry, ResourceTypeUnit)
 	resource.RegisterResourceType[*PgBackRestRestore](registry, ResourceTypePgBackRestRestore)
+	resource.RegisterResourceType[*PostgRESTConfig](registry, ResourceTypePostgRESTConfig)
+	resource.RegisterResourceType[*ServiceInstanceResource](registry, ResourceTypeServiceInstance)
 }

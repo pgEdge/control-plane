@@ -150,3 +150,22 @@ func TestCreateUserRole(t *testing.T) {
 		})
 	}
 }
+
+func TestRoleGrantStatements(t *testing.T) {
+	assert.Equal(t, postgres.Statement{SQL: `GRANT CONNECT ON DATABASE "app db" TO "web""user";`},
+		postgres.GrantConnect("app db", `web"user`))
+	assert.Equal(t, postgres.Statement{SQL: `GRANT "anon" TO "web""user";`},
+		postgres.GrantRole("anon", `web"user`))
+	assert.Equal(t, postgres.Statement{SQL: `ALTER ROLE "web""user" WITH NOINHERIT;`},
+		postgres.AlterRoleNoInherit(`web"user`))
+	assert.Equal(t, postgres.ConditionalStatement{
+		If: postgres.Query[bool]{
+			SQL: `SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @role) AND EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @member);`,
+			Args: pgx.NamedArgs{
+				"role":   "anon",
+				"member": `web"user`,
+			},
+		},
+		Then: postgres.Statement{SQL: `REVOKE "anon" FROM "web""user";`},
+	}, postgres.RevokeRole("anon", `web"user`))
+}

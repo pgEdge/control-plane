@@ -2,6 +2,8 @@ package swarm
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -34,6 +36,9 @@ func (s *ServiceImage) ValidateCompatibility(postgres, spock *ds.Version) error 
 type ServiceVersions struct {
 	cfg    config.Config
 	images map[string]map[string]*ServiceImage
+	// defaults maps each service type to the version that "latest" resolves
+	// to.
+	defaults map[string]string
 }
 
 
@@ -72,6 +77,24 @@ func (sv ServiceVersions) SupportedServiceVersions(serviceType string) ([]string
 	}
 
 	return versions, nil
+}
+
+// HostServiceVersions returns the supported versions of each service type,
+// excluding the "latest" alias, along with each service type's default
+// version.
+func (sv ServiceVersions) HostServiceVersions() (supported map[string][]string, defaults map[string]string) {
+	supported = make(map[string][]string, len(sv.images))
+	for serviceType, versionMap := range sv.images {
+		versions := make([]string, 0, len(versionMap))
+		for version := range versionMap {
+			if version != "latest" {
+				versions = append(versions, version)
+			}
+		}
+		slices.Sort(versions)
+		supported[serviceType] = versions
+	}
+	return supported, maps.Clone(sv.defaults)
 }
 
 func serviceImageTag(cfg config.Config, imageRef string) string {

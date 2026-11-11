@@ -136,6 +136,58 @@ func (c *Client) ReloadUnit(ctx context.Context, name string) error {
 	return nil
 }
 
+func (c *Client) RestartUnit(ctx context.Context, name string) error {
+	logger := c.logger.With().Str("unit", name).Logger()
+	logger.Debug().Msg("restarting unit")
+
+	resCh := make(chan string, 1)
+	pid, err := c.conn.RestartUnitContext(ctx, name, "replace", resCh)
+	if err != nil {
+		return fmt.Errorf("failed to restart unit '%s': %w", name, err)
+	}
+	res, err := awaitJob(ctx, resCh)
+	if err != nil {
+		return fmt.Errorf("failed to restart unit '%s': %w", name, err)
+	}
+
+	c.logger.Debug().
+		Str("response", res).
+		Int("pid", pid).
+		Msg("restarted unit")
+
+	return nil
+}
+
+// SignalUnit sends the given signal to the unit's main process.
+func (c *Client) SignalUnit(ctx context.Context, name string, signal syscall.Signal) error {
+	c.logger.Debug().
+		Str("unit", name).
+		Str("signal", signal.String()).
+		Msg("signaling unit")
+
+	if err := c.conn.KillUnitWithTarget(ctx, name, dbus.Main, int32(signal)); err != nil {
+		return fmt.Errorf("failed to send %s to unit '%s': %w", signal, name, err)
+	}
+
+	return nil
+}
+
+// ActiveState returns the unit's ActiveState property, e.g. "active",
+// "activating", "failed" or "inactive".
+func (c *Client) ActiveState(ctx context.Context, name string) (string, error) {
+	prop, err := c.conn.GetUnitPropertyContext(ctx, name, "ActiveState")
+	if err != nil {
+		return "", fmt.Errorf("failed to get ActiveState for unit '%s': %w", name, err)
+	}
+
+	state, ok := prop.Value.Value().(string)
+	if !ok {
+		return "", fmt.Errorf("unexpected type for ActiveState property of unit '%s'", name)
+	}
+
+	return state, nil
+}
+
 func (c *Client) ReloadOrRestartUnit(ctx context.Context, name string) error {
 	logger := c.logger.With().Str("unit", name).Logger()
 	logger.Debug().Msg("reloading or restarting unit")

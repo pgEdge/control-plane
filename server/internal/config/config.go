@@ -148,6 +148,7 @@ type SystemD struct {
 	PgBackRestPath  string            `koanf:"pgbackrest_path" json:"pgbackrest_path,omitempty"`
 	PatroniPath     string            `koanf:"patroni_path" json:"patroni_path,omitempty"`
 	PgBinDirs       map[string]string `koanf:"pg_bin_dirs" json:"pg_bin_dirs,omitzero"`
+	PostgRESTPath   string            `koanf:"postgrest_path" json:"postgrest_path,omitempty"`
 }
 
 func (s SystemD) validate() []error {
@@ -157,6 +158,9 @@ func (s SystemD) validate() []error {
 	}
 	if s.PatroniPath == "" {
 		errs = append(errs, errors.New("patroni_path cannot be empty"))
+	}
+	if s.PostgRESTPath != "" && !filepath.IsAbs(s.PostgRESTPath) {
+		errs = append(errs, fmt.Errorf("postgrest_path must be an absolute path, got '%s'", s.PostgRESTPath))
 	}
 	if !knownOSFamilies.Has(s.OSFamily) {
 		var families strings.Builder
@@ -215,6 +219,7 @@ func defaultSystemD() SystemD {
 		OSFamily:       getOSFamily(),
 		PgBackRestPath: "/usr/bin/pgbackrest",
 		PatroniPath:    "/usr/bin/patroni",
+		PostgRESTPath:  "/usr/bin/postgrest",
 	}
 }
 

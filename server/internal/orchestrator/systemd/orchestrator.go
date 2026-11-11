@@ -100,6 +100,20 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	h.SupportedPgEdgeVersions = versions
 	h.DefaultPgEdgeVersion = defaultVersion(versions)
 
+	// Services are optional, so a failure to detect them shouldn't prevent
+	// this host from running databases.
+	services, err := o.versionsProbe.InstalledServices(ctx)
+	if err != nil {
+		o.logger.Warn().Err(err).Msg("failed to get installed service versions")
+	}
+	h.SupportedServices = make(map[string][]string, len(services))
+	h.DefaultServiceVersions = make(map[string]string, len(services))
+	for serviceType, version := range services {
+		// Only one version of each service can be installed on a host.
+		h.SupportedServices[serviceType] = []string{version}
+		h.DefaultServiceVersions[serviceType] = version
+	}
+
 	h.CPUs = int(o.cpus)
 	h.MemBytes = o.memBytes
 
@@ -360,10 +374,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 	return database.NewInstanceResources(instance, instanceDependencies, dbDependencies, nodeDependents)
 }
 
-func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	return nil, errors.New("unimplemented")
-}
-
 func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceSpec, taskID uuid.UUID) (*database.InstanceResources, error) {
 	if spec.RestoreConfig == nil {
 		return nil, fmt.Errorf("missing restore config for node %s instance %s", spec.NodeName, spec.InstanceID)
@@ -433,10 +443,6 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
 		ClientPort:       postgresPortInt,
 		InstanceHostname: o.cfg.PeerAddress(),
 	}, nil
-}
-
-func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInstanceID string) (*database.ServiceInstanceStatus, error) {
-	return nil, errors.New("unimplemented")
 }
 
 func (o *Orchestrator) ExecuteInstanceCommand(ctx context.Context, w io.Writer, databaseID, instanceID string, args ...string) error {

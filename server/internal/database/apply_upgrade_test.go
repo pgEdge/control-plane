@@ -50,6 +50,9 @@ func (s *stubOrchestrator) GetInstanceConnectionInfo(context.Context, string, st
 func (s *stubOrchestrator) GetServiceInstanceStatus(context.Context, string) (*database.ServiceInstanceStatus, error) {
 	return nil, nil
 }
+func (s *stubOrchestrator) ReloadServiceInstance(context.Context, string, database.ReloadMode) error {
+	return nil
+}
 func (s *stubOrchestrator) CreatePgBackRestBackup(context.Context, io.Writer, *database.InstanceSpec, *pgbackrest.BackupOptions) error {
 	return nil
 }

@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"maps"
 	"slices"
 	"testing"
 
@@ -304,5 +305,45 @@ func TestValidateCompatibility(t *testing.T) {
 				t.Errorf("ValidateCompatibility() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestHostServiceVersions(t *testing.T) {
+	mf := &versionManifest{
+		Images: versionManifestImages{
+			PostgREST: []manifestServiceEntry{
+				{Version: "14.5", Image: "postgrest:14.5", Default: true},
+				{Version: "14.10", Image: "postgrest:14.10"},
+			},
+			// Without an explicit default, the last entry is the default.
+			MCP: []manifestServiceEntry{
+				{Version: "1.0.0", Image: "postgres-mcp:1.0.0"},
+				{Version: "1.1.0", Image: "postgres-mcp:1.1.0"},
+			},
+		},
+	}
+	sv, err := buildServiceVersions(config.Config{}, mf)
+	if err != nil {
+		t.Fatalf("buildServiceVersions: %v", err)
+	}
+
+	supported, defaults := sv.HostServiceVersions()
+
+	wantSupported := map[string][]string{
+		"postgrest": {"14.10", "14.5"},
+		"mcp":       {"1.0.0", "1.1.0"},
+	}
+	if len(supported) != len(wantSupported) {
+		t.Fatalf("HostServiceVersions() supported = %v, want %v", supported, wantSupported)
+	}
+	for serviceType, want := range wantSupported {
+		if got := supported[serviceType]; !slices.Equal(got, want) {
+			t.Errorf("HostServiceVersions() supported[%q] = %v, want %v", serviceType, got, want)
+		}
+	}
+
+	wantDefaults := map[string]string{"postgrest": "14.5", "mcp": "1.1.0"}
+	if !maps.Equal(defaults, wantDefaults) {
+		t.Errorf("HostServiceVersions() defaults = %v, want %v", defaults, wantDefaults)
 	}
 }

@@ -127,6 +127,9 @@ func (r *InstanceResources) InstanceState() (*resource.State, error) {
 type ServiceInstanceResources struct {
 	ServiceInstance *ServiceInstance
 	Resources       []*resource.ResourceData
+	// MonitorDependency is the resource that the service instance's monitor
+	// depends on. Orchestrators that leave it nil get the swarm default.
+	MonitorDependency *resource.Identifier
 }
 
 type ValidationResult struct {
@@ -202,6 +205,43 @@ type Orchestrator interface {
 	// Returns the validated upgrade descriptor on success, or
 	// ErrUpgradeNotAvailable (possibly wrapped) on any validation failure.
 	FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*AvailableUpgrade, error)
+	// ReloadServiceInstance makes a running service instance pick up its
+	// updated configuration using the given mode. It is a no-op when the
+	// service instance is not running yet, since it will read its current
+	// configuration when it starts.
+	ReloadServiceInstance(ctx context.Context, serviceInstanceID string, mode ReloadMode) error
+}
+
+// ReloadMode is how a service instance is made to pick up a configuration
+// change.
+type ReloadMode int
+
+const (
+	// ReloadModeRestart fully restarts the service instance.
+	ReloadModeRestart ReloadMode = iota
+	// ReloadModeSighup sends SIGHUP to the service process.
+	ReloadModeSighup
+	// ReloadModeSigusr1 sends SIGUSR1 to the service process. For PostgREST,
+	// this reloads the schema cache.
+	ReloadModeSigusr1
+	// ReloadModeSigusr2 sends SIGUSR2 to the service process. For PostgREST,
+	// this reloads the configuration file.
+	ReloadModeSigusr2
+)
+
+func (m ReloadMode) String() string {
+	switch m {
+	case ReloadModeRestart:
+		return "restart"
+	case ReloadModeSighup:
+		return "SIGHUP"
+	case ReloadModeSigusr1:
+		return "SIGUSR1"
+	case ReloadModeSigusr2:
+		return "SIGUSR2"
+	default:
+		return fmt.Sprintf("ReloadMode(%d)", int(m))
+	}
 }
 
 // AvailableUpgrade describes a single candidate image upgrade available for a
