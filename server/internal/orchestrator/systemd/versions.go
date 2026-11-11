@@ -47,10 +47,15 @@ type InstalledVersionsProbe struct {
 	ExecCommand ExecCommand
 	Fs          afero.Fs
 
+	osFamily      config.OSFamily
 	pgConfigPaths map[string]string
 	// servicePaths maps each supported service type to the path of its
 	// binary.
 	servicePaths map[string]string
+	// servicePackages maps the service types whose binary can't report its
+	// version to the package that installs it. Their version comes from the
+	// package manager instead.
+	servicePackages map[string]string
 }
 
 func NewInstalledVersionsProbe(
@@ -70,11 +75,19 @@ func NewInstalledVersionsProbe(
 	if cfg.PostgRESTPath != "" {
 		servicePaths["postgrest"] = cfg.PostgRESTPath
 	}
+	if cfg.MCPPath != "" {
+		servicePaths["mcp"] = cfg.MCPPath
+	}
 	return &InstalledVersionsProbe{
 		ExecCommand:   execCommand,
 		Fs:            fsys,
+		osFamily:      cfg.OSFamily,
 		pgConfigPaths: pgConfigPaths,
 		servicePaths:  servicePaths,
+		servicePackages: map[string]string{
+			// The MCP server binary has no version flag.
+			"mcp": mcpPackageName,
+		},
 	}, nil
 }
 
@@ -98,18 +111,63 @@ func (p *InstalledVersionsProbe) InstalledServices(ctx context.Context) (map[str
 			return nil, fmt.Errorf("%s is a directory", binPath)
 		}
 
-		var stdout, stderr strings.Builder
-		if err := p.ExecCommand(ctx, &stdout, &stderr, binPath, "--version"); err != nil {
-			return nil, fmt.Errorf("failed to get %s version: %w, stderr: %s", serviceType, err, &stderr)
+		var version string
+		if pkg, ok := p.servicePackages[serviceType]; ok {
+			version, err = p.packageVersion(ctx, pkg)
+		} else {
+			version, err = p.binaryVersion(ctx, binPath)
 		}
-		version, err := parseServiceVersionOutput(stdout.String())
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse %s version: %w", serviceType, err)
+			return nil, fmt.Errorf("failed to get %s version: %w", serviceType, err)
 		}
 		installed[serviceType] = version
 	}
 
 	return installed, nil
+}
+
+// binaryVersion returns the version reported by the binary's --version flag.
+func (p *InstalledVersionsProbe) binaryVersion(ctx context.Context, binPath string) (string, error) {
+	var stdout, stderr strings.Builder
+	if err := p.ExecCommand(ctx, &stdout, &stderr, binPath, "--version"); err != nil {
+		return "", fmt.Errorf("%w, stderr: %s", err, &stderr)
+	}
+	return parseServiceVersionOutput(stdout.String())
+}
+
+// packageVersion returns the upstream version of the given installed
+// package, without the package revision, e.g. "1.1.0-1.trixie" -> "1.1.0".
+func (p *InstalledVersionsProbe) packageVersion(ctx context.Context, pkg string) (string, error) {
+	var name string
+	var args []string
+	switch p.osFamily {
+	case config.OSFamilyRedHat:
+		name, args = "rpm", []string{"-q", "--queryformat", "%{VERSION}", pkg}
+	case config.OSFamilyDebian:
+		name, args = "dpkg-query", []string{"--show", "--showformat", "${Version}", pkg}
+	default:
+		return "", fmt.Errorf("unrecognized os family '%s'", p.osFamily)
+	}
+
+	var stdout, stderr strings.Builder
+	if err := p.ExecCommand(ctx, &stdout, &stderr, name, args...); err != nil {
+		return "", fmt.Errorf("failed to query package %s: %w, stderr: %s", pkg, err, &stderr)
+	}
+	return parsePackageVersion(stdout.String())
+}
+
+// parsePackageVersion extracts the upstream version from a package version,
+// dropping any epoch ("1:") and revision ("-1.trixie").
+func parsePackageVersion(output string) (string, error) {
+	version := strings.TrimSpace(output)
+	if _, after, ok := strings.Cut(version, ":"); ok {
+		version = after
+	}
+	version, _, _ = strings.Cut(version, "-")
+	if _, err := ds.ParseVersion(version); err != nil {
+		return "", fmt.Errorf("no version found in package version %q", strings.TrimSpace(output))
+	}
+	return version, nil
 }
 
 // parseServiceVersionOutput extracts the version from a service binary's

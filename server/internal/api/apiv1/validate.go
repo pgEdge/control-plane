@@ -190,7 +190,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 }
 
 // systemdServiceTypes are the service types that can run on systemd hosts.
-var systemdServiceTypes = ds.NewSet("postgrest")
+var systemdServiceTypes = ds.NewSet("postgrest", "mcp")
 
 // validateLocale performs basic validation of the locale fields. It
 // intentionally does not check whether the image or host has the requested

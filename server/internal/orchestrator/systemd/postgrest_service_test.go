@@ -146,9 +146,9 @@ func TestGeneratePostgRESTInstanceResources(t *testing.T) {
 	t.Run("unsupported service type", func(t *testing.T) {
 		o := newOrchestrator(t, "14.5")
 		spec := newSpec("1.0.0", utils.PointerTo(3100))
-		spec.ServiceSpec.ServiceType = "mcp"
+		spec.ServiceSpec.ServiceType = "rag"
 
 		_, err := o.GenerateServiceInstanceResources(spec)
-		assert.EqualError(t, err, `service type "mcp" is not supported on systemd hosts`)
+		assert.EqualError(t, err, `service type "rag" is not supported on systemd hosts`)
 	})
 }

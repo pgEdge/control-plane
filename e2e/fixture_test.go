@@ -291,6 +291,15 @@ func (f *TestFixture) SkipIfServicesUnsupported(t testing.TB) {
 	}
 }
 
+// SkipIfServiceVersionChangesUnsupported skips tests that move a service
+// between versions. A systemd host runs the single version of each service
+// that's installed on it.
+func (f *TestFixture) SkipIfServiceVersionChangesUnsupported(t testing.TB) {
+	if f.orchestrator == "systemd" {
+		t.Skip("systemd hosts run the single installed version of each service")
+	}
+}
+
 func (f *TestFixture) SkipIfUpgradesUnsupported(t testing.TB) {
 	if f.orchestrator == "systemd" {
 		t.Skip("database upgrades via dbspec not supported for systemd")

@@ -1,0 +1,29 @@
+http:
+  enabled: true
+  address: :8080
+  auth:
+    enabled: true
+    token_file: /app/data/tokens.yaml
+    user_file: /app/data/users.yaml
+databases:
+- name: mydb
+  hosts:
+  - host: postgres-inst-1
+    port: 5432
+  database: mydb
+  user: app
+  password: secret
+  sslmode: prefer
+  allow_writes: false
+  pool:
+    max_conns: 4
+llm:
+  enabled: true
+  provider: anthropic
+  model: claude-sonnet-4-5
+  anthropic_api_key: sk-ant
+  temperature: 0.2
+  max_tokens: 1024
+builtins:
+  tools:
+    llm_connection_selection: false

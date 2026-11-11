@@ -30,7 +30,8 @@ RUN curl -fsSL --retry 5 https://apt.pgedge.com/repodeb/pgedge-release_latest_al
       pgedge-postgresql-18-spock50 \
       pgedge-pgbackrest \
       pgedge-patroni \
-      pgedge-postgrest && \
+      pgedge-postgrest \
+      pgedge-postgres-mcp && \
     rm -rf /var/lib/apt/lists/*
 
 # Locally built CP package copying and installing

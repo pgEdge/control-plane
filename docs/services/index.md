@@ -17,8 +17,9 @@ The Control Plane supports the following service types:
   writing backend code.
 
 > [!NOTE]
-> Supporting Services are not yet supported on systemd clusters; support is
-> coming in a subsequent release.
+> On systemd clusters, PostgREST and MCP services are supported. Install the
+> `pgedge-postgrest` or `pgedge-postgres-mcp` package on each host that runs
+> the service. RAG services are not yet supported on systemd clusters.
 
 ## Service Instances
 

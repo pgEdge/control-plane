@@ -119,6 +119,11 @@ future release.
     and copy your file there, or use `kb_database_host_path` to specify
     a custom path.
 
+    On systemd clusters, the MCP server reads the file directly as the
+    `pgedge` user. Make sure that the `pgedge` user can read the file and
+    traverse each directory in its path. The Control Plane does not change
+    the file's ownership or permissions.
+
 The following table describes the knowledgebase configuration fields:
 
 | Field                     | Type    | Description |

@@ -1,0 +1,22 @@
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+User=999
+Group=999
+ExecStart=/usr/bin/pgedge-postgres-mcp -config /etc/pgedge-mcp/storefront-mcp-server-host-1/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+CPUQuota=50%
+MemoryMax=536870912
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+
+[X-pgEdge]
+Port=3200
+ServiceInstanceID=storefront-mcp-server-host-1
+ServiceType=mcp
+Version=1.1.0

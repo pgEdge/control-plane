@@ -87,17 +87,9 @@ func (o *Orchestrator) generatePostgRESTInstanceResources(spec *database.Service
 		return nil, err
 	}
 
-	u, err := o.userLookup(postgrestUser)
+	uid, gid, err := o.lookupServiceUser(postgrestUser, "pgedge-postgrest")
 	if err != nil {
-		return nil, fmt.Errorf("failed to look up the '%s' user, which should be created by the pgedge-postgrest package: %w", postgrestUser, err)
-	}
-	uid, err := strconv.Atoi(u.Uid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse uid for user '%s': %w", postgrestUser, err)
-	}
-	gid, err := strconv.Atoi(u.Gid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse gid for user '%s': %w", postgrestUser, err)
+		return nil, err
 	}
 
 	databaseInstances, err := serviceDatabaseInstances(spec)

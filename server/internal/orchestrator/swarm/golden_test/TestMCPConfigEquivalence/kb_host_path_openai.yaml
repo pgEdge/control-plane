@@ -1,0 +1,28 @@
+http:
+  enabled: true
+  address: :8080
+  auth:
+    enabled: true
+    token_file: /app/data/tokens.yaml
+    user_file: /app/data/users.yaml
+databases:
+- name: mydb
+  hosts:
+  - host: postgres-inst-1
+    port: 5432
+  database: mydb
+  user: app
+  password: secret
+  sslmode: prefer
+  allow_writes: false
+  pool:
+    max_conns: 4
+knowledgebase:
+  enabled: true
+  database_path: /app/kb/custom-kb.db
+  embedding_provider: openai
+  embedding_model: kb-model
+  embedding_openai_api_key: kb-key
+builtins:
+  tools:
+    llm_connection_selection: false

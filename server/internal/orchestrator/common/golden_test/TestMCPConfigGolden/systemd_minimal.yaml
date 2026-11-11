@@ -1,0 +1,26 @@
+http:
+  enabled: true
+  address: :9000
+  auth:
+    enabled: true
+    token_file: /var/lib/pgedge/postgres-mcp/inst-1/tokens.yaml
+    user_file: /var/lib/pgedge/postgres-mcp/inst-1/users.yaml
+databases:
+- name: mydb
+  hosts:
+  - host: 10.0.0.1
+    port: 6432
+  - host: 10.0.0.2
+    port: 6433
+  target_session_attrs: read-write
+  database: mydb
+  user: app
+  password: secret
+  sslmode: prefer
+  allow_writes: false
+  pool:
+    max_conns: 4
+builtins:
+  tools:
+    llm_connection_selection: false
+data_dir: /var/lib/pgedge/postgres-mcp/inst-1

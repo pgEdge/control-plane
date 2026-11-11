@@ -441,7 +441,7 @@ func TestInstalledServices(t *testing.T) {
 			outputs: map[string]mockPgConfigOutput{
 				postgrestPath: {stdout: "PostgREST dev\n"},
 			},
-			expectedErr: `failed to parse postgrest version: no version found in output "PostgREST dev"`,
+			expectedErr: `failed to get postgrest version: no version found in output "PostgREST dev"`,
 		},
 		{
 			name:          "command fails",
@@ -684,3 +684,88 @@ module_pathname = '$libdir/spock'
 relocatable = false
 
 schema = spock`
+
+func TestInstalledServicesMCP(t *testing.T) {
+	const mcpPath = "/usr/bin/pgedge-postgres-mcp"
+
+	for _, tc := range []struct {
+		name           string
+		osFamily       config.OSFamily
+		fsys           func() afero.Fs
+		outputs        map[string]mockPgConfigOutput
+		expectedOutput map[string]string
+		expectedErr    string
+	}{
+		{
+			name:     "rpm",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stdout: "1.1.0"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:     "deb strips the revision",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.1.0-1.trixie"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:     "deb strips the epoch",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "2:1.1.0-1.noble"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:           "binary not installed",
+			osFamily:       config.OSFamilyRedHat,
+			fsys:           testFs(nil),
+			expectedOutput: map[string]string{},
+		},
+		{
+			name:     "package query fails",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stderr: "package pgedge-postgres-mcp is not installed", err: errors.New("exit status 1")},
+			},
+			expectedErr: "failed to get mcp version: failed to query package pgedge-postgres-mcp: exit status 1, stderr: package pgedge-postgres-mcp is not installed",
+		},
+		{
+			name:     "unparseable version",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stdout: "dev"},
+			},
+			expectedErr: `failed to get mcp version: no version found in package version "dev"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			probe, err := systemd.NewInstalledVersionsProbe(
+				mockPgConfigExecCommand(t, tc.outputs),
+				tc.fsys(),
+				config.SystemD{
+					OSFamily: tc.osFamily,
+					MCPPath:  mcpPath,
+				},
+			)
+			require.NoError(t, err)
+
+			actual, err := probe.InstalledServices(t.Context())
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedOutput, actual)
+			}
+		})
+	}
+}

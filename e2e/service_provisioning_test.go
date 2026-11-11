@@ -19,8 +19,6 @@ import (
 func TestProvisionMCPService(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -56,6 +54,7 @@ func TestProvisionMCPService(t *testing.T) {
 					//Version:     "1.0.0",
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:    pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -128,15 +127,19 @@ func TestProvisionMCPService(t *testing.T) {
 				t.Logf("  - %s: container_port=%v", port.Name, port.ContainerPort)
 			}
 
-			// Verify HTTP port (8080) is exposed
+			// Verify the HTTP port is exposed. Swarm containers listen on
+			// 8080, while systemd units listen on their allocated port.
 			foundHTTPPort := false
 			for _, port := range serviceInstance.Status.Ports {
-				if port.Name == "http" && port.ContainerPort != nil && *port.ContainerPort == 8080 {
+				if port.Name != "http" || port.ContainerPort == nil {
+					continue
+				}
+				if *port.ContainerPort == 8080 || fixture.Orchestrator() == "systemd" {
 					foundHTTPPort = true
 					break
 				}
 			}
-			assert.True(t, foundHTTPPort, "HTTP port (8080) should be configured")
+			assert.True(t, foundHTTPPort, "HTTP port should be configured")
 		}
 	} else {
 		t.Log("Service instance status not yet populated (this may be expected if container is still starting)")
@@ -148,8 +151,6 @@ func TestProvisionMCPService(t *testing.T) {
 // TestProvisionMultiHostMCPService tests provisioning MCP service on multiple hosts.
 func TestProvisionMultiHostMCPService(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -192,6 +193,7 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 						controlplane.Identifier(host2),
 						controlplane.Identifier(host3),
 					},
+					Port: pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":    true,
 						"llm_provider":   "openai",
@@ -236,8 +238,6 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 // depends on a service already being present.
 func TestUpdateDatabaseService(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -304,6 +304,7 @@ func TestUpdateDatabaseService(t *testing.T) {
 						//Version:     "1.0.0",
 						Version: "latest",
 						HostIds: []controlplane.Identifier{controlplane.Identifier(host2)},
+						Port:    pointerTo(0),
 						Config: map[string]any{
 							"llm_enabled":  true,
 							"llm_provider": "ollama",
@@ -379,8 +380,6 @@ func TestUpdateDatabaseService(t *testing.T) {
 func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -414,6 +413,7 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "99.99.99", // Valid semver but not registered in ServiceVersions
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -443,8 +443,6 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 //  4. Verify the database is "available" and the service instance is created and running
 func TestProvisionMCPServiceRecovery(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -530,6 +528,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "99.99.99", // Unsupported version - rejected at submit time
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -585,6 +584,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 						ConnectAs:   "admin",
 						Version:     "latest", // Corrected version
 						HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+						Port:        pointerTo(0),
 						Config: map[string]any{
 							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
@@ -680,8 +680,6 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 func TestUpdateDatabaseServiceStable(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -715,6 +713,7 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -786,6 +785,7 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -826,8 +826,6 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 func TestUpdateMCPServiceConfig(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -861,6 +859,7 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -926,6 +925,7 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -975,8 +975,6 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -1010,6 +1008,7 @@ func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "1.1.0",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
@@ -1039,7 +1038,7 @@ func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
 func TestUpdateMCPServiceVersion(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
+	fixture.SkipIfServiceVersionChangesUnsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -1074,6 +1073,7 @@ func TestUpdateMCPServiceVersion(t *testing.T) {
 					ConnectAs:   "admin",
 					Version:     "1.0.0",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Port:        pointerTo(0),
 					Config: map[string]any{
 						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
