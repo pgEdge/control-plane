@@ -1,0 +1,29 @@
+http:
+  enabled: true
+  address: :8080
+  auth:
+    enabled: true
+    token_file: /app/data/tokens.yaml
+    user_file: /app/data/users.yaml
+databases:
+- name: mydb
+  hosts:
+  - host: postgres-inst-1
+    port: 5432
+  database: mydb
+  user: app
+  password: secret
+  sslmode: prefer
+  allow_writes: false
+  pool:
+    max_conns: 4
+llm:
+  enabled: true
+  provider: openai
+  model: gpt-4o
+  openai_api_key: sk-openai
+  temperature: 0.7
+  max_tokens: 4096
+builtins:
+  tools:
+    llm_connection_selection: false

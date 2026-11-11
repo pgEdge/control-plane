@@ -1,0 +1,24 @@
+http:
+  enabled: true
+  address: :8080
+  auth:
+    enabled: true
+    token_file: /app/data/tokens.yaml
+    user_file: /app/data/users.yaml
+databases:
+- name: mydb
+  hosts:
+  - host: postgres-inst-1
+    port: 5432
+  database: mydb
+  user: app
+  password: secret
+  sslmode: prefer
+  allow_writes: false
+  pool:
+    max_conns: 4
+builtins:
+  tools:
+    llm_connection_selection: false
+trace_file: /app/data/audit-trace.log
+trace_metadata_only: true

@@ -33,7 +33,7 @@ const (
 )
 
 // supportedServiceTypes are the service types that can run on systemd hosts.
-var supportedServiceTypes = []string{"postgrest"}
+var supportedServiceTypes = []string{"postgrest", "mcp"}
 
 func serviceUnitName(serviceType, serviceInstanceID string) string {
 	return fmt.Sprintf("%s-%s.service", serviceType, serviceInstanceID)
@@ -141,7 +141,7 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 				HostPort:      utils.PointerTo(unit.Port),
 			},
 		},
-		ServiceReady: utils.PointerTo(serviceServing(ctx, unit.Port) == nil),
+		ServiceReady: utils.PointerTo(serviceServing(ctx, unit.ServiceType, unit.Port) == nil),
 	}
 	if unit.Version != "" {
 		status.ImageVersion = utils.PointerTo(unit.Version)
@@ -151,14 +151,19 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 }
 
 // serviceServing checks that the service is accepting HTTP requests on the
-// given port. Any response below 500 means that the service is up and able to
-// serve requests. Server errors, e.g. PostgREST's 503 when it can't reach the
-// database, mean it isn't.
-func serviceServing(ctx context.Context, port int) error {
+// given port. For PostgREST, any response below 500 means that the service is
+// up and able to serve requests, while server errors, e.g. its 503 when it
+// can't reach the database, mean it isn't. The MCP server's health endpoint
+// returns 200 once it's serving.
+func serviceServing(ctx context.Context, serviceType string, port int) error {
 	ctx, cancel := context.WithTimeout(ctx, serviceHealthCheckTimeout)
 	defer cancel()
 
-	url := "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port)) + "/"
+	path := "/"
+	if serviceType == "mcp" {
+		path = "/health"
+	}
+	url := "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port)) + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -169,7 +174,8 @@ func serviceServing(ctx context.Context, port int) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= http.StatusInternalServerError {
+	if resp.StatusCode >= http.StatusInternalServerError ||
+		(serviceType == "mcp" && resp.StatusCode != http.StatusOK) {
 		return fmt.Errorf("service responded with status %d", resp.StatusCode)
 	}
 
@@ -180,9 +186,29 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	switch spec.ServiceSpec.ServiceType {
 	case "postgrest":
 		return o.generatePostgRESTInstanceResources(spec)
+	case "mcp":
+		return o.generateMCPInstanceResources(spec)
 	default:
 		return nil, fmt.Errorf("service type %q is not supported on systemd hosts", spec.ServiceSpec.ServiceType)
 	}
+}
+
+// lookupServiceUser returns the uid and gid of the Linux user that a service
+// runs as, which its package creates.
+func (o *Orchestrator) lookupServiceUser(username, pkg string) (int, int, error) {
+	u, err := o.userLookup(username)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to look up the '%s' user, which should be created by the %s package: %w", username, pkg, err)
+	}
+	uid, err := strconv.Atoi(u.Uid)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse uid for user '%s': %w", username, err)
+	}
+	gid, err := strconv.Atoi(u.Gid)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse gid for user '%s': %w", username, err)
+	}
+	return uid, gid, nil
 }
 
 // installedServiceVersion returns the installed version of the given service,
