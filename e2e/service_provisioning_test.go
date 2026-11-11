@@ -127,15 +127,20 @@ func TestProvisionMCPService(t *testing.T) {
 				t.Logf("  - %s: container_port=%v", port.Name, port.ContainerPort)
 			}
 
-			// Verify the HTTP port is exposed. Swarm containers listen on
-			// 8080, while systemd units listen on their allocated port.
+			// Verify the HTTP port is exposed. Swarm reports the published
+			// container port 8080 under its protocol name, while systemd
+			// reports an "http" port on the allocated port.
 			foundHTTPPort := false
 			for _, port := range serviceInstance.Status.Ports {
-				if port.Name != "http" || port.ContainerPort == nil {
+				if port.ContainerPort == nil {
 					continue
 				}
-				if *port.ContainerPort == 8080 || fixture.Orchestrator() == "systemd" {
-					foundHTTPPort = true
+				if fixture.Orchestrator() == "systemd" {
+					foundHTTPPort = port.Name == "http"
+				} else {
+					foundHTTPPort = *port.ContainerPort == 8080
+				}
+				if foundHTTPPort {
 					break
 				}
 			}
