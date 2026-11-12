@@ -20,24 +20,26 @@ const (
 	candidateSlotsPollInterval = 5 * time.Second
 )
 
-// missingSlotCopies returns the names of the primary's persistent Spock slots
-// that the replica doesn't hold as persistent slots.
+// missingSlotCopies returns the names of the primary's usable, persistent
+// Spock slots that the replica doesn't hold as usable, persistent slots.
 //
 // Spock copies each slot to a replica as a temporary slot, and persists the
 // copy once the primary's slot has moved past the replica's position.
 // Promotion drops temporary slots, so promoting a replica that lacks a
 // persistent copy leaves the peer subscriptions that read from that slot
-// without one, and they stop replicating.
+// without one, and they stop replicating. An invalidated copy can't serve
+// them either. An invalidated slot on the primary is skipped, because no copy
+// of it could serve a subscriber.
 func missingSlotCopies(primary, replica []postgres.SpockSlot) []string {
-	persisted := make(map[string]bool, len(replica))
+	ready := make(map[string]bool, len(replica))
 	for _, slot := range replica {
-		if !slot.Temporary {
-			persisted[slot.Name] = true
+		if !slot.Temporary && slot.Usable {
+			ready[slot.Name] = true
 		}
 	}
 	var missing []string
 	for _, slot := range primary {
-		if !slot.Temporary && !persisted[slot.Name] {
+		if !slot.Temporary && slot.Usable && !ready[slot.Name] {
 			missing = append(missing, slot.Name)
 		}
 	}

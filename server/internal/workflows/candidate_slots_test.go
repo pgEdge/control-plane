@@ -17,7 +17,10 @@ import (
 
 func TestMissingSlotCopies(t *testing.T) {
 	slot := func(name string, temporary bool) postgres.SpockSlot {
-		return postgres.SpockSlot{Name: name, Temporary: temporary}
+		return postgres.SpockSlot{Name: name, Temporary: temporary, Usable: true}
+	}
+	invalidated := func(name string) postgres.SpockSlot {
+		return postgres.SpockSlot{Name: name}
 	}
 
 	for _, tc := range []struct {
@@ -56,6 +59,17 @@ func TestMissingSlotCopies(t *testing.T) {
 			primary: []postgres.SpockSlot{slot("a", false)},
 			replica: []postgres.SpockSlot{slot("a", false), slot("old", false)},
 		},
+		{
+			name:     "invalidated copy on the replica",
+			primary:  []postgres.SpockSlot{slot("a", false), slot("b", false)},
+			replica:  []postgres.SpockSlot{slot("a", false), invalidated("b")},
+			expected: []string{"b"},
+		},
+		{
+			name:    "invalidated slot on the primary is ignored",
+			primary: []postgres.SpockSlot{slot("a", false), invalidated("lost")},
+			replica: []postgres.SpockSlot{slot("a", false)},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, missingSlotCopies(tc.primary, tc.replica))
@@ -84,8 +98,8 @@ func TestCandidateOrder(t *testing.T) {
 }
 
 func TestChooseCandidate(t *testing.T) {
-	persistent := []postgres.SpockSlot{{Name: "spk_db_n1_sub_n1_n2"}}
-	temporary := []postgres.SpockSlot{{Name: "spk_db_n1_sub_n1_n2", Temporary: true}}
+	persistent := []postgres.SpockSlot{{Name: "spk_db_n1_sub_n1_n2", Usable: true}}
+	temporary := []postgres.SpockSlot{{Name: "spk_db_n1_sub_n1_n2", Temporary: true, Usable: true}}
 	instances := []*activities.InstanceHost{
 		{InstanceID: "n1-a", HostID: "host-1"},
 		{InstanceID: "n1-b", HostID: "host-2"},

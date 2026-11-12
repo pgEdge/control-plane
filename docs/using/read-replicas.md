@@ -176,5 +176,7 @@ To prevent this, switchover and failover operations only promote a replica that 
 
 - If the current primary can't be reached, the Control Plane can't check the copies and promotes the candidate without waiting.
 
+- A scheduled switchover (`scheduled_at`) is checked when you submit it, not when it runs. Patroni performs it at the scheduled time without checking again, so avoid changes that add or recreate slots in the meantime, such as adding a node to the database.
+
 Automatic failovers performed by Patroni when a primary goes down are not covered by this check.
 
