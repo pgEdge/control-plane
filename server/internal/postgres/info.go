@@ -50,3 +50,18 @@ func GetSubscriptionStatuses() Query[SubscriptionStatus] {
 		SQL: "SELECT to_json(spock.sub_show_status(sub_name)) from spock.subscription;",
 	}
 }
+
+// SpockSlot is a logical replication slot that a peer node's Spock
+// subscription reads from.
+type SpockSlot struct {
+	Name string `db:"slot_name"`
+	// Temporary is true while Spock is still syncing a slot copy to a
+	// replica. Promotion drops temporary slots.
+	Temporary bool `db:"temporary"`
+}
+
+func GetSpockSlots() Query[SpockSlot] {
+	return Query[SpockSlot]{
+		SQL: "SELECT slot_name, temporary FROM pg_replication_slots WHERE plugin = 'spock_output' ORDER BY slot_name;",
+	}
+}

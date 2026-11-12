@@ -18,12 +18,11 @@ RUN apt-get update && \
           /lib/systemd/system/basic.target.wants/* && \
     rm -rf /var/lib/apt/lists/*
 
-# pgEdge prerequisites from the staging repo. 
+# pgEdge prerequisites from the release repo, so CI tests certified builds.
 RUN curl -fsSL --retry 5 https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb \
       -o /tmp/pgedge-release.deb && \
     dpkg -i /tmp/pgedge-release.deb && \
     rm /tmp/pgedge-release.deb && \
-    sed -i 's/release/staging/g' /etc/apt/sources.list.d/pgedge.sources && \
     apt-get update -o Acquire::Retries=5 && \
     apt-get install -y -o Acquire::Retries=5 \
       pgedge-postgresql-18 \
