@@ -16,11 +16,10 @@ RUN dnf install -y systemd systemd-sysv sudo && \
     sed -i '1a account    sufficient   pam_rootok.so' /etc/pam.d/sudo && \
     dnf clean all
 
-# pgEdge prerequisites from the staging repo. 
+# pgEdge prerequisites from the release repo, so CI tests certified builds.
 RUN dnf install -y --setopt=retries=10 epel-release && \
     dnf config-manager --set-enabled crb && \
     dnf install -y --nogpgcheck https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm && \
-    sed -i 's/release/staging/g' /etc/yum.repos.d/pgedge.repo && \
     dnf install -y --setopt=retries=10 \
       pgedge-postgresql18 \
       pgedge-spock50_18 \

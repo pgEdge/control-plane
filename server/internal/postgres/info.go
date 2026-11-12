@@ -50,3 +50,28 @@ func GetSubscriptionStatuses() Query[SubscriptionStatus] {
 		SQL: "SELECT to_json(spock.sub_show_status(sub_name)) from spock.subscription;",
 	}
 }
+
+// SpockSlot is a logical replication slot that a peer node's Spock
+// subscription reads from.
+type SpockSlot struct {
+	Name string `db:"slot_name"`
+	// Temporary is true while Spock is still syncing a slot copy to a
+	// replica. Promotion drops temporary slots.
+	Temporary bool `db:"temporary"`
+	// Usable is false when the slot has been invalidated, either because
+	// the WAL it needs was removed or because of a recovery conflict. A
+	// subscription can't resume from it.
+	Usable bool `db:"usable"`
+}
+
+// GetSpockSlots lists the Spock replication slots. The conflicting column
+// exists from Postgres 16, the oldest version that Spock 5 supports here.
+func GetSpockSlots() Query[SpockSlot] {
+	return Query[SpockSlot]{
+		SQL: `SELECT slot_name, temporary,
+				wal_status IS DISTINCT FROM 'lost' AND NOT coalesce(conflicting, false) AS usable
+			FROM pg_replication_slots
+			WHERE plugin = 'spock_output'
+			ORDER BY slot_name;`,
+	}
+}

@@ -117,22 +117,16 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 
 	logger.Info("primary resolved", "leader_instance", leaderInstanceID, "leader_host", leaderHostID)
 
-	candidateID := in.CandidateInstanceID
-	if candidateID == "" {
-		selIn := &activities.SelectCandidateInput{
-			DatabaseID:      in.DatabaseID,
-			NodeName:        in.NodeName,
-			ExcludeInstance: leaderInstanceID,
-			Instances:       in.Instances,
-		}
-		selOut, err := w.Activities.ExecuteSelectCandidate(ctx, selIn).Get(ctx)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("candidate selection failed: %w", err))
-		}
-		if selOut == nil || selOut.CandidateInstanceID == "" {
-			return nil, handleError(fmt.Errorf("no eligible candidate found"))
-		}
-		candidateID = selOut.CandidateInstanceID
+	candidateID, err := w.chooseCandidate(ctx, logger, &chooseCandidateInput{
+		DatabaseID:       in.DatabaseID,
+		NodeName:         in.NodeName,
+		Instances:        in.Instances,
+		LeaderInstanceID: leaderInstanceID,
+		LeaderHostID:     leaderHostID,
+		Requested:        in.CandidateInstanceID,
+	})
+	if err != nil {
+		return nil, handleError(err)
 	}
 
 	logger.Info("candidate chosen", "candidate_instance", candidateID)
