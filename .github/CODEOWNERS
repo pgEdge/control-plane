@@ -1,0 +1,28 @@
+# Code owners under the Code Review and Commit Policy v2.0.
+# control-plane is Tier 3. The last matching line wins.
+
+# Tier 3: every change needs a code owner's approval.
+*  @jason-lynch @tsivaprasad
+
+# Workflows, release, packaging and signing: a code owner or build-packaging.
+/.github/workflows/  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+/.github/actions/  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+action.yml  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+action.yaml  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+.goreleaser*.yml  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+.goreleaser*.yaml  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+*.spec  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+debian/  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+rpm/  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+packaging/  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+release*.sh  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+sign*.sh  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+sign*.py  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+Dockerfile*  @jason-lynch @tsivaprasad @pgEdge/build-packaging
+
+# Ownership and AI review configuration: code owners only.
+/CODEOWNERS  @jason-lynch @tsivaprasad
+/.github/CODEOWNERS  @jason-lynch @tsivaprasad
+/docs/CODEOWNERS  @jason-lynch @tsivaprasad
+/REVIEW.md  @jason-lynch @tsivaprasad
+/.coderabbit.yaml  @jason-lynch @tsivaprasad
