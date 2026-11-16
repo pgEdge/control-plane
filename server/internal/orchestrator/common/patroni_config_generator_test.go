@@ -101,6 +101,50 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 		},
 		{
+			name: "with failover slots database",
+			options: common.PatroniConfigGeneratorOptions{
+				Instance: &database.InstanceSpec{
+					InstanceID:   "storefront-n1-689qacsi",
+					DatabaseID:   "storefront",
+					HostID:       "host-1",
+					DatabaseName: "app",
+					NodeName:     "n1",
+					NodeOrdinal:  1,
+					NodeSize:     1,
+					// spock.failover_slots_database is only set for Spock
+					// 5.0.14 and later.
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("18.1", "5.0.14"),
+					ClusterSize:   3,
+				},
+				HostCPUs:        4,
+				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
+				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				LogType:         patroni.LogTypeJson,
+				OrchestratorParameters: map[string]any{
+					"shared_preload_libraries": "pg_stat_statements,snowflake,spock,postgis-3",
+				},
+				PatroniPort:  8888,
+				PostgresPort: 5432,
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
+					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
+					PgBackRestPath: "/usr/bin/pgbackrest",
+					PatroniPath:    "/usr/local/bin/patroni",
+				},
+			},
+			etcdHosts: []string{"i-0123456789abcdef.ec2.internal:2379"},
+			etcdCreds: &common.EtcdCreds{
+				Username: "instance.storefront-n1-689qacsi",
+				Password: "password",
+			},
+			generateOptions: common.GenerateOptions{
+				SystemAddresses: []string{
+					"172.17.0.1",
+					"10.128.165.128/26",
+				},
+			},
+		},
+		{
 			name: "with locale",
 			options: common.PatroniConfigGeneratorOptions{
 				Instance: &database.InstanceSpec{

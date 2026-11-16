@@ -23,7 +23,6 @@ RUN curl -fsSL --retry 5 https://apt.pgedge.com/repodeb/pgedge-release_latest_al
       -o /tmp/pgedge-release.deb && \
     dpkg -i /tmp/pgedge-release.deb && \
     rm /tmp/pgedge-release.deb && \
-    sed -i 's/release/staging/g' /etc/apt/sources.list.d/pgedge.sources && \
     apt-get update -o Acquire::Retries=5 && \
     apt-get install -y -o Acquire::Retries=5 \
       pgedge-postgresql-18 \

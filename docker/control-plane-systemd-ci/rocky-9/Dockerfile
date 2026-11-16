@@ -20,7 +20,6 @@ RUN dnf install -y systemd systemd-sysv sudo && \
 RUN dnf install -y --setopt=retries=10 epel-release && \
     dnf config-manager --set-enabled crb && \
     dnf install -y --nogpgcheck https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm && \
-    sed -i 's/release/staging/g' /etc/yum.repos.d/pgedge.repo && \
     dnf install -y --setopt=retries=10 \
       pgedge-postgresql18 \
       pgedge-spock50_18 \

@@ -146,8 +146,12 @@ func nativeFailoverSlotMajors(version *ds.PgEdgeVersion) (spockMajor, pgMajor ui
 	return spockMajor, pgMajor, true
 }
 
-func SpockDefaultGUCs() map[string]any {
-	return map[string]any{
+var failoverSlotsDatabaseConstraint = ds.VersionConstraint{
+	Min: ds.MustParseVersion("5.0.14"),
+}
+
+func SpockDefaultGUCs(dbName string, version *ds.PgEdgeVersion) map[string]any {
+	gucs := map[string]any{
 		"spock.enable_ddl_replication":   "on",
 		"spock.include_ddl_repset":       "on",
 		"spock.allow_ddl_from_functions": "on",
@@ -155,6 +159,10 @@ func SpockDefaultGUCs() map[string]any {
 		"spock.save_resolutions":         "on",
 		"spock.conflict_log_level":       "DEBUG",
 	}
+	if dbName != "" && version != nil && failoverSlotsDatabaseConstraint.IsSatisfied(version.SpockVersion) {
+		gucs["spock.failover_slots_database"] = dbName
+	}
+	return gucs
 }
 
 func SnowflakeLolorGUCs(nodeOrdinal int) map[string]any {
