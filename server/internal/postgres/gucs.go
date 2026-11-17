@@ -146,8 +146,51 @@ func nativeFailoverSlotMajors(version *ds.PgEdgeVersion) (spockMajor, pgMajor ui
 	return spockMajor, pgMajor, true
 }
 
-func SpockDefaultGUCs() map[string]any {
-	return map[string]any{
+// failoverSlotsDatabaseConstraint matches the Spock versions that have the
+// spock.failover_slots_database setting.
+var failoverSlotsDatabaseConstraint = ds.VersionConstraint{
+	Min: ds.MustParseVersion("5.0.14"),
+}
+
+// failoverSlotsDatabaseMinPostgres maps each Postgres major version to its
+// first minor version that ships with Spock 5.0.14.
+var failoverSlotsDatabaseMinPostgres = map[uint64]*ds.Version{
+	16: ds.MustParseVersion("16.16"),
+	17: ds.MustParseVersion("17.12"),
+	18: ds.MustParseVersion("18.7"),
+}
+
+// supportsFailoverSlotsDatabase reports whether the given version's Spock has
+// the spock.failover_slots_database setting. Database specs only declare the
+// Spock major version, so when that's all we have for Spock 5, we use the
+// Postgres version to tell whether it ships with Spock 5.0.14 or later.
+func supportsFailoverSlotsDatabase(version *ds.PgEdgeVersion) bool {
+	if version == nil || version.SpockVersion == nil || version.PostgresVersion == nil {
+		return false
+	}
+	spockMajor, ok := version.SpockVersion.Major()
+	if !ok {
+		return false
+	}
+	if spockMajor != 5 || len(version.SpockVersion.Components) > 1 {
+		return failoverSlotsDatabaseConstraint.IsSatisfied(version.SpockVersion)
+	}
+	pgVersion := version.PostgresVersion.MajorMinorVersion()
+	pgMajor, ok := pgVersion.Major()
+	if !ok {
+		return false
+	}
+	minPostgres, ok := failoverSlotsDatabaseMinPostgres[pgMajor]
+	if !ok {
+		// Postgres majors newer than the ones above ship with Spock 5.0.14 or
+		// later.
+		return pgMajor > 18
+	}
+	return pgVersion.Compare(minPostgres) >= 0
+}
+
+func SpockDefaultGUCs(dbName string, version *ds.PgEdgeVersion) map[string]any {
+	gucs := map[string]any{
 		"spock.enable_ddl_replication":   "on",
 		"spock.include_ddl_repset":       "on",
 		"spock.allow_ddl_from_functions": "on",
@@ -155,6 +198,10 @@ func SpockDefaultGUCs() map[string]any {
 		"spock.save_resolutions":         "on",
 		"spock.conflict_log_level":       "DEBUG",
 	}
+	if dbName != "" && supportsFailoverSlotsDatabase(version) {
+		gucs["spock.failover_slots_database"] = dbName
+	}
+	return gucs
 }
 
 func SnowflakeLolorGUCs(nodeOrdinal int) map[string]any {
