@@ -30,6 +30,8 @@ type PatroniConfigGenerator struct {
 	CPUs float64 `json:"cpus,omitempty"`
 	// DatabaseID is the Database's ID.
 	DatabaseID string `json:"database_id"`
+	// DatabaseName is the Postgres database name.
+	DatabaseName string `json:"database_name"`
 	// DataDir is the Postgres data directory.
 	DataDir string `json:"data_dir"`
 	// EtcdCertsDir is the Etcd certificates directory.
@@ -143,6 +145,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		ClusterSize:            opts.Instance.ClusterSize,
 		CPUs:                   cpus,
 		DatabaseID:             opts.Instance.DatabaseID,
+		DatabaseName:           opts.Instance.DatabaseName,
 		DataDir:                opts.Paths.Instance.PgData(),
 		EtcdCertsDir:           opts.Paths.Instance.EtcdCertificates(),
 		FQDN:                   opts.FQDN,
@@ -221,7 +224,7 @@ func (p *PatroniConfigGenerator) AuthMethod() hba.AuthMethod {
 
 func (p *PatroniConfigGenerator) parameters() map[string]any {
 	parameters := postgres.DefaultGUCs(p.PgEdgeVersion, p.PeerInstanceIDs)
-	maps.Copy(parameters, postgres.SpockDefaultGUCs())
+	maps.Copy(parameters, postgres.SpockDefaultGUCs(p.DatabaseName, p.PgEdgeVersion))
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{
 		"ssl":           "on",

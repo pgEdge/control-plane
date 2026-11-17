@@ -287,7 +287,7 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 
 	for _, sub := range relevant {
 		for {
-			exists, err := postgres.ReplicationSlotExists(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode).
+			exists, err := postgres.IsReplicationSlotReady(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode).
 				Scalar(ctx, conn)
 			if err != nil {
 				return fmt.Errorf("failed to check replication slot for %s→%s: %w",

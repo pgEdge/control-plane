@@ -162,3 +162,21 @@ The optional `skip_validation` flag bypasses cluster health checks, allowing a f
 
 - Concurrent failover requests are rejected with `failover already in progress` message.
 
+### Replication Slot Readiness
+
+In a multi-node database, the other nodes replicate from this node through Spock replication slots on its primary. Spock copies these slots to each read replica, but a new copy only becomes usable once the replica has caught up. If a replica is promoted before its copies are ready, the other nodes stop replicating from this node.
+
+To prevent this, switchover and failover operations only promote a replica that holds usable copies of all of the primary's Spock slots:
+
+- If `candidate_instance_id` is omitted, the Control Plane promotes the first replica that is ready.
+
+- If no replica is ready, the operation waits up to 2 minutes for one, then fails with an error. This can happen shortly after a replica is added. Retry the operation later.
+
+- `skip_validation` does not skip this check.
+
+- If the current primary can't be reached, the Control Plane can't check the copies and promotes the candidate without waiting.
+
+- A scheduled switchover (`scheduled_at`) is checked when you submit it, not when it runs. Patroni performs it at the scheduled time without checking again, so avoid changes that add or recreate slots in the meantime, such as adding a node to the database.
+
+Automatic failovers performed by Patroni when a primary goes down are not covered by this check.
+

@@ -288,7 +288,7 @@ func waitForFailoverSlots(ctx context.Context, t *testing.T, db *DatabaseFixture
 
 			require.True(t, waitFor(func() bool {
 				var failoverSlotExists bool
-				row := conn.QueryRow(ctx, `select exists (select 1 from pg_replication_slots where plugin = 'spock_output')`)
+				row := conn.QueryRow(ctx, `select exists (select 1 from pg_replication_slots where plugin = 'spock_output' and temporary = 'f')`)
 				require.NoError(t, row.Scan(&failoverSlotExists))
 				return failoverSlotExists
 			}, 60*time.Second))

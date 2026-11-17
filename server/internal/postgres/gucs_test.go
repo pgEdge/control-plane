@@ -152,6 +152,42 @@ func TestDefaultGUCsSynchronizedStandbySlots(t *testing.T) {
 	})
 }
 
+func TestSpockDefaultGUCsFailoverSlotsDatabase(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		dbName          string
+		version         *ds.PgEdgeVersion
+		expectedPresent bool
+	}{
+		{name: "nil version", dbName: "storefront", version: nil, expectedPresent: false},
+		{name: "empty db name", dbName: "", version: ds.MustParsePgEdgeVersion("18.4", "5.0.14"), expectedPresent: false},
+		{name: "spock 5 major only", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5"), expectedPresent: false},
+		{name: "spock 5 major only with postgres 16.15", dbName: "storefront", version: ds.MustParsePgEdgeVersion("16.15", "5"), expectedPresent: false},
+		{name: "spock 5 major only with postgres 16.16", dbName: "storefront", version: ds.MustParsePgEdgeVersion("16.16", "5"), expectedPresent: true},
+		{name: "spock 5 major only with postgres 17.11", dbName: "storefront", version: ds.MustParsePgEdgeVersion("17.11", "5"), expectedPresent: false},
+		{name: "spock 5 major only with postgres 17.12", dbName: "storefront", version: ds.MustParsePgEdgeVersion("17.12", "5"), expectedPresent: true},
+		{name: "spock 5 major only with postgres 18.6", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.6", "5"), expectedPresent: false},
+		{name: "spock 5 major only with postgres 18.7", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.7", "5"), expectedPresent: true},
+		{name: "spock 5 major only with a newer postgres major", dbName: "storefront", version: ds.MustParsePgEdgeVersion("19.0", "5"), expectedPresent: true},
+		{name: "spock 4", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.7", "4"), expectedPresent: false},
+		{name: "spock below gate", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5.0.13"), expectedPresent: false},
+		{name: "spock at gate", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5.0.14"), expectedPresent: true},
+		{name: "spock above gate", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5.1.0"), expectedPresent: true},
+		{name: "spock 6", dbName: "storefront", version: ds.MustParsePgEdgeVersion("17.0", "6"), expectedPresent: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gucs := postgres.SpockDefaultGUCs(tc.dbName, tc.version)
+			value, ok := gucs["spock.failover_slots_database"]
+			assert.Equal(t, tc.expectedPresent, ok)
+			if tc.expectedPresent {
+				assert.Equal(t, tc.dbName, value)
+			}
+			// The unconditional defaults should always be present.
+			assert.Equal(t, "on", gucs["spock.enable_ddl_replication"])
+		})
+	}
+}
+
 func TestDefaultTunableGUCs(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
