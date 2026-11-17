@@ -8,6 +8,7 @@ import (
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -39,6 +40,47 @@ func TestIsSensitiveConfigKey(t *testing.T) {
 			t.Errorf("isSensitiveConfigKey(%q) = true, want false", key)
 		}
 	}
+}
+
+func TestBackupConfigToAPI_ScrubsSensitiveCustomOptions(t *testing.T) {
+	repo := &pgbackrest.Repository{
+		ID:   "default",
+		Type: pgbackrest.RepositoryTypeS3,
+		CustomOptions: map[string]string{
+			"cipher-type":               "aes-256-cbc",
+			"cipher-pass":               "passphrase",
+			"repo1-s3-key":              "key",
+			"s3-key-secret":             "secret",
+			"s3-sse-customer-key":       "customer-key",
+			"repo1-s3-sse-customer-key": "customer-key",
+			"s3-key-type":               "shared",
+			"s3-uri-style":              "path",
+			"storage-verify-tls":        "n",
+		},
+	}
+	expected := map[string]string{
+		"cipher-type":        "aes-256-cbc",
+		"s3-key-type":        "shared",
+		"s3-uri-style":       "path",
+		"storage-verify-tls": "n",
+	}
+
+	backup := backupConfigToAPI(&database.BackupConfig{
+		Repositories: []*pgbackrest.Repository{repo},
+	})
+	require.Len(t, backup.Repositories, 1)
+	assert.Equal(t, expected, backup.Repositories[0].CustomOptions)
+
+	restore := restoreConfigToAPI(&database.RestoreConfig{
+		SourceDatabaseID: "source",
+		SourceNodeName:   "n1",
+		Repository:       repo,
+	})
+	require.NotNil(t, restore.Repository)
+	assert.Equal(t, expected, restore.Repository.CustomOptions)
+
+	// The stored options must not be modified.
+	assert.Equal(t, "passphrase", repo.CustomOptions["cipher-pass"])
 }
 
 func TestNormalizeConfig(t *testing.T) {

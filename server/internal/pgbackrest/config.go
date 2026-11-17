@@ -150,6 +150,54 @@ func (r *Repository) DefaultOptionalFieldsFrom(other *Repository) {
 	if r.AzureKey == "" {
 		r.AzureKey = other.AzureKey
 	}
+	// Sensitive custom options are excluded from API responses, so we restore
+	// any that are omitted entirely. An option that is present, even with an
+	// empty value, is left as submitted. Keys are compared without their
+	// "repoN-" prefix, the same way that writeCustomOptions treats them.
+	submitted := make(map[string]bool, len(r.CustomOptions))
+	for key := range r.CustomOptions {
+		submitted[repoPrefixRegex.ReplaceAllString(key, "")] = true
+	}
+	for key, value := range other.CustomOptions {
+		if !IsSensitiveCustomOption(key) || value == "" {
+			continue
+		}
+		if submitted[repoPrefixRegex.ReplaceAllString(key, "")] {
+			continue
+		}
+		if r.CustomOptions == nil {
+			r.CustomOptions = make(map[string]string)
+		}
+		r.CustomOptions[key] = value
+	}
+}
+
+// sensitiveRepoOptions are the pgBackRest repository options, without the
+// "repoN-" prefix, that contain secret values.
+var sensitiveRepoOptions = map[string]bool{
+	"azure-key":                   true,
+	"cipher-pass":                 true,
+	"gcs-key":                     true,
+	"s3-key":                      true,
+	"s3-key-secret":               true,
+	"s3-sse-customer-key":         true,
+	"s3-token":                    true,
+	"sftp-private-key-passphrase": true,
+}
+
+// IsSensitiveCustomOption returns true if the given custom option key likely
+// contains a secret value that should not be returned in API responses.
+func IsSensitiveCustomOption(key string) bool {
+	k := repoPrefixRegex.ReplaceAllString(strings.ToLower(key), "")
+	if sensitiveRepoOptions[k] {
+		return true
+	}
+	for _, p := range []string{"pass", "secret", "token"} {
+		if strings.Contains(k, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // Identifier computes a unique identifier for the repository.
