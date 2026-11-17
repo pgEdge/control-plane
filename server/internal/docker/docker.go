@@ -449,68 +449,118 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if err != nil {
 				return fmt.Errorf("failed to get ready node IDs: %w", err)
 			}
-			var running, stopping, failed, preparing, pending uint64
-			var lastFailureMsg string
-			var taskStates []string
-			for _, t := range tasks {
-				taskStates = append(taskStates, string(t.Status.State))
-				if !readyNodes.Has(t.NodeID) {
-					continue
-				}
-				switch t.Status.State {
-				case swarm.TaskStateRunning:
-					if t.DesiredState == swarm.TaskStateRunning {
-						running++
-					} else {
-						stopping++
-					}
-				case swarm.TaskStateFailed, swarm.TaskStateRejected:
-					failed++
-					// Capture the error message from the most recent failed task
-					if t.Status.Err != "" {
-						lastFailureMsg = t.Status.Err
-					} else if t.Status.Message != "" {
-						lastFailureMsg = t.Status.Message
-					}
-				case swarm.TaskStatePreparing:
-					preparing++
-				case swarm.TaskStatePending, swarm.TaskStateAssigned, swarm.TaskStateAccepted:
-					pending++
-				}
-			}
+			counts := countServiceTasks(service, tasks, readyNodes)
 
 			d.logger.Debug().
 				Str("service_id", serviceID).
 				Uint64("desired", desired).
-				Uint64("running", running).
-				Uint64("stopping", stopping).
-				Uint64("failed", failed).
-				Uint64("preparing", preparing).
-				Uint64("pending", pending).
+				Uint64("running", counts.running).
+				Uint64("stopping", counts.stopping).
+				Uint64("failed", counts.failed).
+				Uint64("preparing", counts.preparing).
+				Uint64("pending", counts.pending).
 				Int("total_tasks", len(tasks)).
-				Strs("task_states", taskStates).
+				Strs("task_states", counts.taskStates).
 				Msg("checking service task status")
 
 			// If we have failed tasks and no running or transitional tasks, the
 			// service won't start. Skip this check when scaling to 0: task
 			// failures (e.g. bind-mount errors, non-zero exits) are expected
 			// because the containers are being stopped, not started.
-			if desired > 0 && failed > 0 && running == 0 && preparing == 0 && pending == 0 {
-				if lastFailureMsg != "" {
-					return fmt.Errorf("service tasks failed: %s", lastFailureMsg)
+			if desired > 0 && counts.failed > 0 && counts.running == 0 && counts.preparing == 0 && counts.pending == 0 {
+				if counts.lastFailureMsg != "" {
+					return fmt.Errorf("service tasks failed: %s", counts.lastFailureMsg)
 				}
-				return fmt.Errorf("service has %d failed task(s), expected %d running", failed, desired)
+				return fmt.Errorf("service has %d failed task(s), expected %d running", counts.failed, desired)
 			}
 
-			if running == desired && stopping == 0 {
+			if counts.running == desired && counts.stopping == 0 {
 				d.logger.Info().
 					Str("service_id", serviceID).
-					Uint64("running_tasks", running).
+					Uint64("running_tasks", counts.running).
 					Msg("service tasks ready")
 				return nil
 			}
 		}
 	}
+}
+
+type serviceTaskCounts struct {
+	running        uint64
+	stopping       uint64
+	failed         uint64
+	preparing      uint64
+	pending        uint64
+	lastFailureMsg string
+	taskStates     []string
+}
+
+// serviceSpecChangedAt returns the earliest time that tasks for the service's
+// most recent spec change could have been created. Swarm resets the service's
+// UpdateStatus to nil on every spec change. When the change requires a rolling
+// update, Swarm sets UpdateStatus.StartedAt before it creates any new tasks,
+// and the status-only updates that follow, such as marking the update
+// complete, will advance service.UpdatedAt without changing StartedAt. When the
+// change does not require a rolling update, such as a replica-only change,
+// UpdateStatus remains nil and service.UpdatedAt is the time of the spec
+// change.
+func serviceSpecChangedAt(service swarm.Service) time.Time {
+	if service.UpdateStatus != nil && service.UpdateStatus.StartedAt != nil {
+		return *service.UpdateStatus.StartedAt
+	}
+	return service.UpdatedAt
+}
+
+func countServiceTasks(service swarm.Service, tasks []swarm.Task, readyNodes ds.Set[string]) serviceTaskCounts {
+	var counts serviceTaskCounts
+	specChangedAt := serviceSpecChangedAt(service)
+	for _, t := range tasks {
+		counts.taskStates = append(counts.taskStates, string(t.Status.State))
+		// Tasks that haven't been assigned to a node yet have an empty
+		// NodeID.
+		if t.NodeID != "" && !readyNodes.Has(t.NodeID) {
+			continue
+		}
+		switch t.Status.State {
+		case swarm.TaskStateRunning:
+			if t.DesiredState == swarm.TaskStateRunning {
+				counts.running++
+			} else {
+				counts.stopping++
+			}
+		case swarm.TaskStateFailed, swarm.TaskStateRejected:
+			// Swarm retains old tasks in its task history. Failed tasks that
+			// were created before the most recent spec change are not
+			// relevant to the change that we're waiting for.
+			if t.CreatedAt.Before(specChangedAt) {
+				continue
+			}
+			counts.failed++
+			// Capture the error message from the most recent failed task
+			if t.Status.Err != "" {
+				counts.lastFailureMsg = t.Status.Err
+			} else if t.Status.Message != "" {
+				counts.lastFailureMsg = t.Status.Message
+			}
+		case swarm.TaskStatePreparing:
+			if isViableTask(t) {
+				counts.preparing++
+			}
+		case swarm.TaskStatePending, swarm.TaskStateAssigned, swarm.TaskStateAccepted:
+			if isViableTask(t) {
+				counts.pending++
+			}
+		}
+	}
+	return counts
+}
+
+// isViableTask returns true if a transitional task is expected to run. Swarm
+// sets the desired state of replacement tasks to Ready while they wait for
+// their restart delay. Tasks that are being shut down or removed will never
+// run.
+func isViableTask(t swarm.Task) bool {
+	return t.DesiredState == swarm.TaskStateRunning || t.DesiredState == swarm.TaskStateReady
 }
 
 func (d *Docker) HealthCheck() healthcheck.ComponentStatus {
