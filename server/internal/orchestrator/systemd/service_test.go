@@ -26,13 +26,13 @@ func TestServiceServing(t *testing.T) {
 	}
 
 	t.Run("ok", func(t *testing.T) {
-		assert.NoError(t, serviceServing(t.Context(), serverPort(t, http.StatusOK)))
+		assert.NoError(t, serviceServing(t.Context(), "postgrest", serverPort(t, http.StatusOK)))
 	})
 	t.Run("client error still means serving", func(t *testing.T) {
-		assert.NoError(t, serviceServing(t.Context(), serverPort(t, http.StatusUnauthorized)))
+		assert.NoError(t, serviceServing(t.Context(), "postgrest", serverPort(t, http.StatusUnauthorized)))
 	})
 	t.Run("server error", func(t *testing.T) {
-		assert.EqualError(t, serviceServing(t.Context(), serverPort(t, http.StatusServiceUnavailable)),
+		assert.EqualError(t, serviceServing(t.Context(), "postgrest", serverPort(t, http.StatusServiceUnavailable)),
 			"service responded with status 503")
 	})
 	t.Run("not listening", func(t *testing.T) {
@@ -41,6 +41,21 @@ func TestServiceServing(t *testing.T) {
 		port := l.Addr().(*net.TCPAddr).Port
 		require.NoError(t, l.Close())
 
-		assert.Error(t, serviceServing(t.Context(), port))
+		assert.Error(t, serviceServing(t.Context(), "postgrest", port))
+	})
+	t.Run("mcp requests its health endpoint", func(t *testing.T) {
+		var path string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path = r.URL.Path
+		}))
+		t.Cleanup(srv.Close)
+		port := srv.Listener.Addr().(*net.TCPAddr).Port
+
+		assert.NoError(t, serviceServing(t.Context(), "mcp", port))
+		assert.Equal(t, "/health", path)
+	})
+	t.Run("mcp client error isn't serving", func(t *testing.T) {
+		assert.EqualError(t, serviceServing(t.Context(), "mcp", serverPort(t, http.StatusNotFound)),
+			"service responded with status 404")
 	})
 }

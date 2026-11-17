@@ -132,6 +132,43 @@ func TestUnitOptions(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("MCPUnitOptions", func(t *testing.T) {
+		metadata := map[string]string{
+			"ServiceType":       "mcp",
+			"ServiceInstanceID": "storefront-mcp-server-host-1",
+			"Port":              "3200",
+			"Version":           "1.1.0",
+		}
+
+		for _, tc := range []struct {
+			name        string
+			cpus        float64
+			memoryBytes uint64
+		}{
+			{
+				name: "minimal",
+			},
+			{
+				name:        "with limits",
+				cpus:        0.5,
+				memoryBytes: 536_870_912, // 512MiB in bytes
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				actual := systemd.MCPUnitOptions(
+					"/usr/bin/pgedge-postgres-mcp",
+					"/etc/pgedge-mcp/storefront-mcp-server-host-1/config.yaml",
+					"999",
+					"999",
+					tc.cpus,
+					tc.memoryBytes,
+					metadata,
+				)
+				golden.Run(t, actual, update)
+			})
+		}
+	})
 }
 
 func TestExecCommandLine(t *testing.T) {

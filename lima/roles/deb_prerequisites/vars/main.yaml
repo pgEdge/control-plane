@@ -26,6 +26,7 @@ pgedge_packages:
   - pgedge-patroni
   - pgedge-pgbackrest
   - pgedge-postgrest
+  - pgedge-postgres-mcp
 # Every known Spock major's packages, regardless of which one spock_major
 # currently selects. Spock majors conflict with each other at the
 # package-manager level, so switching spock_major on an already-provisioned

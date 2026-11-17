@@ -1468,9 +1468,18 @@ func TestValidateDatabaseSpecSystemDServices(t *testing.T) {
 		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("postgrest", map[string]any{"db_anon_role": "web_anon"}), nil)
 		assert.NoError(t, err)
 	})
+	t.Run("mcp is supported", func(t *testing.T) {
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("mcp", map[string]any{
+			"llm_enabled":       true,
+			"llm_provider":      "anthropic",
+			"llm_model":         "claude-sonnet-4-5",
+			"anthropic_api_key": "sk-ant-test",
+		}), nil)
+		assert.NoError(t, err)
+	})
 	t.Run("other service types are not supported", func(t *testing.T) {
-		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("mcp", map[string]any{}), nil)
-		assert.ErrorContains(t, err, "services[0].service_type: service type 'mcp' is not yet supported for systemd clusters")
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("rag", map[string]any{}), nil)
+		assert.ErrorContains(t, err, "services[0].service_type: service type 'rag' is not yet supported for systemd clusters")
 	})
 	t.Run("service specs are still validated", func(t *testing.T) {
 		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("postgrest", map[string]any{}), nil)

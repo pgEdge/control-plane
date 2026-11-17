@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/ds"
@@ -441,7 +442,7 @@ func TestInstalledServices(t *testing.T) {
 			outputs: map[string]mockPgConfigOutput{
 				postgrestPath: {stdout: "PostgREST dev\n"},
 			},
-			expectedErr: `failed to parse postgrest version: no version found in output "PostgREST dev"`,
+			expectedErr: `failed to get postgrest version: no version found in output "PostgREST dev"`,
 		},
 		{
 			name:          "command fails",
@@ -684,3 +685,185 @@ module_pathname = '$libdir/spock'
 relocatable = false
 
 schema = spock`
+
+func TestInstalledServicesMCP(t *testing.T) {
+	const mcpPath = "/usr/bin/pgedge-postgres-mcp"
+
+	for _, tc := range []struct {
+		name           string
+		osFamily       config.OSFamily
+		fsys           func() afero.Fs
+		outputs        map[string]mockPgConfigOutput
+		expectedOutput map[string]string
+		expectedErr    string
+	}{
+		{
+			name:     "rpm",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stdout: "1.1.0"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:     "deb strips the revision",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.1.0-1.trixie"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:     "deb strips the epoch",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "2:1.1.0-1.noble"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:     "rpm pre-release",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stdout: "1.2.0~beta1"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.2.0-beta1"},
+		},
+		{
+			name:     "deb upstream version with a hyphen",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.2.0-beta1-1.trixie"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.2.0-beta1"},
+		},
+		{
+			name:     "deb native version without a revision",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.1.0"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
+			name:     "deb pre-release",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.2.0~beta1-1.trixie"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.2.0-beta1"},
+		},
+		{
+			name:           "binary not installed",
+			osFamily:       config.OSFamilyRedHat,
+			fsys:           testFs(nil),
+			expectedOutput: map[string]string{},
+		},
+		{
+			name:     "package query fails",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stderr: "package pgedge-postgres-mcp is not installed", err: errors.New("exit status 1")},
+			},
+			expectedErr: "failed to get mcp version: failed to query package pgedge-postgres-mcp: exit status 1, stderr: package pgedge-postgres-mcp is not installed",
+		},
+		{
+			name:     "unparseable version",
+			osFamily: config.OSFamilyRedHat,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"rpm": {stdout: "dev"},
+			},
+			expectedErr: `failed to get mcp version: no version found in package version "dev"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			probe, err := systemd.NewInstalledVersionsProbe(
+				mockPgConfigExecCommand(t, tc.outputs),
+				tc.fsys(),
+				config.SystemD{
+					OSFamily: tc.osFamily,
+					MCPPath:  mcpPath,
+				},
+			)
+			require.NoError(t, err)
+
+			actual, err := probe.InstalledServices(t.Context())
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedOutput, actual)
+			}
+		})
+	}
+}
+
+func TestInstalledServicesPartialFailure(t *testing.T) {
+	const (
+		postgrestPath = "/usr/bin/postgrest"
+		mcpPath       = "/usr/bin/pgedge-postgres-mcp"
+	)
+
+	probe, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
+			postgrestPath: {stdout: "PostgREST 14.18\n"},
+			"dpkg-query":  {stdout: "dev"},
+		}),
+		testFs(map[string]string{postgrestPath: "", mcpPath: ""})(),
+		config.SystemD{
+			OSFamily:      config.OSFamilyDebian,
+			PostgRESTPath: postgrestPath,
+			MCPPath:       mcpPath,
+		},
+	)
+	require.NoError(t, err)
+
+	actual, err := probe.InstalledServices(t.Context())
+	assert.EqualError(t, err, `failed to get mcp version: no version found in package version "dev"`)
+	assert.Equal(t, map[string]string{"postgrest": "14.18"}, actual)
+}
+
+func TestInstalledServicesStalledProbe(t *testing.T) {
+	const (
+		postgrestPath = "/usr/bin/postgrest"
+		mcpPath       = "/usr/bin/pgedge-postgres-mcp"
+	)
+
+	probe, err := systemd.NewInstalledVersionsProbe(
+		func(ctx context.Context, stdout, _ io.Writer, name string, _ ...string) error {
+			if name == postgrestPath {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				_, err := stdout.Write([]byte("PostgREST 14.18\n"))
+				return err
+			}
+			// The MCP package query, which runs first in sorted order, stalls
+			// until the deadline.
+			<-ctx.Done()
+			return ctx.Err()
+		},
+		testFs(map[string]string{postgrestPath: "", mcpPath: ""})(),
+		config.SystemD{
+			OSFamily:      config.OSFamilyRedHat,
+			PostgRESTPath: postgrestPath,
+			MCPPath:       mcpPath,
+		},
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	actual, err := probe.InstalledServices(ctx)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Equal(t, map[string]string{"postgrest": "14.18"}, actual)
+}

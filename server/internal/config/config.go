@@ -149,6 +149,7 @@ type SystemD struct {
 	PatroniPath     string            `koanf:"patroni_path" json:"patroni_path,omitempty"`
 	PgBinDirs       map[string]string `koanf:"pg_bin_dirs" json:"pg_bin_dirs,omitzero"`
 	PostgRESTPath   string            `koanf:"postgrest_path" json:"postgrest_path,omitempty"`
+	MCPPath         string            `koanf:"mcp_path" json:"mcp_path,omitempty"`
 }
 
 func (s SystemD) validate() []error {
@@ -161,6 +162,9 @@ func (s SystemD) validate() []error {
 	}
 	if s.PostgRESTPath != "" && !filepath.IsAbs(s.PostgRESTPath) {
 		errs = append(errs, fmt.Errorf("postgrest_path must be an absolute path, got '%s'", s.PostgRESTPath))
+	}
+	if s.MCPPath != "" && !filepath.IsAbs(s.MCPPath) {
+		errs = append(errs, fmt.Errorf("mcp_path must be an absolute path, got '%s'", s.MCPPath))
 	}
 	if !knownOSFamilies.Has(s.OSFamily) {
 		var families strings.Builder
@@ -220,6 +224,7 @@ func defaultSystemD() SystemD {
 		PgBackRestPath: "/usr/bin/pgbackrest",
 		PatroniPath:    "/usr/bin/patroni",
 		PostgRESTPath:  "/usr/bin/postgrest",
+		MCPPath:        "/usr/bin/pgedge-postgres-mcp",
 	}
 }
 
