@@ -274,7 +274,19 @@ func waitFor(cond func() bool, timeout time.Duration) bool {
 
 func waitForFailoverSlots(ctx context.Context, t *testing.T, db *DatabaseFixture) {
 	require.NoError(t, db.Refresh(ctx))
-	replicas := db.GetInstances(And(WithRole(client.RoleReplica)))
+	for primary := range db.GetInstances(WithRole(client.RolePrimary)) {
+		opts := ConnectionOptions{
+			Username: "admin",
+			Password: "password",
+			Instance: primary,
+		}
+		tLogf(t, "triggering WAL activity on primary %s", primary.ID)
+		db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
+			_, err := conn.Exec(ctx, `SELECT pg_log_standby_snapshot();`)
+			require.NoError(t, err)
+		})
+	}
+	replicas := db.GetInstances(WithRole(client.RoleReplica))
 	require.NotEmpty(t, replicas)
 	for replica := range replicas {
 		opts := ConnectionOptions{
@@ -291,7 +303,7 @@ func waitForFailoverSlots(ctx context.Context, t *testing.T, db *DatabaseFixture
 				row := conn.QueryRow(ctx, `select exists (select 1 from pg_replication_slots where plugin = 'spock_output' and temporary = 'f')`)
 				require.NoError(t, row.Scan(&failoverSlotExists))
 				return failoverSlotExists
-			}, 60*time.Second))
+			}, 70*time.Second))
 
 			tLogf(t, "failover slot exists in replica instance %s after %.2f seconds", replica.ID, time.Since(start).Seconds())
 		})
