@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/ds"
@@ -828,5 +829,41 @@ func TestInstalledServicesPartialFailure(t *testing.T) {
 
 	actual, err := probe.InstalledServices(t.Context())
 	assert.EqualError(t, err, `failed to get mcp version: no version found in package version "dev"`)
+	assert.Equal(t, map[string]string{"postgrest": "14.18"}, actual)
+}
+
+func TestInstalledServicesStalledProbe(t *testing.T) {
+	const (
+		postgrestPath = "/usr/bin/postgrest"
+		mcpPath       = "/usr/bin/pgedge-postgres-mcp"
+	)
+
+	probe, err := systemd.NewInstalledVersionsProbe(
+		func(ctx context.Context, stdout, _ io.Writer, name string, _ ...string) error {
+			if name == postgrestPath {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				_, err := stdout.Write([]byte("PostgREST 14.18\n"))
+				return err
+			}
+			// The MCP package query, which runs first in sorted order, stalls
+			// until the deadline.
+			<-ctx.Done()
+			return ctx.Err()
+		},
+		testFs(map[string]string{postgrestPath: "", mcpPath: ""})(),
+		config.SystemD{
+			OSFamily:      config.OSFamilyRedHat,
+			PostgRESTPath: postgrestPath,
+			MCPPath:       mcpPath,
+		},
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+	actual, err := probe.InstalledServices(ctx)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Equal(t, map[string]string{"postgrest": "14.18"}, actual)
 }

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -98,22 +99,39 @@ func (p *InstalledVersionsProbe) InstalledServices(ctx context.Context) (map[str
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	// Probe each service concurrently, so that one stalled probe can't use up
+	// the deadline before the others start.
+	serviceTypes := slices.Sorted(maps.Keys(p.servicePaths))
+	results := make([]serviceVersionResult, len(serviceTypes))
+	var wg sync.WaitGroup
+	for i, serviceType := range serviceTypes {
+		wg.Go(func() {
+			version, ok, err := p.serviceVersion(ctx, serviceType)
+			results[i] = serviceVersionResult{version: version, ok: ok, err: err}
+		})
+	}
+	wg.Wait()
+
 	// A failure to detect one service shouldn't hide the others, so we
 	// return every version we could detect along with any errors.
 	installed := map[string]string{}
 	var errs []error
-	for _, serviceType := range slices.Sorted(maps.Keys(p.servicePaths)) {
-		version, ok, err := p.serviceVersion(ctx, serviceType)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if ok {
-			installed[serviceType] = version
+	for i, result := range results {
+		switch {
+		case result.err != nil:
+			errs = append(errs, result.err)
+		case result.ok:
+			installed[serviceTypes[i]] = result.version
 		}
 	}
 
 	return installed, errors.Join(errs...)
+}
+
+type serviceVersionResult struct {
+	version string
+	ok      bool
+	err     error
 }
 
 // serviceVersion returns the installed version of the given service type. It
