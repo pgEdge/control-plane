@@ -355,3 +355,34 @@ func TestMCPConfigGolden(t *testing.T) {
 		})
 	}
 }
+
+// chownFailingFs fails every ownership change, to simulate a write that fails
+// after the file has been created.
+type chownFailingFs struct {
+	afero.Fs
+}
+
+func (chownFailingFs) Chown(string, int, int) error {
+	return syscall.EPERM
+}
+
+func TestMCPConfigResource_WriteFileIfNotExistsLeavesNoPartialFile(t *testing.T) {
+	afs := afero.NewMemMapFs()
+	require.NoError(t, afs.MkdirAll(testMCPDataDir, 0o700))
+	r := testMCPConfigResource(&database.MCPServiceConfig{})
+	path := filepath.Join(testMCPDataDir, "tokens.yaml")
+
+	err := r.writeFileIfNotExists(chownFailingFs{Fs: afs}, path, []byte("tokens: {}\n"))
+	require.ErrorIs(t, err, syscall.EPERM)
+	for _, p := range []string{path, path + ".tmp"} {
+		exists, err := afero.Exists(afs, p)
+		require.NoError(t, err)
+		assert.False(t, exists, "%s should not exist after a failed write", p)
+	}
+
+	// The next attempt writes the file.
+	require.NoError(t, r.writeFileIfNotExists(afs, path, []byte("tokens: {}\n")))
+	content, err := afero.ReadFile(afs, path)
+	require.NoError(t, err)
+	assert.Equal(t, "tokens: {}\n", string(content))
+}

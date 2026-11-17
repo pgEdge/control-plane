@@ -733,6 +733,24 @@ func TestInstalledServicesMCP(t *testing.T) {
 			expectedOutput: map[string]string{"mcp": "1.2.0-beta1"},
 		},
 		{
+			name:     "deb upstream version with a hyphen",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.2.0-beta1-1.trixie"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.2.0-beta1"},
+		},
+		{
+			name:     "deb native version without a revision",
+			osFamily: config.OSFamilyDebian,
+			fsys:     testFs(map[string]string{mcpPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				"dpkg-query": {stdout: "1.1.0"},
+			},
+			expectedOutput: map[string]string{"mcp": "1.1.0"},
+		},
+		{
 			name:     "deb pre-release",
 			osFamily: config.OSFamilyDebian,
 			fsys:     testFs(map[string]string{mcpPath: ""}),

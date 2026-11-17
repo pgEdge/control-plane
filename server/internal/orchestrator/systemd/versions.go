@@ -173,7 +173,9 @@ func (p *InstalledVersionsProbe) packageVersion(ctx context.Context, pkg string)
 }
 
 // parsePackageVersion extracts the upstream version from a package version,
-// dropping any epoch ("1:") and revision ("-1.trixie"). Packages mark
+// dropping any epoch ("1:") and revision ("-1.trixie"). The revision follows
+// the last hyphen, because Debian upstream versions can contain hyphens. RPM
+// versions can't, and the rpm query only selects the version. Packages mark
 // pre-releases with a tilde so that they sort before the release, e.g.
 // "1.2.0~beta1", which we convert to "1.2.0-beta1".
 func parsePackageVersion(output string) (string, error) {
@@ -181,7 +183,9 @@ func parsePackageVersion(output string) (string, error) {
 	if _, after, ok := strings.Cut(version, ":"); ok {
 		version = after
 	}
-	version, _, _ = strings.Cut(version, "-")
+	if i := strings.LastIndex(version, "-"); i >= 0 {
+		version = version[:i]
+	}
 	version = strings.ReplaceAll(version, "~", "-")
 	if _, err := ds.ParseVersion(version); err != nil {
 		return "", fmt.Errorf("no version found in package version %q", strings.TrimSpace(output))

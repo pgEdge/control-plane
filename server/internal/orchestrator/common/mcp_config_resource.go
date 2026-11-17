@@ -319,7 +319,18 @@ func (r *MCPConfigResource) writeFileIfNotExists(afs afero.Fs, path string, cont
 	if exists {
 		return nil
 	}
-	return r.writeFile(afs, path, content)
+	// Write to a temporary file first, so that a failed write can't leave a
+	// partial file behind that later attempts would skip.
+	tmpPath := path + ".tmp"
+	if err := r.writeFile(afs, tmpPath, content); err != nil {
+		_ = afs.Remove(tmpPath)
+		return err
+	}
+	if err := afs.Rename(tmpPath, path); err != nil {
+		_ = afs.Remove(tmpPath)
+		return fmt.Errorf("failed to rename %s to %s: %w", tmpPath, path, err)
+	}
+	return nil
 }
 
 // checkKBFile blocks deployment when kb_enabled is set but the host KB file

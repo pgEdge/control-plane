@@ -179,3 +179,36 @@ func TestGenerateMCPInstanceResources(t *testing.T) {
 		assert.EqualError(t, err, "port is required for systemd service instances, missing for service instance 'storefront-mcp-server-host-1'")
 	})
 }
+
+func TestInstalledServiceVersionIgnoresOtherServiceFailures(t *testing.T) {
+	const (
+		postgrestPath = "/usr/bin/postgrest"
+		mcpPath       = "/usr/bin/pgedge-postgres-mcp"
+	)
+
+	fsys := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fsys, postgrestPath, nil, 0o755))
+	require.NoError(t, afero.WriteFile(fsys, mcpPath, nil, 0o755))
+	probe, err := NewInstalledVersionsProbe(
+		func(_ context.Context, stdout, _ io.Writer, name string, _ ...string) error {
+			if name == postgrestPath {
+				_, err := stdout.Write([]byte("PostgREST 14.18\n"))
+				return err
+			}
+			// The MCP version query fails.
+			_, err := stdout.Write([]byte("dev"))
+			return err
+		},
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyRedHat, PostgRESTPath: postgrestPath, MCPPath: mcpPath},
+	)
+	require.NoError(t, err)
+	o := &Orchestrator{versionsProbe: probe}
+
+	version, err := o.installedServiceVersion(&database.ServiceSpec{ServiceType: "postgrest", Version: "latest"})
+	require.NoError(t, err)
+	assert.Equal(t, "14.18", version)
+
+	_, err = o.installedServiceVersion(&database.ServiceSpec{ServiceType: "mcp", Version: "latest"})
+	assert.ErrorContains(t, err, "failed to get installed service versions")
+}

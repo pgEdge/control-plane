@@ -980,6 +980,10 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
 	t.Parallel()
 
+	// A systemd host only accepts the version that's installed on it, which
+	// isn't necessarily 1.1.0.
+	fixture.SkipIfServiceVersionChangesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

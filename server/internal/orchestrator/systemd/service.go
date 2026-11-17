@@ -218,12 +218,13 @@ func (o *Orchestrator) installedServiceVersion(svc *database.ServiceSpec) (strin
 	ctx, cancel := context.WithTimeout(context.Background(), serviceHealthCheckTimeout)
 	defer cancel()
 
+	// A failure to detect another service type doesn't affect this one.
 	installed, err := o.versionsProbe.InstalledServices(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get installed service versions: %w", err)
-	}
 	version, ok := installed[svc.ServiceType]
-	if !ok {
+	switch {
+	case !ok && err != nil:
+		return "", fmt.Errorf("failed to get installed service versions: %w", err)
+	case !ok:
 		return "", fmt.Errorf("service type %q is not installed on this host", svc.ServiceType)
 	}
 	if svc.Version != host.ServiceVersionLatest && svc.Version != version {
