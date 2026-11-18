@@ -289,13 +289,19 @@ type PgEdgeVersion struct {
 	// version. Empty when the host does not report one (eg. the systemd
 	// orchestrator); treat empty as stable.
 	Stability Stability `json:"stability,omitempty"`
+	// AvailableLibraries are the names of the shared libraries that are
+	// installed for this version, without their file extension, sorted in
+	// ascending order. Empty when the host does not report them (eg. the swarm
+	// orchestrator). This field does not affect comparisons between versions.
+	AvailableLibraries []string `json:"available_libraries,omitempty"`
 }
 
 func (v *PgEdgeVersion) Clone() *PgEdgeVersion {
 	return &PgEdgeVersion{
-		PostgresVersion: v.PostgresVersion.Clone(),
-		SpockVersion:    v.SpockVersion.Clone(),
-		Stability:       v.Stability,
+		PostgresVersion:    v.PostgresVersion.Clone(),
+		SpockVersion:       v.SpockVersion.Clone(),
+		Stability:          v.Stability,
+		AvailableLibraries: slices.Clone(v.AvailableLibraries),
 	}
 }
 
@@ -366,9 +372,10 @@ func (v *PgEdgeVersion) Normalize() (*PgEdgeVersion, error) {
 	}
 
 	return &PgEdgeVersion{
-		PostgresVersion: pv,
-		SpockVersion:    sv,
-		Stability:       v.Stability,
+		PostgresVersion:    pv,
+		SpockVersion:       sv,
+		Stability:          v.Stability,
+		AvailableLibraries: slices.Clone(v.AvailableLibraries),
 	}, nil
 }
 

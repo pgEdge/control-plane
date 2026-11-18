@@ -57,6 +57,14 @@ type InstalledVersionsProbe struct {
 	// version to the package that installs it. Their version comes from the
 	// package manager instead.
 	servicePackages map[string]string
+
+	mu sync.Mutex
+	// installed holds the results of the most recent successful call to
+	// InstalledPostgresVersions, keyed by Postgres major version.
+	installed map[string]*ds.PgEdgeVersion
+	// warnings holds the warning messages from the most recent successful
+	// call to InstalledPostgresVersions, keyed by Postgres major version.
+	warnings map[string][]string
 }
 
 func NewInstalledVersionsProbe(
@@ -228,11 +236,87 @@ func parseServiceVersionOutput(output string) (string, error) {
 	return "", fmt.Errorf("no version found in output %q", strings.TrimSpace(output))
 }
 
+// versionWarning is a problem with an installed Postgres version that doesn't
+// prevent that version from being discovered, such as a failure to list its
+// libraries.
+type versionWarning struct {
+	err error
+}
+
+func (e *versionWarning) Error() string {
+	return e.err.Error()
+}
+
+func (e *versionWarning) Unwrap() error {
+	return e.err
+}
+
+// InstalledPostgresVersion returns the given Postgres major version from the
+// most recent successful call to InstalledPostgresVersions. It returns false
+// if that call didn't find the version.
+func (p *InstalledVersionsProbe) InstalledPostgresVersion(pgMajor string) (*ds.PgEdgeVersion, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	version, ok := p.installed[pgMajor]
+	if !ok {
+		return nil, false
+	}
+	return version.Clone(), true
+}
+
+// hadWarning returns true if the most recent successful call to
+// InstalledPostgresVersions reported the given warning for the given Postgres
+// major version.
+func (p *InstalledVersionsProbe) hadWarning(pgMajor string, warning error) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return slices.Contains(p.warnings[pgMajor], warning.Error())
+}
+
+func (p *InstalledVersionsProbe) setInstalledPostgresVersions(
+	versions []*ds.PgEdgeVersion,
+	warnings map[string][]error,
+) {
+	installed := make(map[string]*ds.PgEdgeVersion, len(versions))
+	for _, version := range versions {
+		if pgMajor, ok := version.PostgresVersion.MajorString(); ok {
+			installed[pgMajor] = version.Clone()
+		}
+	}
+	messages := make(map[string][]string, len(warnings))
+	for pgMajor, errs := range warnings {
+		for _, err := range errs {
+			messages[pgMajor] = append(messages[pgMajor], err.Error())
+		}
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.installed = installed
+	p.warnings = messages
+}
+
+// InstalledPostgresVersions returns the installed Postgres versions, sorted in
+// descending order. A failure to list a version's libraries keeps the list
+// from the previous call, so that a transient failure doesn't change the
+// defaults or validation for that version. The list is left nil if there was
+// no previous list, since its contents are unknown. A version whose Spock
+// control file is installed without its library is reported without Spock,
+// and a version with an unsupported Spock version is skipped.
+//
+// Every discovered version is returned along with an error that wraps a
+// *versionWarning for each of these problems and each skipped version. Since this is called
+// periodically, a warning is only returned if the previous successful call
+// didn't report it for the same version.
 func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) ([]*ds.PgEdgeVersion, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	var installed []*ds.PgEdgeVersion
+	warnings := map[string][]error{}
 	for _, pgMajor := range monitoredPgVersions {
 		pgConfig := p.pgConfigPaths[pgMajor]
 		out, err := p.execPgConfig(ctx, pgConfig)
@@ -252,9 +336,19 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 			// Postgres pre-release versions don't include a minor version.
 			pgVersion.Components = append(pgVersion.Components, 0)
 		}
+		// These warnings are only reported if this version is discovered.
+		var versionWarnings []error
+		libraries, err := installedLibraries(p.Fs, out.pkgLibDir)
+		if err != nil {
+			if previous, ok := p.InstalledPostgresVersion(pgMajor); ok {
+				libraries = previous.AvailableLibraries
+			}
+			versionWarnings = append(versionWarnings, fmt.Errorf("failed to get installed libraries for postgres %s: %w", pgMajor, err))
+		}
 		postgres := &ds.PgEdgeVersion{
-			PostgresVersion: pgVersion,
-			Stability:       prereleaseStability(pgVersion),
+			PostgresVersion:    pgVersion,
+			Stability:          prereleaseStability(pgVersion),
+			AvailableLibraries: libraries,
 		}
 
 		spockVersion, err := extensionVersion(p.Fs, out.shareDir, "spock")
@@ -264,6 +358,11 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 		switch {
 		case spockVersion == nil:
 			// Spock is optional. This version will be reported without it.
+		case libraries != nil && !slices.Contains(libraries, "spock"):
+			// Spock's control file is installed without its library, so
+			// Postgres would fail to start with spock preloaded. An unknown
+			// list of libraries is not checked.
+			versionWarnings = append(versionWarnings, fmt.Errorf("spock %s is installed for postgres %s without its library in %s, so postgres %s will be available without spock", spockVersion, pgMajor, out.pkgLibDir, pgMajor))
 		case supportedSpockVersions.IsSatisfied(spockVersion):
 			postgres.SpockVersion = spockVersion
 			// Normalize drops the Spock pre-release, so we need to reflect it
@@ -274,7 +373,9 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 		default:
 			// An unsupported Spock version is installed. We skip this Postgres
 			// version rather than reporting it without Spock, since that would
-			// be surprising to someone who intentionally installed Spock.
+			// be surprising to someone who intentionally installed Spock. The
+			// other warnings don't apply to a version that isn't discovered.
+			warnings[pgMajor] = []error{fmt.Errorf("spock %s is installed for postgres %s, but it isn't supported, so postgres %s will not be available", spockVersion, pgMajor, pgMajor)}
 			continue
 		}
 		normalized, err := postgres.Normalize()
@@ -283,13 +384,26 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 		}
 
 		installed = append(installed, normalized)
+		if len(versionWarnings) > 0 {
+			warnings[pgMajor] = versionWarnings
+		}
 	}
 	slices.SortFunc(installed, func(a, b *ds.PgEdgeVersion) int {
 		// Sort in reverse order
 		return -a.Compare(b)
 	})
 
-	return installed, nil
+	var newWarnings []error
+	for _, pgMajor := range monitoredPgVersions {
+		for _, warning := range warnings[pgMajor] {
+			if !p.hadWarning(pgMajor, warning) {
+				newWarnings = append(newWarnings, &versionWarning{err: warning})
+			}
+		}
+	}
+	p.setInstalledPostgresVersions(installed, warnings)
+
+	return installed, errors.Join(newWarnings...)
 }
 
 // prereleaseStability returns the stability for the given version's
@@ -309,8 +423,9 @@ func prereleaseStability(v *ds.Version) ds.Stability {
 }
 
 type pgConfigOutput struct {
-	version  *ds.Version
-	shareDir string
+	version   *ds.Version
+	shareDir  string
+	pkgLibDir string
 }
 
 func (p *InstalledVersionsProbe) execPgConfig(ctx context.Context, pgConfig string) (pgConfigOutput, error) {
@@ -336,9 +451,10 @@ func (p *InstalledVersionsProbe) execPgConfig(ctx context.Context, pgConfig stri
 // e.g.:
 //
 //	SHAREDIR = /usr/share/postgresql/17
+//	PKGLIBDIR = /usr/lib/postgresql/17/lib
 //	VERSION = PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)
 func parsePgConfigOutput(output string) (pgConfigOutput, error) {
-	var rawVersion, shareDir string
+	var rawVersion, shareDir, pkgLibDir string
 	for line := range strings.SplitSeq(output, "\n") {
 		key, value, ok := strings.Cut(line, "=")
 		if !ok {
@@ -349,6 +465,8 @@ func parsePgConfigOutput(output string) (pgConfigOutput, error) {
 			rawVersion = strings.TrimSpace(value)
 		case "SHAREDIR":
 			shareDir = strings.TrimSpace(value)
+		case "PKGLIBDIR":
+			pkgLibDir = strings.TrimSpace(value)
 		}
 	}
 	if rawVersion == "" {
@@ -356,6 +474,9 @@ func parsePgConfigOutput(output string) (pgConfigOutput, error) {
 	}
 	if shareDir == "" {
 		return pgConfigOutput{}, errors.New("SHAREDIR not found in pg_config output")
+	}
+	if pkgLibDir == "" {
+		return pgConfigOutput{}, errors.New("PKGLIBDIR not found in pg_config output")
 	}
 
 	// The version value looks like "PostgreSQL 17.2 (Debian 17.2-1.pgdg120+1)"
@@ -370,9 +491,36 @@ func parsePgConfigOutput(output string) (pgConfigOutput, error) {
 	}
 
 	return pgConfigOutput{
-		version:  version,
-		shareDir: shareDir,
+		version:   version,
+		shareDir:  shareDir,
+		pkgLibDir: pkgLibDir,
 	}, nil
+}
+
+// installedLibraries returns the names of the shared libraries in the given
+// package library directory, without their ".so" extension, sorted in
+// ascending order. These are the names that Postgres can load from $libdir,
+// e.g. via shared_preload_libraries. It returns nil if the directory does not
+// exist.
+func installedLibraries(fsys afero.Fs, pkgLibDir string) ([]string, error) {
+	entries, err := afero.ReadDir(fsys, pkgLibDir)
+	if errors.Is(err, afero.ErrFileNotFound) {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", pkgLibDir, err)
+	}
+
+	var names []string
+	for _, entry := range entries {
+		name, ok := strings.CutSuffix(entry.Name(), ".so")
+		if !ok || name == "" || entry.IsDir() {
+			continue
+		}
+		names = append(names, name)
+	}
+	slices.Sort(names)
+
+	return names, nil
 }
 
 // extensionVersion reads the default_version from the given extension's

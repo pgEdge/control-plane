@@ -523,6 +523,35 @@ func TestValidateConfLibraries(t *testing.T) {
 			conf: map[string]any{"shared_preload_libraries": "snowflake"},
 		},
 		{
+			name: "valid quoted names",
+			conf: map[string]any{"shared_preload_libraries": `"spock", "/opt/pg/my,module.so"`},
+		},
+		{
+			name: "invalid duplicate spellings",
+			conf: map[string]any{
+				"shared_preload_libraries":   "spock",
+				"SHARED_PRELOAD_LIBRARIES":   "spock",
+				" Shared_Preload_Libraries ": "spock",
+			},
+			expected: []string{
+				`shared_preload_libraries is set more than once: " Shared_Preload_Libraries ", "SHARED_PRELOAD_LIBRARIES", "shared_preload_libraries"`,
+			},
+		},
+		{
+			name: "invalid list syntax",
+			conf: map[string]any{"shared_preload_libraries": "snowflake,,spock"},
+			expected: []string{
+				`"shared_preload_libraries" has invalid list syntax: empty name`,
+			},
+		},
+		{
+			name: "invalid unterminated quote",
+			conf: map[string]any{"shared_preload_libraries": `"spock`},
+			expected: []string{
+				`"shared_preload_libraries" has invalid list syntax: unterminated quoted name`,
+			},
+		},
+		{
 			name: "invalid conf type",
 			conf: map[string]any{"shared_preload_libraries": []string{"spock"}},
 			expected: []string{

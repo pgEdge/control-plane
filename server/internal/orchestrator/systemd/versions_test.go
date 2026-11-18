@@ -39,7 +39,10 @@ func TestInstalledVersionsProbe(t *testing.T) {
 		cfgBinDirs     map[string]string
 		outputs        map[string]mockPgConfigOutput
 		expectedOutput []*ds.PgEdgeVersion
-		expectedErr    string
+		// expectedWarning is a non-fatal error that's returned along with the
+		// expected output.
+		expectedWarning string
+		expectedErr     string
 	}{
 		{
 			name:     "debian no postgres installed",
@@ -103,6 +106,55 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			},
 		},
 		{
+			name: "debian available libraries",
+			fsys: testFs(map[string]string{
+				debianPg17Config: "",
+				debianPg17Spock:  spock5Control,
+				"/usr/lib/postgresql/17/lib/auto_explain.so":       "",
+				"/usr/lib/postgresql/17/lib/bitcode/plpgsql.bc":    "",
+				"/usr/lib/postgresql/17/lib/pg_stat_statements.so": "",
+				"/usr/lib/postgresql/17/lib/pgxml.so":              "",
+				"/usr/lib/postgresql/17/lib/plpgsql.so":            "",
+				"/usr/lib/postgresql/17/lib/spock.so":              "",
+				debianPg18Config:                                   "",
+				"/usr/lib/postgresql/18/lib/plpgsql.so":            "",
+			}),
+			osFamily: config.OSFamilyDebian,
+			outputs: map[string]mockPgConfigOutput{
+				debianPg17Config: {stdout: testDebianPg17ConfigOut},
+				debianPg18Config: {stdout: testDebianPg18ConfigOut},
+			},
+			expectedOutput: []*ds.PgEdgeVersion{
+				{
+					PostgresVersion:    ds.MustParseVersion("18.4"),
+					AvailableLibraries: []string{"plpgsql"},
+				},
+				{
+					PostgresVersion:    ds.MustParseVersion("17.11"),
+					SpockVersion:       ds.MustParseVersion("5"),
+					AvailableLibraries: []string{"auto_explain", "pg_stat_statements", "pgxml", "plpgsql", "spock"},
+				},
+			},
+		},
+		{
+			name: "rhel available libraries",
+			fsys: testFs(map[string]string{
+				rhelPg17Config: "",
+				"/usr/pgsql-17/lib/pg_stat_statements.so": "",
+				"/usr/pgsql-17/lib/plpgsql.so":            "",
+			}),
+			osFamily: config.OSFamilyRedHat,
+			outputs: map[string]mockPgConfigOutput{
+				rhelPg17Config: {stdout: testRHELPg17ConfigOut},
+			},
+			expectedOutput: []*ds.PgEdgeVersion{
+				{
+					PostgresVersion:    ds.MustParseVersion("17.11"),
+					AvailableLibraries: []string{"pg_stat_statements", "plpgsql"},
+				},
+			},
+		},
+		{
 			name: "debian mixed with and without spock",
 			fsys: testFs(map[string]string{
 				debianPg17Config: "",
@@ -143,6 +195,7 @@ func TestInstalledVersionsProbe(t *testing.T) {
 					PostgresVersion: ds.MustParseVersion("18.4"),
 				},
 			},
+			expectedWarning: "spock 4.0.10 is installed for postgres 17, but it isn't supported, so postgres 17 will not be available",
 		},
 		{
 			name: "debian spock 6",
@@ -310,6 +363,19 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			expectedErr: "SHAREDIR not found in pg_config output",
 		},
 		{
+			name: "pg_config output missing PKGLIBDIR",
+			fsys: testFs(map[string]string{
+				debianPg17Config: "",
+			}),
+			osFamily: config.OSFamilyDebian,
+			outputs: map[string]mockPgConfigOutput{
+				debianPg17Config: {
+					stdout: withoutPgConfigKey(testDebianPg17ConfigOut, "PKGLIBDIR"),
+				},
+			},
+			expectedErr: "PKGLIBDIR not found in pg_config output",
+		},
+		{
 			name: "pg_config output unrecognized version",
 			fsys: testFs(map[string]string{
 				debianPg17Config: "",
@@ -437,14 +503,192 @@ func TestInstalledVersionsProbe(t *testing.T) {
 			require.NoError(t, err)
 
 			actual, err := probe.InstalledPostgresVersions(t.Context())
-			if tc.expectedErr != "" {
+			switch {
+			case tc.expectedErr != "":
 				assert.ErrorContains(t, err, tc.expectedErr)
-			} else {
+			case tc.expectedWarning != "":
+				assert.EqualError(t, err, tc.expectedWarning)
+				assert.Equal(t, tc.expectedOutput, actual)
+			default:
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedOutput, actual)
 			}
 		})
 	}
+}
+
+func TestInstalledVersionsProbeInventoryErrors(t *testing.T) {
+	fsys := testFs(map[string]string{
+		"/usr/lib/postgresql/17/bin/pg_config":             "",
+		"/usr/share/postgresql/17/extension/spock.control": spock5Control,
+		// The library directory is a file, which can't be read as a directory.
+		"/usr/lib/postgresql/17/lib":            "",
+		"/usr/lib/postgresql/18/bin/pg_config":  "",
+		"/usr/lib/postgresql/18/lib/plpgsql.so": "",
+	})
+	probe, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
+			"/usr/lib/postgresql/17/bin/pg_config": {stdout: testDebianPg17ConfigOut},
+			"/usr/lib/postgresql/18/bin/pg_config": {stdout: testDebianPg18ConfigOut},
+		}),
+		fsys(),
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+
+	actual, err := probe.InstalledPostgresVersions(t.Context())
+	assert.ErrorContains(t, err, "failed to get installed libraries for postgres 17: failed to read /usr/lib/postgresql/17/lib")
+	// Both versions are still discovered, and the list that couldn't be read
+	// is left nil. Spock isn't skipped, since its library might be installed.
+	assert.Equal(t, []*ds.PgEdgeVersion{
+		{
+			PostgresVersion:    ds.MustParseVersion("18.4"),
+			AvailableLibraries: []string{"plpgsql"},
+		},
+		{
+			PostgresVersion: ds.MustParseVersion("17.11"),
+			SpockVersion:    ds.MustParseVersion("5"),
+		},
+	}, actual)
+}
+
+func TestInstalledVersionsProbeCache(t *testing.T) {
+	const (
+		pg17Config = "/usr/lib/postgresql/17/bin/pg_config"
+		pg17LibDir = "/usr/lib/postgresql/17/lib"
+		pg18Config = "/usr/lib/postgresql/18/bin/pg_config"
+	)
+
+	fsys := testFs(map[string]string{
+		pg17Config:                 "",
+		pg17LibDir + "/plpgsql.so": "",
+		pg18Config:                 "",
+	})()
+	probe, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
+			pg17Config: {stdout: testDebianPg17ConfigOut},
+			pg18Config: {stdout: testDebianPg18ConfigOut},
+		}),
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+
+	_, ok := probe.InstalledPostgresVersion("17")
+	assert.False(t, ok, "nothing is cached before the first call")
+
+	_, err = probe.InstalledPostgresVersions(t.Context())
+	require.NoError(t, err)
+
+	pg17 := &ds.PgEdgeVersion{
+		PostgresVersion:    ds.MustParseVersion("17.11"),
+		AvailableLibraries: []string{"plpgsql"},
+	}
+	actual, ok := probe.InstalledPostgresVersion("17")
+	require.True(t, ok)
+	assert.Equal(t, pg17, actual)
+	_, ok = probe.InstalledPostgresVersion("18")
+	assert.True(t, ok)
+
+	// The getter returns a copy.
+	actual.AvailableLibraries[0] = "modified"
+	actual, _ = probe.InstalledPostgresVersion("17")
+	assert.Equal(t, pg17, actual)
+
+	// Make the Postgres 17 library directory unreadable and uninstall
+	// Postgres 18.
+	require.NoError(t, fsys.RemoveAll(pg17LibDir))
+	require.NoError(t, afero.WriteFile(fsys, pg17LibDir, nil, 0o644))
+	require.NoError(t, fsys.Remove(pg18Config))
+
+	versions, err := probe.InstalledPostgresVersions(t.Context())
+	assert.ErrorContains(t, err, "failed to get installed libraries for postgres 17")
+	// The previous libraries are kept for Postgres 17, and Postgres 18 is no
+	// longer cached.
+	assert.Equal(t, []*ds.PgEdgeVersion{pg17}, versions)
+	actual, ok = probe.InstalledPostgresVersion("17")
+	require.True(t, ok)
+	assert.Equal(t, pg17, actual)
+	_, ok = probe.InstalledPostgresVersion("18")
+	assert.False(t, ok)
+
+	// The failure was already reported by the previous call.
+	versions, err = probe.InstalledPostgresVersions(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []*ds.PgEdgeVersion{pg17}, versions)
+}
+
+func TestInstalledVersionsProbeSpockWithoutLibrary(t *testing.T) {
+	const (
+		pg17Config  = "/usr/lib/postgresql/17/bin/pg_config"
+		pg17Spock   = "/usr/share/postgresql/17/extension/spock.control"
+		pg17Library = "/usr/lib/postgresql/17/lib/spock.so"
+		pg18Config  = "/usr/lib/postgresql/18/bin/pg_config"
+		pg18Spock   = "/usr/share/postgresql/18/extension/spock.control"
+		warning     = "spock 5.0.9 is installed for postgres 17 without its library in /usr/lib/postgresql/17/lib, so postgres 17 will be available without spock"
+	)
+
+	fsys := testFs(map[string]string{
+		pg17Config:                              "",
+		pg17Spock:                               spock5Control,
+		"/usr/lib/postgresql/17/lib/plpgsql.so": "",
+		pg18Config:                              "",
+		pg18Spock:                               spock5Control,
+		"/usr/lib/postgresql/18/lib/spock.so":   "",
+	})()
+	probe, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
+			pg17Config: {stdout: testDebianPg17ConfigOut},
+			pg18Config: {stdout: testDebianPg18ConfigOut},
+		}),
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+
+	pg18 := &ds.PgEdgeVersion{
+		PostgresVersion:    ds.MustParseVersion("18.4"),
+		SpockVersion:       ds.MustParseVersion("5"),
+		AvailableLibraries: []string{"spock"},
+	}
+	withoutSpock := []*ds.PgEdgeVersion{
+		pg18,
+		{
+			PostgresVersion:    ds.MustParseVersion("17.11"),
+			AvailableLibraries: []string{"plpgsql"},
+		},
+	}
+
+	// Postgres 17 is reported without spock, since Postgres would fail to
+	// load it.
+	actual, err := probe.InstalledPostgresVersions(t.Context())
+	assert.EqualError(t, err, warning)
+	assert.Equal(t, withoutSpock, actual)
+
+	// The warning is only returned the first time.
+	actual, err = probe.InstalledPostgresVersions(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, withoutSpock, actual)
+
+	// Installing the library adds spock.
+	require.NoError(t, afero.WriteFile(fsys, pg17Library, nil, 0o644))
+	actual, err = probe.InstalledPostgresVersions(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []*ds.PgEdgeVersion{
+		pg18,
+		{
+			PostgresVersion:    ds.MustParseVersion("17.11"),
+			SpockVersion:       ds.MustParseVersion("5"),
+			AvailableLibraries: []string{"plpgsql", "spock"},
+		},
+	}, actual)
+
+	// Removing it again repeats the warning, since the previous call didn't
+	// report it.
+	require.NoError(t, fsys.Remove(pg17Library))
+	actual, err = probe.InstalledPostgresVersions(t.Context())
+	assert.EqualError(t, err, warning)
+	assert.Equal(t, withoutSpock, actual)
 }
 
 func TestInstalledServices(t *testing.T) {
@@ -980,4 +1224,33 @@ func TestInstalledServicesStalledProbe(t *testing.T) {
 	actual, err := probe.InstalledServices(ctx)
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Equal(t, map[string]string{"postgrest": "14.18"}, actual)
+}
+
+func TestInstalledVersionsProbeUnsupportedSpockWarning(t *testing.T) {
+	const pg17Config = "/usr/lib/postgresql/17/bin/pg_config"
+
+	fsys := testFs(map[string]string{
+		pg17Config: "",
+		"/usr/share/postgresql/17/extension/spock.control": withPgConfigValues(spock5Control, map[string]string{
+			"default_version": "'4.0.10'",
+		}),
+	})()
+	probe, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
+			pg17Config: {stdout: testDebianPg17ConfigOut},
+		}),
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+
+	actual, err := probe.InstalledPostgresVersions(t.Context())
+	assert.EqualError(t, err, "spock 4.0.10 is installed for postgres 17, but it isn't supported, so postgres 17 will not be available")
+	assert.Empty(t, actual)
+
+	// The warning is only returned the first time, even though the skipped
+	// version isn't in the previous results.
+	actual, err = probe.InstalledPostgresVersions(t.Context())
+	assert.NoError(t, err)
+	assert.Empty(t, actual)
 }

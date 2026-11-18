@@ -1,14 +1,19 @@
 package systemd
 
 import (
+	"context"
+	"io"
 	"os/user"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
+	"github.com/rs/zerolog"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -102,6 +107,7 @@ func TestGenerateInstanceResourcesPatroniUnit(t *testing.T) {
 			t.Setenv("PATH", "")
 
 			o := &Orchestrator{
+				versionsProbe: &InstalledVersionsProbe{},
 				userLookup: func(username string) (*user.User, error) {
 					return &user.User{
 						Uid:      "26",
@@ -161,4 +167,123 @@ func TestGenerateInstanceResourcesPatroniUnit(t *testing.T) {
 			assert.Contains(t, env, `"PGSERVICEFILE=`+tc.expectedBaseDir+`/configs/pg_service.conf"`)
 		})
 	}
+}
+
+func TestPopulateHostInventoryError(t *testing.T) {
+	const pgConfig = "/usr/lib/postgresql/17/bin/pg_config"
+
+	fsys := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fsys, pgConfig, nil, 0o755))
+	// The library directory is a file, which can't be read as a directory.
+	require.NoError(t, afero.WriteFile(fsys, "/usr/lib/postgresql/17/lib", nil, 0o644))
+	probe, err := NewInstalledVersionsProbe(
+		func(_ context.Context, stdout, _ io.Writer, name string, _ ...string) error {
+			require.Equal(t, pgConfig, name)
+			_, err := stdout.Write([]byte("SHAREDIR = /usr/share/postgresql/17\n" +
+				"PKGLIBDIR = /usr/lib/postgresql/17/lib\n" +
+				"VERSION = PostgreSQL 17.11\n"))
+			return err
+		},
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+
+	o := &Orchestrator{logger: zerolog.Nop(), versionsProbe: probe}
+	h := &host.Host{}
+	require.NoError(t, o.PopulateHost(t.Context(), h))
+
+	expected := []*ds.PgEdgeVersion{{PostgresVersion: ds.MustParseVersion("17.11")}}
+	assert.Equal(t, expected, h.SupportedPgEdgeVersions)
+	assert.Equal(t, expected[0], h.DefaultPgEdgeVersion)
+}
+
+func TestDefaultGUCs(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		version   *ds.PgEdgeVersion
+		libraries []string
+		expected  map[string]any
+	}{
+		{
+			name:      "with spock",
+			version:   ds.MustParsePgEdgeVersion("17.10", "5"),
+			libraries: []string{"pg_stat_statements", "spock"},
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements,spock",
+			},
+		},
+		{
+			name:      "with spock and output plugin libraries",
+			version:   ds.MustParsePgEdgeVersion("17.11", "5"),
+			libraries: []string{"pg_stat_statements", "spock"},
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements,spock",
+				"output_plugin_libraries":  "pgoutput, test_decoding, spock_output",
+			},
+		},
+		{
+			name:      "with spock without pg_stat_statements",
+			version:   ds.MustParsePgEdgeVersion("17.10", "5"),
+			libraries: []string{"spock"},
+			expected: map[string]any{
+				"shared_preload_libraries": "spock",
+			},
+		},
+		{
+			name:      "without spock",
+			version:   ds.MustParsePgEdgeVersion("17.11", ""),
+			libraries: []string{"pg_stat_statements"},
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements",
+			},
+		},
+		{
+			name:      "without spock or pg_stat_statements",
+			version:   ds.MustParsePgEdgeVersion("17.11", ""),
+			libraries: []string{"plpgsql"},
+			expected:  map[string]any{},
+		},
+		{
+			name:     "unknown libraries",
+			version:  ds.MustParsePgEdgeVersion("17.11", ""),
+			expected: map[string]any{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, defaultGUCs(tc.version, tc.libraries))
+		})
+	}
+}
+
+func TestInstalledLibraries(t *testing.T) {
+	const pgConfig = "/usr/lib/postgresql/17/bin/pg_config"
+
+	fsys := afero.NewMemMapFs()
+	for _, path := range []string{pgConfig, "/usr/lib/postgresql/17/lib/pg_stat_statements.so"} {
+		require.NoError(t, afero.WriteFile(fsys, path, nil, 0o755))
+	}
+	probe, err := NewInstalledVersionsProbe(
+		func(_ context.Context, stdout, _ io.Writer, name string, _ ...string) error {
+			require.Equal(t, pgConfig, name)
+			_, err := stdout.Write([]byte("SHAREDIR = /usr/share/postgresql/17\n" +
+				"PKGLIBDIR = /usr/lib/postgresql/17/lib\n" +
+				"VERSION = PostgreSQL 17.11\n"))
+			return err
+		},
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+	o := &Orchestrator{versionsProbe: probe}
+
+	// The probe hasn't run yet.
+	assert.Nil(t, o.installedLibraries(ds.MustParsePgEdgeVersion("17.11", "")))
+
+	_, err = probe.InstalledPostgresVersions(t.Context())
+	require.NoError(t, err)
+
+	// The instance spec's minor version can differ from the installed one.
+	assert.Equal(t, []string{"pg_stat_statements"}, o.installedLibraries(ds.MustParsePgEdgeVersion("17.6", "")))
+	assert.Nil(t, o.installedLibraries(ds.MustParsePgEdgeVersion("18.4", "")))
 }

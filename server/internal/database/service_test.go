@@ -305,7 +305,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid adding spock",
+			name: "valid adding spock",
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
@@ -323,7 +323,6 @@ func TestValidateChangedSpec(t *testing.T) {
 					{Name: "n1", HostIDs: []string{"host-1"}},
 				},
 			},
-			expectedErr: "adding spock to an existing database is not supported",
 		},
 		{
 			name: "invalid removing spock",

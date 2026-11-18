@@ -170,8 +170,11 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
 				FQDN:            "storefront-n1-689qacsi.storefront-database",
 				LogType:         patroni.LogTypeJson,
-				PatroniPort:     8888,
-				PostgresPort:    5432,
+				OrchestratorParameters: map[string]any{
+					"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+				},
+				PatroniPort:  8888,
+				PostgresPort: 5432,
 				Paths: database.InstancePaths{
 					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
 					Host:           database.Paths{BaseDir: "/data/control-plane/instances/storefront-n1-689qacsi"},
@@ -484,8 +487,11 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
 				FQDN:            "pghba-n1-689qacsi.pghba-database",
 				LogType:         patroni.LogTypeJson,
-				PatroniPort:     8888,
-				PostgresPort:    5432,
+				OrchestratorParameters: map[string]any{
+					"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+				},
+				PatroniPort:  8888,
+				PostgresPort: 5432,
 				Paths: database.InstancePaths{
 					Instance:       database.Paths{BaseDir: "/opt/pgedge"},
 					Host:           database.Paths{BaseDir: "/data/control-plane/instances/pghba-n1-689qacsi"},

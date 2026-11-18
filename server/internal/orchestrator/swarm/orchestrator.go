@@ -367,6 +367,22 @@ func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string
 	}, nil
 }
 
+// defaultGUCs returns the swarm-specific defaults for the given version. Our
+// images include every library in shared_preload_libraries, but spock and
+// snowflake are only included when the version uses Spock.
+func defaultGUCs(version *ds.PgEdgeVersion) map[string]any {
+	gucs := map[string]any{
+		"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+	}
+	if version != nil && !version.HasSpock() {
+		gucs["shared_preload_libraries"] = "pg_stat_statements"
+	}
+	if postgres.NeedsOutputPluginLibraries(version) {
+		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
+	}
+	return gucs
+}
+
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts database.Scripts) (*database.InstanceResource, []resource.Resource, []resource.Resource, error) {
 	images, err := o.resolveInstanceImages(spec)
 	if err != nil {
@@ -465,14 +481,15 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec, scripts da
 			OwnerUID:   databaseOwnerUID,
 			OwnerGID:   databaseOwnerGID,
 			Generator: common.NewPatroniConfigGenerator(common.PatroniConfigGeneratorOptions{
-				Instance:        spec,
-				HostCPUs:        float64(o.cpus),
-				HostMemoryBytes: o.memBytes,
-				PatroniPort:     PatroniContainerPort,
-				PostgresPort:    PostgresContainerPort,
-				FQDN:            instanceHostname,
-				LogType:         patroni.LogTypeJson,
-				Paths:           paths,
+				Instance:               spec,
+				HostCPUs:               float64(o.cpus),
+				HostMemoryBytes:        o.memBytes,
+				PatroniPort:            PatroniContainerPort,
+				PostgresPort:           PostgresContainerPort,
+				FQDN:                   instanceHostname,
+				LogType:                patroni.LogTypeJson,
+				Paths:                  paths,
+				OrchestratorParameters: defaultGUCs(spec.PgEdgeVersion),
 			}),
 		},
 	}

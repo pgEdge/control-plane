@@ -34,7 +34,7 @@ func breakSharedPreloadLibraries(t *testing.T, db *DatabaseFixture, host1 string
 	badSpec := &api.DatabaseSpec{}
 	*badSpec = *goodSpec
 	badSpec.PostgresqlConf = map[string]any{
-		"shared_preload_libraries": "pg_stat_statements,spock,definitely_not_installed",
+		"shared_preload_libraries": "pg_stat_statements,spock,$libdir/definitely_not_installed",
 	}
 
 	err := db.Update(t.Context(), UpdateOptions{Spec: badSpec})

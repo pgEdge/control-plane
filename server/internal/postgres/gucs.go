@@ -19,10 +19,10 @@ var minOutputPluginLibrariesVersions = map[uint64]*ds.Version{
 	18: ds.MustParseVersion("18.6"),
 }
 
-// needsOutputPluginLibraries reports whether the given Postgres version
+// NeedsOutputPluginLibraries reports whether the given Postgres version
 // requires output_plugin_libraries to be set in order to allow spock_output
 // to create replication slots.
-func needsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
+func NeedsOutputPluginLibraries(version *ds.PgEdgeVersion) bool {
 	if version == nil || version.PostgresVersion == nil || !version.HasSpock() {
 		return false
 	}
@@ -57,19 +57,12 @@ func DefaultGUCs(version *ds.PgEdgeVersion, peerInstanceIDs []string) map[string
 		"log_truncate_on_rotation":     "on",
 		"logging_collector":            "on",
 		"password_encryption":          "scram-sha-256",
-		"shared_preload_libraries":     "pg_stat_statements,snowflake,spock",
 		"track_commit_timestamp":       "on",
 		"track_io_timing":              "on",
 		"unix_socket_permissions":      "0700",
 		"wal_level":                    "logical",
 		"wal_log_hints":                "on",
 		"wal_sender_timeout":           "5s",
-	}
-	if version != nil && !version.HasSpock() {
-		gucs["shared_preload_libraries"] = "pg_stat_statements,snowflake"
-	}
-	if needsOutputPluginLibraries(version) {
-		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
 	}
 	if NeedsNativeFailoverSlotsForVersion(version) {
 		gucs["sync_replication_slots"] = "on"

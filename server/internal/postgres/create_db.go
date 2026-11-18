@@ -95,22 +95,97 @@ func NodeNeedsCreate(nodeName string) Query[bool] {
 	}
 }
 
-func InitializeSpockNode(nodeName string, nodeDSN *DSN) Statements {
+// InitializeSpockNode creates the Spock extension and the given Spock node if
+// they don't already exist. If addExistingTables is true, the tables that
+// exist when the node is created are added to the default replication sets.
+// Spock only does this automatically for tables that are created after the
+// node, so it's needed when Spock is added to an existing database. Callers
+// should execute these statements in a transaction when addExistingTables is
+// true, because the tables are only added when the node is created.
+func InitializeSpockNode(nodeName string, nodeDSN *DSN, addExistingTables bool) Statements {
 	dsn := nodeDSN.String()
+	createNode := Statements{
+		Statement{
+			SQL: "SELECT spock.node_create(@node, @dsn);",
+			Args: pgx.NamedArgs{
+				"node": nodeName,
+				"dsn":  dsn,
+			},
+		},
+	}
+	if addExistingTables {
+		createNode = append(createNode, AddExistingTablesToReplicationSets())
+	}
 	return Statements{
 		Statement{
 			SQL: "CREATE EXTENSION IF NOT EXISTS spock;",
 		},
 		ConditionalStatement{
-			If: NodeNeedsCreate(nodeName),
-			Then: Statement{
-				SQL: "SELECT spock.node_create(@node, @dsn);",
-				Args: pgx.NamedArgs{
-					"node": nodeName,
-					"dsn":  dsn,
-				},
-			},
+			If:   NodeNeedsCreate(nodeName),
+			Then: createNode,
 		},
+	}
+}
+
+// AddExistingTablesToReplicationSets adds the existing tables that aren't in
+// any replication set to Spock's default replication sets. It follows the
+// rules that Spock uses for new tables when spock.include_ddl_repset is
+// enabled (see add_ddl_to_repset in Spock's src/spock_executor.c):
+//
+//   - Unlogged and temporary tables are skipped.
+//   - Tables with a replica identity index, i.e. a primary key with the
+//     default replica identity or a REPLICA IDENTITY USING INDEX index, are
+//     added to 'default'.
+//   - Tables with a primary key but without a replica identity index, i.e.
+//     with REPLICA IDENTITY FULL or NOTHING, are skipped.
+//   - Other tables are added to 'default_insert_only'.
+//
+// Partitioned tables and their partitions are each added individually, like
+// Spock does. System tables and tables that belong to extensions are skipped.
+func AddExistingTablesToReplicationSets() Statement {
+	return Statement{
+		SQL: `
+			SELECT spock.repset_add_table(
+				set_name           => (CASE WHEN t.has_replica_identity_index
+				                            THEN 'default'
+				                            ELSE 'default_insert_only'
+				                       END)::name,
+				relation           => t.oid::regclass,
+				synchronize_data   => false,
+				include_partitions => false
+			)
+			FROM (
+				SELECT
+					c.oid,
+					EXISTS (
+						SELECT 1 FROM pg_index i
+						WHERE i.indrelid = c.oid
+						AND ((c.relreplident = 'd' AND i.indisprimary)
+							OR (c.relreplident = 'i' AND i.indisreplident))
+					) AS has_replica_identity_index,
+					EXISTS (
+						SELECT 1 FROM pg_index i
+						WHERE i.indrelid = c.oid AND i.indisprimary
+					) AS has_primary_key
+				FROM pg_class c
+				JOIN pg_namespace n ON n.oid = c.relnamespace
+				WHERE c.relkind IN ('r', 'p')
+				AND c.relpersistence = 'p'
+				AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'spock')
+				AND NOT EXISTS (
+					SELECT 1 FROM pg_depend d
+					WHERE d.classid = 'pg_class'::regclass
+					AND d.objid = c.oid
+					AND d.deptype = 'e'
+				)
+				AND NOT EXISTS (
+					SELECT 1 FROM spock.replication_set_table rst
+					WHERE rst.set_reloid = c.oid
+				)
+			) t
+			WHERE t.has_replica_identity_index OR NOT t.has_primary_key
+			ORDER BY t.oid;
+		`,
 	}
 }
 

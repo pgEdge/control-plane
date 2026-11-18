@@ -198,7 +198,8 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 		if err != nil {
 			return fmt.Errorf("failed to drop spock: %w", err)
 		}
-		err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
+		// The tables are added to the restored replication sets below.
+		err = postgres.InitializeSpockNode(p.NodeName, dsn, false).Exec(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("failed to reinitialize spock: %w", err)
 		}
@@ -207,7 +208,7 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 			return fmt.Errorf("failed to restore spock replication sets: %w", err)
 		}
 	} else {
-		err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
+		err = postgres.InitializeSpockNode(p.NodeName, dsn, false).Exec(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("failed to initialize spock: %w", err)
 		}
@@ -232,7 +233,13 @@ func (p *PostgresDatabaseResource) create(ctx context.Context, rc *resource.Cont
 	}
 
 	if primary.Spec.UsesSpock() {
-		err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
+		// Spock can be added to an existing database, so we add its existing
+		// tables to the replication sets when the Spock node is created. This
+		// happens in a transaction so that a failure to add them can't leave
+		// a node that would skip them on the next attempt.
+		err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+			return postgres.InitializeSpockNode(p.NodeName, dsn, true).Exec(ctx, tx)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to initialize spock: %w", err)
 		}

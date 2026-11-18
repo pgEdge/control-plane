@@ -251,6 +251,14 @@ func TestValidateSpockRequirements(t *testing.T) {
 			version: withSpock,
 		},
 		{
+			name: "spock with quoted spock in shared_preload_libraries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": `snowflake, "spock"`},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: withSpock,
+		},
+		{
 			name: "spock with uppercase param name",
 			spec: &Spec{
 				PostgreSQLConf: map[string]any{"SHARED_PRELOAD_LIBRARIES": "snowflake, spock"},
@@ -265,7 +273,7 @@ func TestValidateSpockRequirements(t *testing.T) {
 				Nodes:          []*Node{{Name: "n1"}},
 			},
 			version:     withSpock,
-			expectedErr: `postgresql_conf[shared_preload_libraries]: "spock" must be included in shared_preload_libraries`,
+			expectedErr: `postgresql_conf[shared_preload_libraries]: 'spock' must be included in shared_preload_libraries`,
 		},
 		{
 			name: "spock missing from node-level shared_preload_libraries",
@@ -279,7 +287,7 @@ func TestValidateSpockRequirements(t *testing.T) {
 				},
 			},
 			version:     withSpock,
-			expectedErr: `nodes[1].postgresql_conf[shared_preload_libraries]: "spock" must be included in shared_preload_libraries`,
+			expectedErr: `nodes[1].postgresql_conf[shared_preload_libraries]: 'spock' must be included in shared_preload_libraries`,
 		},
 		{
 			name: "no spock without spock in shared_preload_libraries",
@@ -292,6 +300,134 @@ func TestValidateSpockRequirements(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateSpockRequirements(tc.spec, tc.version)
+			if tc.expectedErr != "" {
+				assert.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidatePreloadedLibraries(t *testing.T) {
+	version := &ds.PgEdgeVersion{
+		PostgresVersion:    ds.MustParseVersion("17.6"),
+		SpockVersion:       ds.MustParseVersion("5"),
+		AvailableLibraries: []string{"auto_explain", "pg_stat_statements", "pgxml", "plpgsql", "spock"},
+	}
+
+	for _, tc := range []struct {
+		name        string
+		spec        *Spec
+		version     *ds.PgEdgeVersion
+		expectedErr string
+	}{
+		{
+			name:    "parameter absent",
+			spec:    &Spec{Nodes: []*Node{{Name: "n1"}}},
+			version: version,
+		},
+		{
+			name: "available spec-level libraries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": `pg_stat_statements, "spock"`},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: version,
+		},
+		{
+			name: "libraries without an extension",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "auto_explain,pgxml,spock"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: version,
+		},
+		{
+			name: "library with file extension",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "pg_stat_statements.so,spock"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: version,
+		},
+		{
+			name: "uninstalled built-in library",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "sepgsql,spock"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version:     version,
+			expectedErr: `postgresql_conf[shared_preload_libraries]: 'sepgsql' is not installed on host host-1`,
+		},
+		{
+			name: "path-style entries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": `$libdir/plugins/foo,/opt/lib/bar.so,"/opt/pg/my,module.so",spock`},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: version,
+		},
+		{
+			name: "unavailable spec-level library",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "pg_stat_statements,snowflake,spock"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version:     version,
+			expectedErr: `postgresql_conf[shared_preload_libraries]: 'snowflake' is not installed on host host-1 for postgres=17.6, spock=5`,
+		},
+		{
+			name: "unavailable library with uppercase param name",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"SHARED_PRELOAD_LIBRARIES": "snowflake"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version:     version,
+			expectedErr: `postgresql_conf[SHARED_PRELOAD_LIBRARIES]: 'snowflake' is not installed on host host-1`,
+		},
+		{
+			name: "unavailable node-level library",
+			spec: &Spec{
+				Nodes: []*Node{{
+					Name:           "n1",
+					PostgreSQLConf: map[string]any{"shared_preload_libraries": "spock,pg_cron"},
+				}},
+			},
+			version:     version,
+			expectedErr: `nodes[0].postgresql_conf[shared_preload_libraries]: 'pg_cron' is not installed on host host-1`,
+		},
+		{
+			name: "node-level parameter overrides spec-level parameter",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "snowflake"},
+				Nodes: []*Node{{
+					Name:           "n1",
+					PostgreSQLConf: map[string]any{"shared_preload_libraries": "spock"},
+				}},
+			},
+			version: version,
+		},
+		{
+			// The API rejects lists with invalid syntax.
+			name: "invalid list syntax is not validated",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": `"snowflake`},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: version,
+		},
+		{
+			name: "host without available libraries is not validated",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "snowflake"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: ds.MustParsePgEdgeVersion("17.6", "5"),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validatePreloadedLibraries(tc.spec, 0, "host-1", tc.version)
 			if tc.expectedErr != "" {
 				assert.ErrorContains(t, err, tc.expectedErr)
 			} else {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/ports"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/pgEdge/control-plane/server/internal/validation"
@@ -611,20 +613,35 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec, current *Spec)
 				node.PostgresVersion = pgVer
 			}
 		}
+		nodeVersion := specVersion
+		if node.PostgresVersion != "" {
+			nodeVersion, err = ds.ParsePgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
+			if err != nil {
+				return fmt.Errorf("failed to parse versions from nodes[%d] spec: %w", idx, err)
+			}
+		}
+		var hostErrs []error
 		for _, hostID := range node.HostIDs {
 			h, ok := hostsByID[hostID]
 			if !ok {
-				return fmt.Errorf("host %s not found in host list", hostID)
+				hostErrs = append(hostErrs, fmt.Errorf("host %s not found in host list", hostID))
+				continue
 			}
-			if node.PostgresVersion != "" {
-				nodeVersion, err := ds.ParsePgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
-				if err != nil {
-					return fmt.Errorf("failed to parse versions from nodes[%d] spec: %w", idx, err)
-				}
-				if !h.Supports(nodeVersion) {
-					return fmt.Errorf("host %s does not support version combination: %s", h.ID, describeVersion(nodeVersion))
+			hostVersion := h.SupportedVersion(nodeVersion)
+			if hostVersion == nil {
+				hostErrs = append(hostErrs, fmt.Errorf("host %s does not support version combination: %s", h.ID, describeVersion(nodeVersion)))
+				continue
+			}
+			if h.Orchestrator == config.OrchestratorSystemD {
+				// Systemd hosts can have any set of extensions installed, so
+				// we validate that the preloaded libraries are available.
+				if err := validatePreloadedLibraries(spec, idx, h.ID, hostVersion); err != nil {
+					hostErrs = append(hostErrs, err)
 				}
 			}
+		}
+		if err := errors.Join(hostErrs...); err != nil {
+			return err
 		}
 	}
 
@@ -1164,14 +1181,14 @@ func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 // existing database. A Spock N subscription cannot sync from a Spock N-1
 // peer, so this must be caught here rather than left to fail at replication
 // time. It does not apply to a dedicated Spock upgrade workflow (PLAT-720),
-// which is expected to have its own validation. It also rejects adding Spock
-// to or removing Spock from an existing database.
+// which is expected to have its own validation. It also rejects removing
+// Spock from an existing database. Adding Spock to an existing database is
+// allowed, since its existing tables are added to the replication sets when
+// the Spock node is created.
 func spockMajorVersionChanged(current, updated string) error {
 	switch {
-	case current == "" && updated == "":
-		return nil
 	case current == "":
-		return fmt.Errorf("spock version changed from none to %s: adding spock to an existing database is not supported", updated)
+		return nil
 	case updated == "":
 		return fmt.Errorf("spock version changed from %s to none: removing spock from an existing database is not supported", current)
 	}
@@ -1222,7 +1239,7 @@ func tenantIDsMatch(a, b *string) bool {
 // describeVersion formats the given version for use in error messages.
 func describeVersion(v *ds.PgEdgeVersion) string {
 	if !v.HasSpock() {
-		return fmt.Sprintf("postgres=%s without spock", v.PostgresVersion)
+		return fmt.Sprintf("postgres=%s", v.PostgresVersion)
 	}
 	return fmt.Sprintf("postgres=%s, spock=%s", v.PostgresVersion, v.SpockVersion)
 }
@@ -1250,6 +1267,59 @@ func validateSpockRequirements(spec *Spec, version *ds.PgEdgeVersion) error {
 }
 
 func validateSpockPreloaded(conf map[string]any, path validation.Path) []error {
+	key, libs, ok := sharedPreloadLibrariesParam(conf)
+	if !ok || slices.Contains(libs, "spock") {
+		// An absent key means that the defaults will be applied, including
+		// spock.
+		return nil
+	}
+	err := errors.New(`'spock' must be included in shared_preload_libraries`)
+	return []error{validation.NewError(err, path.AppendMapKey(key))}
+}
+
+// validatePreloadedLibraries validates that every library in the node's
+// shared_preload_libraries is an available library in the given host version.
+// The node-level parameter takes precedence over the spec-level parameter.
+// Path-style entries and hosts that don't report their available libraries
+// are not validated.
+func validatePreloadedLibraries(spec *Spec, nodeIdx int, hostID string, version *ds.PgEdgeVersion) error {
+	if version.AvailableLibraries == nil {
+		return nil
+	}
+
+	path := validation.NewPath("nodes", validation.ArrayIndexElement(nodeIdx), "postgresql_conf")
+	key, libs, ok := sharedPreloadLibrariesParam(spec.Nodes[nodeIdx].PostgreSQLConf)
+	if !ok {
+		path = validation.NewPath("postgresql_conf")
+		key, libs, ok = sharedPreloadLibrariesParam(spec.PostgreSQLConf)
+	}
+	if !ok {
+		// The defaults will be applied, which are always available.
+		return nil
+	}
+
+	var errs []error
+	for _, lib := range libs {
+		// Postgres appends the ".so" extension to bare names that don't have
+		// it, so names are valid with or without it.
+		name := strings.TrimSuffix(lib, ".so")
+		switch {
+		case strings.Contains(lib, "/"):
+			// Postgres loads names that contain a slash as file paths, so
+			// they can refer to libraries outside of the library directory.
+		case !slices.Contains(version.AvailableLibraries, name):
+			err := fmt.Errorf("'%s' is not installed on host %s for %s", lib, hostID, describeVersion(version))
+			errs = append(errs, validation.NewError(err, path.AppendMapKey(key)))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// sharedPreloadLibrariesParam returns the key and the library names of the
+// shared_preload_libraries parameter in the given conf. It returns false if
+// the parameter is absent, is not a string, or is not a valid list.
+func sharedPreloadLibrariesParam(conf map[string]any) (string, []string, bool) {
 	// param names are case-insensitive, so comparison is done after casting to lowercase
 	for key, val := range conf {
 		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
@@ -1258,17 +1328,16 @@ func validateSpockPreloaded(conf map[string]any, path validation.Path) []error {
 		strVal, ok := val.(string)
 		if !ok {
 			// The type is validated by the API.
-			return nil
+			return "", nil, false
 		}
-		for lib := range strings.SplitSeq(strVal, ",") {
-			if strings.TrimSpace(lib) == "spock" {
-				return nil
-			}
+		libs, err := postgres.SplitLibraryList(strVal)
+		if err != nil {
+			// The syntax is validated by the API.
+			return "", nil, false
 		}
-		err := errors.New(`"spock" must be included in shared_preload_libraries`)
-		return []error{validation.NewError(err, path.AppendMapKey(key))}
+		return key, libs, true
 	}
-	return nil // key absent; defaults will be applied, including spock
+	return "", nil, false
 }
 
 // validateLocaleVersions rejects the builtin locale provider when the spec or

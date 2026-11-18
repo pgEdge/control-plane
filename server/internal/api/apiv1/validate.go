@@ -18,26 +18,48 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/postgres/hba"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/pgEdge/control-plane/server/internal/validation"
 )
 
-// validateConfLibraries validates the type of shared_preload_libraries. The
-// requirement to include spock depends on the database's version, so it's
-// checked in database.Service.PopulateSpecDefaults after versions are
-// defaulted.
+// validateConfLibraries validates the type and list syntax of
+// shared_preload_libraries, and that it's only set once. The requirement to
+// include spock depends on the database's version, so it's checked in
+// database.Service.PopulateSpecDefaults after versions are defaulted.
 func validateConfLibraries(conf map[string]any, path validation.Path) []error {
 	// param names are case-insensitive, so comparison is done after casting to lowercase
-	for key, val := range conf {
-		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
-			continue
+	var keys []string
+	for key := range conf {
+		if strings.ToLower(strings.TrimSpace(key)) == "shared_preload_libraries" {
+			keys = append(keys, key)
 		}
-		if _, ok := val.(string); !ok {
-			err := fmt.Errorf("%q must be a string", key)
-			return []error{validation.NewError(err, path.AppendMapKey(key))}
-		}
+	}
+	switch len(keys) {
+	case 0:
 		return nil
+	case 1:
+	default:
+		// Otherwise, which value takes effect would depend on map order.
+		slices.Sort(keys)
+		quoted := make([]string, len(keys))
+		for i, key := range keys {
+			quoted[i] = fmt.Sprintf("%q", key)
+		}
+		err := fmt.Errorf("shared_preload_libraries is set more than once: %s", strings.Join(quoted, ", "))
+		return []error{validation.NewError(err, path)}
+	}
+
+	key := keys[0]
+	strVal, ok := conf[key].(string)
+	if !ok {
+		err := fmt.Errorf("%q must be a string", key)
+		return []error{validation.NewError(err, path.AppendMapKey(key))}
+	}
+	if _, err := postgres.SplitLibraryList(strVal); err != nil {
+		err := fmt.Errorf("%q has invalid list syntax: %w", key, err)
+		return []error{validation.NewError(err, path.AppendMapKey(key))}
 	}
 	return nil
 }
