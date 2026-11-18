@@ -105,11 +105,14 @@ func (r *RAGServiceKeysResource) Refresh(ctx context.Context, rc *resource.Conte
 		if err := validateKeyFilename(name); err != nil {
 			return fmt.Errorf("invalid key filename in state: %w", err)
 		}
-		if _, err := afs.Stat(filepath.Join(keysDir, name)); err != nil {
-			if errors.Is(err, afero.ErrFileNotFound) {
-				return resource.ErrNotFound
-			}
-			return fmt.Errorf("failed to stat key file %q: %w", name, err)
+		match, err := keyFileMatches(afs, filepath.Join(keysDir, name), r.Keys[name])
+		if err != nil {
+			return fmt.Errorf("failed to check key file %q: %w", name, err)
+		}
+		if !match {
+			// A missing, non-regular or changed key file makes the resource
+			// be recreated, which rewrites it. The key value isn't logged.
+			return resource.ErrNotFound
 		}
 	}
 
@@ -117,14 +120,19 @@ func (r *RAGServiceKeysResource) Refresh(ctx context.Context, rc *resource.Conte
 }
 
 func (r *RAGServiceKeysResource) Create(ctx context.Context, rc *resource.Context) error {
-	return r.apply(rc, false)
+	return r.apply(rc)
 }
 
 func (r *RAGServiceKeysResource) Update(ctx context.Context, rc *resource.Context) error {
-	return r.apply(rc, true)
+	return r.apply(rc)
 }
 
-func (r *RAGServiceKeysResource) apply(rc *resource.Context, removeStale bool) error {
+// apply writes the desired key files, then removes the key files that are no
+// longer needed. Writing first means a failed write never leaves the
+// installed config referencing deleted key files. Stale files are removed on
+// Create too, since a resource is recreated when one of its files is missing
+// or changed, and the directory may still hold a removed pipeline's keys.
+func (r *RAGServiceKeysResource) apply(rc *resource.Context) error {
 	// Validate all desired filenames before any filesystem mutation so that an
 	// invalid name never leaves the directory in a partially-updated state.
 	for name := range r.Keys {
@@ -150,12 +158,30 @@ func (r *RAGServiceKeysResource) apply(rc *resource.Context, removeStale bool) e
 	if err := afs.Chown(keysDir, r.OwnerUID, r.OwnerGID); err != nil {
 		return fmt.Errorf("failed to set keys directory ownership: %w", err)
 	}
-	if removeStale {
-		if err := r.removeStaleKeyFiles(afs, keysDir); err != nil {
-			return err
-		}
+	if err := r.writeKeyFiles(afs, keysDir); err != nil {
+		return err
 	}
-	return r.writeKeyFiles(afs, keysDir)
+	return r.removeStaleKeyFiles(afs, keysDir)
+}
+
+// keyFileMatches reports whether path is a regular file that holds exactly
+// the expected key.
+func keyFileMatches(afs afero.Fs, path, expected string) (bool, error) {
+	info, err := afs.Stat(path)
+	if errors.Is(err, afero.ErrFileNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !info.Mode().IsRegular() {
+		return false, nil
+	}
+	content, err := afero.ReadFile(afs, path)
+	if err != nil {
+		return false, err
+	}
+	return string(content) == expected, nil
 }
 
 func (r *RAGServiceKeysResource) Delete(ctx context.Context, rc *resource.Context) error {

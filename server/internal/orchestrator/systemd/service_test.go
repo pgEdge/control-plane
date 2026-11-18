@@ -87,4 +87,10 @@ func TestServiceHealthCheckTimeouts(t *testing.T) {
 	assert.Greater(t, serviceHealthChecks["rag"].timeout, 10*time.Second)
 	assert.Equal(t, serviceHealthCheckTimeout, serviceHealthChecks["mcp"].timeout)
 	assert.Equal(t, serviceHealthCheckTimeout, serviceHealthChecks["postgrest"].timeout)
+
+	// The deploy-time readiness check wraps the health check, so it must
+	// not cut any health check short.
+	for serviceType, check := range serviceHealthChecks {
+		assert.Greater(t, serviceInstanceStatusTimeout, check.timeout, serviceType)
+	}
 }

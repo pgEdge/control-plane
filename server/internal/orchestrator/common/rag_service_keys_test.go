@@ -122,6 +122,82 @@ func TestRAGServiceKeysResource_UpdateRemovesStaleKeys(t *testing.T) {
 	assert.Equal(t, "sk-ant-rotated", string(content))
 }
 
+func TestRAGServiceKeysResource_RefreshDetectsChangedKeys(t *testing.T) {
+	path := filepath.Join(testRAGKeysDir, "default_rag.key")
+	for name, tamper := range map[string]func(afero.Fs) error{
+		"changed": func(afs afero.Fs) error {
+			return afero.WriteFile(afs, path, []byte("sk-other"), 0o600)
+		},
+		"truncated": func(afs afero.Fs) error {
+			return afero.WriteFile(afs, path, nil, 0o600)
+		},
+		"replaced by a directory": func(afs afero.Fs) error {
+			if err := afs.Remove(path); err != nil {
+				return err
+			}
+			return afs.Mkdir(path, 0o700)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			afs := afero.NewMemMapFs()
+			rc := ragTestContext(t, afs)
+			r := testRAGKeysResource(map[string]string{"default_rag.key": "sk-ant"})
+			require.NoError(t, r.Create(t.Context(), rc))
+			require.NoError(t, r.Refresh(t.Context(), rc))
+
+			require.NoError(t, tamper(afs))
+			assert.ErrorIs(t, r.Refresh(t.Context(), rc), resource.ErrNotFound)
+		})
+	}
+}
+
+func TestRAGServiceKeysResource_CreateRemovesStaleKeys(t *testing.T) {
+	afs := afero.NewMemMapFs()
+	rc := ragTestContext(t, afs)
+	require.NoError(t, testRAGKeysResource(map[string]string{
+		"old_embedding.key": "sk-old",
+		"keep_rag.key":      "sk-ant",
+	}).Create(t.Context(), rc))
+
+	// A missing key file makes the resource be recreated rather than
+	// updated, and the recreation must still remove the old pipeline's key.
+	require.NoError(t, afs.Remove(filepath.Join(testRAGKeysDir, "keep_rag.key")))
+	recreated := testRAGKeysResource(map[string]string{"keep_rag.key": "sk-ant"})
+	require.ErrorIs(t, recreated.Refresh(t.Context(), rc), resource.ErrNotFound)
+	require.NoError(t, recreated.Create(t.Context(), rc))
+
+	exists, err := afero.Exists(afs, filepath.Join(testRAGKeysDir, "old_embedding.key"))
+	require.NoError(t, err)
+	assert.False(t, exists, "the removed pipeline's key file should be deleted")
+	require.NoError(t, recreated.Refresh(t.Context(), rc))
+}
+
+func TestRAGServiceKeysResource_FailedUpdateKeepsCurrentKeys(t *testing.T) {
+	afs := afero.NewMemMapFs()
+	rc := ragTestContext(t, afs)
+	require.NoError(t, testRAGKeysResource(map[string]string{"old_rag.key": "sk-old"}).Create(t.Context(), rc))
+
+	// The new key can't be written, so the key that the installed config
+	// references must not be removed.
+	do.OverrideValue[afero.Fs](rc.Injector, renameFailingFs{Fs: afs})
+	err := testRAGKeysResource(map[string]string{"new_rag.key": "sk-new"}).Update(t.Context(), rc)
+	require.ErrorIs(t, err, syscall.EPERM)
+
+	content, err := afero.ReadFile(afs, filepath.Join(testRAGKeysDir, "old_rag.key"))
+	require.NoError(t, err)
+	assert.Equal(t, "sk-old", string(content))
+}
+
+// renameFailingFs fails every rename, to simulate a key file that can't be
+// moved into place.
+type renameFailingFs struct {
+	afero.Fs
+}
+
+func (renameFailingFs) Rename(string, string) error {
+	return syscall.EPERM
+}
+
 func TestRAGServiceKeysResource_InvalidFilenameIsNonDestructive(t *testing.T) {
 	afs := afero.NewMemMapFs()
 	rc := ragTestContext(t, afs)
