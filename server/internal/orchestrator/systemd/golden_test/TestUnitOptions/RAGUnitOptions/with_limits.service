@@ -1,0 +1,20 @@
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+User=999
+Group=999
+ExecStart=/usr/pgedge/rag-server2/bin/pgedge-rag-server -config /etc/pgedge-rag/storefront-rag-host-1/pgedge-rag-server.yaml
+CPUQuota=50%
+MemoryMax=536870912
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+[X-pgEdge]
+Port=3300
+ServiceInstanceID=storefront-rag-host-1
+ServiceType=rag
+Version=2.0.1

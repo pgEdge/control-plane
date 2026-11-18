@@ -476,6 +476,68 @@ func TestInstalledServices(t *testing.T) {
 	}
 }
 
+func TestInstalledServicesRAG(t *testing.T) {
+	const (
+		ragPath       = "/usr/pgedge/rag-server2/bin/pgedge-rag-server"
+		postgrestPath = "/usr/bin/postgrest"
+	)
+	ragVersionOutput := "pgEdge RAG Server\n" +
+		"  Version:    2.0.1\n" +
+		"  Build Time: 2026-11-10T12:30:01Z\n" +
+		"  Git Commit: e0fbdf2c5a93a5592b577a972594b5f729fa671e\n"
+
+	for _, tc := range []struct {
+		name           string
+		fsys           func() afero.Fs
+		outputs        map[string]mockPgConfigOutput
+		expectedOutput map[string]string
+		expectedErr    string
+	}{
+		{
+			name:           "rag installed",
+			fsys:           testFs(map[string]string{ragPath: ""}),
+			outputs:        map[string]mockPgConfigOutput{ragPath: {stdout: ragVersionOutput}},
+			expectedOutput: map[string]string{"rag": "2.0.1"},
+		},
+		{
+			name:           "rag not installed",
+			fsys:           testFs(nil),
+			expectedOutput: map[string]string{},
+		},
+		{
+			name: "rag failure doesn't hide other services",
+			fsys: testFs(map[string]string{ragPath: "", postgrestPath: ""}),
+			outputs: map[string]mockPgConfigOutput{
+				ragPath:       {stderr: "boom", err: errors.New("exit status 1")},
+				postgrestPath: {stdout: "PostgREST 14.18\n"},
+			},
+			expectedOutput: map[string]string{"postgrest": "14.18"},
+			expectedErr:    "failed to get rag version: exit status 1, stderr: boom",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			probe, err := systemd.NewInstalledVersionsProbe(
+				mockPgConfigExecCommand(t, tc.outputs),
+				tc.fsys(),
+				config.SystemD{
+					OSFamily:      config.OSFamilyDebian,
+					PostgRESTPath: postgrestPath,
+					RAGPath:       ragPath,
+				},
+			)
+			require.NoError(t, err)
+
+			actual, err := probe.InstalledServices(t.Context())
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.expectedOutput, actual)
+		})
+	}
+}
+
 func TestNewInstalledVersionsProbeUnknownOSFamily(t *testing.T) {
 	_, err := systemd.NewInstalledVersionsProbe(
 		mockPgConfigExecCommand(t, nil),

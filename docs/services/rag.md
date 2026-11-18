@@ -60,6 +60,37 @@ database creation using the `scripts.post_database_create` hook. See
 example. Alternatively, you can provision these manually after
 database creation.
 
+## Running on systemd Clusters
+
+On systemd clusters, the Control Plane runs each RAG service instance as a
+systemd unit named `rag-<service-instance-id>.service`. Each host that runs
+a RAG service instance must have the RAG server installed:
+
+- Install the `pgedge-rag-server2` package, which installs the server at
+  `/usr/pgedge/rag-server2/bin/pgedge-rag-server`. To use a different
+  binary, such as the 1.x server at `/usr/bin/pgedge-rag-server`, set
+  [`systemd.rag_path`](../installation/configuration.md).
+- The server runs as the `pgedge` user, which the package creates.
+- Each host runs the single RAG server version that's installed on it. A
+  service's `version` must be `latest` or match the installed version.
+- The service's `port` is required.
+
+The Control Plane writes the configuration file to
+`/etc/pgedge-rag/<service-instance-id>/pgedge-rag-server.yaml` and the
+API key files to the `keys` directory next to it. When you change the
+service's configuration or API keys, the Control Plane restarts the unit.
+
+!!! note
+
+    On Debian and Ubuntu, the `pgedge-rag-server2` package enables and
+    starts its own `pgedge-rag-server2.service` unit, which listens on
+    port 8080. The Control Plane doesn't use that unit. Disable it so that
+    it doesn't take a port that the Control Plane assigns:
+
+    ```sh
+    sudo systemctl disable --now pgedge-rag-server2
+    ```
+
 ## Configuration Reference
 
 All configuration fields are provided in the `config` object of the

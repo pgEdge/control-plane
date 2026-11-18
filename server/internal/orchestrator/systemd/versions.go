@@ -79,6 +79,9 @@ func NewInstalledVersionsProbe(
 	if cfg.MCPPath != "" {
 		servicePaths["mcp"] = cfg.MCPPath
 	}
+	if cfg.RAGPath != "" {
+		servicePaths["rag"] = cfg.RAGPath
+	}
 	return &InstalledVersionsProbe{
 		ExecCommand:   execCommand,
 		Fs:            fsys,

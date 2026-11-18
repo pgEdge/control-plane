@@ -8,5 +8,6 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PgBackRestRestore](registry, ResourceTypePgBackRestRestore)
 	resource.RegisterResourceType[*PostgRESTConfig](registry, ResourceTypePostgRESTConfig)
 	resource.RegisterResourceType[*MCPConfig](registry, ResourceTypeMCPConfig)
+	resource.RegisterResourceType[*RAGConfig](registry, ResourceTypeRAGConfig)
 	resource.RegisterResourceType[*ServiceInstanceResource](registry, ResourceTypeServiceInstance)
 }

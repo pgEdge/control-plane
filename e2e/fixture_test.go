@@ -285,12 +285,6 @@ func (f *TestFixture) SkipIfS3Unsupported(t testing.TB) {
 	}
 }
 
-func (f *TestFixture) SkipIfServicesUnsupported(t testing.TB) {
-	if f.orchestrator == "systemd" {
-		t.Skip("services not supported for systemd")
-	}
-}
-
 // SkipIfServiceVersionChangesUnsupported skips tests that move a service
 // between versions. A systemd host runs the single version of each service
 // that's installed on it.

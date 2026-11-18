@@ -169,6 +169,43 @@ func TestUnitOptions(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("RAGUnitOptions", func(t *testing.T) {
+		metadata := map[string]string{
+			"ServiceType":       "rag",
+			"ServiceInstanceID": "storefront-rag-host-1",
+			"Port":              "3300",
+			"Version":           "2.0.1",
+		}
+
+		for _, tc := range []struct {
+			name        string
+			cpus        float64
+			memoryBytes uint64
+		}{
+			{
+				name: "minimal",
+			},
+			{
+				name:        "with limits",
+				cpus:        0.5,
+				memoryBytes: 536_870_912, // 512MiB in bytes
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				actual := systemd.RAGUnitOptions(
+					"/usr/pgedge/rag-server2/bin/pgedge-rag-server",
+					"/etc/pgedge-rag/storefront-rag-host-1/pgedge-rag-server.yaml",
+					"999",
+					"999",
+					tc.cpus,
+					tc.memoryBytes,
+					metadata,
+				)
+				golden.Run(t, actual, update)
+			})
+		}
+	})
 }
 
 func TestExecCommandLine(t *testing.T) {

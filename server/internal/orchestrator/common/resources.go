@@ -14,4 +14,7 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PostgRESTConfigResource](registry, ResourceTypePostgRESTConfig)
 	resource.RegisterResourceType[*PostgRESTAuthenticatorResource](registry, ResourceTypePostgRESTAuthenticator)
 	resource.RegisterResourceType[*MCPConfigResource](registry, ResourceTypeMCPConfig)
+	resource.RegisterResourceType[*RAGPreflightResource](registry, ResourceTypeRAGPreflightResource)
+	resource.RegisterResourceType[*RAGServiceKeysResource](registry, ResourceTypeRAGServiceKeys)
+	resource.RegisterResourceType[*RAGConfigResource](registry, ResourceTypeRAGConfig)
 }

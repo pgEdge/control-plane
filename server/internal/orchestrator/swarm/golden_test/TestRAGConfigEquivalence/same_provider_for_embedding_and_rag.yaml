@@ -1,0 +1,24 @@
+server:
+  listen_address: 0.0.0.0
+  port: 8080
+pipelines:
+- name: default
+  database:
+    host: postgres-storefront-n1-aaaa
+    port: 5432
+    database: storefront
+    username: rag_user
+    password: secret
+    ssl_mode: prefer
+  tables:
+  - table: docs
+    text_column: content
+    vector_column: embedding
+  embedding_llm:
+    provider: openai
+    model: text-embedding-3-small
+  rag_llm:
+    provider: openai
+    model: gpt-4o
+  api_keys:
+    openai: /app/keys/default_rag.key
