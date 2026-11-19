@@ -1,6 +1,7 @@
 package database
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,46 @@ func TestVersionsFromImage(t *testing.T) {
 				assert.Equal(t, tc.wantPg, pg)
 				assert.Equal(t, tc.wantSpock, spock)
 			}
+		})
+	}
+}
+
+func TestMergePostgreSQLConf(t *testing.T) {
+	cases := []struct {
+		name     string
+		base     map[string]any
+		override map[string]any
+		want     map[string]any
+	}{
+		{
+			name:     "nil base",
+			override: map[string]any{"max_connections": 100},
+			want:     map[string]any{"max_connections": 100},
+		},
+		{
+			name: "nil override",
+			base: map[string]any{"max_connections": 100},
+			want: map[string]any{"max_connections": 100},
+		},
+		{
+			name:     "same spelling",
+			base:     map[string]any{"max_connections": 100, "work_mem": "4MB"},
+			override: map[string]any{"max_connections": 200},
+			want:     map[string]any{"max_connections": 200, "work_mem": "4MB"},
+		},
+		{
+			name:     "different spelling",
+			base:     map[string]any{"shared_preload_libraries": "pg_stat_statements,spock"},
+			override: map[string]any{" SHARED_PRELOAD_LIBRARIES ": "spock"},
+			want:     map[string]any{" SHARED_PRELOAD_LIBRARIES ": "spock"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			base := maps.Clone(tc.base)
+			assert.Equal(t, tc.want, mergePostgreSQLConf(tc.base, tc.override))
+			assert.Equal(t, base, tc.base, "base must not be modified")
 		})
 	}
 }

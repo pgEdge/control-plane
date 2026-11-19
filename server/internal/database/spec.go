@@ -857,7 +857,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				DatabaseUsers:  s.DatabaseUsers,
 				BackupConfig:   overridableValue(s.BackupConfig, node.BackupConfig),
 				RestoreConfig:  effectiveRestore,
-				PostgreSQLConf: mergableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				PostgreSQLConf: mergePostgreSQLConf(s.PostgreSQLConf, node.PostgreSQLConf),
 				// Node entries come first so they take first-match priority;
 				// database-level entries follow as the baseline.
 				PgHbaConf:        slices.Concat(node.PgHbaConf, s.PgHbaConf),
@@ -914,11 +914,25 @@ func overridableValue[T comparable](base, override T) T {
 	return base
 }
 
-func mergableMapValue[T ~map[V]any, V comparable](base, override T) T {
+// mergePostgreSQLConf merges the override parameters into the base parameters.
+// Parameter names are case-insensitive, so an override replaces any base
+// parameter with the same normalized name, regardless of its spelling.
+func mergePostgreSQLConf(base, override map[string]any) map[string]any {
 	if base == nil {
 		return maps.Clone(override)
 	}
+	overridden := make(map[string]bool, len(override))
+	for key := range override {
+		overridden[normalizeParamName(key)] = true
+	}
 	result := maps.Clone(base)
+	maps.DeleteFunc(result, func(key string, _ any) bool {
+		return overridden[normalizeParamName(key)]
+	})
 	maps.Copy(result, override)
 	return result
+}
+
+func normalizeParamName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
 }

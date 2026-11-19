@@ -1376,9 +1376,8 @@ func validatePreloadedLibraries(spec *Spec, nodeIdx int, hostID string, version 
 // shared_preload_libraries parameter in the given conf. It returns false if
 // the parameter is absent, is not a string, or is not a valid list.
 func sharedPreloadLibrariesParam(conf map[string]any) (string, []string, bool) {
-	// param names are case-insensitive, so comparison is done after casting to lowercase
 	for key, val := range conf {
-		if strings.ToLower(strings.TrimSpace(key)) != "shared_preload_libraries" {
+		if normalizeParamName(key) != "shared_preload_libraries" {
 			continue
 		}
 		strVal, ok := val.(string)
