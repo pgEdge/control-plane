@@ -9,6 +9,7 @@ import (
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
+	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/validation"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
@@ -64,6 +65,8 @@ func apiErr(err error) error {
 		return newAPIError(errNotFound, err.Error())
 	case errors.Is(err, database.ErrInstanceNotFound):
 		return newAPIError(errNotFound, err.Error())
+	case errors.Is(err, host.ErrHostNotFound):
+		return ErrHostNotFound
 	case errors.Is(err, task.ErrTaskNotFound):
 		return ErrTaskNotFound
 	case errors.Is(err, database.ErrDatabaseNotModifiable):

@@ -12,6 +12,9 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
+// ErrHostNotFound indicates that no host exists with the given ID.
+var ErrHostNotFound = errors.New("host not found")
+
 type Orchestrator interface {
 	PopulateHost(ctx context.Context, h *Host) error
 	PopulateHostStatus(ctx context.Context, h *HostStatus) error
@@ -180,8 +183,10 @@ func (s *Service) GetHost(ctx context.Context, hostID string) (*Host, error) {
 	storedHost, err := s.store.Host.
 		GetByKey(hostID).
 		Exec(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch hosts from storage: %w", err)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrHostNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to fetch host from storage: %w", err)
 	}
 	storedStatus, err := s.store.HostStatus.
 		GetByKey(hostID).
