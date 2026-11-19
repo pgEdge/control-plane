@@ -12,6 +12,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -923,16 +924,12 @@ func mergePostgreSQLConf(base, override map[string]any) map[string]any {
 	}
 	overridden := make(map[string]bool, len(override))
 	for key := range override {
-		overridden[normalizeParamName(key)] = true
+		overridden[postgres.NormalizeParameterName(key)] = true
 	}
 	result := maps.Clone(base)
 	maps.DeleteFunc(result, func(key string, _ any) bool {
-		return overridden[normalizeParamName(key)]
+		return overridden[postgres.NormalizeParameterName(key)]
 	})
 	maps.Copy(result, override)
 	return result
-}
-
-func normalizeParamName(name string) string {
-	return strings.ToLower(strings.TrimSpace(name))
 }

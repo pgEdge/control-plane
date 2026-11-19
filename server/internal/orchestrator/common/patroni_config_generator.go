@@ -245,7 +245,11 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 		})
 	}
 	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(p.NodeOrdinal))
-	maps.Copy(parameters, p.SpecParameters)
+	// The defaults above use normalized names, so user-specified parameters
+	// are normalized to replace them regardless of spelling.
+	for name, value := range p.SpecParameters {
+		parameters[postgres.NormalizeParameterName(name)] = value
+	}
 
 	return parameters
 }

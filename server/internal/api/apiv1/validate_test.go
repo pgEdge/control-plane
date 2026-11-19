@@ -495,7 +495,7 @@ func TestValidateDatabaseUpdate_LibraryConf(t *testing.T) {
 	}
 }
 
-func TestValidateConfLibraries(t *testing.T) {
+func TestValidatePostgreSQLConf(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		conf     map[string]any
@@ -538,6 +538,26 @@ func TestValidateConfLibraries(t *testing.T) {
 			},
 		},
 		{
+			name: "valid distinct params",
+			conf: map[string]any{
+				"Work_Mem":        "4MB",
+				"max_connections": 100,
+			},
+		},
+		{
+			name: "invalid duplicate spellings of other params",
+			conf: map[string]any{
+				"work_mem":        "4MB",
+				"WORK_MEM":        "8MB",
+				"max_connections": 100,
+				"Max_Connections": 200,
+			},
+			expected: []string{
+				`max_connections is set more than once: "Max_Connections", "max_connections"`,
+				`work_mem is set more than once: "WORK_MEM", "work_mem"`,
+			},
+		},
+		{
 			name: "invalid list syntax",
 			conf: map[string]any{"shared_preload_libraries": "snowflake,,spock"},
 			expected: []string{
@@ -560,7 +580,7 @@ func TestValidateConfLibraries(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := errors.Join(validateConfLibraries(tc.conf, nil)...)
+			err := errors.Join(validatePostgreSQLConf(tc.conf, nil)...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {

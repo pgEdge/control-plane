@@ -9,6 +9,13 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
+// NormalizeParameterName returns the canonical form of the given parameter
+// name. Postgres parameter names are case-insensitive, so names that differ
+// only by case or surrounding whitespace refer to the same parameter.
+func NormalizeParameterName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
 // minOutputPluginLibrariesVersions are the earliest Postgres minor version per
 // major version that gates output plugins behind the output_plugin_libraries
 // allowlist GUC. Any major version newer than the last entry here is assumed

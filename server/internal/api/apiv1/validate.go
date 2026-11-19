@@ -24,33 +24,42 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/validation"
 )
 
-// validateConfLibraries validates the type and list syntax of
-// shared_preload_libraries, and that it's only set once. The requirement to
+// validatePostgreSQLConf validates that each parameter is only set once, and
+// the type and list syntax of shared_preload_libraries. The requirement to
 // include spock depends on the database's version, so it's checked in
 // database.Service.PopulateSpecDefaults after versions are defaulted.
-func validateConfLibraries(conf map[string]any, path validation.Path) []error {
-	// param names are case-insensitive, so comparison is done after casting to lowercase
-	var keys []string
+func validatePostgreSQLConf(conf map[string]any, path validation.Path) []error {
+	// Parameter names are case-insensitive, so keys are grouped by their
+	// normalized name.
+	keysByName := map[string][]string{}
 	for key := range conf {
-		if strings.ToLower(strings.TrimSpace(key)) == "shared_preload_libraries" {
-			keys = append(keys, key)
-		}
+		name := postgres.NormalizeParameterName(key)
+		keysByName[name] = append(keysByName[name], key)
 	}
-	switch len(keys) {
-	case 0:
-		return nil
-	case 1:
-	default:
+
+	var errs []error
+	for _, name := range slices.Sorted(maps.Keys(keysByName)) {
+		keys := keysByName[name]
+		if len(keys) < 2 {
+			continue
+		}
 		// Otherwise, which value takes effect would depend on map order.
 		slices.Sort(keys)
 		quoted := make([]string, len(keys))
 		for i, key := range keys {
 			quoted[i] = fmt.Sprintf("%q", key)
 		}
-		err := fmt.Errorf("shared_preload_libraries is set more than once: %s", strings.Join(quoted, ", "))
-		return []error{validation.NewError(err, path)}
+		err := fmt.Errorf("%s is set more than once: %s", name, strings.Join(quoted, ", "))
+		errs = append(errs, validation.NewError(err, path))
+	}
+	if len(errs) > 0 {
+		return errs
 	}
 
+	keys, ok := keysByName["shared_preload_libraries"]
+	if !ok {
+		return nil
+	}
 	key := keys[0]
 	strVal, ok := conf[key].(string)
 	if !ok {
@@ -161,7 +170,7 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 	}
 
 	// Validate the postgresql_conf GUCs and the pg_hba/pg_ident entries.
-	errs = append(errs, validateConfLibraries(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	errs = append(errs, validatePostgreSQLConf(spec.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(spec.PgHbaConf, validation.NewPath("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(spec.PgIdentConf, validation.NewPath("pg_ident_conf"))...)
 	errs = append(errs, validateLocale(spec, validation.NewPath("locale"))...)
@@ -332,10 +341,10 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 
 	// Validate shared_preload_libraries, if explicitly set, both at the spec
 	// level and on individual nodes.
-	errs = append(errs, validateConfLibraries(new.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
+	errs = append(errs, validatePostgreSQLConf(new.PostgresqlConf, validation.NewPath("postgresql_conf"))...)
 	for i, n := range new.Nodes {
 		nodePath := validation.NewPath("nodes", validation.ArrayIndexElement(i))
-		errs = append(errs, validateConfLibraries(n.PostgresqlConf, nodePath.Append("postgresql_conf"))...)
+		errs = append(errs, validatePostgreSQLConf(n.PostgresqlConf, nodePath.Append("postgresql_conf"))...)
 	}
 
 	return errors.Join(errs...)
@@ -419,7 +428,7 @@ func validateNode(
 		}
 	}
 
-	errs = append(errs, validateConfLibraries(node.PostgresqlConf, path.Append("postgresql_conf"))...)
+	errs = append(errs, validatePostgreSQLConf(node.PostgresqlConf, path.Append("postgresql_conf"))...)
 	errs = append(errs, validatePgHbaConf(node.PgHbaConf, path.Append("pg_hba_conf"))...)
 	errs = append(errs, validatePgIdentConf(node.PgIdentConf, path.Append("pg_ident_conf"))...)
 

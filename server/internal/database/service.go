@@ -1377,7 +1377,7 @@ func validatePreloadedLibraries(spec *Spec, nodeIdx int, hostID string, version 
 // the parameter is absent, is not a string, or is not a valid list.
 func sharedPreloadLibrariesParam(conf map[string]any) (string, []string, bool) {
 	for key, val := range conf {
-		if normalizeParamName(key) != "shared_preload_libraries" {
+		if postgres.NormalizeParameterName(key) != "shared_preload_libraries" {
 			continue
 		}
 		strVal, ok := val.(string)
