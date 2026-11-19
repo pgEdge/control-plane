@@ -653,7 +653,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec, current *Spec)
 
 	// This must also run after the version defaults above, since an omitted
 	// version can resolve to one with or without Spock.
-	if err := validateSpockRequirements(spec, specVersion); err != nil {
+	if err := validateSpockRequirements(spec, specVersion, hostsByID); err != nil {
 		return err
 	}
 
@@ -1248,12 +1248,20 @@ func describeVersion(v *ds.PgEdgeVersion) string {
 // whether the database uses Spock. Databases without Spock are limited to a
 // single node, since there is no replication between nodes. Databases with
 // Spock must keep spock in shared_preload_libraries if it's overridden.
-func validateSpockRequirements(spec *Spec, version *ds.PgEdgeVersion) error {
+func validateSpockRequirements(spec *Spec, version *ds.PgEdgeVersion, hostsByID map[string]*host.Host) error {
 	if !version.HasSpock() {
-		if len(spec.Nodes) > 1 {
-			return errors.New("databases without spock are limited to a single node")
+		if len(spec.Nodes) <= 1 {
+			return nil
 		}
-		return nil
+		err := errors.New("databases without spock are limited to a single node")
+		if spockVersion := availableSpockVersion(spec, hostsByID); spockVersion != "" {
+			// Spock is only defaulted from the hosts' default version when a
+			// database is created, so the hosts can support Spock for this
+			// Postgres version even though the database doesn't use it, e.g.
+			// when Spock was installed after the database was created.
+			return fmt.Errorf("%w: set spock_version to %q to add spock to this database", err, spockVersion)
+		}
+		return err
 	}
 
 	var errs []error
@@ -1264,6 +1272,54 @@ func validateSpockRequirements(spec *Spec, version *ds.PgEdgeVersion) error {
 	}
 
 	return errors.Join(errs...)
+}
+
+// availableSpockVersion returns the greatest Spock version that every host in
+// the spec's nodes supports with its node's Postgres version, or "" if there
+// is no such version.
+func availableSpockVersion(spec *Spec, hostsByID map[string]*host.Host) string {
+	var common ds.Set[string]
+	spockVersions := map[string]*ds.Version{}
+	for _, node := range spec.Nodes {
+		pgVersionStr := spec.PostgresVersion
+		if node.PostgresVersion != "" {
+			pgVersionStr = node.PostgresVersion
+		}
+		pgVersion, err := ds.ParseVersion(pgVersionStr)
+		if err != nil {
+			return ""
+		}
+		for _, hostID := range node.HostIDs {
+			h, ok := hostsByID[hostID]
+			if !ok {
+				return ""
+			}
+			supported := ds.NewSet[string]()
+			for _, v := range h.SupportedPgEdgeVersions {
+				if v.HasSpock() && v.PostgresVersion.Compare(pgVersion) == 0 {
+					spockVersion := v.SpockVersion.String()
+					supported.Add(spockVersion)
+					spockVersions[spockVersion] = v.SpockVersion
+				}
+			}
+			if common == nil {
+				common = supported
+			} else {
+				common = common.Intersection(supported)
+			}
+		}
+	}
+
+	var greatest *ds.Version
+	for spockVersion := range common {
+		if v := spockVersions[spockVersion]; greatest == nil || v.Compare(greatest) > 0 {
+			greatest = v
+		}
+	}
+	if greatest == nil {
+		return ""
+	}
+	return greatest.String()
 }
 
 func validateSpockPreloaded(conf map[string]any, path validation.Path) []error {

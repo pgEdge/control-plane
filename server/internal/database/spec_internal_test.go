@@ -217,6 +217,10 @@ func TestValidateServiceHosts(t *testing.T) {
 func TestValidateSpockRequirements(t *testing.T) {
 	withSpock := ds.MustParsePgEdgeVersion("17.6", "5")
 	withoutSpock := ds.MustParsePgEdgeVersion("17.6", "")
+	hostsByID := map[string]*host.Host{
+		"host-1": {ID: "host-1", SupportedPgEdgeVersions: []*ds.PgEdgeVersion{withoutSpock, withSpock}},
+		"host-2": {ID: "host-2", SupportedPgEdgeVersions: []*ds.PgEdgeVersion{withoutSpock, withSpock}},
+	}
 
 	for _, tc := range []struct {
 		name        string
@@ -241,6 +245,18 @@ func TestValidateSpockRequirements(t *testing.T) {
 			},
 			version:     withoutSpock,
 			expectedErr: "databases without spock are limited to a single node",
+		},
+		{
+			name: "no spock with multiple nodes on hosts with spock",
+			spec: &Spec{
+				PostgresVersion: "17.6",
+				Nodes: []*Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-2"}},
+				},
+			},
+			version:     withoutSpock,
+			expectedErr: `databases without spock are limited to a single node: set spock_version to "5" to add spock to this database`,
 		},
 		{
 			name: "spock with spock in shared_preload_libraries",
@@ -299,7 +315,7 @@ func TestValidateSpockRequirements(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateSpockRequirements(tc.spec, tc.version)
+			err := validateSpockRequirements(tc.spec, tc.version, hostsByID)
 			if tc.expectedErr != "" {
 				assert.ErrorContains(t, err, tc.expectedErr)
 			} else {
@@ -433,6 +449,95 @@ func TestValidatePreloadedLibraries(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestAvailableSpockVersion(t *testing.T) {
+	newHost := func(id string, versions ...*ds.PgEdgeVersion) *host.Host {
+		return &host.Host{ID: id, SupportedPgEdgeVersions: versions}
+	}
+	hostsByID := map[string]*host.Host{
+		"host-1": newHost("host-1",
+			ds.MustParsePgEdgeVersion("17.6", ""),
+			ds.MustParsePgEdgeVersion("17.6", "4"),
+			ds.MustParsePgEdgeVersion("17.6", "5"),
+			ds.MustParsePgEdgeVersion("18.1", "5"),
+		),
+		"host-2": newHost("host-2",
+			ds.MustParsePgEdgeVersion("17.6", ""),
+			ds.MustParsePgEdgeVersion("17.6", "4"),
+			ds.MustParsePgEdgeVersion("18.1", "5"),
+		),
+		"host-3": newHost("host-3",
+			ds.MustParsePgEdgeVersion("17.6", ""),
+			ds.MustParsePgEdgeVersion("18.1", "5"),
+		),
+	}
+
+	for _, tc := range []struct {
+		name     string
+		spec     *Spec
+		expected string
+	}{
+		{
+			name: "greatest version supported by every host",
+			spec: &Spec{
+				PostgresVersion: "17.6",
+				Nodes: []*Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-2"}},
+				},
+			},
+			expected: "4",
+		},
+		{
+			name: "greatest version on a single host",
+			spec: &Spec{
+				PostgresVersion: "17.6",
+				Nodes: []*Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-1"}},
+				},
+			},
+			expected: "5",
+		},
+		{
+			name: "host without spock for the postgres version",
+			spec: &Spec{
+				PostgresVersion: "17.6",
+				Nodes: []*Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-3"}},
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "node-level postgres version",
+			spec: &Spec{
+				PostgresVersion: "17.6",
+				Nodes: []*Node{
+					{Name: "n1", HostIDs: []string{"host-2"}},
+					{Name: "n2", HostIDs: []string{"host-3"}, PostgresVersion: "18.1"},
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "unknown host",
+			spec: &Spec{
+				PostgresVersion: "18.1",
+				Nodes: []*Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-4"}},
+				},
+			},
+			expected: "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, availableSpockVersion(tc.spec, hostsByID))
 		})
 	}
 }
