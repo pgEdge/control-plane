@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -194,6 +196,24 @@ func TestInstalledVersionsProbe(t *testing.T) {
 				{
 					PostgresVersion: ds.MustParseVersion("18.4"),
 				},
+			},
+			expectedWarning: "spock 4.0.10 is installed for postgres 17, but it isn't supported, so postgres 17 will not be available",
+		},
+		{
+			// The unsupported version takes precedence over the missing
+			// library, so this version is skipped rather than being reported
+			// without spock.
+			name: "debian unsupported spock version without its library",
+			fsys: testFs(map[string]string{
+				debianPg17Config: "",
+				debianPg17Spock: withPgConfigValues(spock5Control, map[string]string{
+					"default_version": "'4.0.10'",
+				}),
+				"/usr/lib/postgresql/17/lib/plpgsql.so": "",
+			}),
+			osFamily: config.OSFamilyDebian,
+			outputs: map[string]mockPgConfigOutput{
+				debianPg17Config: {stdout: testDebianPg17ConfigOut},
 			},
 			expectedWarning: "spock 4.0.10 is installed for postgres 17, but it isn't supported, so postgres 17 will not be available",
 		},
@@ -518,20 +538,23 @@ func TestInstalledVersionsProbe(t *testing.T) {
 }
 
 func TestInstalledVersionsProbeInventoryErrors(t *testing.T) {
-	fsys := testFs(map[string]string{
-		"/usr/lib/postgresql/17/bin/pg_config":             "",
-		"/usr/share/postgresql/17/extension/spock.control": spock5Control,
-		// The library directory is a file, which can't be read as a directory.
-		"/usr/lib/postgresql/17/lib":            "",
-		"/usr/lib/postgresql/18/bin/pg_config":  "",
-		"/usr/lib/postgresql/18/lib/plpgsql.so": "",
-	})
+	fsys := &unlistableDirFs{
+		Fs: testFs(map[string]string{
+			"/usr/lib/postgresql/17/bin/pg_config":             "",
+			"/usr/share/postgresql/17/extension/spock.control": spock5Control,
+			"/usr/lib/postgresql/17/lib/plpgsql.so":            "",
+			"/usr/lib/postgresql/18/bin/pg_config":             "",
+			"/usr/lib/postgresql/18/lib/plpgsql.so":            "",
+		})(),
+		dir:      "/usr/lib/postgresql/17/lib",
+		denyStat: true,
+	}
 	probe, err := systemd.NewInstalledVersionsProbe(
 		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
 			"/usr/lib/postgresql/17/bin/pg_config": {stdout: testDebianPg17ConfigOut},
 			"/usr/lib/postgresql/18/bin/pg_config": {stdout: testDebianPg18ConfigOut},
 		}),
-		fsys(),
+		fsys,
 		config.SystemD{OSFamily: config.OSFamilyDebian},
 	)
 	require.NoError(t, err)
@@ -539,7 +562,8 @@ func TestInstalledVersionsProbeInventoryErrors(t *testing.T) {
 	actual, err := probe.InstalledPostgresVersions(t.Context())
 	assert.ErrorContains(t, err, "failed to get installed libraries for postgres 17: failed to read /usr/lib/postgresql/17/lib")
 	// Both versions are still discovered, and the list that couldn't be read
-	// is left nil. Spock isn't skipped, since its library might be installed.
+	// is left nil. Spock isn't skipped, since its library can't be checked
+	// directly either, so it might be installed.
 	assert.Equal(t, []*ds.PgEdgeVersion{
 		{
 			PostgresVersion:    ds.MustParseVersion("18.4"),
@@ -853,6 +877,29 @@ func testFs(files map[string]string) func() afero.Fs {
 		}
 		return fsys
 	}
+}
+
+// unlistableDirFs denies listing dir, like a directory without read
+// permission. If denyStat is true, it also denies checking the files in dir,
+// like a directory without execute permission.
+type unlistableDirFs struct {
+	afero.Fs
+	dir      string
+	denyStat bool
+}
+
+func (f *unlistableDirFs) Open(name string) (afero.File, error) {
+	if name == f.dir {
+		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrPermission}
+	}
+	return f.Fs.Open(name)
+}
+
+func (f *unlistableDirFs) Stat(name string) (os.FileInfo, error) {
+	if f.denyStat && filepath.Dir(name) == f.dir {
+		return nil, &os.PathError{Op: "stat", Path: name, Err: os.ErrPermission}
+	}
+	return f.Fs.Stat(name)
 }
 
 // withPgConfigValues replaces the values of the given keys in "KEY = value"
@@ -1224,6 +1271,62 @@ func TestInstalledServicesStalledProbe(t *testing.T) {
 	actual, err := probe.InstalledServices(ctx)
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Equal(t, map[string]string{"postgrest": "14.18"}, actual)
+}
+
+func TestInstalledVersionsProbeSpockLibraryWithStaleList(t *testing.T) {
+	const (
+		pg17Config  = "/usr/lib/postgresql/17/bin/pg_config"
+		pg17LibDir  = "/usr/lib/postgresql/17/lib"
+		pg17Library = pg17LibDir + "/spock.so"
+	)
+
+	memFs := testFs(map[string]string{
+		pg17Config: "",
+		"/usr/share/postgresql/17/extension/spock.control": spock5Control,
+		pg17LibDir + "/plpgsql.so":                         "",
+	})()
+	fsys := &unlistableDirFs{Fs: memFs}
+	probe, err := systemd.NewInstalledVersionsProbe(
+		mockPgConfigExecCommand(t, map[string]mockPgConfigOutput{
+			pg17Config: {stdout: testDebianPg17ConfigOut},
+		}),
+		fsys,
+		config.SystemD{OSFamily: config.OSFamilyDebian},
+	)
+	require.NoError(t, err)
+
+	withoutSpock := []*ds.PgEdgeVersion{
+		{
+			PostgresVersion:    ds.MustParseVersion("17.11"),
+			AvailableLibraries: []string{"plpgsql"},
+		},
+	}
+
+	// The first list doesn't include spock, so it's reported without spock.
+	actual, err := probe.InstalledPostgresVersions(t.Context())
+	assert.ErrorContains(t, err, "without its library")
+	assert.Equal(t, withoutSpock, actual)
+
+	// Installing the library while the directory can't be listed adds spock,
+	// since the library is checked directly instead of using the stale list,
+	// and the list is updated to match.
+	require.NoError(t, afero.WriteFile(memFs, pg17Library, nil, 0o644))
+	fsys.dir = pg17LibDir
+	actual, err = probe.InstalledPostgresVersions(t.Context())
+	assert.ErrorContains(t, err, "failed to get installed libraries for postgres 17")
+	assert.Equal(t, []*ds.PgEdgeVersion{
+		{
+			PostgresVersion:    ds.MustParseVersion("17.11"),
+			SpockVersion:       ds.MustParseVersion("5"),
+			AvailableLibraries: []string{"plpgsql", "spock"},
+		},
+	}, actual)
+
+	// Removing it again is also detected directly.
+	require.NoError(t, memFs.Remove(pg17Library))
+	actual, err = probe.InstalledPostgresVersions(t.Context())
+	assert.ErrorContains(t, err, "without its library")
+	assert.Equal(t, withoutSpock, actual)
 }
 
 func TestInstalledVersionsProbeUnsupportedSpockWarning(t *testing.T) {

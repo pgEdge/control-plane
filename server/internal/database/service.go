@@ -1324,7 +1324,9 @@ func availableSpockVersion(spec *Spec, hostsByID map[string]*host.Host) string {
 
 func validateSpockPreloaded(conf map[string]any, path validation.Path) []error {
 	key, libs, ok := sharedPreloadLibrariesParam(conf)
-	if !ok || slices.Contains(libs, "spock") {
+	// Postgres appends the ".so" extension to names that don't have it, so
+	// spock is preloaded with or without it.
+	if !ok || slices.Contains(libs, "spock") || slices.Contains(libs, "spock.so") {
 		// An absent key means that the defaults will be applied, including
 		// spock.
 		return nil

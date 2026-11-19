@@ -208,7 +208,12 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 			return fmt.Errorf("failed to restore spock replication sets: %w", err)
 		}
 	} else {
-		err = postgres.InitializeSpockNode(p.NodeName, dsn, false).Exec(ctx, conn)
+		// The restored database doesn't have Spock, so its tables are added
+		// to the replication sets when the Spock node is created, like in
+		// create.
+		err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+			return postgres.InitializeSpockNode(p.NodeName, dsn, true).Exec(ctx, tx)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to initialize spock: %w", err)
 		}

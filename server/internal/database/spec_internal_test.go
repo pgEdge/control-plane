@@ -316,6 +316,14 @@ func TestValidateSpockRequirements(t *testing.T) {
 			version: withSpock,
 		},
 		{
+			name: "spock with spock.so in shared_preload_libraries",
+			spec: &Spec{
+				PostgreSQLConf: map[string]any{"shared_preload_libraries": "snowflake, spock.so"},
+				Nodes:          []*Node{{Name: "n1"}},
+			},
+			version: withSpock,
+		},
+		{
 			name: "spock with uppercase param name",
 			spec: &Spec{
 				PostgreSQLConf: map[string]any{"SHARED_PRELOAD_LIBRARIES": "snowflake, spock"},

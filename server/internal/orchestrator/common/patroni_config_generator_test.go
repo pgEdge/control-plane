@@ -412,6 +412,46 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 		},
 		{
+			// Community Postgres without Spock, whose preloaded libraries come
+			// from the systemd orchestrator's defaults.
+			name: "systemd without spock",
+			options: common.PatroniConfigGeneratorOptions{
+				Instance: &database.InstanceSpec{
+					InstanceID:    "storefront-n1-689qacsi",
+					DatabaseID:    "storefront",
+					HostID:        "host-1",
+					DatabaseName:  "app",
+					NodeName:      "n1",
+					NodeOrdinal:   1,
+					NodeSize:      1,
+					PgEdgeVersion: ds.MustParsePgEdgeVersion("17.11", ""),
+					ClusterSize:   1,
+				},
+				HostCPUs:        4,
+				HostMemoryBytes: 1024 * 1024 * 1024 * 8,
+				FQDN:            "storefront-n1-689qacsi.storefront-database",
+				OrchestratorParameters: map[string]any{
+					"shared_preload_libraries": "pg_stat_statements",
+				},
+				PatroniPort:  8888,
+				PostgresPort: 5432,
+				Paths: database.InstancePaths{
+					Instance:       database.Paths{BaseDir: "/var/lib/pgsql/17/storefront-n1-689qacsi"},
+					Host:           database.Paths{BaseDir: "/var/lib/pgsql/17/storefront-n1-689qacsi"},
+					PgBackRestPath: "/usr/bin/pgbackrest",
+					PatroniPath:    "/usr/bin/patroni",
+				},
+			},
+			etcdHosts: []string{"i-0123456789abcdef.ec2.internal:2379"},
+			etcdCreds: &common.EtcdCreds{
+				Username: "instance.storefront-n1-689qacsi",
+				Password: "password",
+			},
+			generateOptions: common.GenerateOptions{
+				SystemAddresses: []string{"10.10.0.2"},
+			},
+		},
+		{
 			name: "enable fast basebackup",
 			options: common.PatroniConfigGeneratorOptions{
 				Instance: &database.InstanceSpec{

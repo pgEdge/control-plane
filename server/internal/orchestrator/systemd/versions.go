@@ -303,9 +303,11 @@ func (p *InstalledVersionsProbe) setInstalledPostgresVersions(
 // descending order. A failure to list a version's libraries keeps the list
 // from the previous call, so that a transient failure doesn't change the
 // defaults or validation for that version. The list is left nil if there was
-// no previous list, since its contents are unknown. A version whose Spock
-// control file is installed without its library is reported without Spock,
-// and a version with an unsupported Spock version is skipped.
+// no previous list, since its contents are unknown. In that case, Spock's
+// library is checked directly, since the previous list could be stale. A
+// version with an unsupported Spock version is skipped, and a version whose
+// Spock control file is installed without its library is reported without
+// Spock.
 //
 // Every discovered version is returned along with an error that wraps a
 // *versionWarning for each of these problems and each skipped version. Since this is called
@@ -338,17 +340,16 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 		}
 		// These warnings are only reported if this version is discovered.
 		var versionWarnings []error
-		libraries, err := installedLibraries(p.Fs, out.pkgLibDir)
-		if err != nil {
+		libraries, listErr := installedLibraries(p.Fs, out.pkgLibDir)
+		if listErr != nil {
 			if previous, ok := p.InstalledPostgresVersion(pgMajor); ok {
 				libraries = previous.AvailableLibraries
 			}
-			versionWarnings = append(versionWarnings, fmt.Errorf("failed to get installed libraries for postgres %s: %w", pgMajor, err))
+			versionWarnings = append(versionWarnings, fmt.Errorf("failed to get installed libraries for postgres %s: %w", pgMajor, listErr))
 		}
 		postgres := &ds.PgEdgeVersion{
-			PostgresVersion:    pgVersion,
-			Stability:          prereleaseStability(pgVersion),
-			AvailableLibraries: libraries,
+			PostgresVersion: pgVersion,
+			Stability:       prereleaseStability(pgVersion),
 		}
 
 		spockVersion, err := extensionVersion(p.Fs, out.shareDir, "spock")
@@ -358,26 +359,34 @@ func (p *InstalledVersionsProbe) InstalledPostgresVersions(ctx context.Context) 
 		switch {
 		case spockVersion == nil:
 			// Spock is optional. This version will be reported without it.
-		case libraries != nil && !slices.Contains(libraries, "spock"):
-			// Spock's control file is installed without its library, so
-			// Postgres would fail to start with spock preloaded. An unknown
-			// list of libraries is not checked.
-			versionWarnings = append(versionWarnings, fmt.Errorf("spock %s is installed for postgres %s without its library in %s, so postgres %s will be available without spock", spockVersion, pgMajor, out.pkgLibDir, pgMajor))
-		case supportedSpockVersions.IsSatisfied(spockVersion):
-			postgres.SpockVersion = spockVersion
-			// Normalize drops the Spock pre-release, so we need to reflect it
-			// in the stability if Postgres is otherwise stable.
-			if postgres.Stability == "" {
-				postgres.Stability = prereleaseStability(spockVersion)
-			}
-		default:
+		case !supportedSpockVersions.IsSatisfied(spockVersion):
 			// An unsupported Spock version is installed. We skip this Postgres
 			// version rather than reporting it without Spock, since that would
 			// be surprising to someone who intentionally installed Spock. The
 			// other warnings don't apply to a version that isn't discovered.
 			warnings[pgMajor] = []error{fmt.Errorf("spock %s is installed for postgres %s, but it isn't supported, so postgres %s will not be available", spockVersion, pgMajor, pgMajor)}
 			continue
+		default:
+			installed, known := libraryInstalled(p.Fs, out.pkgLibDir, libraries, listErr == nil, "spock")
+			if known && listErr != nil {
+				// The previous list could predate Spock being installed or
+				// removed, so it's updated to match.
+				libraries = withLibrary(libraries, "spock", installed)
+			}
+			if known && !installed {
+				// Spock's control file is installed without its library, so
+				// Postgres would fail to start with spock preloaded.
+				versionWarnings = append(versionWarnings, fmt.Errorf("spock %s is installed for postgres %s without its library in %s, so postgres %s will be available without spock", spockVersion, pgMajor, out.pkgLibDir, pgMajor))
+				break
+			}
+			postgres.SpockVersion = spockVersion
+			// Normalize drops the Spock pre-release, so we need to reflect it
+			// in the stability if Postgres is otherwise stable.
+			if postgres.Stability == "" {
+				postgres.Stability = prereleaseStability(spockVersion)
+			}
 		}
+		postgres.AvailableLibraries = libraries
 		normalized, err := postgres.Normalize()
 		if err != nil {
 			return nil, fmt.Errorf("failed to normalize version for postgres %s: %w", pgMajor, err)
@@ -521,6 +530,43 @@ func installedLibraries(fsys afero.Fs, pkgLibDir string) ([]string, error) {
 	slices.Sort(names)
 
 	return names, nil
+}
+
+// libraryInstalled returns whether the given library is installed in the given
+// package library directory, and false for known if that's unknown. If listed
+// is true, libraries is the current list of the directory's libraries, and an
+// unknown (nil) list means the directory doesn't exist. Otherwise, libraries
+// could be stale, so the library is checked directly.
+func libraryInstalled(fsys afero.Fs, pkgLibDir string, libraries []string, listed bool, name string) (installed, known bool) {
+	if listed {
+		return slices.Contains(libraries, name), libraries != nil
+	}
+	_, err := fsys.Stat(filepath.Join(pkgLibDir, name+".so"))
+	switch {
+	case err == nil:
+		return true, true
+	case errors.Is(err, afero.ErrFileNotFound):
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+// withLibrary returns a copy of the given sorted list of libraries with the
+// given library added or removed. An unknown (nil) list is left unknown.
+func withLibrary(libraries []string, name string, installed bool) []string {
+	if libraries == nil {
+		return nil
+	}
+	i, found := slices.BinarySearch(libraries, name)
+	switch {
+	case installed && !found:
+		return slices.Insert(slices.Clone(libraries), i, name)
+	case !installed && found:
+		return slices.Delete(slices.Clone(libraries), i, i+1)
+	default:
+		return libraries
+	}
 }
 
 // extensionVersion reads the default_version from the given extension's
