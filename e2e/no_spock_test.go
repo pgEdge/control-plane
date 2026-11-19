@@ -35,13 +35,14 @@ func TestCreateDBWithoutSpock(t *testing.T) {
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   "admin",
-					Password:   pointerTo("password"),
-					DbOwner:    pointerTo(true),
+					Password:   new("password"),
+					DbOwner:    new(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
+			Port:           new(0),
+			PatroniPort:    new(0),
+			PostgresqlConf: fastCheckpointConf,
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name: "n1",
@@ -87,12 +88,12 @@ func TestCreateDBWithoutSpock(t *testing.T) {
 	opts.Matcher = WithRole("replica")
 	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
-			var val string
-			err := conn.QueryRow(ctx, "SELECT val FROM foo WHERE id = 1").Scan(&val)
+			var rowExists bool
+			err := conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM foo WHERE id = 1 AND val = 'bar')").Scan(&rowExists)
 			if !assert.NoError(c, err) {
 				return
 			}
-			assert.Equal(c, "bar", val)
+			assert.True(c, rowExists, "replica should have the row written on the primary")
 		}, time.Minute, time.Second)
 	})
 }
@@ -117,13 +118,14 @@ func TestCreateMultiNodeDBWithoutSpock(t *testing.T) {
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   "admin",
-					Password:   pointerTo("password"),
-					DbOwner:    pointerTo(true),
+					Password:   new("password"),
+					DbOwner:    new(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
+			Port:           new(0),
+			PatroniPort:    new(0),
+			PostgresqlConf: fastCheckpointConf,
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(host1)}},
 				{Name: "n2", HostIds: []controlplane.Identifier{controlplane.Identifier(host2)}},
@@ -162,18 +164,20 @@ func TestCreateDBWithUninstalledPreloadLibrary(t *testing.T) {
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   "admin",
-					Password:   pointerTo("password"),
-					DbOwner:    pointerTo(true),
+					Password:   new("password"),
+					DbOwner:    new(true),
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
+			Port:        new(0),
+			PatroniPort: new(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(host1)}},
 			},
 			PostgresqlConf: map[string]any{
-				"shared_preload_libraries": libraries,
+				"shared_preload_libraries":     libraries,
+				"checkpoint_timeout":           "30s",
+				"checkpoint_completion_target": "0",
 			},
 		},
 	})
