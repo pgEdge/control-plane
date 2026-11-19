@@ -17,6 +17,8 @@ import (
 func TestFailoverScenarios(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfSpockNotInstalled(t)
+
 	hostIDs := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hostIDs), 3, "fixture must provide at least 3 hosts")
 	host1 := hostIDs[0]

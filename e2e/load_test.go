@@ -16,6 +16,8 @@ import (
 )
 
 func TestUpdateUnderLoad(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	hostIDs := fixture.HostIDs()
 	host1 := controlplane.Identifier(hostIDs[0])
 	host2 := controlplane.Identifier(hostIDs[1])

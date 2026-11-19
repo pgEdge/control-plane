@@ -24,6 +24,8 @@ var password string = "password"
 // Performs various validations, such as checking primary and replica node functionality.
 // Uses DatabaseFixture to create the database.
 func TestCreateDbWithVersions(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	// The supported versions will be the same across all hosts.
 	host, err := fixture.Client.GetHost(t.Context(), &controlplane.GetHostPayload{
 		HostID: controlplane.Identifier(fixture.HostIDs()[0]),

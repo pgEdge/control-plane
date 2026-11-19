@@ -14,6 +14,8 @@ import (
 func TestPortChange(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfSpockNotInstalled(t)
+
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
 

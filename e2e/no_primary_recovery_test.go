@@ -13,34 +13,25 @@ import (
 // that references a library that isn't installed, which causes Postgres to
 // fail to restart and leaves the node without a primary. It returns the
 // node's last-known-good spec so the caller can submit it again to recover.
-func breakSharedPreloadLibraries(t *testing.T, db *DatabaseFixture, host1 string, dbName string) *api.DatabaseSpec {
+func breakSharedPreloadLibraries(t *testing.T, db *DatabaseFixture) {
 	t.Helper()
 
-	goodSpec := &api.DatabaseSpec{
-		DatabaseName: dbName,
-		DatabaseUsers: []*api.DatabaseUserSpec{
-			{Username: "admin", DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
-		},
-		Port:        pointerTo(0),
-		PatroniPort: pointerTo(0),
-		Nodes: []*api.DatabaseNodeSpec{
-			{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
-		},
-		PostgresqlConf: map[string]any{
-			"shared_preload_libraries": "pg_stat_statements,spock",
-		},
+	// Path-style entries aren't validated against the host's installed
+	// libraries, so this one gets past validation and breaks Postgres at
+	// restart. A bare name would be rejected by validation on systemd hosts.
+	sharedLibraries := "pg_stat_statements,$libdir/definitely_not_installed"
+	if fixture.hasSpock {
+		sharedLibraries += ",spock"
 	}
 
 	badSpec := &api.DatabaseSpec{}
-	*badSpec = *goodSpec
+	*badSpec = *db.Spec
 	badSpec.PostgresqlConf = map[string]any{
-		"shared_preload_libraries": "pg_stat_statements,spock,$libdir/definitely_not_installed",
+		"shared_preload_libraries": sharedLibraries,
 	}
 
 	err := db.Update(t.Context(), UpdateOptions{Spec: badSpec})
 	require.Error(t, err, "update with an uninstalled library should fail")
-
-	return goodSpec
 }
 
 func TestUpdateDatabaseRecoversNodeWithNoPrimary(t *testing.T) {
@@ -52,25 +43,21 @@ func TestUpdateDatabaseRecoversNodeWithNoPrimary(t *testing.T) {
 	ctx := t.Context()
 
 	tLog(t, "creating database")
-	db := fixture.NewDatabaseFixture(ctx, t, &api.CreateDatabaseRequest{
-		Spec: &api.DatabaseSpec{
-			DatabaseName: dbName,
-			DatabaseUsers: []*api.DatabaseUserSpec{
-				{Username: "admin", Password: pointerTo("password"), DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
-			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
-			Nodes: []*api.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
-			},
-			PostgresqlConf: map[string]any{
-				"shared_preload_libraries": "pg_stat_statements,spock",
-			},
+	goodSpec := &api.DatabaseSpec{
+		DatabaseName: dbName,
+		DatabaseUsers: []*api.DatabaseUserSpec{
+			{Username: "admin", Password: pointerTo("password"), DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
 		},
-	})
+		Port:        pointerTo(0),
+		PatroniPort: pointerTo(0),
+		Nodes: []*api.DatabaseNodeSpec{
+			{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
+		},
+	}
+	db := fixture.NewDatabaseFixture(ctx, t, &api.CreateDatabaseRequest{Spec: goodSpec})
 
 	tLog(t, "breaking the node with an uninstalled shared_preload_libraries entry")
-	goodSpec := breakSharedPreloadLibraries(t, db, host1, dbName)
+	breakSharedPreloadLibraries(t, db)
 
 	require.NoError(t, db.Refresh(ctx))
 	require.Equal(t, "failed", db.Database.State, "database should be in a failed state")
@@ -94,25 +81,21 @@ func TestDeleteDatabaseWithNoPrimaryNode(t *testing.T) {
 	ctx := t.Context()
 
 	tLog(t, "creating database")
-	db := fixture.NewDatabaseFixture(ctx, t, &api.CreateDatabaseRequest{
-		Spec: &api.DatabaseSpec{
-			DatabaseName: dbName,
-			DatabaseUsers: []*api.DatabaseUserSpec{
-				{Username: "admin", Password: pointerTo("password"), DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
-			},
-			Port:        pointerTo(0),
-			PatroniPort: pointerTo(0),
-			Nodes: []*api.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
-			},
-			PostgresqlConf: map[string]any{
-				"shared_preload_libraries": "pg_stat_statements,spock",
-			},
+	goodSpec := &api.DatabaseSpec{
+		DatabaseName: dbName,
+		DatabaseUsers: []*api.DatabaseUserSpec{
+			{Username: "admin", Password: pointerTo("password"), DbOwner: pointerTo(true), Attributes: []string{"LOGIN", "SUPERUSER"}},
 		},
-	})
+		Port:        pointerTo(0),
+		PatroniPort: pointerTo(0),
+		Nodes: []*api.DatabaseNodeSpec{
+			{Name: "n1", HostIds: []api.Identifier{api.Identifier(host1)}},
+		},
+	}
+	db := fixture.NewDatabaseFixture(ctx, t, &api.CreateDatabaseRequest{Spec: goodSpec})
 
 	tLog(t, "breaking the node with an uninstalled shared_preload_libraries entry")
-	breakSharedPreloadLibraries(t, db, host1, dbName)
+	breakSharedPreloadLibraries(t, db)
 
 	tLog(t, "deleting the database while its only node has no primary")
 	require.NoError(t, db.Delete(ctx, true))

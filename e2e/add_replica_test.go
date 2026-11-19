@@ -23,6 +23,20 @@ func TestAddReplica(t *testing.T) {
 
 	tLog(t, "creating database")
 
+	originalNodes := []*api.DatabaseNodeSpec{
+		{
+			Name:           "n1",
+			HostIds:        []api.Identifier{api.Identifier(host1)},
+			PostgresqlConf: fastCheckpointConf,
+		},
+	}
+	if fixture.hasSpock {
+		originalNodes = append(originalNodes, &api.DatabaseNodeSpec{
+			Name:    "n2",
+			HostIds: []api.Identifier{api.Identifier(host2)},
+		})
+	}
+
 	ctx := t.Context()
 	db := fixture.NewDatabaseFixture(ctx, t, &api.CreateDatabaseRequest{
 		Spec: &api.DatabaseSpec{
@@ -37,14 +51,7 @@ func TestAddReplica(t *testing.T) {
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
-			Nodes: []*api.DatabaseNodeSpec{
-				{
-					Name:           "n1",
-					HostIds:        []api.Identifier{api.Identifier(host1)},
-					PostgresqlConf: fastCheckpointConf,
-				},
-				{Name: "n2", HostIds: []api.Identifier{api.Identifier(host2)}},
-			},
+			Nodes:       originalNodes,
 		},
 	})
 
@@ -63,6 +70,23 @@ func TestAddReplica(t *testing.T) {
 
 	tLog(t, "adding a replica")
 
+	updatedNodes := []*api.DatabaseNodeSpec{
+		{
+			Name: "n1",
+			HostIds: []api.Identifier{
+				api.Identifier(host1),
+				api.Identifier(host3),
+			},
+			PostgresqlConf: fastCheckpointConf,
+		},
+	}
+	if fixture.hasSpock {
+		updatedNodes = append(updatedNodes, &api.DatabaseNodeSpec{
+			Name:    "n2",
+			HostIds: []api.Identifier{api.Identifier(host2)},
+		})
+	}
+
 	err := db.Update(ctx, UpdateOptions{
 		Spec: &api.DatabaseSpec{
 			DatabaseName: "add_replica",
@@ -75,17 +99,7 @@ func TestAddReplica(t *testing.T) {
 			},
 			Port:        pointerTo(0),
 			PatroniPort: pointerTo(0),
-			Nodes: []*api.DatabaseNodeSpec{
-				{
-					Name: "n1",
-					HostIds: []api.Identifier{
-						api.Identifier(host1),
-						api.Identifier(host3),
-					},
-					PostgresqlConf: fastCheckpointConf,
-				},
-				{Name: "n2", HostIds: []api.Identifier{api.Identifier(host2)}},
-			},
+			Nodes:       updatedNodes,
 		},
 	})
 	require.NoError(t, err)

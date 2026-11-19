@@ -82,6 +82,10 @@ func (t TestConfigS3) RestoreRepository() *controlplane.RestoreRepositorySpec {
 type TestConfig struct {
 	Hosts map[string]TestConfigHost `yaml:"hosts"`
 	S3    TestConfigS3              `yaml:"s3"`
+	// ServicePackagesNotInstalled is true when the fixture's hosts don't have
+	// the PostgREST and MCP server packages installed, such as systemd hosts
+	// that only have the community Postgres packages.
+	ServicePackagesNotInstalled bool `yaml:"service_packages_not_installed"`
 }
 
 func DefaultTestConfig() TestConfig {
@@ -123,6 +127,7 @@ type TestFixture struct {
 	debug        bool
 	debugDir     string
 	orchestrator string
+	hasSpock     bool
 }
 
 func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, debug bool, debugDir string) (*TestFixture, error) {
@@ -162,6 +167,9 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, de
 	// orchestrator from one host.
 	orchestrator := hosts.Hosts[0].Orchestrator
 
+	hasSpock := hosts.Hosts[0].DefaultPgedgeVersion.SpockVersion != nil &&
+		*hosts.Hosts[0].DefaultPgedgeVersion.SpockVersion != ""
+
 	return &TestFixture{
 		Client:       cli,
 		config:       config,
@@ -169,6 +177,7 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, de
 		debug:        debug,
 		debugDir:     debugDir,
 		orchestrator: orchestrator,
+		hasSpock:     hasSpock,
 	}, nil
 }
 
@@ -317,6 +326,26 @@ func (f *TestFixture) SkipIfSpock6Unsupported(t testing.TB) {
 		}
 	}
 	t.Skip("skipping spock 6 test: no host has spock 6 installed")
+}
+
+func (f *TestFixture) SkipIfSpockNotInstalled(t testing.TB) {
+	if !f.hasSpock {
+		t.Skip("this fixture does not have spock installed")
+	}
+}
+
+func (f *TestFixture) SkipIfSpockInstalled(t testing.TB) {
+	if f.hasSpock {
+		t.Skip("this fixture has spock installed")
+	}
+}
+
+// SkipIfServicePackagesNotInstalled skips tests that provision PostgREST or
+// MCP services on fixtures whose hosts don't have those packages installed.
+func (f *TestFixture) SkipIfServicePackagesNotInstalled(t testing.TB) {
+	if f.config.ServicePackagesNotInstalled {
+		t.Skip("this fixture does not have the service packages installed")
+	}
 }
 
 func (f *TestFixture) S3BackupRepository() *controlplane.BackupRepositorySpec {

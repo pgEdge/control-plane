@@ -162,16 +162,24 @@ jobs:
           when: always
       - store_test_results:
           path: .
-  test_e2e_systemd_rocky9:
+  test_e2e_systemd:
     executor: common
+    parameters:
+      systemd_os:
+        description: The value of SYSTEMD_OS, e.g. rocky-9 or debian-13-community.
+        type: string
     steps:
       - common_setup
       - run:
-          name: Start Rocky 9 systemd cluster
-          command: make ci-systemd-up SYSTEMD_OS=rocky-9
+          name: Start << parameters.systemd_os >> systemd cluster
+          command: make ci-systemd-up SYSTEMD_OS=<< parameters.systemd_os >>
       - run:
-          name: Run Rocky 9 systemd E2E tests
-          command: make test-e2e E2E_FIXTURE=docker-systemd-rocky9 E2E_DEBUG=1 TEST_RERUN_FAILS=2
+          name: Run << parameters.systemd_os >> systemd E2E tests
+          command: |
+            # The fixture names drop the hyphen before the OS version, e.g.
+            # rocky-9-community -> docker-systemd-rocky9-community.
+            fixture="docker-systemd-$(echo '<< parameters.systemd_os >>' | sed -E 's/^([a-z]+)-([0-9]+)/\1\2/')"
+            make test-e2e E2E_FIXTURE="${fixture}" E2E_DEBUG=1 TEST_RERUN_FAILS=2
       - run:
           name: Archive debug output
           command: |
@@ -184,33 +192,7 @@ jobs:
           path: e2e-debug.tar.gz
       - run:
           name: Tear down cluster
-          command: make ci-systemd-down SYSTEMD_OS=rocky-9
-          when: always
-      - store_test_results:
-          path: .
-  test_e2e_systemd_debian13:
-    executor: common
-    steps:
-      - common_setup
-      - run:
-          name: Start Debian 13 systemd cluster
-          command: make ci-systemd-up SYSTEMD_OS=debian-13
-      - run:
-          name: Run Debian 13 systemd E2E tests
-          command: make test-e2e E2E_FIXTURE=docker-systemd-debian13 E2E_DEBUG=1 TEST_RERUN_FAILS=2
-      - run:
-          name: Archive debug output
-          command: |
-            if [[ -d ./e2e/debug ]]; then
-              sudo journalctl -u docker.service > ./e2e/debug/docker-service.log
-              tar -czf e2e-debug.tar.gz -C e2e debug
-            fi
-          when: on_fail
-      - store_artifacts:
-          path: e2e-debug.tar.gz
-      - run:
-          name: Tear down cluster
-          command: make ci-systemd-down SYSTEMD_OS=debian-13
+          command: make ci-systemd-down SYSTEMD_OS=<< parameters.systemd_os >>
           when: always
       - store_test_results:
           path: .
@@ -374,8 +356,14 @@ workflows:
       - basic_check
       - test_cluster
       - test_e2e
-      - test_e2e_systemd_rocky9
-      - test_e2e_systemd_debian13
+      - test_e2e_systemd:
+          matrix:
+            parameters:
+              systemd_os:
+                - rocky-9
+                - debian-13
+                - rocky-9-community
+                - debian-13-community
 
   release:
     jobs:

@@ -16,10 +16,14 @@ import (
 )
 
 func TestUpdateAddNode23(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	testUpdateAddNode(t, 2, false)
 }
 
 func TestUpdateAddNode12(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	testUpdateAddNode(t, 1, false)
 }
 

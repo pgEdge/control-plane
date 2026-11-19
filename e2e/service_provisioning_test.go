@@ -19,6 +19,8 @@ import (
 func TestProvisionMCPService(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicePackagesNotInstalled(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -157,6 +159,8 @@ func TestProvisionMCPService(t *testing.T) {
 func TestProvisionMultiHostMCPService(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicePackagesNotInstalled(t)
+
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
 	host3 := fixture.HostIDs()[2]
@@ -243,6 +247,8 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 // depends on a service already being present.
 func TestUpdateDatabaseService(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicePackagesNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -385,6 +391,8 @@ func TestUpdateDatabaseService(t *testing.T) {
 func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicePackagesNotInstalled(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -448,6 +456,8 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 //  4. Verify the database is "available" and the service instance is created and running
 func TestProvisionMCPServiceRecovery(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicePackagesNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -685,6 +695,8 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 func TestUpdateDatabaseServiceStable(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicePackagesNotInstalled(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -830,6 +842,8 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 // where config.yaml is regenerated while tokens.yaml/users.yaml are preserved.
 func TestUpdateMCPServiceConfig(t *testing.T) {
 	t.Parallel()
+
+	fixture.SkipIfServicePackagesNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 
@@ -980,6 +994,8 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 func TestProvisionMCPServicePinnedVersion110(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicePackagesNotInstalled(t)
+
 	// A systemd host only accepts the version that's installed on it, which
 	// isn't necessarily 1.1.0.
 	fixture.SkipIfServiceVersionChangesUnsupported(t)
@@ -1048,6 +1064,7 @@ func TestUpdateMCPServiceVersion(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfServiceVersionChangesUnsupported(t)
+	fixture.SkipIfServicePackagesNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 

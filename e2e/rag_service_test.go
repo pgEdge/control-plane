@@ -67,7 +67,7 @@ func TestProvisionRAGService(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Port:        pointerTo(0),
-					ConnectAs: "rag_user",
+					ConnectAs:   "rag_user",
 					Config: map[string]any{
 						"pipelines": []any{
 							map[string]any{

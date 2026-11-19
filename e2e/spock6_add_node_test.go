@@ -38,6 +38,7 @@ func TestSpock6AddNode(t *testing.T) {
 
 	t.Parallel()
 	fixture.SkipIfSpock6Unsupported(t)
+	fixture.SkipIfSpockNotInstalled(t)
 
 	const (
 		username = "admin"
