@@ -13,6 +13,7 @@ bootstrap:
     loop_wait: 10
     ttl: 30
     retry_timeout: 10
+    check_timeline: true
     failsafe_mode: false
     postgresql:
       parameters:
@@ -75,6 +76,7 @@ postgresql:
     maintenance_work_mem: 137518
     max_parallel_workers: 8
     password_encryption: scram-sha-256
+    restore_command: /usr/bin/pgbackrest --config /opt/pgedge/configs/pgbackrest.backup.conf --stanza db archive-get "%f" "%p"
     shared_buffers: 262144
     shared_preload_libraries: pg_stat_statements,snowflake,spock,postgis-3
     snowflake.node: 1

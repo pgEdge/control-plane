@@ -620,10 +620,6 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 		return nil, apiErr(err)
 	}
 
-	if !hasPrimaryInstance(db.Instances) {
-		return nil, ErrNoPrimaryInstance
-	}
-
 	if !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
@@ -631,6 +627,10 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 	node, err := db.Spec.Node(req.NodeName)
 	if err != nil {
 		return nil, apiErr(err)
+	}
+
+	if !hasPrimaryInstance(nodeInstances(db.Instances, req.NodeName)) {
+		return nil, ErrNoPrimaryInstance
 	}
 
 	instances := make([]*activities.InstanceHost, len(node.HostIDs))
@@ -729,10 +729,6 @@ func (s *PostInitHandlers) FailoverDatabaseNode(ctx context.Context, req *api.Fa
 		return nil, apiErr(err)
 	}
 
-	if !hasPrimaryInstance(db.Instances) {
-		return nil, ErrNoPrimaryInstance
-	}
-
 	if !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
@@ -740,6 +736,13 @@ func (s *PostInitHandlers) FailoverDatabaseNode(ctx context.Context, req *api.Fa
 	node, err := db.Spec.Node(req.NodeName)
 	if err != nil {
 		return nil, apiErr(err)
+	}
+
+	// A node without a primary can only fail over to a candidate that the
+	// caller chose. See the Failover workflow for details.
+	hasCandidate := req.CandidateInstanceID != nil && string(*req.CandidateInstanceID) != ""
+	if !hasCandidate && !hasPrimaryInstance(nodeInstances(db.Instances, req.NodeName)) {
+		return nil, ErrNoPrimaryInstance
 	}
 
 	instances := make([]*activities.InstanceHost, len(node.HostIDs))
@@ -1175,6 +1178,16 @@ func hasPrimaryInstance(instances []*database.Instance) bool {
 		}
 	}
 	return false
+}
+
+func nodeInstances(instances []*database.Instance, nodeName string) []*database.Instance {
+	var out []*database.Instance
+	for _, inst := range instances {
+		if inst.NodeName == nodeName {
+			out = append(out, inst)
+		}
+	}
+	return out
 }
 
 func (s *PostInitHandlers) ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error) {

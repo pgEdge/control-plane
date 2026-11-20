@@ -1494,7 +1494,7 @@ var FailoverDatabaseNodeRequest = g.Type("FailoverDatabaseNodeRequest", func() {
 		g.Meta("struct:tag:json", "node_name")
 	})
 	g.Attribute("candidate_instance_id", g.String, func() {
-		g.Description("Optional instance_id of the replica to promote. If omitted, a candidate will be selected.")
+		g.Description("Optional instance_id of the replica to promote. If omitted, a candidate will be selected. Required if the node has no primary instance.")
 		g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
 		g.Meta("struct:tag:json", "candidate_instance_id,omitempty")
 	})
