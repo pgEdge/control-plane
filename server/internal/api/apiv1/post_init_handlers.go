@@ -698,7 +698,7 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 		return nil, apiErr(err)
 	}
 	if len(activeTasks) > 0 {
-		return nil, apiErr(fmt.Errorf("switchover already in progress for database %s node %s", databaseID, req.NodeName))
+		return nil, newAPIError(errOperationAlreadyInProgress, fmt.Sprintf("switchover already in progress for database %s node %s", databaseID, req.NodeName))
 	}
 
 	t, err := s.workflowSvc.SwitchoverDatabaseNode(ctx, input)
@@ -791,7 +791,7 @@ func (s *PostInitHandlers) FailoverDatabaseNode(ctx context.Context, req *api.Fa
 		return nil, apiErr(err)
 	}
 	if len(activeTasks) > 0 {
-		return nil, apiErr(fmt.Errorf("failover already in progress for database %s node %s", databaseID, req.NodeName))
+		return nil, newAPIError(errOperationAlreadyInProgress, fmt.Sprintf("failover already in progress for database %s node %s", databaseID, req.NodeName))
 	}
 
 	t, err := s.workflowSvc.FailoverDatabaseNode(ctx, input)

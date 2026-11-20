@@ -1,0 +1,3 @@
+kind: Fixed
+body: A scheduled switchover's task now stays running until the switchover happens, and canceling the task before the scheduled time cancels the switchover. Previously, the task completed as soon as the switchover was scheduled and could no longer be canceled. A scheduled switchover is now skipped if the primary changes before the scheduled time and no candidate was given, and it fails rather than running more than 5 minutes late. Requesting a switchover or failover for a node that already has one in progress now returns a 409 operation_already_in_progress error instead of a 500 server error.
+time: 2026-11-20T00:00:00.000000+00:00

@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
@@ -27,7 +28,7 @@ func TestSwitchoverScenarios(t *testing.T) {
 	host2 := hostIDs[1]
 	host3 := hostIDs[2]
 
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 	defer cancel()
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
@@ -177,6 +178,55 @@ func TestSwitchoverScenarios(t *testing.T) {
 		t.Logf("[specific] new primary confirmed: %s", candidateInst)
 	})
 
+	// scheduleSwitchover schedules a switchover of n1, delay from now in server
+	// time, without waiting for its task. It returns the task and the local
+	// time at which the switchover is due.
+	scheduleSwitchover := func(t *testing.T, candidate string, delay time.Duration) (*controlplane.Task, time.Time) {
+		srvNow := serverNowUTC(t, fixture.APIBaseURL())
+		localNow := time.Now()
+		scheduledAt := srvNow.Add(delay).Truncate(time.Second)
+		scheduledAtStr := scheduledAt.Format(time.RFC3339)
+
+		resp, err := fixture.Client.SwitchoverDatabaseNode(ctx, &controlplane.SwitchoverDatabaseNodePayload{
+			DatabaseID:          dbID,
+			NodeName:            "n1",
+			ScheduledAt:         &scheduledAtStr,
+			CandidateInstanceID: &candidate,
+		})
+		require.NoError(t, err, "switchover (scheduled) API call failed")
+		t.Logf("[scheduled] task %s scheduled for %s (server now %s)",
+			resp.Task.TaskID, scheduledAtStr, srvNow.Format(time.RFC3339))
+
+		// Don't let a switchover left waiting by a failed subtest run during
+		// later subtests.
+		t.Cleanup(func() {
+			_, _ = fixture.Client.CancelDatabaseTask(context.Background(), &controlplane.CancelDatabaseTaskPayload{
+				DatabaseID: dbID,
+				TaskID:     controlplane.Identifier(resp.Task.TaskID),
+			})
+		})
+
+		return resp.Task, localNow.Add(scheduledAt.Sub(srvNow))
+	}
+
+	getTaskStatus := func(t *testing.T, taskID string) string {
+		task, err := fixture.Client.GetDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
+			DatabaseID: dbID,
+			TaskID:     taskID,
+		})
+		require.NoError(t, err)
+		return task.Status
+	}
+
+	waitForTaskStatus := func(t *testing.T, taskID string) string {
+		task, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
+			DatabaseID: dbID,
+			TaskID:     taskID,
+		})
+		require.NoError(t, err)
+		return task.Status
+	}
+
 	t.Run("scheduled switchover", func(t *testing.T) {
 		// Let the cluster settle after the previous test
 		time.Sleep(10 * time.Second)
@@ -188,39 +238,57 @@ func TestSwitchoverScenarios(t *testing.T) {
 		require.NotEmpty(t, candidate)
 		require.NotEqual(t, origPrimary, candidate)
 
-		// Compute skew and schedule using server time.
-		hostNow := time.Now().UTC().Truncate(time.Second)
-		srvNow := serverNowUTC(t, fixture.APIBaseURL()) // e.g., "http://<cp-host>:3000"
-		skew := srvNow.Sub(hostNow)                     // positive means server is ahead
+		task, dueAt := scheduleSwitchover(t, candidate, time.Minute)
 
-		scheduledAt := srvNow.Add(2 * time.Minute).Truncate(time.Second)
-		scheduledAtStr := scheduledAt.Format(time.RFC3339)
+		// The task must stay open until the switchover happens. It used to
+		// complete as soon as the switchover was scheduled in Patroni.
+		time.Sleep(30 * time.Second)
+		require.True(t, time.Now().Before(dueAt), "test took too long to check the task before the scheduled time")
+		require.Equal(t, client.TaskStatusRunning, getTaskStatus(t, task.TaskID))
+		require.NoError(t, db.Refresh(ctx))
+		assert.Equal(t, origPrimary, getPrimaryInstanceID(), "switchover happened before the scheduled time")
 
-		db.Refresh(ctx)
-		t.Logf("[scheduled] hostNow=%s serverNow=%s skew=%s scheduled_at=%s (delta=%s)",
-			hostNow.Format(time.RFC3339), srvNow.Format(time.RFC3339),
-			skew, scheduledAtStr, time.Until(scheduledAt).Truncate(time.Second))
-
-		err := db.SwitchoverDatabaseNode(ctx, &controlplane.SwitchoverDatabaseNodePayload{
-			DatabaseID:          controlplane.Identifier(db.ID),
-			NodeName:            "n1",
-			ScheduledAt:         &scheduledAtStr,
-			CandidateInstanceID: &candidate,
+		// The open task blocks a second switchover of the same node.
+		_, err := fixture.Client.SwitchoverDatabaseNode(ctx, &controlplane.SwitchoverDatabaseNodePayload{
+			DatabaseID: dbID,
+			NodeName:   "n1",
 		})
-		require.NoError(t, err, "switchover (scheduled) API call failed")
+		assert.ErrorIs(t, err, client.ErrOperationAlreadyInProgress)
 
-		// Wait until scheduledAt + 4m (min 5m), computed from *server* time.
-		waitBudget := time.Until(scheduledAt.Add(skew)) + 4*time.Minute
-		if waitBudget < 5*time.Minute {
-			waitBudget = 5 * time.Minute
-		}
-
-		require.Truef(t, waitForPrimaryIs(candidate, waitBudget),
-			"[scheduled] primary did not become %s within %s (current %s; scheduledAt=%s; skew=%s). "+
-				"Hint: ensure scheduler is running and compares due_at <= server-now (UTC).",
-			candidate, waitBudget, getPrimaryInstanceID(), scheduledAtStr, skew)
-
+		require.Equal(t, client.TaskStatusCompleted, waitForTaskStatus(t, task.TaskID))
+		require.Truef(t, waitForPrimaryIs(candidate, 30*time.Second),
+			"[scheduled] primary did not become %s (current %s)", candidate, getPrimaryInstanceID())
 		t.Logf("[scheduled] new primary confirmed: %s", getPrimaryInstanceID())
+	})
+
+	t.Run("canceled scheduled switchover", func(t *testing.T) {
+		time.Sleep(10 * time.Second)
+
+		origPrimary := getPrimaryInstanceID()
+		require.NotEmpty(t, origPrimary, "database has no primary instance")
+
+		candidate := waitForReadyReplica(origPrimary, 90*time.Second)
+		require.NotEmpty(t, candidate)
+
+		task, dueAt := scheduleSwitchover(t, candidate, time.Minute)
+
+		// Cancel well after the switchover would have been handed to Patroni
+		// if the task didn't stay open until the scheduled time.
+		time.Sleep(30 * time.Second)
+		require.True(t, time.Now().Before(dueAt), "test took too long to cancel before the scheduled time")
+		require.Equal(t, client.TaskStatusRunning, getTaskStatus(t, task.TaskID))
+
+		_, err := fixture.Client.CancelDatabaseTask(ctx, &controlplane.CancelDatabaseTaskPayload{
+			DatabaseID: dbID,
+			TaskID:     controlplane.Identifier(task.TaskID),
+		})
+		require.NoError(t, err)
+		require.Equal(t, client.TaskStatusCanceled, waitForTaskStatus(t, task.TaskID))
+
+		// The canceled switchover must not happen at the scheduled time.
+		time.Sleep(time.Until(dueAt) + 30*time.Second)
+		require.NoError(t, db.Refresh(ctx))
+		assert.Equal(t, origPrimary, getPrimaryInstanceID(), "canceled switchover still happened")
 	})
 
 	t.Run("invalid candidate instance", func(t *testing.T) {
