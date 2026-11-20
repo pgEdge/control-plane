@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -23,19 +24,29 @@ type switchoverTest struct {
 }
 
 // newSwitchoverTest sets up the Switchover workflow with mocked activities.
-// GetPrimaryInstance returns each of primaries in turn, then the last one.
-func newSwitchoverTest(t *testing.T, primaries ...string) *switchoverTest {
+// Task updates to the failUpdate status, if any, fail. GetPrimaryInstance
+// returns each of primaries in turn, then the last one.
+func newSwitchoverTest(t *testing.T, failUpdate string, primaries ...string) *switchoverTest {
 	t.Helper()
 
 	w := &Workflows{Activities: &activities.Activities{}}
 	st := &switchoverTest{wt: tester.NewWorkflowTester[*SwitchoverOutput](w.Switchover)}
 	st.start = st.wt.Now()
 
+	recordUpdate := func(args mock.Arguments) {
+		update := args.Get(1).(*activities.UpdateTaskInput)
+		st.events = append(st.events, string(*update.UpdateOptions.Status))
+	}
+	if failUpdate != "" {
+		failing := mock.MatchedBy(func(in *activities.UpdateTaskInput) bool {
+			return string(*in.UpdateOptions.Status) == failUpdate
+		})
+		st.wt.OnActivity(w.Activities.UpdateTask, mock.Anything, failing).
+			Run(recordUpdate).
+			Return((*activities.UpdateTaskOutput)(nil), errors.New("storage unavailable"))
+	}
 	st.wt.OnActivity(w.Activities.UpdateTask, mock.Anything, mock.Anything).
-		Run(func(args mock.Arguments) {
-			update := args.Get(1).(*activities.UpdateTaskInput)
-			st.events = append(st.events, string(*update.UpdateOptions.Status))
-		}).
+		Run(recordUpdate).
 		Return(&activities.UpdateTaskOutput{}, nil)
 	for i, primary := range primaries {
 		call := st.wt.OnActivity(w.Activities.GetPrimaryInstance, mock.Anything, mock.Anything).
@@ -88,7 +99,7 @@ func TestSwitchoverTaskStaysOpen(t *testing.T) {
 		{name: "scheduled without a candidate", delay: 10 * time.Minute},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			st := newSwitchoverTest(t, "n1-a")
+			st := newSwitchoverTest(t, "", "n1-a")
 			in := &SwitchoverInput{CandidateInstanceID: tc.candidate}
 			if tc.delay > 0 {
 				in.ScheduledAt = st.start.Add(tc.delay)
@@ -105,6 +116,11 @@ func TestSwitchoverTaskStaysOpen(t *testing.T) {
 			assert.Equal(t, "n1-a", st.switched.LeaderInstanceID)
 			assert.Equal(t, "n1-b", st.switched.CandidateInstanceID)
 			assert.True(t, st.switched.ScheduledAt.IsZero())
+			if tc.delay > 0 {
+				assert.WithinDuration(t, in.ScheduledAt.Add(maxScheduledSwitchoverDelay), st.switched.Deadline, 0)
+			} else {
+				assert.True(t, st.switched.Deadline.IsZero(), "immediate switchovers have no deadline")
+			}
 		})
 	}
 }
@@ -112,7 +128,7 @@ func TestSwitchoverTaskStaysOpen(t *testing.T) {
 func TestSwitchoverMissedScheduledTime(t *testing.T) {
 	// The workflow runs long after the scheduled time, as it would if the
 	// Control Plane had been down at that time.
-	st := newSwitchoverTest(t, "n1-a")
+	st := newSwitchoverTest(t, "", "n1-a")
 	in := &SwitchoverInput{ScheduledAt: st.start.Add(-maxScheduledSwitchoverDelay - time.Minute)}
 
 	err := st.run(t, in)
@@ -123,7 +139,7 @@ func TestSwitchoverMissedScheduledTime(t *testing.T) {
 
 func TestSwitchoverPrimaryChangedBeforeScheduledTime(t *testing.T) {
 	t.Run("skipped without a requested candidate", func(t *testing.T) {
-		st := newSwitchoverTest(t, "n1-a", "n1-b")
+		st := newSwitchoverTest(t, "", "n1-a", "n1-b")
 		in := &SwitchoverInput{ScheduledAt: st.start.Add(10 * time.Minute)}
 
 		require.NoError(t, st.run(t, in))
@@ -131,7 +147,7 @@ func TestSwitchoverPrimaryChangedBeforeScheduledTime(t *testing.T) {
 	})
 
 	t.Run("performed with a requested candidate", func(t *testing.T) {
-		st := newSwitchoverTest(t, "n1-a", "n1-b")
+		st := newSwitchoverTest(t, "", "n1-a", "n1-b")
 		in := &SwitchoverInput{
 			ScheduledAt:         st.start.Add(10 * time.Minute),
 			CandidateInstanceID: "n1-c",
@@ -139,5 +155,16 @@ func TestSwitchoverPrimaryChangedBeforeScheduledTime(t *testing.T) {
 
 		require.NoError(t, st.run(t, in))
 		assert.Equal(t, []string{"running", "switchover", "completed"}, st.events)
+	})
+	t.Run("task left running is reported as failed", func(t *testing.T) {
+		// If the skipped switchover can't be marked complete, the task must not
+		// be left running, where it would block later switchovers.
+		st := newSwitchoverTest(t, "completed", "n1-a", "n1-b")
+		in := &SwitchoverInput{ScheduledAt: st.start.Add(10 * time.Minute)}
+
+		err := st.run(t, in)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to mark task complete")
+		assert.Equal(t, []string{"running", "completed", "failed"}, st.events)
 	})
 }

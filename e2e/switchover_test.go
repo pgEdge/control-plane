@@ -183,6 +183,7 @@ func TestSwitchoverScenarios(t *testing.T) {
 	// time at which the switchover is due.
 	scheduleSwitchover := func(t *testing.T, candidate string, delay time.Duration) (*controlplane.Task, time.Time) {
 		srvNow := serverNowUTC(t, fixture.APIBaseURL())
+		localNow := time.Now()
 		scheduledAt := srvNow.Add(delay).Truncate(time.Second)
 		scheduledAtStr := scheduledAt.Format(time.RFC3339)
 
@@ -205,7 +206,7 @@ func TestSwitchoverScenarios(t *testing.T) {
 			})
 		})
 
-		return resp.Task, time.Now().Add(scheduledAt.Sub(srvNow))
+		return resp.Task, localNow.Add(scheduledAt.Sub(srvNow))
 	}
 
 	getTaskStatus := func(t *testing.T, taskID string) string {

@@ -93,7 +93,9 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateComplete(),
 		}
-		_, _ = w.Activities.ExecuteUpdateTask(ctx, completeUpdate).Get(ctx)
+		if _, err := w.Activities.ExecuteUpdateTask(ctx, completeUpdate).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("failed to mark task complete: %w", err))
+		}
 		return &SwitchoverOutput{}, nil
 	}
 
@@ -196,6 +198,11 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		LeaderInstanceID:    leaderInstanceID,
 		CandidateInstanceID: candidateID,
 		TaskID:              in.TaskID,
+	}
+	if !in.ScheduledAt.IsZero() {
+		// Primary resolution, the candidate's slot check and the activity's
+		// queue can all delay the switchover after the check above.
+		performIn.Deadline = in.ScheduledAt.Add(maxScheduledSwitchoverDelay)
 	}
 
 	logger.Info("dispatching perform switchover activity", "target_host_queue", utils.HostQueue(leaderHostID))
