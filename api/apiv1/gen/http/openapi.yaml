@@ -698,7 +698,7 @@ paths:
           description: Name of the node to back up.
           required: true
           type: string
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         - name: Backup-Database-NodeRequestBody
           in: body
           required: true
@@ -763,7 +763,7 @@ paths:
           description: Name of the node to initiate the failover from.
           required: true
           type: string
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         - name: Failover-Database-NodeRequestBody
           in: body
           required: true
@@ -828,7 +828,7 @@ paths:
           description: Name of the node to operate on.
           required: true
           type: string
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         - name: Switchover-Database-NodeRequestBody
           in: body
           required: true
@@ -3055,7 +3055,7 @@ definitions:
         type: string
         description: The name of the database node.
         example: n1
-        pattern: n[0-9]+
+        pattern: ^n[0-9]+$
       orchestrator_opts:
         $ref: '#/definitions/OrchestratorOpts'
       patroni_port:
@@ -5262,7 +5262,7 @@ definitions:
         type: string
         description: The Spock node name of the provider for this subscription.
         example: n2
-        pattern: n[0-9]+
+        pattern: ^n[0-9]+$
       status:
         type: string
         description: The current status of the subscription.
@@ -6215,7 +6215,7 @@ definitions:
         type: string
         description: The name of the node to restore this database from.
         example: n1
-        pattern: n[0-9]+
+        pattern: ^n[0-9]+$
     example:
       repository:
         azure_account: pgedge-backups

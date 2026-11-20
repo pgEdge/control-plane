@@ -1772,7 +1772,7 @@ paths:
             type: string
             description: Name of the node to back up.
             example: n1
-            pattern: n[0-9]+
+            pattern: ^n[0-9]+$
           example: n1
       requestBody:
         required: true
@@ -1881,7 +1881,7 @@ paths:
             type: string
             description: Name of the node to initiate the failover from.
             example: n1
-            pattern: n[0-9]+
+            pattern: ^n[0-9]+$
           example: n1
       requestBody:
         required: true
@@ -1978,7 +1978,7 @@ paths:
             type: string
             description: Name of the node to operate on.
             example: n1
-            pattern: n[0-9]+
+            pattern: ^n[0-9]+$
           example: n1
       requestBody:
         required: true
@@ -6928,7 +6928,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -7139,7 +7139,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -7369,7 +7369,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -7582,7 +7582,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -7793,7 +7793,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -8023,7 +8023,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -8233,7 +8233,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -8444,7 +8444,7 @@ components:
           type: string
           description: The name of the database node.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         orchestrator_opts:
           $ref: '#/components/schemas/OrchestratorOpts'
         patroni_port:
@@ -18981,7 +18981,7 @@ components:
           type: string
           description: Name of the node to initiate the failover from.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         skip_validation:
           type: boolean
           description: If true, skip the health validations that prevent running failover on a healthy cluster.
@@ -19466,7 +19466,7 @@ components:
           type: string
           description: The Spock node name of the provider for this subscription.
           example: n2
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         status:
           type: string
           description: The current status of the subscription.
@@ -20523,7 +20523,7 @@ components:
           type: string
           description: The name of the node to restore this database from.
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
       example:
         repository:
           azure_account: pgedge-backups
@@ -22361,7 +22361,7 @@ components:
           type: string
           description: Name of the node to initiate the switchover from (informational).
           example: n1
-          pattern: n[0-9]+
+          pattern: ^n[0-9]+$
         scheduled_at:
           type: string
           description: Optional ISO8601 datetime when the switchover should occur. If omitted the switchover occurs immediately.

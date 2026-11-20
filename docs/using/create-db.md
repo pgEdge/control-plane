@@ -3,6 +3,8 @@
 To create a database, submit a `POST` request to the `/v1/databases` endpoint of
 any host in the cluster.
 
+Node names must be `n` followed by a number, such as `n1`, `n2`, and `n3`. The Control Plane derives each node's number from its name.
+
 For example, this request creates a three node distributed database with one instance per node and an `admin` database user.
 
 === "curl"

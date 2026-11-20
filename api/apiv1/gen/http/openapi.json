@@ -1004,7 +1004,7 @@
             "description": "Name of the node to back up.",
             "required": true,
             "type": "string",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           {
             "name": "Backup-Database-NodeRequestBody",
@@ -1099,7 +1099,7 @@
             "description": "Name of the node to initiate the failover from.",
             "required": true,
             "type": "string",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           {
             "name": "Failover-Database-NodeRequestBody",
@@ -1194,7 +1194,7 @@
             "description": "Name of the node to operate on.",
             "required": true,
             "type": "string",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           {
             "name": "Switchover-Database-NodeRequestBody",
@@ -4285,7 +4285,7 @@
           "type": "string",
           "description": "The name of the database node.",
           "example": "n1",
-          "pattern": "n[0-9]+"
+          "pattern": "^n[0-9]+$"
         },
         "orchestrator_opts": {
           "$ref": "#/definitions/OrchestratorOpts"
@@ -7346,7 +7346,7 @@
           "type": "string",
           "description": "The Spock node name of the provider for this subscription.",
           "example": "n2",
-          "pattern": "n[0-9]+"
+          "pattern": "^n[0-9]+$"
         },
         "status": {
           "type": "string",
@@ -8684,7 +8684,7 @@
           "type": "string",
           "description": "The name of the node to restore this database from.",
           "example": "n1",
-          "pattern": "n[0-9]+"
+          "pattern": "^n[0-9]+$"
         }
       },
       "example": {

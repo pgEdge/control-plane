@@ -818,7 +818,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	nodes := make([]*NodeInstances, clusterSize)
 	for nodeIdx, node := range s.Nodes {
 		nodeSize := len(node.HostIDs)
-		nodeOrdinal, err := extractOrdinal(node.Name)
+		nodeOrdinal, err := ParseNodeOrdinal(node.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to extract ordinal from node name: %w", err)
 		}
@@ -896,15 +896,16 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	return nodes, nil
 }
 
-func extractOrdinal(name string) (int, error) {
-	if len(name) < 2 {
-		return 0, fmt.Errorf("invalid name: %s", name)
+// ParseNodeOrdinal returns the ordinal of the given node name, e.g. 1 for
+// "n1". The ordinal is everything after the first character. It doesn't check
+// the first character or reject a sign; the API's node name pattern does that.
+func ParseNodeOrdinal(name string) (int, error) {
+	if len(name) >= 2 {
+		if ordinal, err := strconv.Atoi(name[1:]); err == nil {
+			return ordinal, nil
+		}
 	}
-	ordinal, err := strconv.Atoi(name[1:])
-	if err != nil {
-		return 0, fmt.Errorf("invalid name: %s", name)
-	}
-	return ordinal, nil
+	return 0, fmt.Errorf(`invalid node name %q: node names must be "n" followed by a number, such as "n1"`, name)
 }
 
 func overridableValue[T comparable](base, override T) T {

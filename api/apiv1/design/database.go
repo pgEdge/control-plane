@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	nodeNamePattern        = `n[0-9]+`
+	nodeNamePattern        = `^n[0-9]+$`
 	cpuPattern             = `^[0-9]+(\.[0-9]{1,3}|m)?$`
 	postgresVersionPattern = `^\d{2}\.\d{1,2}$`
 	spockVersionPattern    = `^\d{1}$`

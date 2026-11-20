@@ -6266,7 +6266,7 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "n[0-9]+"))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "^n[0-9]+$"))
 	if len(body.HostIds) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
@@ -6522,7 +6522,7 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 	if utf8.RuneCountInString(body.SourceDatabaseID) > 36 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 36, false))
 	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "^n[0-9]+$"))
 	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 1, true))
 	}
@@ -7134,7 +7134,7 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 	if body.HostIds == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "n[0-9]+"))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "^n[0-9]+$"))
 	if len(body.HostIds) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
@@ -7390,7 +7390,7 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 	if utf8.RuneCountInString(body.SourceDatabaseID) > 36 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 36, false))
 	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "^n[0-9]+$"))
 	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 1, true))
 	}

@@ -480,7 +480,7 @@ func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, c
 	var nodeName string
 	{
 		nodeName = controlPlaneBackupDatabaseNodeNodeName
-		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "^n[0-9]+$"))
 		if err != nil {
 			return nil, err
 		}
@@ -566,7 +566,7 @@ func BuildSwitchoverDatabaseNodePayload(controlPlaneSwitchoverDatabaseNodeBody s
 	var nodeName string
 	{
 		nodeName = controlPlaneSwitchoverDatabaseNodeNodeName
-		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "^n[0-9]+$"))
 		if err != nil {
 			return nil, err
 		}
@@ -608,7 +608,7 @@ func BuildFailoverDatabaseNodePayload(controlPlaneFailoverDatabaseNodeBody strin
 	var nodeName string
 	{
 		nodeName = controlPlaneFailoverDatabaseNodeNodeName
-		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "^n[0-9]+$"))
 		if err != nil {
 			return nil, err
 		}
