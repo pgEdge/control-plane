@@ -1526,7 +1526,7 @@ func DecodeBackupDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Reque
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
 		}
 		nodeName = params["node_name"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "^n[0-9]+$"))
 		{
 			forceRaw := r.URL.Query().Get("force")
 			if forceRaw != "" {
@@ -1690,7 +1690,7 @@ func DecodeSwitchoverDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.R
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
 		}
 		nodeName = params["node_name"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "^n[0-9]+$"))
 		if err != nil {
 			return nil, err
 		}
@@ -1840,7 +1840,7 @@ func DecodeFailoverDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Req
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 36, false))
 		}
 		nodeName = params["node_name"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "^n[0-9]+$"))
 		if err != nil {
 			return nil, err
 		}

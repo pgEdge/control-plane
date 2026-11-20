@@ -1,0 +1,3 @@
+kind: Fixed
+body: Creating or updating a database with a node name that isn't "n" followed by a number, such as "n1-east", now returns a 400 error that names the node and the expected format, instead of a 500 server error. The same node name format is now enforced for the node names in backup, switchover, failover, and restore requests.
+time: 2026-11-19T12:00:00.000000+00:00

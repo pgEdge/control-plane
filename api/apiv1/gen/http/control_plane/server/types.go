@@ -5685,7 +5685,7 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
 	if body.Name != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "^n[0-9]+$"))
 	}
 	if len(body.HostIds) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
@@ -5976,7 +5976,7 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 		}
 	}
 	if body.SourceNodeName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "^n[0-9]+$"))
 	}
 	if body.SourceDatabaseName != nil {
 		if utf8.RuneCountInString(*body.SourceDatabaseName) < 1 {
@@ -6522,7 +6522,7 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
 	if body.Name != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "^n[0-9]+$"))
 	}
 	if len(body.HostIds) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
@@ -6813,7 +6813,7 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 		}
 	}
 	if body.SourceNodeName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "^n[0-9]+$"))
 	}
 	if body.SourceDatabaseName != nil {
 		if utf8.RuneCountInString(*body.SourceDatabaseName) < 1 {

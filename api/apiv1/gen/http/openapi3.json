@@ -2690,7 +2690,7 @@
               "type": "string",
               "description": "Name of the node to back up.",
               "example": "n1",
-              "pattern": "n[0-9]+"
+              "pattern": "^n[0-9]+$"
             },
             "example": "n1"
           }
@@ -2852,7 +2852,7 @@
               "type": "string",
               "description": "Name of the node to initiate the failover from.",
               "example": "n1",
-              "pattern": "n[0-9]+"
+              "pattern": "^n[0-9]+$"
             },
             "example": "n1"
           }
@@ -2996,7 +2996,7 @@
               "type": "string",
               "description": "Name of the node to operate on.",
               "example": "n1",
-              "pattern": "n[0-9]+"
+              "pattern": "^n[0-9]+$"
             },
             "example": "n1"
           }
@@ -10039,7 +10039,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -10321,7 +10321,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -10625,7 +10625,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -10909,7 +10909,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -11191,7 +11191,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -11495,7 +11495,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -11776,7 +11776,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -12058,7 +12058,7 @@
             "type": "string",
             "description": "The name of the database node.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "orchestrator_opts": {
             "$ref": "#/components/schemas/OrchestratorOpts"
@@ -27026,7 +27026,7 @@
             "type": "string",
             "description": "Name of the node to initiate the failover from.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "skip_validation": {
             "type": "boolean",
@@ -27685,7 +27685,7 @@
             "type": "string",
             "description": "The Spock node name of the provider for this subscription.",
             "example": "n2",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "status": {
             "type": "string",
@@ -29184,7 +29184,7 @@
             "type": "string",
             "description": "The name of the node to restore this database from.",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           }
         },
         "example": {
@@ -31701,7 +31701,7 @@
             "type": "string",
             "description": "Name of the node to initiate the switchover from (informational).",
             "example": "n1",
-            "pattern": "n[0-9]+"
+            "pattern": "^n[0-9]+$"
           },
           "scheduled_at": {
             "type": "string",

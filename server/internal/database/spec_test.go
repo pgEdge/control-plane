@@ -802,3 +802,38 @@ func TestSpec_DefaultVersions(t *testing.T) {
 		})
 	}
 }
+
+// PLAT-706: an unparseable node name must produce an error that names the node
+// and states the expected format, rather than an opaque one.
+func TestParseNodeOrdinal(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		expected int
+	}{
+		{name: "n1", expected: 1},
+		{name: "n2", expected: 2},
+		{name: "n10", expected: 10},
+		{name: "n01", expected: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ordinal, err := database.ParseNodeOrdinal(tc.name)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, ordinal)
+		})
+	}
+
+	for _, name := range []string{
+		"",
+		"n",
+		"n1-east",
+		"an1",
+		"nodes-n2",
+		"analytics-1",
+		"n99999999999999999999",
+	} {
+		t.Run("invalid "+name, func(t *testing.T) {
+			_, err := database.ParseNodeOrdinal(name)
+			assert.EqualError(t, err, `invalid node name "`+name+`": node names must be "n" followed by a number, such as "n1"`)
+		})
+	}
+}

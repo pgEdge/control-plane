@@ -134,6 +134,14 @@ func validateDatabaseSpec(orchestrator config.Orchestrator, databaseID string, s
 
 		seenNodeNames.Add(node.Name)
 
+		// The node's ordinal is parsed from its name when the spec is
+		// planned, so reject names it can't be parsed from here rather than
+		// failing later with a server error. The API pattern doesn't catch
+		// every such name, e.g. one whose number overflows an int.
+		if _, err := database.ParseNodeOrdinal(node.Name); err != nil {
+			errs = append(errs, validation.NewError(err, nodePath.Append("name")))
+		}
+
 		// Mark nodes that declare a source_node as "new" nodes.
 		if utils.FromPointer(node.SourceNode) != "" {
 			newNodesWithSource.Add(node.Name)

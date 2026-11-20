@@ -1474,6 +1474,31 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				`services[0]: service must not be null`,
 			},
 		},
+		{
+			// PLAT-706: these used to fail later, in the spec validation
+			// workflow, with a server error.
+			name: "unparseable node names",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{Name: "n1", HostIds: []api.Identifier{"host-1"}},
+					{Name: "n1-east", HostIds: []api.Identifier{"host-2"}},
+					{Name: "n99999999999999999999", HostIds: []api.Identifier{"host-3"}},
+				},
+			},
+			expected: []string{
+				`nodes[1].name: invalid node name "n1-east": node names must be "n" followed by a number, such as "n1"`,
+				`nodes[2].name: invalid node name "n99999999999999999999": node names must be "n" followed by a number, such as "n1"`,
+			},
+		},
+		{
+			name: "valid multi-digit node names",
+			spec: &api.DatabaseSpec{
+				Nodes: []*api.DatabaseNodeSpec{
+					{Name: "n10", HostIds: []api.Identifier{"host-1"}},
+					{Name: "n02", HostIds: []api.Identifier{"host-2"}},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.NotPanics(t, func() {
