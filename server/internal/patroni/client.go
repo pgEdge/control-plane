@@ -337,6 +337,10 @@ type DynamicConfig struct {
 	// maximum number of timeline history items kept in DCS. Default value: 0.
 	// When set to 0, it keeps the full history in DCS.
 	MaxTimelinesHistory *int `json:"max_timelines_history,omitempty"`
+	// Prevents a member whose timeline is behind the last known cluster
+	// timeline from becoming the leader during an automatic failover or a
+	// switchover. Default value: false.
+	CheckTimeline *bool `json:"check_timeline,omitempty"`
 	// The amount of time a primary is allowed to recover from failures before
 	// failover is triggered (in seconds). Default is 300 seconds. When set to 0
 	// failover is done immediately after a crash is detected if possible.
