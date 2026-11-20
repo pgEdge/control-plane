@@ -19,7 +19,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/postgres/hba"
-	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/pgEdge/control-plane/server/internal/validation"
 )
@@ -967,7 +966,7 @@ func validateHostIDUniqueness(ctx context.Context, hostSvc *host.Service, hostID
 	case err == nil:
 		// Host already exists - this is a duplicate
 		return ErrHostAlreadyExistsWithID(hostID)
-	case errors.Is(err, storage.ErrNotFound):
+	case errors.Is(err, host.ErrHostNotFound):
 		// Host doesn't exist - good, host ID is unique
 		return nil
 	default:

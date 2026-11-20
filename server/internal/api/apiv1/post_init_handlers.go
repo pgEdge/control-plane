@@ -23,7 +23,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
-	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/version"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
@@ -230,7 +229,7 @@ func (s *PostInitHandlers) validateHostRemoval(ctx context.Context, hostID strin
 	}
 
 	_, err := s.hostSvc.GetHost(ctx, hostID)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, host.ErrHostNotFound) {
 		return ErrHostNotFound
 	} else if err != nil {
 		return apiErr(err)
