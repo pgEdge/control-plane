@@ -16,9 +16,12 @@ import (
 )
 
 const (
-	serviceInstanceStartTimeout  = 5 * time.Minute
-	serviceInstancePollInterval  = 2 * time.Second
-	serviceInstanceStatusTimeout = 10 * time.Second
+	serviceInstanceStartTimeout = 5 * time.Minute
+	serviceInstancePollInterval = 2 * time.Second
+	// serviceInstanceStatusTimeout must be longer than the longest service
+	// health check timeout (ragHealthCheckTimeout), so that the health check
+	// gets its full time.
+	serviceInstanceStatusTimeout = 30 * time.Second
 )
 
 var _ resource.Resource = (*ServiceInstanceResource)(nil)

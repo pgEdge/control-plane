@@ -24,6 +24,10 @@ const (
 	// serviceHealthCheckTimeout bounds the HTTP request used to check whether
 	// a service instance is serving.
 	serviceHealthCheckTimeout = 5 * time.Second
+	// ragHealthCheckTimeout bounds the RAG health check, whose endpoint pings
+	// every pipeline's providers and can take about 10 seconds. It matches
+	// the RAG healthcheck timeout on swarm.
+	ragHealthCheckTimeout = 20 * time.Second
 
 	// Keys for the Control Plane metadata recorded in service unit files.
 	serviceMetadataServiceType       = "ServiceType"
@@ -33,7 +37,7 @@ const (
 )
 
 // supportedServiceTypes are the service types that can run on systemd hosts.
-var supportedServiceTypes = []string{"postgrest", "mcp"}
+var supportedServiceTypes = []string{"postgrest", "mcp", "rag"}
 
 func serviceUnitName(serviceType, serviceInstanceID string) string {
 	return fmt.Sprintf("%s-%s.service", serviceType, serviceInstanceID)
@@ -150,20 +154,39 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 	return status, nil
 }
 
+// serviceHealthCheck describes how to check that a service type is serving.
+type serviceHealthCheck struct {
+	path    string
+	timeout time.Duration
+	// requireOK requires a 200 response. Otherwise, any response below 500
+	// means that the service is serving.
+	requireOK bool
+}
+
+// serviceHealthChecks are the health checks of each service type. For
+// PostgREST, any response below 500 means that the service is up and able to
+// serve requests, while server errors, e.g. its 503 when it can't reach the
+// database, mean it isn't. The MCP server's health endpoint returns 200 once
+// it's serving. The RAG server's health endpoint returns 200 once it's
+// serving, with the providers' status in the body.
+var serviceHealthChecks = map[string]serviceHealthCheck{
+	"postgrest": {path: "/", timeout: serviceHealthCheckTimeout},
+	"mcp":       {path: "/health", timeout: serviceHealthCheckTimeout, requireOK: true},
+	"rag":       {path: "/v1/health", timeout: ragHealthCheckTimeout, requireOK: true},
+}
+
 // serviceServing checks that the service is accepting HTTP requests on the
-// given port. For PostgREST, any response below 500 means that the service is
-// up and able to serve requests, while server errors, e.g. its 503 when it
-// can't reach the database, mean it isn't. The MCP server's health endpoint
-// returns 200 once it's serving.
+// given port.
 func serviceServing(ctx context.Context, serviceType string, port int) error {
-	ctx, cancel := context.WithTimeout(ctx, serviceHealthCheckTimeout)
+	check, ok := serviceHealthChecks[serviceType]
+	if !ok {
+		return fmt.Errorf("no health check for service type %q", serviceType)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, check.timeout)
 	defer cancel()
 
-	path := "/"
-	if serviceType == "mcp" {
-		path = "/health"
-	}
-	url := "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port)) + path
+	url := "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port)) + check.path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -175,7 +198,7 @@ func serviceServing(ctx context.Context, serviceType string, port int) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= http.StatusInternalServerError ||
-		(serviceType == "mcp" && resp.StatusCode != http.StatusOK) {
+		(check.requireOK && resp.StatusCode != http.StatusOK) {
 		return fmt.Errorf("service responded with status %d", resp.StatusCode)
 	}
 
@@ -188,6 +211,8 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		return o.generatePostgRESTInstanceResources(spec)
 	case "mcp":
 		return o.generateMCPInstanceResources(spec)
+	case "rag":
+		return o.generateRAGInstanceResources(spec)
 	default:
 		return nil, fmt.Errorf("service type %q is not supported on systemd hosts", spec.ServiceSpec.ServiceType)
 	}

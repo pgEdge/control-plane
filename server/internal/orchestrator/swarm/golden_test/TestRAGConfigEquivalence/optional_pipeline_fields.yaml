@@ -1,0 +1,37 @@
+server:
+  listen_address: 0.0.0.0
+  port: 8080
+pipelines:
+- name: default
+  description: My pipeline
+  database:
+    host: postgres-storefront-n1-aaaa
+    port: 5432
+    database: storefront
+    username: rag_user
+    password: secret
+    ssl_mode: prefer
+  tables:
+  - table: t
+    text_column: c
+    vector_column: v
+    id_column: id
+  embedding_llm:
+    provider: openai
+    model: text-embedding-3-small
+  rag_llm:
+    provider: anthropic
+    model: claude-sonnet-4-5
+  api_keys:
+    anthropic: /app/keys/default_rag.key
+    openai: /app/keys/default_embedding.key
+  token_budget: 500
+  top_n: 5
+  system_prompt: You are a helpful assistant.
+  search:
+    hybrid_enabled: false
+    vector_weight: 0.7
+  allow_include_sources: true
+defaults:
+  token_budget: 1000
+  top_n: 10

@@ -73,6 +73,15 @@
     update_cache: true
   when: ansible_os_family == 'Debian'
 
+# The Debian packages enable and start the packaged RAG server unit, which
+# listens on port 8080 with an example config. The Control Plane runs its own
+# units, so disable this one to keep its port free.
+- name: Disable the packaged RAG server unit
+  ansible.builtin.systemd:
+    name: pgedge-rag-server2
+    enabled: false
+    state: stopped
+
 - name: Install awscli (DEB)
   apt:
     name: awscli

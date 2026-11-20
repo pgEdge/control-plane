@@ -1477,9 +1477,24 @@ func TestValidateDatabaseSpecSystemDServices(t *testing.T) {
 		}), nil)
 		assert.NoError(t, err)
 	})
+	t.Run("rag is supported", func(t *testing.T) {
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("rag", map[string]any{
+			"pipelines": []any{
+				map[string]any{
+					"name": "default",
+					"tables": []any{
+						map[string]any{"table": "docs", "text_column": "content", "vector_column": "embedding"},
+					},
+					"embedding_llm": map[string]any{"provider": "openai", "model": "text-embedding-3-small", "api_key": "sk-test"},
+					"rag_llm":       map[string]any{"provider": "anthropic", "model": "claude-sonnet-4-5", "api_key": "sk-ant-test"},
+				},
+			},
+		}), nil)
+		assert.NoError(t, err)
+	})
 	t.Run("other service types are not supported", func(t *testing.T) {
-		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("rag", map[string]any{}), nil)
-		assert.ErrorContains(t, err, "services[0].service_type: service type 'rag' is not yet supported for systemd clusters")
+		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("unknown", map[string]any{}), nil)
+		assert.ErrorContains(t, err, "services[0].service_type: service type 'unknown' is not yet supported for systemd clusters")
 	})
 	t.Run("service specs are still validated", func(t *testing.T) {
 		err := validateDatabaseSpec(config.OrchestratorSystemD, "test-db", spec("postgrest", map[string]any{}), nil)

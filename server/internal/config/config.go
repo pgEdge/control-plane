@@ -150,6 +150,7 @@ type SystemD struct {
 	PgBinDirs       map[string]string `koanf:"pg_bin_dirs" json:"pg_bin_dirs,omitzero"`
 	PostgRESTPath   string            `koanf:"postgrest_path" json:"postgrest_path,omitempty"`
 	MCPPath         string            `koanf:"mcp_path" json:"mcp_path,omitempty"`
+	RAGPath         string            `koanf:"rag_path" json:"rag_path,omitempty"`
 }
 
 func (s SystemD) validate() []error {
@@ -165,6 +166,9 @@ func (s SystemD) validate() []error {
 	}
 	if s.MCPPath != "" && !filepath.IsAbs(s.MCPPath) {
 		errs = append(errs, fmt.Errorf("mcp_path must be an absolute path, got '%s'", s.MCPPath))
+	}
+	if s.RAGPath != "" && !filepath.IsAbs(s.RAGPath) {
+		errs = append(errs, fmt.Errorf("rag_path must be an absolute path, got '%s'", s.RAGPath))
 	}
 	if !knownOSFamilies.Has(s.OSFamily) {
 		var families strings.Builder
@@ -225,6 +229,10 @@ func defaultSystemD() SystemD {
 		PatroniPath:    "/usr/bin/patroni",
 		PostgRESTPath:  "/usr/bin/postgrest",
 		MCPPath:        "/usr/bin/pgedge-postgres-mcp",
+		// The pgedge-rag-server2 package installs the 2.x server here, so
+		// that it can be installed alongside 1.x, which owns
+		// /usr/bin/pgedge-rag-server.
+		RAGPath: "/usr/pgedge/rag-server2/bin/pgedge-rag-server",
 	}
 }
 

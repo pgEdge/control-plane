@@ -27,7 +27,8 @@ RUN dnf install -y --setopt=retries=10 epel-release && \
       pgedge-pgbackrest \
       pgedge-patroni \
       pgedge-postgrest \
-      pgedge-postgres-mcp && \
+      pgedge-postgres-mcp \
+      pgedge-rag-server2 && \
     dnf clean all
 
 # Locally built CP package, copying and installing

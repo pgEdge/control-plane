@@ -27,8 +27,6 @@ import (
 func TestProvisionRAGService(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	hosts := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
 	host1 := hosts[0]
@@ -117,8 +115,6 @@ func TestProvisionRAGService(t *testing.T) {
 // Skipped unless E2E_OPENAI_API_KEY and E2E_ANTHROPIC_API_KEY are set.
 func TestRAGPipelineQuery(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	openAIKey := getEnvOrSkip(t, "E2E_OPENAI_API_KEY")
 	anthropicKey := getEnvOrSkip(t, "E2E_ANTHROPIC_API_KEY")
@@ -381,8 +377,6 @@ func queryRAGPipeline(ctx context.Context, t testing.TB, baseURL, query string) 
 func TestProvisionMultiHostRAGService(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
-
 	hosts := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hosts), 3, "requires at least 3 hosts")
 	host1, host2, host3 := hosts[0], hosts[1], hosts[2]
@@ -479,8 +473,6 @@ func TestProvisionMultiHostRAGService(t *testing.T) {
 // that was initially created without any services.
 func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	hosts := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
@@ -592,8 +584,6 @@ func TestAddRAGServiceToExistingDatabase(t *testing.T) {
 // database is created (mirrors TestProvisionMCPServiceUnsupportedVersion).
 func TestProvisionRAGServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
-
-	fixture.SkipIfServicesUnsupported(t)
 
 	hosts := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
@@ -714,7 +704,7 @@ func getEnvOrSkip(t testing.TB, key string) string {
 func TestProvisionRAGServicePinnedVersion200(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
+	fixture.SkipIfServiceVersionChangesUnsupported(t)
 
 	hosts := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")
@@ -816,7 +806,7 @@ func TestProvisionRAGServicePinnedVersion200(t *testing.T) {
 func TestUpdateRAGServiceVersion(t *testing.T) {
 	t.Parallel()
 
-	fixture.SkipIfServicesUnsupported(t)
+	fixture.SkipIfServiceVersionChangesUnsupported(t)
 
 	hosts := fixture.HostIDs()
 	require.GreaterOrEqual(t, len(hosts), 1, "requires at least 1 host")

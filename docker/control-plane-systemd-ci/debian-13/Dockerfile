@@ -19,6 +19,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # pgEdge prerequisites from the release repo, so CI tests certified builds.
+# The RAG server package enables its own unit, which would listen on port
+# 8080 at boot. The Control Plane runs its own RAG units, so disable it.
 RUN curl -fsSL --retry 5 https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb \
       -o /tmp/pgedge-release.deb && \
     dpkg -i /tmp/pgedge-release.deb && \
@@ -30,7 +32,9 @@ RUN curl -fsSL --retry 5 https://apt.pgedge.com/repodeb/pgedge-release_latest_al
       pgedge-pgbackrest \
       pgedge-patroni \
       pgedge-postgrest \
-      pgedge-postgres-mcp && \
+      pgedge-postgres-mcp \
+      pgedge-rag-server2 && \
+    rm -f /etc/systemd/system/multi-user.target.wants/pgedge-rag-server2.service && \
     rm -rf /var/lib/apt/lists/*
 
 # Locally built CP package copying and installing

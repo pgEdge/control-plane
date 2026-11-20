@@ -1,0 +1,26 @@
+server:
+  listen_address: 0.0.0.0
+  port: 8080
+pipelines:
+- name: default
+  database:
+    host: postgres-storefront-n1-aaaa
+    port: 5432
+    database: storefront
+    username: rag_user
+    password: secret
+    ssl_mode: prefer
+  tables:
+  - table: docs
+    text_column: content
+    vector_column: embedding
+  embedding_llm:
+    provider: gemini
+    model: text-embedding-004
+    base_url: https://example.test/embed
+  rag_llm:
+    provider: gemini
+    model: gemini-2.0-flash
+    base_url: https://example.test/llm
+  api_keys:
+    gemini: /app/keys/default_rag.key
