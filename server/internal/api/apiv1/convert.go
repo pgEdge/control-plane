@@ -182,7 +182,7 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 			RetentionFull:     utils.NillablePointerTo(repo.RetentionFull),
 			RetentionFullType: utils.NillablePointerTo(string(repo.RetentionFullType)),
 			BasePath:          utils.NillablePointerTo(repo.BasePath),
-			CustomOptions:     repo.CustomOptions,
+			CustomOptions:     scrubSensitiveCustomOptions(repo.CustomOptions),
 		}
 	}
 	schedules := make([]*api.BackupScheduleSpec, len(config.Schedules))
@@ -228,8 +228,24 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 			AzureContainer: utils.NillablePointerTo(config.Repository.AzureContainer),
 			AzureEndpoint:  utils.NillablePointerTo(config.Repository.AzureEndpoint),
 			BasePath:       utils.NillablePointerTo(config.Repository.BasePath),
-			CustomOptions:  config.Repository.CustomOptions,
+			CustomOptions:  scrubSensitiveCustomOptions(config.Repository.CustomOptions),
 		}
+	}
+	return out
+}
+
+// scrubSensitiveCustomOptions returns a copy of the given pgBackRest custom
+// options with sensitive options, such as cipher-pass, removed.
+func scrubSensitiveCustomOptions(options map[string]string) map[string]string {
+	if options == nil {
+		return nil
+	}
+	out := make(map[string]string, len(options))
+	for k, v := range options {
+		if pgbackrest.IsSensitiveCustomOption(k) {
+			continue
+		}
+		out[k] = v
 	}
 	return out
 }

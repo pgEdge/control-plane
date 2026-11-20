@@ -373,3 +373,117 @@ func TestWriteConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSensitiveCustomOption(t *testing.T) {
+	sensitive := []string{
+		"cipher-pass", "repo1-cipher-pass", "REPO2-CIPHER-PASS",
+		"s3-key", "s3-key-secret", "s3-token", "repo1-s3-key",
+		"gcs-key", "azure-key", "sftp-private-key-passphrase",
+		"s3-sse-customer-key", "repo1-s3-sse-customer-key",
+	}
+	for _, key := range sensitive {
+		assert.True(t, pgbackrest.IsSensitiveCustomOption(key), key)
+	}
+
+	notSensitive := []string{
+		"cipher-type", "repo1-cipher-type", "s3-key-type", "s3-uri-style",
+		"gcs-key-type", "azure-key-type", "s3-kms-key-id", "storage-verify-tls",
+	}
+	for _, key := range notSensitive {
+		assert.False(t, pgbackrest.IsSensitiveCustomOption(key), key)
+	}
+}
+
+func TestRepositoryDefaultOptionalFieldsFrom(t *testing.T) {
+	other := &pgbackrest.Repository{
+		S3Key:       "key",
+		S3KeySecret: "secret",
+		CustomOptions: map[string]string{
+			"cipher-type":   "aes-256-cbc",
+			"cipher-pass":   "passphrase",
+			"s3-token":      "token",
+			"s3-uri-style":  "path",
+			"s3-key-secret": "",
+		},
+	}
+
+	t.Run("restores omitted sensitive options", func(t *testing.T) {
+		r := &pgbackrest.Repository{
+			CustomOptions: map[string]string{
+				"cipher-type": "aes-256-cbc",
+			},
+		}
+		r.DefaultOptionalFieldsFrom(other)
+		assert.Equal(t, "key", r.S3Key)
+		assert.Equal(t, "secret", r.S3KeySecret)
+		assert.Equal(t, map[string]string{
+			"cipher-type": "aes-256-cbc",
+			"cipher-pass": "passphrase",
+			"s3-token":    "token",
+		}, r.CustomOptions)
+	})
+
+	t.Run("restores into nil options", func(t *testing.T) {
+		r := &pgbackrest.Repository{}
+		r.DefaultOptionalFieldsFrom(other)
+		assert.Equal(t, map[string]string{
+			"cipher-pass": "passphrase",
+			"s3-token":    "token",
+		}, r.CustomOptions)
+	})
+
+	t.Run("keeps submitted sensitive options", func(t *testing.T) {
+		r := &pgbackrest.Repository{
+			CustomOptions: map[string]string{
+				"cipher-pass": "new-passphrase",
+				"s3-token":    "",
+			},
+		}
+		r.DefaultOptionalFieldsFrom(other)
+		assert.Equal(t, map[string]string{
+			"cipher-pass": "new-passphrase",
+			"s3-token":    "",
+		}, r.CustomOptions)
+	})
+
+	t.Run("restores omitted s3-sse-customer-key", func(t *testing.T) {
+		other := &pgbackrest.Repository{
+			CustomOptions: map[string]string{
+				"s3-sse-customer-key": "customer-key",
+				"s3-key-type":         "shared",
+			},
+		}
+		r := &pgbackrest.Repository{
+			CustomOptions: map[string]string{
+				"s3-key-type": "shared",
+			},
+		}
+		r.DefaultOptionalFieldsFrom(other)
+		assert.Equal(t, map[string]string{
+			"s3-sse-customer-key": "customer-key",
+			"s3-key-type":         "shared",
+		}, r.CustomOptions)
+	})
+
+	t.Run("treats prefixed and unprefixed keys as equivalent", func(t *testing.T) {
+		other := &pgbackrest.Repository{
+			CustomOptions: map[string]string{
+				"repo1-cipher-pass":         "passphrase",
+				"s3-token":                  "token",
+				"repo1-s3-sse-customer-key": "customer-key",
+			},
+		}
+		r := &pgbackrest.Repository{
+			CustomOptions: map[string]string{
+				"cipher-pass":    "new-passphrase",
+				"repo1-s3-token": "",
+			},
+		}
+		r.DefaultOptionalFieldsFrom(other)
+		assert.Equal(t, map[string]string{
+			"cipher-pass":               "new-passphrase",
+			"repo1-s3-token":            "",
+			"repo1-s3-sse-customer-key": "customer-key",
+		}, r.CustomOptions)
+	})
+}
