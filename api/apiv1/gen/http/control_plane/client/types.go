@@ -91,7 +91,7 @@ type SwitchoverDatabaseNodeRequestBody struct {
 // "failover-database-node" endpoint HTTP request body.
 type FailoverDatabaseNodeRequestBody struct {
 	// Optional instance_id of the replica to promote. If omitted, a candidate will
-	// be selected.
+	// be selected. Required if the node has no primary instance.
 	CandidateInstanceID *string `json:"candidate_instance_id,omitempty"`
 	// If true, skip the health validations that prevent running failover on a
 	// healthy cluster.

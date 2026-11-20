@@ -232,13 +232,13 @@ func TestRestoreCommandPreventsTimelineReuse(t *testing.T) {
 
 	s.startStaleOriginal(ctx, t)
 
-	// A failover to a named candidate bypasses check_timeline. The Control
-	// Plane's failover API requires an existing leader, so this goes through
-	// Patroni directly.
+	// A failover to a named candidate bypasses check_timeline.
 	tLog(t, "forcing a failover to the original instance")
-	_, err := runPatronictl(s.originalHost, s.original,
-		fmt.Sprintf("failover --candidate %s --force", s.original.ID))
-	require.NoError(t, err)
+	require.NoError(t, s.db.FailoverDatabaseNode(ctx, &controlplane.FailoverDatabaseNodeRequest{
+		DatabaseID:          controlplane.Identifier(s.db.ID),
+		NodeName:            "n1",
+		CandidateInstanceID: &s.original.ID,
+	}))
 	require.True(t, waitFor(func() bool {
 		inRecovery, err := queryInstance[bool](ctx, s.db, s.original, "SELECT pg_is_in_recovery()")
 		return err == nil && !inRecovery

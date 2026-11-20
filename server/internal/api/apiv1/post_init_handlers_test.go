@@ -140,3 +140,25 @@ func TestValidatePrimaryNotRemoved(t *testing.T) {
 		require.NoError(t, validatePrimaryNotRemoved(unavailable, spec, nil))
 	})
 }
+
+func TestHasPrimaryInstanceInNode(t *testing.T) {
+	instances := []*database.Instance{
+		newTestInstance("n1", database.InstanceStateAvailable, patroni.InstanceRoleReplica),
+		newTestInstance("n2", database.InstanceStateAvailable, patroni.InstanceRolePrimary),
+		newTestInstance("n3", database.InstanceStateStopped, patroni.InstanceRolePrimary),
+	}
+
+	for _, tc := range []struct {
+		nodeName string
+		expected bool
+	}{
+		{nodeName: "n1", expected: false},
+		{nodeName: "n2", expected: true},
+		{nodeName: "n3", expected: false},
+		{nodeName: "n4", expected: false},
+	} {
+		t.Run(tc.nodeName, func(t *testing.T) {
+			require.Equal(t, tc.expected, hasPrimaryInstance(nodeInstances(instances, tc.nodeName)))
+		})
+	}
+}
