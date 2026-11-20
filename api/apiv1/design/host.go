@@ -62,9 +62,9 @@ var PgEdgeVersion = g.Type("PgEdgeVersion", func() {
 		g.Meta("struct:tag:json", "postgres_version")
 	})
 	g.Attribute("spock_version", g.String, func() {
-		g.Description("The Spock major version.")
+		g.Description("The Spock major version. Absent when Spock is not installed for this Postgres version.")
 		g.Example("5")
-		g.Meta("struct:tag:json", "spock_version")
+		g.Meta("struct:tag:json", "spock_version,omitempty")
 	})
 	g.Attribute("stability", g.String, func() {
 		g.Description("Release stability of the manifest image backing this version. " +
@@ -78,7 +78,7 @@ var PgEdgeVersion = g.Type("PgEdgeVersion", func() {
 		g.Meta("struct:tag:json", "stability,omitempty")
 	})
 
-	g.Required("postgres_version", "spock_version")
+	g.Required("postgres_version")
 })
 
 var HostCohort = g.Type("HostCohort", func() {

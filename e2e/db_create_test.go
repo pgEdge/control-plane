@@ -23,10 +23,14 @@ func TestCreateSingleNodeDBWithReplicas(t *testing.T) {
 }
 
 func TestCreateMultiNodeDB(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	testCreateDB(t, 2, false)
 }
 
 func TestCreateMultiNodeDBWithReplicas(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	testCreateDB(t, 2, true)
 }
 

@@ -22,6 +22,7 @@ func TestRollingUpdatePreservesReplication(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfUpgradesUnsupported(t)
+	fixture.SkipIfSpockNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -186,6 +187,7 @@ func TestMinorVersionUpgrade(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfUpgradesUnsupported(t)
+	fixture.SkipIfSpockNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]

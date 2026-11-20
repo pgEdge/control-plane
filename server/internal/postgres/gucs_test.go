@@ -13,30 +13,26 @@ func TestDefaultGUCs(t *testing.T) {
 	assert.Equal(t, "scram-sha-256", postgres.DefaultGUCs(nil, nil)["password_encryption"])
 }
 
-func TestDefaultGUCsOutputPluginLibraries(t *testing.T) {
+func TestNeedsOutputPluginLibraries(t *testing.T) {
 	for _, tc := range []struct {
-		name            string
-		version         *ds.PgEdgeVersion
-		expectedPresent bool
+		name     string
+		version  *ds.PgEdgeVersion
+		expected bool
 	}{
-		{name: "nil version", version: nil, expectedPresent: false},
-		{name: "pg16 below gate", version: ds.MustParsePgEdgeVersion("16.14", "4"), expectedPresent: false},
-		{name: "pg16 at gate", version: ds.MustParsePgEdgeVersion("16.15", "4"), expectedPresent: true},
-		{name: "pg16 above gate", version: ds.MustParsePgEdgeVersion("16.16", "4"), expectedPresent: true},
-		{name: "pg17 below gate", version: ds.MustParsePgEdgeVersion("17.10", "4"), expectedPresent: false},
-		{name: "pg17 at gate", version: ds.MustParsePgEdgeVersion("17.11", "4"), expectedPresent: true},
-		{name: "pg18 below gate", version: ds.MustParsePgEdgeVersion("18.5", "4"), expectedPresent: false},
-		{name: "pg18 at gate", version: ds.MustParsePgEdgeVersion("18.6", "4"), expectedPresent: true},
-		{name: "future major", version: ds.MustParsePgEdgeVersion("19.0", "4"), expectedPresent: true},
-		{name: "older major", version: ds.MustParsePgEdgeVersion("15.10", "4"), expectedPresent: false},
+		{name: "nil version", version: nil, expected: false},
+		{name: "pg16 below gate", version: ds.MustParsePgEdgeVersion("16.14", "4"), expected: false},
+		{name: "pg16 at gate", version: ds.MustParsePgEdgeVersion("16.15", "4"), expected: true},
+		{name: "pg16 above gate", version: ds.MustParsePgEdgeVersion("16.16", "4"), expected: true},
+		{name: "pg17 below gate", version: ds.MustParsePgEdgeVersion("17.10", "4"), expected: false},
+		{name: "pg17 at gate", version: ds.MustParsePgEdgeVersion("17.11", "4"), expected: true},
+		{name: "pg18 below gate", version: ds.MustParsePgEdgeVersion("18.5", "4"), expected: false},
+		{name: "pg18 at gate", version: ds.MustParsePgEdgeVersion("18.6", "4"), expected: true},
+		{name: "future major", version: ds.MustParsePgEdgeVersion("19.0", "4"), expected: true},
+		{name: "older major", version: ds.MustParsePgEdgeVersion("15.10", "4"), expected: false},
+		{name: "pg17 at gate without spock", version: ds.MustParsePgEdgeVersion("17.11", ""), expected: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			gucs := postgres.DefaultGUCs(tc.version, nil)
-			value, ok := gucs["output_plugin_libraries"]
-			assert.Equal(t, tc.expectedPresent, ok)
-			if tc.expectedPresent {
-				assert.Equal(t, "pgoutput, test_decoding, spock_output", value)
-			}
+			assert.Equal(t, tc.expected, postgres.NeedsOutputPluginLibraries(tc.version))
 		})
 	}
 }

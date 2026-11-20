@@ -67,12 +67,19 @@ type Host struct {
 const ServiceVersionLatest = "latest"
 
 func (h *Host) Supports(pgEdgeVersion *ds.PgEdgeVersion) bool {
+	return h.SupportedVersion(pgEdgeVersion) != nil
+}
+
+// SupportedVersion returns this host's entry for the given version, which
+// includes host-specific details such as the available libraries. It returns
+// nil if this host does not support the given version.
+func (h *Host) SupportedVersion(pgEdgeVersion *ds.PgEdgeVersion) *ds.PgEdgeVersion {
 	for _, v := range h.SupportedPgEdgeVersions {
 		if v.Equals(pgEdgeVersion) {
-			return true
+			return v
 		}
 	}
-	return false
+	return nil
 }
 
 // SupportsService returns true if this host can run the given version of the

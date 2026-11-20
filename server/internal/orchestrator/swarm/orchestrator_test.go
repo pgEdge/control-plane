@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 func TestServiceInstanceName(t *testing.T) {
@@ -88,4 +92,46 @@ func TestServiceInstanceName(t *testing.T) {
 		}
 	})
 
+}
+
+func TestDefaultGUCs(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		version  *ds.PgEdgeVersion
+		expected map[string]any
+	}{
+		{
+			name:    "nil version",
+			version: nil,
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+			},
+		},
+		{
+			name:    "with spock",
+			version: ds.MustParsePgEdgeVersion("17.10", "5"),
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+			},
+		},
+		{
+			name:    "with spock and output plugin libraries",
+			version: ds.MustParsePgEdgeVersion("17.11", "5"),
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements,snowflake,spock",
+				"output_plugin_libraries":  "pgoutput, test_decoding, spock_output",
+			},
+		},
+		{
+			name:    "without spock",
+			version: ds.MustParsePgEdgeVersion("17.11", ""),
+			expected: map[string]any{
+				"shared_preload_libraries": "pg_stat_statements",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, defaultGUCs(tc.version))
+		})
+	}
 }

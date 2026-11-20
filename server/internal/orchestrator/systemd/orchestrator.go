@@ -10,7 +10,9 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -84,7 +86,13 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 
 	versions, err := o.versionsProbe.InstalledPostgresVersions(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get installed postgres versions: %w", err)
+		var warning *versionWarning
+		if !errors.As(err, &warning) {
+			return fmt.Errorf("failed to get installed postgres versions: %w", err)
+		}
+		// The affected versions are still usable. The probe only returns
+		// each warning once, so this doesn't repeat on every refresh.
+		o.logger.Warn().Err(err).Msg("found problems with installed postgres versions")
 	}
 
 	o.logger.Debug().
@@ -92,9 +100,7 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		Msg("got installed versions")
 
 	if len(versions) == 0 {
-		// TODO(PLAT-752): This wording should change or the error should be
-		// removed as we work towards optional spock.
-		return errors.New("pgedge postgres not installed")
+		return errors.New("no supported postgres installations found")
 	}
 
 	h.SupportedPgEdgeVersions = versions
@@ -130,6 +136,44 @@ func defaultVersion(versions []*ds.PgEdgeVersion) *ds.PgEdgeVersion {
 		}
 	}
 	return versions[0]
+}
+
+// defaultGUCs returns the systemd-specific defaults for the given version.
+// shared_preload_libraries omits snowflake, which is not available outside of
+// the pgEdge packages, only includes pg_stat_statements when it's in the given
+// installed libraries, and only includes spock when the version uses it.
+func defaultGUCs(version *ds.PgEdgeVersion, installedLibraries []string) map[string]any {
+	gucs := map[string]any{}
+	var libs []string
+	if slices.Contains(installedLibraries, "pg_stat_statements") {
+		libs = append(libs, "pg_stat_statements")
+	}
+	if version.HasSpock() {
+		libs = append(libs, "spock")
+	}
+	if postgres.NeedsOutputPluginLibraries(version) {
+		gucs["output_plugin_libraries"] = "pgoutput, test_decoding, spock_output"
+	}
+	if len(libs) > 0 {
+		gucs["shared_preload_libraries"] = strings.Join(libs, ",")
+	}
+	return gucs
+}
+
+// installedLibraries returns the libraries that this host's most recent probe
+// found for the given version's Postgres major version. The version in an
+// instance spec doesn't include them, since they're specific to this host. It
+// returns nil if they're unknown.
+func (o *Orchestrator) installedLibraries(version *ds.PgEdgeVersion) []string {
+	pgMajor, ok := version.PostgresVersion.MajorString()
+	if !ok {
+		return nil
+	}
+	installed, ok := o.versionsProbe.InstalledPostgresVersion(pgMajor)
+	if !ok {
+		return nil
+	}
+	return installed.AvailableLibraries
 }
 
 func (o *Orchestrator) PopulateHostStatus(ctx context.Context, h *host.HostStatus) error {
@@ -237,7 +281,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 	if postgresPort == 0 {
 		return nil, fmt.Errorf("port is required for systemd instances, missing for instance '%s'", spec.InstanceID)
 	}
-
 	patroniConfig := &PatroniConfig{
 		DatabaseID: spec.DatabaseID,
 		AllHostIDs: spec.AllHostIDs,
@@ -246,16 +289,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec, sc
 			HostID:     spec.HostID,
 			NodeName:   spec.NodeName,
 			Generator: common.NewPatroniConfigGenerator(common.PatroniConfigGeneratorOptions{
-				Instance:        spec,
-				HostCPUs:        float64(o.cpus),
-				HostMemoryBytes: o.memBytes,
-				PatroniPort:     patroniPort,
-				PostgresPort:    postgresPort,
-				OrchestratorParameters: map[string]any{
-					"shared_preload_libraries": "pg_stat_statements,spock",
-				},
-				FQDN:  o.cfg.PeerAddress(),
-				Paths: paths,
+				Instance:               spec,
+				HostCPUs:               float64(o.cpus),
+				HostMemoryBytes:        o.memBytes,
+				PatroniPort:            patroniPort,
+				PostgresPort:           postgresPort,
+				OrchestratorParameters: defaultGUCs(spec.PgEdgeVersion, o.installedLibraries(spec.PgEdgeVersion)),
+				FQDN:                   o.cfg.PeerAddress(),
+				Paths:                  paths,
 			}),
 			ParentID: configsDir.ID,
 			OwnerUID: databaseOwnerUID,

@@ -224,7 +224,9 @@ func (p *PatroniConfigGenerator) AuthMethod() hba.AuthMethod {
 
 func (p *PatroniConfigGenerator) parameters() map[string]any {
 	parameters := postgres.DefaultGUCs(p.PgEdgeVersion, p.PeerInstanceIDs)
-	maps.Copy(parameters, postgres.SpockDefaultGUCs(p.DatabaseName, p.PgEdgeVersion))
+	if p.PgEdgeVersion == nil || p.PgEdgeVersion.HasSpock() {
+		maps.Copy(parameters, postgres.SpockDefaultGUCs(p.DatabaseName, p.PgEdgeVersion))
+	}
 	maps.Copy(parameters, postgres.DefaultTunableGUCs(p.MemoryBytes, p.CPUs, p.ClusterSize))
 	maps.Copy(parameters, map[string]any{
 		"ssl":           "on",
@@ -243,7 +245,11 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 		})
 	}
 	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(p.NodeOrdinal))
-	maps.Copy(parameters, p.SpecParameters)
+	// The defaults above use normalized names, so user-specified parameters
+	// are normalized to replace them regardless of spelling.
+	for name, value := range p.SpecParameters {
+		parameters[postgres.NormalizeParameterName(name)] = value
+	}
 
 	return parameters
 }

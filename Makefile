@@ -137,7 +137,10 @@ e2e-help:
 	@echo "    make test-e2e E2E_FIXTURE=ec2-systemd E2E_DEBUG=1"
 	@echo ""
 	@echo "  E2E variables:"
-	@echo "    E2E_FIXTURE      Fixture name (lima, ec2, ec2-systemd, lima-systemd)"
+	@echo "    E2E_FIXTURE      Fixture name (lima, ec2, ec2-systemd, lima-systemd,"
+	@echo "                     docker-systemd-rocky9, docker-systemd-debian13,"
+	@echo "                     docker-systemd-rocky9-community,"
+	@echo "                     docker-systemd-debian13-community)"
 	@echo "    E2E_RUN          Test name regex filter"
 	@echo "    E2E_PARALLEL     Parallelism (default: 4)"
 	@echo "    E2E_DEBUG=1      Print debug output for failing tests"
@@ -608,7 +611,7 @@ ci-compose-detached: ci-compose-build docker-swarm-init
 ci-compose-down:
 	$(docker_compose_ci) down
 
-# rocky-9 or debian-13
+# rocky-9, debian-13, rocky-9-community, or debian-13-community
 SYSTEMD_OS ?= rocky-9
 systemd_ci_dir=./docker/control-plane-systemd-ci/$(SYSTEMD_OS)
 docker_compose_systemd_ci=docker compose -f $(systemd_ci_dir)/docker-compose.yaml
@@ -629,10 +632,10 @@ ci-sbom-placeholder:
 .PHONY: ci-systemd-package
 ci-systemd-package:
 	@case "$(SYSTEMD_OS):$(systemd_ci_arch)" in \
-		rocky-9:x86_64|rocky-9:amd64) pattern='*.el9.x86_64.rpm'; ext=rpm ;; \
-		rocky-9:aarch64|rocky-9:arm64) pattern='*.el9.aarch64.rpm'; ext=rpm ;; \
-		debian-13:x86_64|debian-13:amd64) pattern='*.trixie_amd64.deb'; ext=deb ;; \
-		debian-13:aarch64|debian-13:arm64) pattern='*.trixie_arm64.deb'; ext=deb ;; \
+		rocky-9:x86_64|rocky-9:amd64|rocky-9-community:x86_64|rocky-9-community:amd64) pattern='*.el9.x86_64.rpm'; ext=rpm ;; \
+		rocky-9:aarch64|rocky-9:arm64|rocky-9-community:aarch64|rocky-9-community:arm64) pattern='*.el9.aarch64.rpm'; ext=rpm ;; \
+		debian-13:x86_64|debian-13:amd64|debian-13-community:x86_64|debian-13-community:amd64) pattern='*.trixie_amd64.deb'; ext=deb ;; \
+		debian-13:aarch64|debian-13:arm64|debian-13-community:aarch64|debian-13-community:arm64) pattern='*.trixie_arm64.deb'; ext=deb ;; \
 		*) echo "unsupported SYSTEMD_OS/arch: $(SYSTEMD_OS)/$(systemd_ci_arch)"; exit 1 ;; \
 	esac; \
 	pkg=$$(ls dist/pgedge-control-plane$$pattern 2>/dev/null | sort -V | tail -1); \

@@ -708,3 +708,97 @@ func TestSpec_Locale(t *testing.T) {
 		assert.Equal(t, updated, s.Locale)
 	})
 }
+
+func TestSpec_DefaultVersions(t *testing.T) {
+	withSpock := ds.MustParsePgEdgeVersion("18.1", "5")
+	withoutSpock := ds.MustParsePgEdgeVersion("18.1", "")
+	image := &database.OrchestratorOpts{
+		Swarm: &database.SwarmOpts{
+			Image: "ghcr.io/pgedge/pgedge-postgres:17.9-spock5.0.6-standard-2",
+		},
+	}
+
+	for _, tc := range []struct {
+		name          string
+		spec          *database.Spec
+		current       *database.Spec
+		hostDefault   *ds.PgEdgeVersion
+		expectedPg    string
+		expectedSpock string
+	}{
+		{
+			name:          "create defaults to host version with spock",
+			spec:          &database.Spec{},
+			hostDefault:   withSpock,
+			expectedPg:    "18.1",
+			expectedSpock: "5",
+		},
+		{
+			name:          "create defaults to host version without spock",
+			spec:          &database.Spec{},
+			hostDefault:   withoutSpock,
+			expectedPg:    "18.1",
+			expectedSpock: "",
+		},
+		{
+			name:          "create prefers image versions",
+			spec:          &database.Spec{OrchestratorOpts: image},
+			hostDefault:   withoutSpock,
+			expectedPg:    "17.9",
+			expectedSpock: "5",
+		},
+		{
+			name: "create keeps specified versions",
+			spec: &database.Spec{
+				PostgresVersion: "17.6",
+				SpockVersion:    "4",
+			},
+			hostDefault:   withSpock,
+			expectedPg:    "17.6",
+			expectedSpock: "4",
+		},
+		{
+			name: "update without spock does not default spock from host",
+			spec: &database.Spec{},
+			current: &database.Spec{
+				PostgresVersion: "18.0",
+			},
+			hostDefault:   withSpock,
+			expectedPg:    "18.0",
+			expectedSpock: "",
+		},
+		{
+			name: "update without spock does not default spock from image",
+			spec: &database.Spec{OrchestratorOpts: image},
+			current: &database.Spec{
+				PostgresVersion: "18.0",
+			},
+			hostDefault:   withSpock,
+			expectedPg:    "18.0",
+			expectedSpock: "",
+		},
+		{
+			name: "update with spock keeps stored spock version",
+			spec: &database.Spec{},
+			current: &database.Spec{
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+			},
+			hostDefault:   withoutSpock,
+			expectedPg:    "18.0",
+			expectedSpock: "5",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Mirrors the update flow, where stored values are restored
+			// before defaults are applied.
+			if tc.current != nil {
+				tc.spec.DefaultOptionalFieldsFrom(tc.current)
+			}
+			tc.spec.DefaultVersions(tc.hostDefault, tc.current)
+
+			assert.Equal(t, tc.expectedPg, tc.spec.PostgresVersion)
+			assert.Equal(t, tc.expectedSpock, tc.spec.SpockVersion)
+		})
+	}
+}

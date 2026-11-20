@@ -181,6 +181,25 @@ func TestSupportsService(t *testing.T) {
 	}
 }
 
+func TestSupportedVersion(t *testing.T) {
+	hostVersion := &ds.PgEdgeVersion{
+		PostgresVersion:    ds.MustParseVersion("17.6"),
+		SpockVersion:       ds.MustParseVersion("5"),
+		AvailableLibraries: []string{"spock"},
+	}
+	h := &host.Host{
+		ID:                      "host-1",
+		SupportedPgEdgeVersions: []*ds.PgEdgeVersion{hostVersion},
+	}
+
+	// The host's entry is returned so that callers can see its available
+	// libraries.
+	assert.Same(t, hostVersion, h.SupportedVersion(ds.MustParsePgEdgeVersion("17.6", "5")))
+	assert.True(t, h.Supports(ds.MustParsePgEdgeVersion("17.6", "5")))
+	assert.Nil(t, h.SupportedVersion(ds.MustParsePgEdgeVersion("17.6", "")))
+	assert.False(t, h.Supports(ds.MustParsePgEdgeVersion("17.6", "")))
+}
+
 func TestCommonDefaultServiceVersion(t *testing.T) {
 	newHost := func(id, def string, supported ...string) *host.Host {
 		return &host.Host{

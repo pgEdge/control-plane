@@ -67,6 +67,14 @@ func scrubSensitiveValue(v any) any {
 	}
 }
 
+func pgEdgeVersionToAPI(v *ds.PgEdgeVersion) *api.PgEdgeVersion {
+	return &api.PgEdgeVersion{
+		PostgresVersion: v.PostgresVersion.String(),
+		SpockVersion:    utils.NillablePointerTo(v.SpockVersionString()),
+		Stability:       utils.NillablePointerTo(string(v.Stability)),
+	}
+}
+
 func hostToAPI(h *host.Host) *api.Host {
 	components := make(map[string]*api.ComponentStatus, len(h.Status.Components))
 	for name, status := range h.Status.Components {
@@ -86,27 +94,19 @@ func hostToAPI(h *host.Host) *api.Host {
 	}
 	supportedVersions := make([]*api.PgEdgeVersion, len(h.SupportedPgEdgeVersions))
 	for i, v := range h.SupportedPgEdgeVersions {
-		supportedVersions[i] = &api.PgEdgeVersion{
-			PostgresVersion: v.PostgresVersion.String(),
-			SpockVersion:    v.SpockVersion.String(),
-			Stability:       utils.NillablePointerTo(string(v.Stability)),
-		}
+		supportedVersions[i] = pgEdgeVersionToAPI(v)
 	}
 	return &api.Host{
-		Orchestrator:    string(h.Orchestrator),
-		DataDir:         h.DataDir,
-		PeerAddresses:   h.PeerAddresses,
-		ClientAddresses: h.ClientAddresses,
-		Cpus:            utils.NillablePointerTo(h.CPUs),
-		Memory:          utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
-		Cohort:          cohort,
-		ID:              api.Identifier(h.ID),
-		EtcdMode:        utils.NillablePointerTo(string(h.EtcdMode)),
-		DefaultPgedgeVersion: &api.PgEdgeVersion{
-			PostgresVersion: h.DefaultPgEdgeVersion.PostgresVersion.String(),
-			SpockVersion:    h.DefaultPgEdgeVersion.SpockVersion.String(),
-			Stability:       utils.NillablePointerTo(string(h.DefaultPgEdgeVersion.Stability)),
-		},
+		Orchestrator:            string(h.Orchestrator),
+		DataDir:                 h.DataDir,
+		PeerAddresses:           h.PeerAddresses,
+		ClientAddresses:         h.ClientAddresses,
+		Cpus:                    utils.NillablePointerTo(h.CPUs),
+		Memory:                  utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
+		Cohort:                  cohort,
+		ID:                      api.Identifier(h.ID),
+		EtcdMode:                utils.NillablePointerTo(string(h.EtcdMode)),
+		DefaultPgedgeVersion:    pgEdgeVersionToAPI(h.DefaultPgEdgeVersion),
 		SupportedPgedgeVersions: supportedVersions,
 		Status: &api.HostStatus{
 			State:      string(h.Status.State),
@@ -487,7 +487,8 @@ func instancePostgresStatusToAPI(status *database.InstanceStatus) *api.InstanceP
 }
 
 func instanceSpockStatusToAPI(status *database.InstanceStatus) *api.InstanceSpockStatus {
-	if status == nil || !status.IsPrimary() {
+	// SpockVersion is nil for databases that don't use Spock.
+	if status == nil || !status.IsPrimary() || status.SpockVersion == nil {
 		return nil
 	}
 	subs := make([]*api.InstanceSubscription, len(status.Subscriptions))

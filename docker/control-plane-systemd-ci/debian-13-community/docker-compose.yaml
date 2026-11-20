@@ -1,0 +1,54 @@
+# 3-host Control Plane cluster running as systemd services on Debian 13, with
+# the community Postgres packages and without Spock. The cluster is not
+# initialized, since that's done during test execution.
+#
+# Unlike the pgEdge fixtures, these hosts don't have config files or fixed IPs,
+# so that they exercise the packaged default config: the host ID defaults to
+# the hostname, and the peer and client addresses default to the container's
+# IP on the compose network.
+#
+#   make ci-systemd-up SYSTEMD_OS=debian-13-community
+#   make test-e2e E2E_FIXTURE=docker-systemd-debian13-community
+#   make ci-systemd-down SYSTEMD_OS=debian-13-community
+name: cp-systemd-debian-13-community
+
+x-host: &host
+  build:
+    context: .
+  image: cp-systemd-debian-13-community
+  privileged: true
+  cgroup: host
+  tmpfs:
+    - /run
+    - /run/lock
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:rw
+  stop_grace_period: 30s
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:3000/v1/version >/dev/null && sudo -u postgres true"]
+    interval: 3s
+    timeout: 2s
+    retries: 40
+    start_period: 30s
+# Launch 3 services (containers)
+services:
+  host-1:
+    <<: *host
+    container_name: cp-debian13-community-host-1
+    hostname: host-1
+    ports:
+      - "127.0.0.1:3030:3000"
+
+  host-2:
+    <<: *host
+    container_name: cp-debian13-community-host-2
+    hostname: host-2
+    ports:
+      - "127.0.0.1:3031:3000"
+
+  host-3:
+    <<: *host
+    container_name: cp-debian13-community-host-3
+    hostname: host-3
+    ports:
+      - "127.0.0.1:3032:3000"

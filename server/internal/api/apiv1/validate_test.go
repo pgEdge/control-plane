@@ -464,22 +464,22 @@ func TestValidateDatabaseUpdate_LibraryConf(t *testing.T) {
 			new:  &api.DatabaseSpec{},
 		},
 		{
-			name: "invalid spec-level conf missing spock",
+			name: "invalid spec-level conf type",
 			old:  &database.Spec{},
 			new: &api.DatabaseSpec{
-				PostgresqlConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"},
+				PostgresqlConf: map[string]any{"shared_preload_libraries": 1},
 			},
-			expected: []string{`"spock" must be included in shared_preload_libraries`},
+			expected: []string{`"shared_preload_libraries" must be a string`},
 		},
 		{
-			name: "invalid node-level conf missing spock",
+			name: "invalid node-level conf type",
 			old:  &database.Spec{},
 			new: &api.DatabaseSpec{
 				Nodes: []*api.DatabaseNodeSpec{
-					{PostgresqlConf: map[string]any{"shared_preload_libraries": "pg_stat_statements"}},
+					{PostgresqlConf: map[string]any{"shared_preload_libraries": 1}},
 				},
 			},
-			expected: []string{`"spock" must be included in shared_preload_libraries`},
+			expected: []string{`"shared_preload_libraries" must be a string`},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -495,7 +495,7 @@ func TestValidateDatabaseUpdate_LibraryConf(t *testing.T) {
 	}
 }
 
-func TestValidateConfLibraries(t *testing.T) {
+func TestValidatePostgreSQLConf(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		conf     map[string]any
@@ -517,15 +517,70 @@ func TestValidateConfLibraries(t *testing.T) {
 			conf: map[string]any{"shared_preload_libraries": "snowflake, spock, custom_lib"},
 		},
 		{
-			name: "invalid conf missing spock",
+			// Whether spock is required depends on the database version, so
+			// it's validated in the database service instead.
+			name: "valid conf without spock",
 			conf: map[string]any{"shared_preload_libraries": "snowflake"},
+		},
+		{
+			name: "valid quoted names",
+			conf: map[string]any{"shared_preload_libraries": `"spock", "/opt/pg/my,module.so"`},
+		},
+		{
+			name: "invalid duplicate spellings",
+			conf: map[string]any{
+				"shared_preload_libraries":   "spock",
+				"SHARED_PRELOAD_LIBRARIES":   "spock",
+				" Shared_Preload_Libraries ": "spock",
+			},
 			expected: []string{
-				`"spock" must be included in shared_preload_libraries`,
+				`shared_preload_libraries is set more than once: " Shared_Preload_Libraries ", "SHARED_PRELOAD_LIBRARIES", "shared_preload_libraries"`,
+			},
+		},
+		{
+			name: "valid distinct params",
+			conf: map[string]any{
+				"Work_Mem":        "4MB",
+				"max_connections": 100,
+			},
+		},
+		{
+			name: "invalid duplicate spellings of other params",
+			conf: map[string]any{
+				"work_mem":        "4MB",
+				"WORK_MEM":        "8MB",
+				"max_connections": 100,
+				"Max_Connections": 200,
+			},
+			expected: []string{
+				`max_connections is set more than once: "Max_Connections", "max_connections"`,
+				`work_mem is set more than once: "WORK_MEM", "work_mem"`,
+			},
+		},
+		{
+			name: "invalid list syntax",
+			conf: map[string]any{"shared_preload_libraries": "snowflake,,spock"},
+			expected: []string{
+				`"shared_preload_libraries" has invalid list syntax: empty name`,
+			},
+		},
+		{
+			name: "invalid unterminated quote",
+			conf: map[string]any{"shared_preload_libraries": `"spock`},
+			expected: []string{
+				`"shared_preload_libraries" has invalid list syntax: unterminated quoted name`,
+			},
+		},
+		{
+			name: "invalid conf type",
+			conf: map[string]any{"shared_preload_libraries": []string{"spock"}},
+			expected: []string{
+				`"shared_preload_libraries" must be a string`,
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := errors.Join(validateConfLibraries(tc.conf, nil)...)
+			err := errors.Join(validatePostgreSQLConf(tc.conf, nil)...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
@@ -668,10 +723,10 @@ func TestValidateNode(t *testing.T) {
 				HostIds: []api.Identifier{
 					api.Identifier("host-1"),
 				},
-				PostgresqlConf: map[string]any{"shared_preload_libraries": "snowflake"},
+				PostgresqlConf: map[string]any{"shared_preload_libraries": 1},
 			},
 			expected: []string{
-				`"spock" must be included in shared_preload_libraries`,
+				`"shared_preload_libraries" must be a string`,
 			},
 		},
 	} {
@@ -1396,12 +1451,12 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						HostIds: []api.Identifier{
 							api.Identifier("host-1"),
 						},
-						PostgresqlConf: map[string]any{"shared_preload_libraries": "snowflake"},
+						PostgresqlConf: map[string]any{"shared_preload_libraries": 1},
 					},
 				},
 			},
 			expected: []string{
-				`"spock" must be included in shared_preload_libraries`,
+				`"shared_preload_libraries" must be a string`,
 			},
 		},
 		{

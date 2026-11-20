@@ -12,6 +12,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -302,6 +303,39 @@ func (o *OrchestratorOpts) swarmImage() string {
 		return ""
 	}
 	return o.Swarm.Image
+}
+
+// DefaultVersions fills in this spec's omitted Postgres and Spock versions,
+// preferring the versions encoded in an image override's tag over
+// hostDefault. current is the database's stored spec, or nil if the database
+// is being created.
+func (s *Spec) DefaultVersions(hostDefault *ds.PgEdgeVersion, current *Spec) {
+	// Whether a database uses Spock is decided when it's created. For an
+	// existing database, Spec.DefaultOptionalFieldsFrom has already restored
+	// the stored Spock version, so an empty version here means the database
+	// doesn't use Spock and must not be defaulted.
+	defaultSpock := current == nil && s.SpockVersion == ""
+	// If the user supplied an image override, prefer the versions encoded in
+	// its tag over the host default so the image and spec version don't end
+	// up in conflict.
+	if s.PostgresVersion == "" || defaultSpock {
+		if pgVer, spockVer, ok := versionsFromImage(s.OrchestratorOpts.swarmImage()); ok {
+			if s.PostgresVersion == "" {
+				s.PostgresVersion = pgVer
+			}
+			if defaultSpock {
+				s.SpockVersion = spockVer
+			}
+		}
+	}
+	if s.PostgresVersion == "" {
+		s.PostgresVersion = hostDefault.PostgresVersion.String()
+	}
+	if defaultSpock && s.SpockVersion == "" {
+		// This will remain empty if the default version does not include
+		// Spock, which means that the database will not use Spock.
+		s.SpockVersion = hostDefault.SpockVersionString()
+	}
 }
 
 // versionsFromImage parses the Postgres and Spock versions encoded in a
@@ -670,6 +704,12 @@ type InstanceSpec struct {
 	Locale          *Locale  `json:"locale,omitempty"`
 }
 
+// UsesSpock returns true if this instance's database uses Spock. Instances
+// without a version predate optional Spock, so they're assumed to use it.
+func (s *InstanceSpec) UsesSpock() bool {
+	return s.PgEdgeVersion == nil || s.PgEdgeVersion.HasSpock()
+}
+
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
 	s.Port = reconcilePort(current.Port, s.Port)
 	s.PatroniPort = reconcilePort(current.PatroniPort, s.PatroniPort)
@@ -818,7 +858,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				DatabaseUsers:  s.DatabaseUsers,
 				BackupConfig:   overridableValue(s.BackupConfig, node.BackupConfig),
 				RestoreConfig:  effectiveRestore,
-				PostgreSQLConf: mergableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
+				PostgreSQLConf: mergePostgreSQLConf(s.PostgreSQLConf, node.PostgreSQLConf),
 				// Node entries come first so they take first-match priority;
 				// database-level entries follow as the baseline.
 				PgHbaConf:        slices.Concat(node.PgHbaConf, s.PgHbaConf),
@@ -875,11 +915,21 @@ func overridableValue[T comparable](base, override T) T {
 	return base
 }
 
-func mergableMapValue[T ~map[V]any, V comparable](base, override T) T {
+// mergePostgreSQLConf merges the override parameters into the base parameters.
+// Parameter names are case-insensitive, so an override replaces any base
+// parameter with the same normalized name, regardless of its spelling.
+func mergePostgreSQLConf(base, override map[string]any) map[string]any {
 	if base == nil {
 		return maps.Clone(override)
 	}
+	overridden := make(map[string]bool, len(override))
+	for key := range override {
+		overridden[postgres.NormalizeParameterName(key)] = true
+	}
 	result := maps.Clone(base)
+	maps.DeleteFunc(result, func(key string, _ any) bool {
+		return overridden[postgres.NormalizeParameterName(key)]
+	})
 	maps.Copy(result, override)
 	return result
 }

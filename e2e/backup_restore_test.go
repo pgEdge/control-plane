@@ -169,7 +169,9 @@ func TestPosixBackupRestore(t *testing.T) {
 
 		assert.Equal(t, 2, count)
 
-		assertInDefaultRepSet(t, ctx, conn)
+		if fixture.hasSpock {
+			assertInDefaultRepSet(t, ctx, conn)
+		}
 	})
 }
 
@@ -177,6 +179,7 @@ func TestS3BackupRestore(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfS3Unsupported(t)
+	fixture.SkipIfSpockNotInstalled(t)
 
 	hostIDs := fixture.HostIDs()
 	host1 := hostIDs[0]
@@ -305,6 +308,7 @@ func TestS3AddNodeFromBackup(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfS3Unsupported(t)
+	fixture.SkipIfSpockNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -439,6 +443,7 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 	t.Parallel()
 
 	fixture.SkipIfS3Unsupported(t)
+	fixture.SkipIfSpockNotInstalled(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]

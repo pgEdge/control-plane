@@ -17,6 +17,8 @@ import (
 
 // TestWholeCluster deploys one instance to each host in the cluster.
 func TestWholeCluster(t *testing.T) {
+	fixture.SkipIfSpockNotInstalled(t)
+
 	username := "admin"
 	password := "password"
 

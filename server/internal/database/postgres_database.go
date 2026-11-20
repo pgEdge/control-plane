@@ -81,6 +81,20 @@ func (p *PostgresDatabaseResource) Refresh(ctx context.Context, rc *resource.Con
 	}
 	defer conn.Close(ctx)
 
+	if primary.Spec.UsesSpock() {
+		if err := p.refreshSpockNode(ctx, conn); err != nil {
+			return err
+		}
+	}
+
+	if err := SetScriptNeedsToRun(ctx, rc, p.PostDatabaseCreate); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *PostgresDatabaseResource) refreshSpockNode(ctx context.Context, conn *pgx.Conn) error {
 	// Check that Spock is enabled and that the spock node exists
 	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, conn)
 	if err != nil {
@@ -96,10 +110,6 @@ func (p *PostgresDatabaseResource) Refresh(ctx context.Context, rc *resource.Con
 	}
 	if needsCreate {
 		return resource.ErrNotFound
-	}
-
-	if err := SetScriptNeedsToRun(ctx, rc, p.PostDatabaseCreate); err != nil {
-		return err
 	}
 
 	return nil
@@ -166,6 +176,10 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 		return err
 	}
 
+	if !primary.Spec.UsesSpock() {
+		return nil
+	}
+
 	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to check if spock is enabled: %w", err)
@@ -184,7 +198,8 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 		if err != nil {
 			return fmt.Errorf("failed to drop spock: %w", err)
 		}
-		err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
+		// The tables are added to the restored replication sets below.
+		err = postgres.InitializeSpockNode(p.NodeName, dsn, false).Exec(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("failed to reinitialize spock: %w", err)
 		}
@@ -193,7 +208,12 @@ func (p *PostgresDatabaseResource) postRestore(ctx context.Context, rc *resource
 			return fmt.Errorf("failed to restore spock replication sets: %w", err)
 		}
 	} else {
-		err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
+		// The restored database doesn't have Spock, so its tables are added
+		// to the replication sets when the Spock node is created, like in
+		// create.
+		err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+			return postgres.InitializeSpockNode(p.NodeName, dsn, true).Exec(ctx, tx)
+		})
 		if err != nil {
 			return fmt.Errorf("failed to initialize spock: %w", err)
 		}
@@ -217,9 +237,17 @@ func (p *PostgresDatabaseResource) create(ctx context.Context, rc *resource.Cont
 		return err
 	}
 
-	err = postgres.InitializeSpockNode(p.NodeName, dsn).Exec(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to initialize spock: %w", err)
+	if primary.Spec.UsesSpock() {
+		// Spock can be added to an existing database, so we add its existing
+		// tables to the replication sets when the Spock node is created. This
+		// happens in a transaction so that a failure to add them can't leave
+		// a node that would skip them on the next attempt.
+		err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+			return postgres.InitializeSpockNode(p.NodeName, dsn, true).Exec(ctx, tx)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to initialize spock: %w", err)
+		}
 	}
 	if err := ExecuteScript(ctx, rc, conn, p.PostDatabaseCreate); err != nil {
 		return fmt.Errorf("failed to execute post-database-create script: %w", err)
@@ -291,8 +319,13 @@ func (p *PostgresDatabaseResource) updateUserPrivileges(ctx context.Context, rc 
 		}
 	}
 
+	var extraSchemas []string
+	if primary.Spec.UsesSpock() {
+		extraSchemas = append(extraSchemas, "spock")
+	}
 	err = postgres.GrantBuiltinRolePrivileges(postgres.BuiltinRolePrivilegeOptions{
-		DBName: p.DatabaseName,
+		DBName:       p.DatabaseName,
+		ExtraSchemas: extraSchemas,
 	}).Exec(ctx, tx)
 	if err != nil {
 		return fmt.Errorf("failed to grant privileges to built-in roles: %w", err)

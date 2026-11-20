@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 )
@@ -123,6 +124,34 @@ func TestCreateReplicationSlot(t *testing.T) {
 				t.Fatalf("expected slot.Then to be a postgres.Statement, got %T", slot.Then)
 			}
 			assert.Equal(t, tc.expectedSQL, then.SQL)
+		})
+	}
+}
+
+func TestInitializeSpockNode(t *testing.T) {
+	dsn := &postgres.DSN{Hosts: []string{"localhost"}, DBName: "app"}
+
+	for _, tc := range []struct {
+		name              string
+		addExistingTables bool
+		expectedNodeStmts int
+	}{
+		{name: "without existing tables", addExistingTables: false, expectedNodeStmts: 1},
+		{name: "with existing tables", addExistingTables: true, expectedNodeStmts: 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stmts := postgres.InitializeSpockNode("n1", dsn, tc.addExistingTables)
+			require.Len(t, stmts, 2)
+
+			createNode, ok := stmts[1].(postgres.ConditionalStatement)
+			require.True(t, ok)
+			// The existing tables are only added when the node is created.
+			nodeStmts, ok := createNode.Then.(postgres.Statements)
+			require.True(t, ok)
+			require.Len(t, nodeStmts, tc.expectedNodeStmts)
+			if tc.addExistingTables {
+				assert.Equal(t, postgres.AddExistingTablesToReplicationSets(), nodeStmts[1])
+			}
 		})
 	}
 }

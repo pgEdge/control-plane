@@ -27,6 +27,8 @@ import (
 func TestAddNodeOriginAdvanced(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfSpockNotInstalled(t)
+
 	const (
 		username = "admin"
 		password = "password"

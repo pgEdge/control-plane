@@ -1,0 +1,15 @@
+---
+hosts:
+  host-1:
+    external_ip: 127.0.0.1
+    port: 3030
+    ssh_command: docker exec cp-debian13-community-host-1 sh -c
+  host-2:
+    external_ip: 127.0.0.1
+    port: 3031
+    ssh_command: docker exec cp-debian13-community-host-2 sh -c
+  host-3:
+    external_ip: 127.0.0.1
+    port: 3032
+    ssh_command: docker exec cp-debian13-community-host-3 sh -c
+service_packages_not_installed: true

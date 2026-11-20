@@ -1,0 +1,15 @@
+---
+hosts:
+  host-1:
+    external_ip: 127.0.0.1
+    port: 3020
+    ssh_command: docker exec cp-rocky9-community-host-1 sh -c
+  host-2:
+    external_ip: 127.0.0.1
+    port: 3021
+    ssh_command: docker exec cp-rocky9-community-host-2 sh -c
+  host-3:
+    external_ip: 127.0.0.1
+    port: 3022
+    ssh_command: docker exec cp-rocky9-community-host-3 sh -c
+service_packages_not_installed: true
