@@ -19,6 +19,9 @@ type InstanceHost struct {
 	HostID     string `json:"host_id"`
 }
 
+// PerformSwitchoverInput.ScheduledAt is only set by switchover workflows
+// started by older versions, which scheduled the switchover in Patroni. The
+// Switchover workflow now waits for the scheduled time itself.
 type PerformSwitchoverInput struct {
 	DatabaseID          string    `json:"database_id"`
 	LeaderInstanceID    string    `json:"leader_instance_id"`

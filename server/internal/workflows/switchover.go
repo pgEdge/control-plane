@@ -24,6 +24,10 @@ type SwitchoverInput struct {
 
 type SwitchoverOutput struct{}
 
+// maxScheduledSwitchoverDelay is how long after its scheduled time a scheduled
+// switchover may still start.
+const maxScheduledSwitchoverDelay = 5 * time.Minute
+
 func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*SwitchoverOutput, error) {
 
 	logger := workflow.Logger(ctx).With(
@@ -81,6 +85,18 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		return nil, handleError(fmt.Errorf("failed to mark task running: %w", err))
 	}
 
+	completeSkipped := func(reason string, args ...any) (*SwitchoverOutput, error) {
+		logger.Info(reason, args...)
+		completeUpdate := &activities.UpdateTaskInput{
+			Scope:         task.ScopeDatabase,
+			EntityID:      in.DatabaseID,
+			TaskID:        in.TaskID,
+			UpdateOptions: task.UpdateComplete(),
+		}
+		_, _ = w.Activities.ExecuteUpdateTask(ctx, completeUpdate).Get(ctx)
+		return &SwitchoverOutput{}, nil
+	}
+
 	// determine an instance id to query for primary resolution (use first provided instance)
 	var instanceToQuery string
 	var getPrimaryQueue string
@@ -93,16 +109,56 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	}
 
 	// Resolve primary instance (leader) for the node via activity, using the instance id.
-	getPrimaryIn := &activities.GetPrimaryInstanceInput{
-		DatabaseID: in.DatabaseID,
-		InstanceID: instanceToQuery,
+	getPrimary := func() (string, error) {
+		getPrimaryIn := &activities.GetPrimaryInstanceInput{
+			DatabaseID: in.DatabaseID,
+			InstanceID: instanceToQuery,
+		}
+		out, err := w.Activities.ExecuteGetPrimaryInstance(ctx, getPrimaryQueue, getPrimaryIn).Get(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get primary instance: %w", err)
+		}
+		return out.PrimaryInstanceID, nil
 	}
 
-	getPrimaryOut, err := w.Activities.ExecuteGetPrimaryInstance(ctx, getPrimaryQueue, getPrimaryIn).Get(ctx)
-	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to get primary instance: %w", err))
+	// Wait for a scheduled switchover here rather than in Patroni, so that the
+	// task stays open, and can be canceled, until the switchover has happened.
+	var scheduledFrom string
+	if !in.ScheduledAt.IsZero() {
+		// Note the primary we're switching away from, so that we don't switch
+		// again if it has already changed by the scheduled time.
+		var err error
+		if scheduledFrom, err = getPrimary(); err != nil {
+			return nil, handleError(err)
+		}
+		if d := in.ScheduledAt.Sub(workflow.Now(ctx)); d > 0 {
+			logger.Info("sleeping until scheduled switchover time", "duration", d.String())
+			if err := workflow.Sleep(ctx, d); err != nil {
+				if errors.Is(err, workflow.Canceled) {
+					return nil, err
+				}
+				return nil, handleError(err)
+			}
+		}
+		// The timer fires late if the Control Plane is down at the scheduled
+		// time. Like Patroni, don't run a scheduled switchover long after it
+		// was due.
+		if late := workflow.Now(ctx).Sub(in.ScheduledAt); late > maxScheduledSwitchoverDelay {
+			return nil, handleError(fmt.Errorf("switchover not performed: it was due at %s but couldn't start until %s later",
+				in.ScheduledAt.Format(time.RFC3339), late.Round(time.Second)))
+		}
 	}
-	leaderInstanceID = getPrimaryOut.PrimaryInstanceID
+
+	leader, err := getPrimary()
+	if err != nil {
+		return nil, handleError(err)
+	}
+	leaderInstanceID = leader
+
+	if scheduledFrom != "" && in.CandidateInstanceID == "" && leaderInstanceID != scheduledFrom {
+		return completeSkipped("primary changed before the scheduled time; skipping switchover",
+			"scheduled_from", scheduledFrom, "leader_instance", leaderInstanceID)
+	}
 
 	// Resolve leaderHostID by scanning provided Instances
 	for _, inst := range in.Instances {
@@ -132,22 +188,13 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	logger.Info("candidate chosen", "candidate_instance", candidateID)
 
 	if candidateID == leaderInstanceID {
-		logger.Info("candidate is already the leader; skipping switchover", "candidate", candidateID)
-		completeUpdate := &activities.UpdateTaskInput{
-			Scope:         task.ScopeDatabase,
-			EntityID:      in.DatabaseID,
-			TaskID:        in.TaskID,
-			UpdateOptions: task.UpdateComplete(),
-		}
-		_, _ = w.Activities.ExecuteUpdateTask(ctx, completeUpdate).Get(ctx)
-		return &SwitchoverOutput{}, nil
+		return completeSkipped("candidate is already the leader; skipping switchover", "candidate", candidateID)
 	}
 
 	performIn := &activities.PerformSwitchoverInput{
 		DatabaseID:          in.DatabaseID,
 		LeaderInstanceID:    leaderInstanceID,
 		CandidateInstanceID: candidateID,
-		ScheduledAt:         in.ScheduledAt,
 		TaskID:              in.TaskID,
 	}
 
