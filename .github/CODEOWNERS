@@ -1,0 +1,29 @@
+# Code owners under the Code Review and Commit Policy v2.0.
+# control-plane is Tier 3. The last matching line wins.
+
+# Tier 3: every change needs a code owner's approval.
+*  @pgEdge/platform
+
+# Workflows, release, packaging and signing: platform-admins or
+# build-packaging.
+/.github/workflows/  @pgEdge/platform-admins @pgEdge/build-packaging
+/.github/actions/  @pgEdge/platform-admins @pgEdge/build-packaging
+action.yml  @pgEdge/platform-admins @pgEdge/build-packaging
+action.yaml  @pgEdge/platform-admins @pgEdge/build-packaging
+.goreleaser*.yml  @pgEdge/platform-admins @pgEdge/build-packaging
+.goreleaser*.yaml  @pgEdge/platform-admins @pgEdge/build-packaging
+*.spec  @pgEdge/platform-admins @pgEdge/build-packaging
+debian/  @pgEdge/platform-admins @pgEdge/build-packaging
+rpm/  @pgEdge/platform-admins @pgEdge/build-packaging
+packaging/  @pgEdge/platform-admins @pgEdge/build-packaging
+release*.sh  @pgEdge/platform-admins @pgEdge/build-packaging
+sign*.sh  @pgEdge/platform-admins @pgEdge/build-packaging
+sign*.py  @pgEdge/platform-admins @pgEdge/build-packaging
+Dockerfile*  @pgEdge/platform-admins @pgEdge/build-packaging
+
+# Ownership and AI review configuration: platform-admins only.
+/CODEOWNERS  @pgEdge/platform-admins
+/.github/CODEOWNERS  @pgEdge/platform-admins
+/docs/CODEOWNERS  @pgEdge/platform-admins
+/REVIEW.md  @pgEdge/platform-admins
+/.coderabbit.yaml  @pgEdge/platform-admins
