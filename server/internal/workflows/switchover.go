@@ -44,25 +44,12 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	var switchoverRequested bool
 	taskCtx := ctx
 
-	// cleanup on cancellation
+	// cleanup on cancellation. Nothing is scheduled in Patroni, so there's no
+	// switchover to cancel there, only the task.
 	defer func() {
 		if errors.Is(ctx.Err(), workflow.Canceled) && !switchoverRequested {
 			logger.Warn("workflow cancelled; running cleanup")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
-			if in != nil && in.TaskID != uuid.Nil {
-				if leaderHostID != "" && leaderInstanceID != "" {
-					cancelIn := &activities.CancelSwitchoverInput{
-						DatabaseID:       in.DatabaseID,
-						LeaderInstanceID: leaderInstanceID,
-						TaskID:           in.TaskID,
-					}
-					if _, err := w.Activities.ExecuteCancelSwitchover(cleanupCtx, leaderHostID, cancelIn).Get(cleanupCtx); err != nil {
-						logger.Warn("cancel switchover activity failed", "err", err)
-					} else {
-						logger.Info("cancel switchover activity dispatched")
-					}
-				}
-			}
 			w.cancelTask(cleanupCtx, task.ScopeDatabase, in.DatabaseID, in.TaskID, logger)
 		}
 	}()
@@ -272,6 +259,10 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	switchoverRequested = true
 	taskCtx = workflow.NewDisconnectedContext(ctx)
 
+	// go-workflows has no timeout for an activity that isn't picked up, and a
+	// workflow can't complete while one is pending. So if the leader's host
+	// goes down after the check above, this waits until it's back. The
+	// activity's Deadline stops a scheduled switchover from then running late.
 	logger.Info("dispatching perform switchover activity", "target_host_queue", utils.HostQueue(leaderHostID))
 
 	if _, err := w.Activities.ExecutePerformSwitchover(taskCtx, leaderHostID, performIn).Get(taskCtx); err != nil {
