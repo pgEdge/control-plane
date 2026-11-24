@@ -27,20 +27,6 @@ func ResumeDDLReplication() Statements {
 	}
 }
 
-// DDLReplicationPaused reports whether PauseDDLReplication's override is in
-// place on this instance. The override outlives the workflow that set it, so
-// it marks a Spock major upgrade that hasn't finished.
-func DDLReplicationPaused() Query[bool] {
-	return Query[bool]{
-		SQL: `SELECT EXISTS (
-				SELECT 1 FROM pg_file_settings
-				WHERE name = 'spock.enable_ddl_replication'
-				  AND sourcefile LIKE '%postgresql.auto.conf'
-				  AND applied
-			);`,
-	}
-}
-
 // ServerVersionNum returns the server's version number, e.g. 170012.
 func ServerVersionNum() Query[int] {
 	return Query[int]{

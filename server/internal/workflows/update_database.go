@@ -20,6 +20,9 @@ type UpdateDatabaseInput struct {
 	ForceUpdate bool               `json:"force_update"`
 	RemoveHosts []string           `json:"remove_hosts"`
 	Variables   resource.Variables `json:"variables"`
+	// SpockUpgradePending is true while an earlier Spock major upgrade of the
+	// database hasn't finished, so this update must finish it.
+	SpockUpgradePending bool `json:"spock_upgrade_pending,omitempty"`
 }
 
 type UpdateDatabaseOutput struct {
@@ -148,13 +151,17 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
-	upgrade, err = detectSpockUpgrade(current, input.Spec, input.RemoveHosts)
+	upgrade, err = detectSpockUpgrade(current, input.Spec, input.RemoveHosts, input.SpockUpgradePending)
 	if err != nil {
 		return nil, handleError(err)
 	}
-	switch {
-	case upgrade == nil:
-	case upgrade.RaisesMajor:
+	if upgrade != nil {
+		if !upgrade.RaisesMajor {
+			// An earlier upgrade failed after every instance reached the
+			// new major version. Repeat its remaining steps, which are safe
+			// to run again.
+			w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "finishing an earlier spock upgrade")
+		}
 		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "upgrading the spock major version: pausing spock ddl replication on every instance")
 		// Set before pausing, so that a partial pause is resumed too.
 		ddlPaused = true
@@ -165,14 +172,6 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		if err := w.prepareSpockUpgrade(ctx, upgrade); err != nil {
 			return nil, handleError(err)
 		}
-	case upgrade.mayHaveUnfinishedUpgrade() && w.spockDDLReplicationPaused(ctx, upgrade):
-		// An earlier upgrade failed after every instance reached the new
-		// major version, before it verified the nodes and resumed DDL
-		// replication. Finish those steps in this update.
-		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "finishing an earlier spock upgrade: spock ddl replication is still paused")
-		ddlPaused = true
-	default:
-		upgrade = nil
 	}
 
 	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans, input.RemoveHosts...)
@@ -186,6 +185,12 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 			return nil, handleError(err)
 		}
 		if err := resumeDDL(ctx); err != nil {
+			return nil, handleError(err)
+		}
+		_, err := w.Activities.ExecuteClearSpockUpgradePending(ctx, &activities.ClearSpockUpgradePendingInput{
+			DatabaseID: input.Spec.DatabaseID,
+		}).Get(ctx)
+		if err != nil {
 			return nil, handleError(err)
 		}
 	}

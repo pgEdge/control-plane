@@ -71,48 +71,35 @@ func (a *Activities) SetSpockDDLReplication(ctx context.Context, input *SetSpock
 	return &SetSpockDDLReplicationOutput{}, nil
 }
 
-type GetSpockDDLReplicationPausedInput struct {
+type ClearSpockUpgradePendingInput struct {
 	DatabaseID string `json:"database_id"`
-	InstanceID string `json:"instance_id"`
 }
 
-type GetSpockDDLReplicationPausedOutput struct {
-	Paused bool `json:"paused"`
-}
+type ClearSpockUpgradePendingOutput struct{}
 
-func (a *Activities) ExecuteGetSpockDDLReplicationPaused(
+func (a *Activities) ExecuteClearSpockUpgradePending(
 	ctx workflow.Context,
-	hostID string,
-	input *GetSpockDDLReplicationPausedInput,
-) workflow.Future[*GetSpockDDLReplicationPausedOutput] {
+	input *ClearSpockUpgradePendingInput,
+) workflow.Future[*ClearSpockUpgradePendingOutput] {
 	options := workflow.ActivityOptions{
-		Queue: utils.HostQueue(hostID),
+		Queue: utils.HostQueue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
-			MaxAttempts: 1,
+			MaxAttempts: 3,
 		},
 	}
-	return workflow.ExecuteActivity[*GetSpockDDLReplicationPausedOutput](ctx, options, a.GetSpockDDLReplicationPaused, input)
+	return workflow.ExecuteActivity[*ClearSpockUpgradePendingOutput](ctx, options, a.ClearSpockUpgradePending, input)
 }
 
-// GetSpockDDLReplicationPaused reports whether a Spock major upgrade left DDL
-// replication paused on one instance.
-func (a *Activities) GetSpockDDLReplicationPaused(ctx context.Context, input *GetSpockDDLReplicationPausedInput) (*GetSpockDDLReplicationPausedOutput, error) {
+// ClearSpockUpgradePending records that the database's Spock major upgrade
+// has finished.
+func (a *Activities) ClearSpockUpgradePending(ctx context.Context, input *ClearSpockUpgradePendingInput) (*ClearSpockUpgradePendingOutput, error) {
 	if input == nil {
 		return nil, errors.New("input is nil")
 	}
-
-	conn, _, err := a.connectToInstance(ctx, input.DatabaseID, input.InstanceID, "postgres")
-	if err != nil {
-		return nil, err
+	if err := a.DatabaseService.ClearSpockUpgradePending(ctx, input.DatabaseID); err != nil {
+		return nil, fmt.Errorf("failed to record that the spock upgrade finished: %w", err)
 	}
-	defer conn.Close(ctx)
-
-	paused, err := postgres.DDLReplicationPaused().Scalar(ctx, conn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check spock ddl replication on instance %s: %w", input.InstanceID, err)
-	}
-
-	return &GetSpockDDLReplicationPausedOutput{Paused: paused}, nil
+	return &ClearSpockUpgradePendingOutput{}, nil
 }
 
 type EnableSpockSlotsFailoverInput struct {

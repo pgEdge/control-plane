@@ -11,7 +11,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
-func TestDetectSpockMajorUpgrade(t *testing.T) {
+func TestDetectSpockUpgrade(t *testing.T) {
 	const databaseID = "test-db"
 
 	type inst struct {
@@ -48,13 +48,16 @@ func TestDetectSpockMajorUpgrade(t *testing.T) {
 		inst{node: "n2", instanceID: "test-db-n2-a", hostID: "host-3", postgres: "17.12", spock: "5"},
 		inst{node: "n1", instanceID: "test-db-n1-a", hostID: "host-1", postgres: "17.12", spock: "5"},
 	)
+	spock6 := newState(t,
+		inst{node: "n1", instanceID: "test-db-n1-a", hostID: "host-1", postgres: "17.12", spock: "6"},
+		inst{node: "n2", instanceID: "test-db-n2-a", hostID: "host-3", postgres: "17.12", spock: "6"},
+	)
 
 	t.Run("spock major upgrade", func(t *testing.T) {
-		upgrade, err := detectSpockUpgrade(spock5, spec("6"), nil)
+		upgrade, err := detectSpockUpgrade(spock5, spec("6"), nil, false)
 		require.NoError(t, err)
 		require.NotNil(t, upgrade)
 		assert.True(t, upgrade.RaisesMajor)
-		assert.False(t, upgrade.mayHaveUnfinishedUpgrade())
 		assert.Equal(t, databaseID, upgrade.DatabaseID)
 		assert.Equal(t, "app", upgrade.DatabaseName)
 		assert.Equal(t, []spockUpgradeInstance{
@@ -80,26 +83,23 @@ func TestDetectSpockMajorUpgrade(t *testing.T) {
 			inst{node: "n1", instanceID: "test-db-n1-a", hostID: "host-1", postgres: "17.12", spock: "6"},
 			inst{node: "n2", instanceID: "test-db-n2-a", hostID: "host-3", postgres: "17.12", spock: "5"},
 		)
-		upgrade, err := detectSpockUpgrade(state, spec("6"), nil)
+		upgrade, err := detectSpockUpgrade(state, spec("6"), nil, true)
 		require.NoError(t, err)
 		require.NotNil(t, upgrade)
 		assert.True(t, upgrade.RaisesMajor)
 		assert.Len(t, upgrade.Instances, 2)
 	})
 
-	t.Run("every instance already on spock 6", func(t *testing.T) {
-		state := newState(t,
-			inst{node: "n1", instanceID: "test-db-n1-a", hostID: "host-1", postgres: "17.12", spock: "6"},
-		)
-		upgrade, err := detectSpockUpgrade(state, spec("6"), nil)
+	t.Run("pending upgrade with every instance on the new major", func(t *testing.T) {
+		upgrade, err := detectSpockUpgrade(spock6, spec("6"), nil, true)
 		require.NoError(t, err)
-		require.NotNil(t, upgrade)
+		require.NotNil(t, upgrade, "the remaining steps must run again")
 		assert.False(t, upgrade.RaisesMajor)
-		assert.True(t, upgrade.mayHaveUnfinishedUpgrade(), "a leftover ddl pause must be checked for")
+		assert.Len(t, upgrade.Instances, 2)
 	})
 
 	t.Run("instances on removed hosts are left out", func(t *testing.T) {
-		upgrade, err := detectSpockUpgrade(spock5, spec("6"), []string{"host-2", "host-4"})
+		upgrade, err := detectSpockUpgrade(spock5, spec("6"), []string{"host-2", "host-4"}, false)
 		require.NoError(t, err)
 		require.NotNil(t, upgrade)
 		assert.Equal(t, []spockUpgradeInstance{
@@ -109,12 +109,16 @@ func TestDetectSpockMajorUpgrade(t *testing.T) {
 	})
 
 	for _, tc := range []struct {
-		name  string
-		state *resource.State
-		spec  *database.Spec
+		name    string
+		state   *resource.State
+		spec    *database.Spec
+		pending bool
 	}{
+		{name: "finished upgrade", state: spock6, spec: spec("6")},
 		{name: "same spock 5 major", state: spock5, spec: spec("5")},
 		{name: "spock minor version", state: spock5, spec: spec("5.0.14")},
+		{name: "spec without spock", state: spock5, spec: spec("")},
+		{name: "no instances yet", state: resource.NewState(), spec: spec("6"), pending: true},
 		{
 			name: "instances without spock",
 			state: newState(t,
@@ -124,31 +128,9 @@ func TestDetectSpockMajorUpgrade(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			upgrade, err := detectSpockUpgrade(tc.state, tc.spec, nil)
-			require.NoError(t, err)
-			require.NotNil(t, upgrade)
-			assert.False(t, upgrade.RaisesMajor)
-		})
-	}
-
-	for _, tc := range []struct {
-		name  string
-		state *resource.State
-		spec  *database.Spec
-	}{
-		{name: "spec without spock", state: spock5, spec: spec("")},
-		{name: "no instances yet", state: resource.NewState(), spec: spec("6")},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			upgrade, err := detectSpockUpgrade(tc.state, tc.spec, nil)
+			upgrade, err := detectSpockUpgrade(tc.state, tc.spec, nil, tc.pending)
 			require.NoError(t, err)
 			assert.Nil(t, upgrade)
 		})
 	}
-
-	t.Run("spock 5 databases never look for an unfinished upgrade", func(t *testing.T) {
-		upgrade, err := detectSpockUpgrade(spock5, spec("5"), nil)
-		require.NoError(t, err)
-		assert.False(t, upgrade.mayHaveUnfinishedUpgrade())
-	})
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -83,20 +82,20 @@ func TestCheckSpockUpgradeVersions(t *testing.T) {
 	}
 }
 
-func TestSpockUpgradeInProgress(t *testing.T) {
-	instance := func(spockVersion string, status *InstanceStatus) *Instance {
-		return &Instance{PgEdgeVersion: ds.MustParsePgEdgeVersion("17.12", spockVersion), Status: status}
-	}
-	stale := &InstanceStatus{StatusUpdatedAt: utils.PointerTo(time.Now().Add(-10 * InstanceMonitorRefreshInterval))}
+func TestCheckNodesNotAddedOrMoved(t *testing.T) {
+	spec := func(nodes ...*Node) *Spec { return &Spec{Nodes: nodes} }
+	n1 := &Node{Name: "n1", HostIDs: []string{"host-1", "host-2"}}
+	n2 := &Node{Name: "n2", HostIDs: []string{"host-3"}}
+	current := spec(n1, n2)
 
-	assert.True(t, spockUpgradeInProgress([]*Instance{instance("6", nil), instance("5", nil)}, "6"),
-		"an instance still recorded on spock 5 means a retried upgrade")
-	assert.True(t, spockUpgradeInProgress([]*Instance{instance("6", nil), instance("5", stale)}, "6"),
-		"an instance that isn't reporting status still counts")
-	assert.False(t, spockUpgradeInProgress([]*Instance{instance("6", nil), instance("6", stale)}, "6"),
-		"every instance on the target major")
-	assert.False(t, spockUpgradeInProgress([]*Instance{{}}, "6"),
-		"instances without a recorded version are ignored")
+	assert.NoError(t, checkNodesNotAddedOrMoved(current, spec(n1, n2)), "unchanged")
+	assert.NoError(t, checkNodesNotAddedOrMoved(current, spec(n1)), "removing a node is allowed")
+	assert.NoError(t, checkNodesNotAddedOrMoved(current, spec(&Node{Name: "n1", HostIDs: []string{"host-2", "host-1"}}, n2)),
+		"host order doesn't matter")
+	assert.ErrorIs(t, checkNodesNotAddedOrMoved(current, spec(n1, n2, &Node{Name: "n3", HostIDs: []string{"host-4"}})),
+		errSpockUpgradeTopology, "adding a node is rejected")
+	assert.ErrorIs(t, checkNodesNotAddedOrMoved(current, spec(n1, &Node{Name: "n2", HostIDs: []string{"host-4"}})),
+		errSpockUpgradeTopology, "moving a node is rejected")
 }
 
 func TestIsSpockMajorUpgrade(t *testing.T) {

@@ -88,6 +88,8 @@ func (s *Service) UpdateDatabase(ctx context.Context, db *database.Database, for
 		ForceUpdate: forceUpdate,
 		RemoveHosts: removeHosts,
 		Variables:   db.Variables(),
+
+		SpockUpgradePending: db.SpockUpgradePending,
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {
@@ -111,6 +113,8 @@ func (s *Service) UpgradeDatabase(ctx context.Context, db *database.Database) (*
 		TaskID:    t.TaskID,
 		Spec:      db.Spec,
 		Variables: db.Variables(),
+
+		SpockUpgradePending: db.SpockUpgradePending,
 	}
 	if err := s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input); err != nil {
 		return nil, err
@@ -466,6 +470,8 @@ func (s *Service) RemoveHost(ctx context.Context, hostID string, dbs ...*databas
 			Spec:        db.Spec,
 			RemoveHosts: []string{hostID},
 			Variables:   db.Variables(),
+
+			SpockUpgradePending: db.SpockUpgradePending,
 		})
 	}
 
