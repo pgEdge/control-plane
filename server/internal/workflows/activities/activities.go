@@ -30,6 +30,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.GenerateServiceInstanceResources),
 		work.RegisterActivity(a.GetCurrentState),
 		work.RegisterActivity(a.GetInstanceResources),
+		work.RegisterActivity(a.GetNodeInstances),
 		work.RegisterActivity(a.GetPrimaryInstance),
 		work.RegisterActivity(a.GetSpockSlots),
 		work.RegisterActivity(a.GetRestoreResources),

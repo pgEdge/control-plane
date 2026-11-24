@@ -123,7 +123,17 @@ The `scheduled_at` field allows the switchover to be executed at a specific sche
 
 - An invalid `candidate_instance_id` will result in a `404 Not Found` error.
 
-- Concurrent switchover attempts are rejected with an `already in progress` message.
+- The switchover's task stays `running` until the switchover has happened. For a scheduled switchover, that's after the scheduled time.
+
+- To cancel a scheduled switchover, cancel its task before the scheduled time. Once the switchover itself has started, canceling its task doesn't stop it, and the task completes or fails with the switchover's result.
+
+- If the primary changes before the scheduled time, for example because of a failover, the scheduled switchover is skipped and its task completes. The task log records why it was skipped.
+
+- At the scheduled time, the switchover uses the node's current hosts. It fails if the database can no longer be modified, if the `candidate_instance_id` is no longer an instance of the node, or if the primary's or the candidate's host is unreachable.
+
+- If the Control Plane can't start a scheduled switchover within 5 minutes of the scheduled time, for example because it was down, the switchover isn't performed and its task fails.
+
+- While a node has a switchover in progress, including a scheduled one that hasn't run yet, other switchover requests for the node are rejected with a `409 operation_already_in_progress` error.
 
 
 ### Failover (Manual Primary Replacement)
@@ -160,7 +170,7 @@ The optional `skip_validation` flag bypasses cluster health checks, allowing a f
 
 - An invalid `candidate_instance_id` will result in a `404 Not Found` error.
 
-- Concurrent failover requests are rejected with `failover already in progress` message.
+- Concurrent failover requests are rejected with a `409 operation_already_in_progress` error.
 
 ### Replication Slot Readiness
 
@@ -176,7 +186,7 @@ To prevent this, switchover and failover operations only promote a replica that 
 
 - If the current primary can't be reached, the Control Plane can't check the copies and promotes the candidate without waiting.
 
-- A scheduled switchover (`scheduled_at`) is checked when you submit it, not when it runs. Patroni performs it at the scheduled time without checking again, so avoid changes that add or recreate slots in the meantime, such as adding a node to the database.
+- A scheduled switchover (`scheduled_at`) is checked when it runs, at the scheduled time, so it can wait up to 2 minutes for a ready replica at that point.
 
 Automatic failovers performed by Patroni when a primary goes down are not covered by this check.
 
