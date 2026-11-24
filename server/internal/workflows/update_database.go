@@ -74,6 +74,13 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	handleError := func(cause error) error {
 		logger.With("error", cause).Error("failed to update database")
 
+		// Before marking the database failed: a failed database accepts new
+		// updates, and one that starts another upgrade must not have its
+		// DDL pause undone by this resume.
+		if err := resumeDDL(ctx); err != nil {
+			cause = errors.Join(cause, err)
+		}
+
 		updateStateInput := &activities.UpdateDbStateInput{
 			DatabaseID: input.Spec.DatabaseID,
 			State:      database.DatabaseStateFailed,
@@ -83,12 +90,6 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 			Get(ctx)
 		if stateErr != nil {
 			logger.With("error", stateErr).Error("failed to update database state")
-		}
-
-		// After marking the database failed, so that a resume that can't
-		// complete doesn't leave the database in the modifying state.
-		if err := resumeDDL(ctx); err != nil {
-			cause = errors.Join(cause, err)
 		}
 
 		updateTaskInput := &activities.UpdateTaskInput{
@@ -147,11 +148,13 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
-	upgrade, err = detectSpockMajorUpgrade(current, input.Spec, input.RemoveHosts)
+	upgrade, err = detectSpockUpgrade(current, input.Spec, input.RemoveHosts)
 	if err != nil {
 		return nil, handleError(err)
 	}
-	if upgrade != nil {
+	switch {
+	case upgrade == nil:
+	case upgrade.RaisesMajor:
 		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "upgrading the spock major version: pausing spock ddl replication on every instance")
 		// Set before pausing, so that a partial pause is resumed too.
 		ddlPaused = true
@@ -162,6 +165,14 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		if err := w.prepareSpockUpgrade(ctx, upgrade); err != nil {
 			return nil, handleError(err)
 		}
+	case upgrade.mayHaveUnfinishedUpgrade() && w.spockDDLReplicationPaused(ctx, upgrade):
+		// An earlier upgrade failed after every instance reached the new
+		// major version, before it verified the nodes and resumed DDL
+		// replication. Finish those steps in this update.
+		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "finishing an earlier spock upgrade: spock ddl replication is still paused")
+		ddlPaused = true
+	default:
+		upgrade = nil
 	}
 
 	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans, input.RemoveHosts...)

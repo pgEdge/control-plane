@@ -1336,15 +1336,18 @@ func (s *Service) validateSpockMajorUpgrade(ctx context.Context, current, update
 	return nil
 }
 
-// spockUpgradeInProgress reports whether any instance is observed running a
-// lower Spock major version than target.
+// spockUpgradeInProgress reports whether any instance is still recorded on a
+// lower Spock major version than target. It uses each instance's stored
+// version, which the Control Plane sets when it updates the instance, rather
+// than its reported status, so an instance that is down or not reporting
+// status still counts.
 func spockUpgradeInProgress(instances []*Instance, target string) bool {
 	for _, instance := range instances {
-		if instance.Status == nil || instance.Status.IsStale() {
+		version := instance.PgEdgeVersion
+		if version == nil || !version.HasSpock() {
 			continue
 		}
-		observed := utils.FromPointer(instance.Status.SpockVersion)
-		if observed != "" && IsSpockMajorUpgrade(observed, target) {
+		if IsSpockMajorUpgrade(version.SpockVersion.String(), target) {
 			return true
 		}
 	}

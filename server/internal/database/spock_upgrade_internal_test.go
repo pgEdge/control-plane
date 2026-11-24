@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -83,20 +84,19 @@ func TestCheckSpockUpgradeVersions(t *testing.T) {
 }
 
 func TestSpockUpgradeInProgress(t *testing.T) {
-	fresh := utils.PointerTo(time.Now())
-	stale := utils.PointerTo(time.Now().Add(-10 * InstanceMonitorRefreshInterval))
-	instance := func(spockVersion string, updatedAt *time.Time) *Instance {
-		return &Instance{Status: &InstanceStatus{SpockVersion: utils.PointerTo(spockVersion), StatusUpdatedAt: updatedAt}}
+	instance := func(spockVersion string, status *InstanceStatus) *Instance {
+		return &Instance{PgEdgeVersion: ds.MustParsePgEdgeVersion("17.12", spockVersion), Status: status}
 	}
+	stale := &InstanceStatus{StatusUpdatedAt: utils.PointerTo(time.Now().Add(-10 * InstanceMonitorRefreshInterval))}
 
-	assert.True(t, spockUpgradeInProgress([]*Instance{instance("6.0.0", fresh), instance("5.0.14", fresh)}, "6"),
-		"an instance still on spock 5 means a retried upgrade")
-	assert.False(t, spockUpgradeInProgress([]*Instance{instance("6.0.0", fresh), instance("6.0.0", fresh)}, "6"),
+	assert.True(t, spockUpgradeInProgress([]*Instance{instance("6", nil), instance("5", nil)}, "6"),
+		"an instance still recorded on spock 5 means a retried upgrade")
+	assert.True(t, spockUpgradeInProgress([]*Instance{instance("6", nil), instance("5", stale)}, "6"),
+		"an instance that isn't reporting status still counts")
+	assert.False(t, spockUpgradeInProgress([]*Instance{instance("6", nil), instance("6", stale)}, "6"),
 		"every instance on the target major")
-	assert.False(t, spockUpgradeInProgress([]*Instance{instance("5.0.14", stale)}, "6"),
-		"stale statuses are ignored")
 	assert.False(t, spockUpgradeInProgress([]*Instance{{}}, "6"),
-		"instances without a status are ignored")
+		"instances without a recorded version are ignored")
 }
 
 func TestIsSpockMajorUpgrade(t *testing.T) {

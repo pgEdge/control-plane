@@ -403,15 +403,10 @@ update can't be undone, so take a backup before you start.
 
 If the upgrade fails, fix the cause and submit the same update again.
 The Control Plane continues with the instances that still run Spock 5.
-If the upgrade fails after every instance runs Spock 6, the next update
-doesn't repeat the checks or resume DDL replication. In that case, check
-that `SHOW spock.enable_ddl_replication;` returns `on` on each instance.
-If the setting is `off`, run the following statements on that instance:
-
-```sql
-ALTER SYSTEM RESET spock.enable_ddl_replication;
-SELECT pg_reload_conf();
-```
+If every instance already runs Spock 6, the next update of the database
+checks each node and resumes DDL replication. Until the upgrade
+finishes, the Control Plane rejects updates that add or move nodes; you
+can still remove a node, for example one whose host has failed.
 
 Spock 6 also changes some replication behavior. Direct DDL against the
 `spock` and `snowflake` schemas fails while DDL replication is on, and

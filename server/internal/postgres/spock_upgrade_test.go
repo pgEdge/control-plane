@@ -37,3 +37,9 @@ func TestDDLReplicationStatements(t *testing.T) {
 		"SELECT pg_reload_conf();",
 	}, sql(postgres.ResumeDDLReplication()))
 }
+
+func TestIsReplicationSlotSynced(t *testing.T) {
+	sql := postgres.IsReplicationSlotSynced("app", "n1", "n2").SQL
+	// An invalidated copy can't be used after a promotion.
+	assert.Contains(t, sql, "synced AND NOT temporary AND invalidation_reason IS NULL")
+}

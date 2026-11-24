@@ -25,7 +25,18 @@ type spockUpgrade struct {
 	// Instances are sorted by node name, then instance ID, so that every
 	// workflow replay schedules the same activities in the same order.
 	Instances []spockUpgradeInstance
+	// TargetMajor is the spec's Spock major version.
+	TargetMajor uint64
+	// RaisesMajor is true when some instance still runs an older Spock major
+	// version, so the update upgrades Spock. When false, the instances are
+	// only used to look for an earlier upgrade that didn't finish.
+	RaisesMajor bool
 }
+
+// minSpockMajorWithUpgradeMarker is the first Spock major version that an
+// upgrade can reach. Only databases on it or later can have an unfinished
+// upgrade's DDL pause left behind.
+const minSpockMajorWithUpgradeMarker = 6
 
 type spockUpgradeInstance struct {
 	NodeName   string
@@ -33,10 +44,12 @@ type spockUpgradeInstance struct {
 	HostID     string
 }
 
-// detectSpockMajorUpgrade returns the upgrade when spec raises the Spock major
-// version of any existing instance, or nil otherwise. Instances on hosts that
-// are being removed are left out, since nothing can run on those hosts.
-func detectSpockMajorUpgrade(current *resource.State, spec *database.Spec, removeHosts []string) (*spockUpgrade, error) {
+// detectSpockUpgrade returns the database's Spock instances for the update,
+// with RaisesMajor set when spec raises the Spock major version of any
+// existing instance. It returns nil when the spec has no Spock version or
+// there are no instances yet. Instances on hosts that are being removed are
+// left out, since nothing can run on those hosts.
+func detectSpockUpgrade(current *resource.State, spec *database.Spec, removeHosts []string) (*spockUpgrade, error) {
 	if spec.SpockVersion == "" {
 		return nil, nil
 	}
@@ -57,8 +70,8 @@ func detectSpockMajorUpgrade(current *resource.State, spec *database.Spec, remov
 	upgrade := &spockUpgrade{
 		DatabaseID:   spec.DatabaseID,
 		DatabaseName: spec.DatabaseName,
+		TargetMajor:  targetMajor,
 	}
-	raisesMajor := false
 	for _, instance := range instances {
 		if instance.Spec == nil || slices.Contains(removeHosts, instance.Spec.HostID) {
 			continue
@@ -73,10 +86,10 @@ func detectSpockMajorUpgrade(current *resource.State, spec *database.Spec, remov
 			continue
 		}
 		if major, ok := version.SpockVersion.Major(); ok && major < targetMajor {
-			raisesMajor = true
+			upgrade.RaisesMajor = true
 		}
 	}
-	if !raisesMajor {
+	if len(upgrade.Instances) == 0 {
 		return nil, nil
 	}
 	slices.SortFunc(upgrade.Instances, func(a, b spockUpgradeInstance) int {
@@ -84,6 +97,37 @@ func detectSpockMajorUpgrade(current *resource.State, spec *database.Spec, remov
 	})
 
 	return upgrade, nil
+}
+
+// mayHaveUnfinishedUpgrade reports whether the database could have DDL
+// replication paused by an earlier Spock major upgrade that didn't finish.
+func (u *spockUpgrade) mayHaveUnfinishedUpgrade() bool {
+	return !u.RaisesMajor && u.TargetMajor >= minSpockMajorWithUpgradeMarker
+}
+
+// spockDDLReplicationPaused reports whether any instance still has DDL
+// replication paused by an earlier Spock major upgrade, meaning that upgrade
+// didn't finish its verification or resume. An instance that can't be
+// checked is logged and skipped, so a down instance doesn't block the update.
+func (w *Workflows) spockDDLReplicationPaused(ctx workflow.Context, u *spockUpgrade) bool {
+	futures := make([]workflow.Future[*activities.GetSpockDDLReplicationPausedOutput], len(u.Instances))
+	for i, instance := range u.Instances {
+		futures[i] = w.Activities.ExecuteGetSpockDDLReplicationPaused(ctx, instance.HostID, &activities.GetSpockDDLReplicationPausedInput{
+			DatabaseID: u.DatabaseID,
+			InstanceID: instance.InstanceID,
+		})
+	}
+	paused := false
+	for i, future := range futures {
+		out, err := future.Get(ctx)
+		if err != nil {
+			workflow.Logger(ctx).With("error", err, "instance_id", u.Instances[i].InstanceID).
+				Warn("failed to check for a paused spock ddl replication")
+			continue
+		}
+		paused = paused || out.Paused
+	}
+	return paused
 }
 
 // nodes returns the upgrade's node names in order, each with one of its

@@ -71,6 +71,50 @@ func (a *Activities) SetSpockDDLReplication(ctx context.Context, input *SetSpock
 	return &SetSpockDDLReplicationOutput{}, nil
 }
 
+type GetSpockDDLReplicationPausedInput struct {
+	DatabaseID string `json:"database_id"`
+	InstanceID string `json:"instance_id"`
+}
+
+type GetSpockDDLReplicationPausedOutput struct {
+	Paused bool `json:"paused"`
+}
+
+func (a *Activities) ExecuteGetSpockDDLReplicationPaused(
+	ctx workflow.Context,
+	hostID string,
+	input *GetSpockDDLReplicationPausedInput,
+) workflow.Future[*GetSpockDDLReplicationPausedOutput] {
+	options := workflow.ActivityOptions{
+		Queue: utils.HostQueue(hostID),
+		RetryOptions: workflow.RetryOptions{
+			MaxAttempts: 1,
+		},
+	}
+	return workflow.ExecuteActivity[*GetSpockDDLReplicationPausedOutput](ctx, options, a.GetSpockDDLReplicationPaused, input)
+}
+
+// GetSpockDDLReplicationPaused reports whether a Spock major upgrade left DDL
+// replication paused on one instance.
+func (a *Activities) GetSpockDDLReplicationPaused(ctx context.Context, input *GetSpockDDLReplicationPausedInput) (*GetSpockDDLReplicationPausedOutput, error) {
+	if input == nil {
+		return nil, errors.New("input is nil")
+	}
+
+	conn, _, err := a.connectToInstance(ctx, input.DatabaseID, input.InstanceID, "postgres")
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+
+	paused, err := postgres.DDLReplicationPaused().Scalar(ctx, conn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check spock ddl replication on instance %s: %w", input.InstanceID, err)
+	}
+
+	return &GetSpockDDLReplicationPausedOutput{Paused: paused}, nil
+}
+
 type EnableSpockSlotsFailoverInput struct {
 	DatabaseID   string `json:"database_id"`
 	InstanceID   string `json:"instance_id"`
