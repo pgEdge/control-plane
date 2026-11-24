@@ -33,9 +33,6 @@ const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
 // server to default so the test doesn't need to track exact installed
 // package versions.
 func TestSpock6AddNode(t *testing.T) {
-	// TODO: Remove once spock 6 beta 2 image is available
-	t.Skip("skipping until spock 6 beta 2 image is available")
-
 	t.Parallel()
 	fixture.SkipIfSpock6Unsupported(t)
 	fixture.SkipIfSpockNotInstalled(t)
@@ -54,7 +51,7 @@ func TestSpock6AddNode(t *testing.T) {
 	var postgresVersion *string
 	var orchestratorOpts *controlplane.OrchestratorOpts
 	if fixture.Orchestrator() != "systemd" {
-		postgresVersion = pointerTo("18.6")
+		postgresVersion = pointerTo("18.7")
 		orchestratorOpts = &controlplane.OrchestratorOpts{
 			Swarm: &controlplane.SwarmOpts{Image: pointerTo(spock6DevImage)},
 		}

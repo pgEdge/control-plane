@@ -298,16 +298,14 @@ value in `orchestrator_opts.swarm.image` when creating the database:
 ### Spock 6 Preview Images
 
 Spock 6 is available as a preview on both Docker Swarm and systemd
-deployments. Spock 6 itself supports Postgres 15 through 19.
+deployments. The preview uses Spock 6.0.0-beta2.
 
-On Docker Swarm, Spock 6 is available as a preview manifest entry with
-[`"stability": "dev"`](#image-stability), currently paired with
-Postgres 18.6; the version manifest currently offers only this one
-Postgres 18.6 pairing as a preview. Preview entries are excluded from
-image upgrades (see below) and are never chosen for a database that
-omits `postgres_version` and `spock_version`. To create a new database
-on the Spock 6 preview image, set `postgres_version` and
-`spock_version` to match the manifest entry:
+On Docker Swarm, the version manifest offers Spock 6 entries with
+[`"stability": "beta"`](#image-stability) for Postgres 16.16, 17.12,
+and 18.7. Beta entries are excluded from image upgrades and are never
+chosen for a database that omits `postgres_version` and `spock_version`.
+To create a new database on Spock 6, set `postgres_version` and
+`spock_version` to match a manifest entry:
 
 === "curl"
 
@@ -325,7 +323,7 @@ on the Spock 6 preview image, set `postgres_version` and
                         "attributes": ["SUPERUSER", "LOGIN"]
                     }
                 ],
-                "postgres_version": "18.6",
+                "postgres_version": "18.7",
                 "spock_version": "6",
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] },
@@ -340,33 +338,19 @@ an image other than the manifest default for that version pair, such as
 pinning a specific build. See
 [Using a Custom Image](#using-a-custom-image).
 
-On systemd, there's no version manifest or image to pin — install the
-Spock 6 packages (`pgedge-spock60_<postgres-major>` on RPM-based
-distributions, `pgedge-postgresql-<postgres-major>-spock60` on
+On systemd, there's no version manifest or image to pin. Install the
+Spock 6.0.0-beta2 packages (`pgedge-spock60_<postgres-major>` on
+RPM-based distributions, `pgedge-postgresql-<postgres-major>-spock60` on
 Debian/Ubuntu) from the pgEdge repositories alongside the matching
 `pgedge-postgresql*` package, following the same steps as
 [Installing via systemd](../installation/systemd-installation.md).
-Once installed, request the preview the same way, setting
-`spock_version` to `"6"`. Unlike the Swarm manifest, systemd has no
-automatic exclusion of preview versions from a database that omits
-`spock_version` — a host advertises whatever Spock major/Postgres
-major combinations it has packages installed for, and the highest
-combination becomes that host's default. Only install the Spock 6
-packages on hosts where you intend to opt into the preview.
-
-!!! note
-
-    The Spock 6 preview image tracks the latest Spock 6 build against
-    Postgres 18, so its resolved Postgres minor version can advance ahead
-    of the manifest entry's declared `postgres_version`.
-
-!!! warning
-
-    This preview supports only creating a new database on Spock 6. It
-    does not support upgrading an existing database from Spock 5.x to
-    Spock 6. The Control Plane rejects a spec update that changes the
-    Spock major version on an existing database, since a Spock 6
-    subscription cannot sync from a Spock 5.x peer.
+Then request the preview the same way, setting `spock_version` to
+`"6"`. Unlike the Swarm manifest, systemd doesn't exclude preview
+versions from a database that omits `spock_version`. A host advertises
+every Spock and Postgres major version combination it has packages
+for, and the highest combination becomes that host's default. Only
+install the Spock 6 packages on hosts where you intend to use the
+preview.
 
 !!! warning
 
@@ -374,6 +358,66 @@ packages on hosts where you intend to opt into the preview.
     Plane rejects preview images as targets for the
     [image upgrade](./upgrade-db.md#image-upgrades) action, and they are
     excluded from `available_upgrades`.
+
+#### Upgrading a Database from Spock 5 to Spock 6
+
+You can upgrade an existing database from Spock 5 to Spock 6 by
+updating its spec and changing `spock_version` from `"5"` to `"6"`.
+Keep `postgres_version` at a version that has a Spock 6 entry, such as
+17.12. On systemd, install the Spock 6 packages on every host first.
+
+The Control Plane accepts the update only when:
+
+- every instance of the database runs Spock 5.0.14 or later; update to
+  an image with Spock 5.0.14 first if needed.
+- every instance is running and has recently reported its status, since
+  the Control Plane uses that status to check the Spock version.
+- the same update doesn't add, remove, or move nodes.
+- every host supports the requested Postgres and Spock 6 version.
+
+The Control Plane upgrades one Spock major version at a time, and it
+rejects a change back to Spock 5.
+
+During the upgrade, the Control Plane:
+
+- pauses Spock's automatic DDL replication on every instance, and
+  resumes it when the upgrade ends, including when the upgrade fails or
+  is canceled.
+- enables failover on existing Spock replication slots on Postgres 17
+  and later, so that replicas keep copies of the slots.
+- upgrades one node at a time, updating the node's replicas before its
+  primary.
+- checks that each node's Spock extension is up to date and that its
+  subscriptions are replicating.
+
+On Docker Swarm, the Control Plane switches over to an upgraded replica
+before it restarts a node's primary. To enable failover on a slot that
+a subscriber is using, the Control Plane briefly disconnects the
+subscriber; the subscriber reconnects and resumes without losing
+changes. The task log shows each step of the upgrade.
+
+Spock updates its extension on each node when the node starts on the
+new version; if the update hasn't happened after two minutes, the
+Control Plane runs `ALTER EXTENSION spock UPDATE` itself. The extension
+update can't be undone, so take a backup before you start.
+
+If the upgrade fails, fix the cause and submit the same update again.
+The Control Plane continues with the instances that still run Spock 5.
+If the upgrade fails after every instance runs Spock 6, the next update
+doesn't repeat the checks or resume DDL replication. In that case, check
+that `SHOW spock.enable_ddl_replication;` returns `on` on each instance.
+If the setting is `off`, run the following statements on that instance:
+
+```sql
+ALTER SYSTEM RESET spock.enable_ddl_replication;
+SELECT pg_reload_conf();
+```
+
+Spock 6 also changes some replication behavior. Direct DDL against the
+`spock` and `snowflake` schemas fails while DDL replication is on, and
+`DELETE` operations now go through conflict resolution. Spock 6 also
+renames some conflict types in `spock.resolutions`; the extension
+update migrates existing rows. See the Spock release notes for details.
 
 ## Image Validation
 

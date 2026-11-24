@@ -352,12 +352,20 @@ func (o *Orchestrator) FindUpgrade(current *ds.PgEdgeVersion, targetImage string
 		return nil, fmt.Errorf("%w: cannot determine current spock major version", database.ErrUpgradeNotAvailable)
 	}
 	targetSpockMajor, ok2 := ver.SpockVersion.Major()
-	if !ok2 || targetSpockMajor != currentSpockMajor {
+	// A target one Spock major version ahead is allowed: Spock 6 nodes can
+	// replicate with 5.0.x peers during a rolling upgrade. The database
+	// service checks that every instance runs a Spock version the upgrade can
+	// start from.
+	if !ok2 || (targetSpockMajor != currentSpockMajor && targetSpockMajor != currentSpockMajor+1) {
 		return nil, fmt.Errorf("%w: target spock major %d differs from current %d", database.ErrUpgradeNotAvailable, targetSpockMajor, currentSpockMajor)
 	}
 
-	if ver.PostgresVersion.Compare(current.PostgresVersion) <= 0 {
+	spockMajorUpgrade := targetSpockMajor > currentSpockMajor
+	if !spockMajorUpgrade && ver.PostgresVersion.Compare(current.PostgresVersion) <= 0 {
 		return nil, fmt.Errorf("%w: target version %s is not newer than current %s", database.ErrUpgradeNotAvailable, ver.PostgresVersion, current.PostgresVersion)
+	}
+	if spockMajorUpgrade && ver.PostgresVersion.Compare(current.PostgresVersion) < 0 {
+		return nil, fmt.Errorf("%w: target postgres version %s is older than current %s", database.ErrUpgradeNotAvailable, ver.PostgresVersion, current.PostgresVersion)
 	}
 
 	return &database.AvailableUpgrade{

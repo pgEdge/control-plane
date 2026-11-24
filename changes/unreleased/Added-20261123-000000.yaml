@@ -1,0 +1,3 @@
+kind: Added
+body: Added support for upgrading an existing database from Spock 5.0.14 to Spock 6 by changing `spock_version` from `"5"` to `"6"`. The Control Plane upgrades one node at a time, pauses DDL replication for the duration of the upgrade, and on Postgres 17 and later enables failover on existing Spock replication slots so replicas keep copies of them.
+time: 2026-11-23T00:00:00.000000+00:00

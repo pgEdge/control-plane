@@ -483,8 +483,11 @@ func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) 
 // IsReplicationSlotReady checks whether a permanent copy of the replication
 // slot for the given subscription exists. Spock 5.0.14 and later first create
 // a temporary copy on a standby, which is dropped if the standby is promoted
-// before the copy becomes permanent. Used to poll for Spock 5.x failover slot
-// creation after a switchover, which can take up to 60 seconds.
+// before the copy becomes permanent. Used on replicas whose copies come from
+// Spock's own failover-slots worker, which syncs every
+// spock.failover_slots_naptime: up to 60 seconds on Spock 5 and 1 second on
+// Spock 6 (Postgres 16 only, since Spock 6 uses native slot sync on Postgres
+// 17+; see IsReplicationSlotSynced).
 func IsReplicationSlotReady(databaseName, providerNode, subscriberNode string) Query[bool] {
 	return Query[bool]{
 		SQL:  fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = %s and temporary = 'f');", slotNameExpr),

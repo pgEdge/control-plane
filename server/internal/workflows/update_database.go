@@ -28,10 +28,31 @@ type UpdateDatabaseOutput struct {
 
 func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseInput) (*UpdateDatabaseOutput, error) {
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
+
+	// Set when this update raises the Spock major version. DDL replication is
+	// paused for the duration of the upgrade and must be resumed however the
+	// workflow ends.
+	var upgrade *spockUpgrade
+	ddlPaused := false
+	resumeDDL := func(ctx workflow.Context) error {
+		if !ddlPaused {
+			return nil
+		}
+		if err := w.setSpockDDLReplication(ctx, upgrade, false); err != nil {
+			logger.With("error", err).Error("failed to resume spock ddl replication")
+			return err
+		}
+		ddlPaused = false
+		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "resumed spock ddl replication")
+		return nil
+	}
+
 	defer func() {
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+
+			_ = resumeDDL(cleanupCtx)
 
 			updateStateInput := &activities.UpdateDbStateInput{
 				DatabaseID: input.Spec.DatabaseID,
@@ -62,6 +83,12 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 			Get(ctx)
 		if stateErr != nil {
 			logger.With("error", stateErr).Error("failed to update database state")
+		}
+
+		// After marking the database failed, so that a resume that can't
+		// complete doesn't leave the database in the modifying state.
+		if err := resumeDDL(ctx); err != nil {
+			cause = errors.Join(cause, err)
 		}
 
 		updateTaskInput := &activities.UpdateTaskInput{
@@ -120,9 +147,36 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
+	upgrade, err = detectSpockMajorUpgrade(current, input.Spec, input.RemoveHosts)
+	if err != nil {
+		return nil, handleError(err)
+	}
+	if upgrade != nil {
+		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "upgrading the spock major version: pausing spock ddl replication on every instance")
+		// Set before pausing, so that a partial pause is resumed too.
+		ddlPaused = true
+		if err := w.setSpockDDLReplication(ctx, upgrade, true); err != nil {
+			return nil, handleError(err)
+		}
+		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "enabling failover on spock replication slots")
+		if err := w.prepareSpockUpgrade(ctx, upgrade); err != nil {
+			return nil, handleError(err)
+		}
+	}
+
 	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans, input.RemoveHosts...)
 	if err != nil {
 		return nil, handleError(err)
+	}
+
+	if upgrade != nil {
+		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "verifying the spock upgrade on each node")
+		if err := w.verifySpockUpgrade(ctx, upgrade); err != nil {
+			return nil, handleError(err)
+		}
+		if err := resumeDDL(ctx); err != nil {
+			return nil, handleError(err)
+		}
 	}
 
 	updateStateInput := &activities.UpdateDbStateInput{

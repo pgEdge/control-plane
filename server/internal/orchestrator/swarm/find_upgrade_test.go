@@ -166,26 +166,50 @@ func TestOrchestrator_FindUpgrade(t *testing.T) {
 		assert.True(t, errors.Is(err, database.ErrUpgradeNotAvailable), "same version should be rejected")
 	})
 
-	t.Run("rejects upgrade across different spock major buckets", func(t *testing.T) {
+	t.Run("spock major upgrades", func(t *testing.T) {
 		cfg := config.Config{DockerSwarm: config.DockerSwarm{ImageRepositoryHost: "ghcr.io/pgedge"}}
 		vs := &Versions{cfg: cfg, images: make(map[string]map[string]*Images)}
-		vs.addImage(ds.MustParsePgEdgeVersion("17.9", "4"), &Images{
-			PgEdgeImage: "ghcr.io/pgedge/pgedge-postgres:17.9-spock4.0.0-standard-1",
-			Stability:   "stable",
-		})
-		vs.addImage(ds.MustParsePgEdgeVersion("17.10", "5"), &Images{
-			PgEdgeImage: "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.0-standard-1",
-			Stability:   "stable",
-		})
-		vs.defaultVersion = ds.MustParsePgEdgeVersion("17.10", "5")
-
+		const (
+			spock5Image      = "ghcr.io/pgedge/pgedge-postgres:17.12-spock5.0.14-standard-1"
+			spock6Image      = "ghcr.io/pgedge/pgedge-postgres:17.12-spock6.0.0-standard-1"
+			spock6OlderImage = "ghcr.io/pgedge/pgedge-postgres:17.11-spock6.0.0-standard-1"
+			spock6BetaImage  = "ghcr.io/pgedge/pgedge-postgres:17.13-spock6.0.0-beta2-standard-1"
+			spock7Image      = "ghcr.io/pgedge/pgedge-postgres:17.12-spock7.0.0-standard-1"
+		)
+		vs.addImage(ds.MustParsePgEdgeVersion("17.12", "5"), &Images{PgEdgeImage: spock5Image, Stability: "stable"})
+		vs.addImage(ds.MustParsePgEdgeVersion("17.12", "6"), &Images{PgEdgeImage: spock6Image, Stability: "stable"})
+		vs.addImage(ds.MustParsePgEdgeVersion("17.11", "6"), &Images{PgEdgeImage: spock6OlderImage, Stability: "stable"})
+		vs.addImage(ds.MustParsePgEdgeVersion("17.13", "6"), &Images{PgEdgeImage: spock6BetaImage, Stability: "beta"})
+		vs.addImage(ds.MustParsePgEdgeVersion("17.12", "7"), &Images{PgEdgeImage: spock7Image, Stability: "stable"})
+		vs.defaultVersion = ds.MustParsePgEdgeVersion("17.12", "5")
 		od := newOrchestratorWithVersions(vs)
-		curSpock4 := ds.MustParsePgEdgeVersion("17.9", "4")
-		targetSpock5Image := "ghcr.io/pgedge/pgedge-postgres:17.10-spock5.0.0-standard-1"
 
-		_, err := od.FindUpgrade(curSpock4, targetSpock5Image)
-		require.Error(t, err)
-		assert.True(t, errors.Is(err, database.ErrUpgradeNotAvailable))
+		spock5 := ds.MustParsePgEdgeVersion("17.12", "5")
+		spock6 := ds.MustParsePgEdgeVersion("17.12", "6")
+
+		t.Run("accepts the next spock major at the same postgres version", func(t *testing.T) {
+			got, err := od.FindUpgrade(spock5, spock6Image)
+			require.NoError(t, err)
+			assert.Equal(t, "17.12", got.PostgresVersion)
+			assert.Equal(t, "6", got.SpockVersion)
+			assert.Equal(t, spock6Image, got.Image)
+		})
+		for _, tc := range []struct {
+			name    string
+			current *ds.PgEdgeVersion
+			image   string
+		}{
+			{name: "rejects skipping a spock major", current: spock5, image: spock7Image},
+			{name: "rejects a spock major downgrade", current: spock6, image: spock5Image},
+			{name: "rejects an older postgres version on the next spock major", current: spock5, image: spock6OlderImage},
+			{name: "rejects a beta target on the next spock major", current: spock5, image: spock6BetaImage},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := od.FindUpgrade(tc.current, tc.image)
+				require.Error(t, err)
+				assert.True(t, errors.Is(err, database.ErrUpgradeNotAvailable))
+			})
+		}
 	})
 
 	t.Run("returns correct fields in upgrade descriptor", func(t *testing.T) {

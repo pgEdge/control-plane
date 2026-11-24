@@ -27,6 +27,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.CheckClusterHealth),
 		work.RegisterActivity(a.CreatePgBackRestBackup),
 		work.RegisterActivity(a.DeleteDbEntities),
+		work.RegisterActivity(a.EnableSpockSlotsFailover),
 		work.RegisterActivity(a.GenerateServiceInstanceResources),
 		work.RegisterActivity(a.GetCurrentState),
 		work.RegisterActivity(a.GetInstanceResources),
@@ -44,12 +45,14 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.RemoveHostFromEtcd),
 		work.RegisterActivity(a.RestartInstance),
 		work.RegisterActivity(a.SelectCandidate),
+		work.RegisterActivity(a.SetSpockDDLReplication),
 		work.RegisterActivity(a.StartInstance),
 		work.RegisterActivity(a.StopInstance),
 		work.RegisterActivity(a.UpdateDbState),
 		work.RegisterActivity(a.UpdatePlannedInstanceStates),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
+		work.RegisterActivity(a.VerifySpockUpgrade),
 		work.RegisterActivity(a.WaitForRestartComplete),
 	}
 	return errors.Join(errs...)

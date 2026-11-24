@@ -244,6 +244,15 @@ asynchronously.
     supply its image reference yourself. To upgrade to a different Postgres
     major version, see [Major Version Upgrades](#major-version-upgrades).
 
+    The upgrade endpoint also accepts a target with the next Spock major
+    version at the same or a newer Postgres minor version, as long as the
+    target's stability allows it as an upgrade target. These targets are never
+    listed in `available_upgrades`. The same rules apply as for a Spock
+    upgrade through a spec update; see
+    [Upgrading a Database from Spock 5 to Spock 6](./image-management.md#upgrading-a-database-from-spock-5-to-spock-6).
+    While the Spock 6 entries are `beta`, upgrade to Spock 6 with a spec update
+    instead.
+
 ## output_plugin_libraries
 
 Postgres 16.15, 17.11, 18.6, and later minor versions gate logical
