@@ -291,6 +291,40 @@ func TestSwitchoverScenarios(t *testing.T) {
 		assert.Equal(t, origPrimary, getPrimaryInstanceID(), "canceled switchover still happened")
 	})
 
+	t.Run("cancel at the scheduled time", func(t *testing.T) {
+		time.Sleep(10 * time.Second)
+
+		origPrimary := getPrimaryInstanceID()
+		require.NotEmpty(t, origPrimary, "database has no primary instance")
+
+		candidate := waitForReadyReplica(origPrimary, 90*time.Second)
+		require.NotEmpty(t, candidate)
+
+		task, dueAt := scheduleSwitchover(t, candidate, 30*time.Second)
+
+		// A cancel that arrives while the switchover is starting may or may
+		// not stop it, but the task must report what actually happened.
+		time.Sleep(time.Until(dueAt) + 8*time.Second)
+		_, cancelErr := fixture.Client.CancelDatabaseTask(ctx, &controlplane.CancelDatabaseTaskPayload{
+			DatabaseID: dbID,
+			TaskID:     controlplane.Identifier(task.TaskID),
+		})
+		status := waitForTaskStatus(t, task.TaskID)
+		t.Logf("[cancel-at-due] cancel error: %v, task status: %s", cancelErr, status)
+
+		switch status {
+		case client.TaskStatusCanceled:
+			time.Sleep(30 * time.Second)
+			require.NoError(t, db.Refresh(ctx))
+			assert.Equal(t, origPrimary, getPrimaryInstanceID(), "task canceled, but the switchover happened")
+		case client.TaskStatusCompleted:
+			assert.Truef(t, waitForPrimaryIs(candidate, 30*time.Second),
+				"task completed, but the primary didn't become %s (current %s)", candidate, getPrimaryInstanceID())
+		default:
+			t.Fatalf("unexpected task status %q", status)
+		}
+	})
+
 	t.Run("invalid candidate instance", func(t *testing.T) {
 		badID := "invalid-instance-" + uuid.NewString()
 		err := db.SwitchoverDatabaseNode(ctx, &controlplane.SwitchoverDatabaseNodePayload{

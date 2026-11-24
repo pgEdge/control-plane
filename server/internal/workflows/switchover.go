@@ -38,10 +38,15 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	logger.Info("starting switchover workflow")
 	var leaderHostID string
 	var leaderInstanceID string
+	// Patroni can't stop a switchover once it's been requested, so after that
+	// point a cancel mustn't mark the task canceled, and task updates use a
+	// context that the cancel doesn't affect.
+	var switchoverRequested bool
+	taskCtx := ctx
 
 	// cleanup on cancellation
 	defer func() {
-		if errors.Is(ctx.Err(), workflow.Canceled) {
+		if errors.Is(ctx.Err(), workflow.Canceled) && !switchoverRequested {
 			logger.Warn("workflow cancelled; running cleanup")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
 			if in != nil && in.TaskID != uuid.Nil {
@@ -70,7 +75,7 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
-		_, _ = w.Activities.ExecuteUpdateTask(ctx, updateTaskInput).Get(ctx)
+		_, _ = w.Activities.ExecuteUpdateTask(taskCtx, updateTaskInput).Get(taskCtx)
 		return cause
 	}
 
@@ -85,8 +90,13 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		return nil, handleError(fmt.Errorf("failed to mark task running: %w", err))
 	}
 
-	completeSkipped := func(reason string, args ...any) (*SwitchoverOutput, error) {
-		logger.Info(reason, args...)
+	// completeSkipped completes the task without a switchover. The reason goes
+	// to the task log, so that it's visible from the API.
+	completeSkipped := func(reason string) (*SwitchoverOutput, error) {
+		logger.Info(reason)
+		if err := w.logTaskEvent(ctx, task.ScopeDatabase, in.DatabaseID, in.TaskID, task.LogEntry{Message: reason}); err != nil {
+			logger.With("error", err).Warn("failed to log task event")
+		}
 		completeUpdate := &activities.UpdateTaskInput{
 			Scope:         task.ScopeDatabase,
 			EntityID:      in.DatabaseID,
@@ -99,29 +109,37 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		return &SwitchoverOutput{}, nil
 	}
 
-	// determine an instance id to query for primary resolution (use first provided instance)
-	var instanceToQuery string
-	var getPrimaryQueue string
-	if len(in.Instances) > 0 && in.Instances[0] != nil {
-		instanceToQuery = in.Instances[0].InstanceID
-		getPrimaryQueue = in.Instances[0].HostID
-	}
-	if instanceToQuery == "" {
+	if len(in.Instances) == 0 || in.Instances[0] == nil {
 		return nil, handleError(fmt.Errorf("no instance id available to resolve primary for node %s", in.NodeName))
 	}
 
-	// Resolve primary instance (leader) for the node via activity, using the instance id.
-	getPrimary := func() (string, error) {
-		getPrimaryIn := &activities.GetPrimaryInstanceInput{
-			DatabaseID: in.DatabaseID,
-			InstanceID: instanceToQuery,
+	// getPrimary resolves the node's primary instance (leader) from the first
+	// of the given instances that answers.
+	getPrimary := func(instances []*activities.InstanceHost) (string, error) {
+		if len(instances) == 0 {
+			return "", fmt.Errorf("no reachable instance of node %s to get the primary from", in.NodeName)
 		}
-		out, err := w.Activities.ExecuteGetPrimaryInstance(ctx, getPrimaryQueue, getPrimaryIn).Get(ctx)
-		if err != nil {
-			return "", fmt.Errorf("failed to get primary instance: %w", err)
+		var err error
+		for _, inst := range instances {
+			getPrimaryIn := &activities.GetPrimaryInstanceInput{
+				DatabaseID: in.DatabaseID,
+				InstanceID: inst.InstanceID,
+			}
+			var out *activities.GetPrimaryInstanceOutput
+			out, err = w.Activities.ExecuteGetPrimaryInstance(ctx, inst.HostID, getPrimaryIn).Get(ctx)
+			if err == nil {
+				return out.PrimaryInstanceID, nil
+			}
+			if ctx.Err() != nil {
+				break
+			}
 		}
-		return out.PrimaryInstanceID, nil
+		return "", fmt.Errorf("failed to get primary instance: %w", err)
 	}
+
+	instances := in.Instances
+	lookup := in.Instances[:1]
+	unreachable := map[string]bool{}
 
 	// Wait for a scheduled switchover here rather than in Patroni, so that the
 	// task stays open, and can be canceled, until the switchover has happened.
@@ -130,7 +148,7 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		// Note the primary we're switching away from, so that we don't switch
 		// again if it has already changed by the scheduled time.
 		var err error
-		if scheduledFrom, err = getPrimary(); err != nil {
+		if scheduledFrom, err = getPrimary(lookup); err != nil {
 			return nil, handleError(err)
 		}
 		if d := in.ScheduledAt.Sub(workflow.Now(ctx)); d > 0 {
@@ -149,21 +167,56 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 			return nil, handleError(fmt.Errorf("switchover not performed: it was due at %s but couldn't start until %s later",
 				in.ScheduledAt.Format(time.RFC3339), late.Round(time.Second)))
 		}
+
+		// The node's hosts can change, or go down, during the wait. Use its
+		// current instances, and don't send activities to unreachable hosts,
+		// where they would never run.
+		current, err := w.Activities.ExecuteGetNodeInstances(ctx, &activities.GetNodeInstancesInput{
+			DatabaseID: in.DatabaseID,
+			NodeName:   in.NodeName,
+		}).Get(ctx)
+		if err != nil {
+			return nil, handleError(fmt.Errorf("switchover not performed: %w", err))
+		}
+		for _, hostID := range current.UnreachableHosts {
+			unreachable[hostID] = true
+		}
+		instances = current.Instances
+		lookup = nil
+		var candidate *activities.InstanceHost
+		for _, inst := range instances {
+			if !unreachable[inst.HostID] {
+				lookup = append(lookup, inst)
+			}
+			if inst.InstanceID == in.CandidateInstanceID {
+				candidate = inst
+			}
+		}
+		if in.CandidateInstanceID != "" {
+			if candidate == nil {
+				return nil, handleError(fmt.Errorf("switchover not performed: candidate instance %s is no longer an instance of node %s",
+					in.CandidateInstanceID, in.NodeName))
+			}
+			if unreachable[candidate.HostID] {
+				return nil, handleError(fmt.Errorf("switchover not performed: candidate instance %s is on unreachable host %s",
+					in.CandidateInstanceID, candidate.HostID))
+			}
+		}
 	}
 
-	leader, err := getPrimary()
+	leader, err := getPrimary(lookup)
 	if err != nil {
 		return nil, handleError(err)
 	}
 	leaderInstanceID = leader
 
-	if scheduledFrom != "" && in.CandidateInstanceID == "" && leaderInstanceID != scheduledFrom {
-		return completeSkipped("primary changed before the scheduled time; skipping switchover",
-			"scheduled_from", scheduledFrom, "leader_instance", leaderInstanceID)
+	if scheduledFrom != "" && leaderInstanceID != scheduledFrom {
+		return completeSkipped(fmt.Sprintf("skipping switchover: the primary changed from %s to %s before the scheduled time",
+			scheduledFrom, leaderInstanceID))
 	}
 
-	// Resolve leaderHostID by scanning provided Instances
-	for _, inst := range in.Instances {
+	// Resolve leaderHostID by scanning the node's instances
+	for _, inst := range instances {
 		if inst != nil && inst.InstanceID == leaderInstanceID {
 			leaderHostID = inst.HostID
 			break
@@ -172,13 +225,21 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	if leaderHostID == "" {
 		return nil, handleError(fmt.Errorf("failed to resolve leader host id for instance %s", leaderInstanceID))
 	}
+	if unreachable[leaderHostID] {
+		return nil, handleError(fmt.Errorf("switchover not performed: the primary %s is on unreachable host %s",
+			leaderInstanceID, leaderHostID))
+	}
 
 	logger.Info("primary resolved", "leader_instance", leaderInstanceID, "leader_host", leaderHostID)
 
+	candidates := instances
+	if !in.ScheduledAt.IsZero() {
+		candidates = lookup
+	}
 	candidateID, err := w.chooseCandidate(ctx, logger, &chooseCandidateInput{
 		DatabaseID:       in.DatabaseID,
 		NodeName:         in.NodeName,
-		Instances:        in.Instances,
+		Instances:        candidates,
 		LeaderInstanceID: leaderInstanceID,
 		LeaderHostID:     leaderHostID,
 		Requested:        in.CandidateInstanceID,
@@ -190,7 +251,7 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	logger.Info("candidate chosen", "candidate_instance", candidateID)
 
 	if candidateID == leaderInstanceID {
-		return completeSkipped("candidate is already the leader; skipping switchover", "candidate", candidateID)
+		return completeSkipped(fmt.Sprintf("skipping switchover: candidate %s is already the primary", candidateID))
 	}
 
 	performIn := &activities.PerformSwitchoverInput{
@@ -205,9 +266,15 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		performIn.Deadline = in.ScheduledAt.Add(maxScheduledSwitchoverDelay)
 	}
 
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	switchoverRequested = true
+	taskCtx = workflow.NewDisconnectedContext(ctx)
+
 	logger.Info("dispatching perform switchover activity", "target_host_queue", utils.HostQueue(leaderHostID))
 
-	if _, err := w.Activities.ExecutePerformSwitchover(ctx, leaderHostID, performIn).Get(ctx); err != nil {
+	if _, err := w.Activities.ExecutePerformSwitchover(taskCtx, leaderHostID, performIn).Get(taskCtx); err != nil {
 		return nil, handleError(fmt.Errorf("perform switchover activity failed: %w", err))
 	}
 
@@ -217,7 +284,7 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		TaskID:        in.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}
-	if _, err := w.Activities.ExecuteUpdateTask(ctx, completeUpdate).Get(ctx); err != nil {
+	if _, err := w.Activities.ExecuteUpdateTask(taskCtx, completeUpdate).Get(taskCtx); err != nil {
 		return nil, handleError(fmt.Errorf("failed to mark task complete: %w", err))
 	}
 

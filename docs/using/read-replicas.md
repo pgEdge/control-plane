@@ -125,9 +125,11 @@ The `scheduled_at` field allows the switchover to be executed at a specific sche
 
 - The switchover's task stays `running` until the switchover has happened. For a scheduled switchover, that's after the scheduled time.
 
-- To cancel a scheduled switchover, cancel its task before the scheduled time. Once the switchover itself has started, canceling its task doesn't stop it.
+- To cancel a scheduled switchover, cancel its task before the scheduled time. Once the switchover itself has started, canceling its task doesn't stop it, and the task completes or fails with the switchover's result.
 
-- If the primary changes before the scheduled time, for example because of a failover, and no `candidate_instance_id` was given, the scheduled switchover is skipped and its task completes.
+- If the primary changes before the scheduled time, for example because of a failover, the scheduled switchover is skipped and its task completes. The task log records why it was skipped.
+
+- At the scheduled time, the switchover uses the node's current hosts. It fails if the database can no longer be modified, if the `candidate_instance_id` is no longer an instance of the node, or if the primary's or the candidate's host is unreachable.
 
 - If the Control Plane can't start a scheduled switchover within 5 minutes of the scheduled time, for example because it was down, the switchover isn't performed and its task fails.
 
