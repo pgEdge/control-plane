@@ -118,6 +118,13 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 	if !DatabaseStateModifiable(currentDB.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
+	startsUpgrade, err := s.validateSpockMajorUpgrade(ctx, currentSpec.Spec, spec, currentDB.SpockUpgradePending)
+	if err != nil {
+		return nil, err
+	}
+	if startsUpgrade {
+		currentDB.SpockUpgradePending = true
+	}
 
 	return s.applySpecUpdate(ctx, currentSpec, currentDB, spec, state)
 }
@@ -807,9 +814,10 @@ func (s *Service) AvailableUpgrades(current *ds.PgEdgeVersion) []*AvailableUpgra
 // ApplyUpgradeResult is returned by ApplyUpgrade. It carries the information
 // needed to roll back the upgrade if the workflow fails to start.
 type ApplyUpgradeResult struct {
-	Database  *Database
-	PrevState DatabaseState
-	prevSpec  *Spec
+	Database                *Database
+	PrevState               DatabaseState
+	prevSpec                *Spec
+	prevSpockUpgradePending bool
 }
 
 // ApplyUpgrade validates targetImage against the manifest, updates the
@@ -864,6 +872,22 @@ func (s *Service) ApplyUpgrade(ctx context.Context, databaseID, targetImage stri
 		}
 	}
 	newSpec.NormalizePostgresVersions()
+	// The orchestrator only accepts a target one Spock major version ahead,
+	// in which case the spec moves to that major version.
+	if IsSpockMajorUpgrade(currentSpec.SpockVersion, upgrade.SpockVersion) {
+		newSpec.SpockVersion = upgrade.SpockVersion
+		if err := spockMajorUpgradeTopologyChanged(currentSpec.Spec, newSpec); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrInvalidDatabaseUpdate, err)
+		}
+	}
+	startsUpgrade, err := s.validateSpockMajorUpgrade(ctx, currentSpec.Spec, newSpec, currentDB.SpockUpgradePending)
+	if err != nil {
+		return nil, err
+	}
+	prevSpockUpgradePending := currentDB.SpockUpgradePending
+	if startsUpgrade {
+		currentDB.SpockUpgradePending = true
+	}
 
 	db, err := s.applySpecUpdate(ctx, currentSpec, currentDB, newSpec, DatabaseStateModifying)
 	if err != nil {
@@ -871,9 +895,10 @@ func (s *Service) ApplyUpgrade(ctx context.Context, databaseID, targetImage stri
 	}
 
 	return &ApplyUpgradeResult{
-		Database:  db,
-		PrevState: prevState,
-		prevSpec:  prevSpec,
+		Database:                db,
+		PrevState:               prevState,
+		prevSpec:                prevSpec,
+		prevSpockUpgradePending: prevSpockUpgradePending,
 	}, nil
 }
 
@@ -932,6 +957,7 @@ func (s *Service) RollbackApplyUpgrade(ctx context.Context, result *ApplyUpgrade
 
 	currentStoredSpec.Spec = result.prevSpec
 	currentDB.State = result.PrevState
+	currentDB.SpockUpgradePending = result.prevSpockUpgradePending
 	currentDB.UpdatedAt = time.Now()
 
 	if err := s.store.Txn(
@@ -1117,6 +1143,9 @@ func ValidateChangedSpec(current, updated *Spec) error {
 	if err := spockMajorVersionChanged(current.SpockVersion, updated.SpockVersion); err != nil {
 		errs = append(errs, err)
 	}
+	if err := spockMajorUpgradeTopologyChanged(current, updated); err != nil {
+		errs = append(errs, err)
+	}
 
 	currentInstances, err := instancesByID(current)
 	if err != nil {
@@ -1177,12 +1206,14 @@ func majorVersionChanged(old, new *ds.PgEdgeVersion) error {
 	return checkMajorUnchanged("postgres", old.PostgresVersion, new.PostgresVersion, "")
 }
 
-// spockMajorVersionChanged rejects a Spock major version change on an
-// existing database. A Spock N subscription cannot sync from a Spock N-1
-// peer, so this must be caught here rather than left to fail at replication
-// time. It does not apply to a dedicated Spock upgrade workflow (PLAT-720),
-// which is expected to have its own validation. It also rejects removing
-// Spock from an existing database. Adding Spock to an existing database is
+// spockMajorVersionChanged rejects unsupported Spock major version changes on
+// an existing database. Upgrading by exactly one major version (5 to 6) is
+// allowed: Spock 6 negotiates the replication protocol with 5.0.x peers, so
+// nodes can be upgraded one at a time while the others still run 5.0.x. The
+// live-version precondition for that upgrade (every node on 5.0.14 or later)
+// is checked separately by Service.validateSpockMajorUpgrade, since it needs
+// the observed instance versions. Downgrades, skipping a major version, and
+// removing Spock are rejected. Adding Spock to an existing database is
 // allowed, since its existing tables are added to the replication sets when
 // the Spock node is created.
 func spockMajorVersionChanged(current, updated string) error {
@@ -1192,18 +1223,168 @@ func spockMajorVersionChanged(current, updated string) error {
 	case updated == "":
 		return fmt.Errorf("spock version changed from %s to none: removing spock from an existing database is not supported", current)
 	}
+	oldMajor, newMajor, err := spockMajors(current, updated)
+	if err != nil {
+		return err
+	}
+	switch {
+	case newMajor == oldMajor, newMajor == oldMajor+1:
+		return nil
+	case newMajor < oldMajor:
+		return fmt.Errorf("spock major version changed from %d to %d: downgrading the spock major version is not supported", oldMajor, newMajor)
+	default:
+		return fmt.Errorf("spock major version changed from %d to %d: upgrade one spock major version at a time", oldMajor, newMajor)
+	}
+}
+
+// IsSpockMajorUpgrade reports whether updated is a later Spock major version
+// than current. It's false when either version is empty or unparseable.
+func IsSpockMajorUpgrade(current, updated string) bool {
+	if current == "" || updated == "" {
+		return false
+	}
+	oldMajor, newMajor, err := spockMajors(current, updated)
+	return err == nil && newMajor > oldMajor
+}
+
+func spockMajors(current, updated string) (uint64, uint64, error) {
 	oldVersion, err := ds.ParseVersion(current)
 	if err != nil {
-		return fmt.Errorf("failed to parse current spock version: %w", err)
+		return 0, 0, fmt.Errorf("failed to parse current spock version: %w", err)
 	}
 	newVersion, err := ds.ParseVersion(updated)
 	if err != nil {
-		return fmt.Errorf("failed to parse updated spock version: %w", err)
+		return 0, 0, fmt.Errorf("failed to parse updated spock version: %w", err)
 	}
-	return checkMajorUnchanged(
-		"spock", oldVersion, newVersion,
-		": changing the spock major version on an existing database is not supported",
-	)
+	oldMajor, ok := oldVersion.Major()
+	if !ok {
+		return 0, 0, errors.New("current spock version is missing its major component")
+	}
+	newMajor, ok := newVersion.Major()
+	if !ok {
+		return 0, 0, errors.New("updated spock version is missing its major component")
+	}
+	return oldMajor, newMajor, nil
+}
+
+// spockMajorUpgradeTopologyChanged rejects a Spock major upgrade that also
+// adds, removes, or moves nodes. The upgrade rolls through the existing
+// instances one node at a time, and new instances would be created on the new
+// major while some peers still run the old one.
+func spockMajorUpgradeTopologyChanged(current, updated *Spec) error {
+	if !IsSpockMajorUpgrade(current.SpockVersion, updated.SpockVersion) {
+		return nil
+	}
+	return checkNodesUnchanged(current, updated)
+}
+
+// checkNodesUnchanged returns an error if updated adds, removes, or moves
+// nodes compared to current.
+func checkNodesUnchanged(current, updated *Spec) error {
+	if len(current.Nodes) != len(updated.Nodes) {
+		return errSpockUpgradeTopology
+	}
+	return checkNodesNotAddedOrMoved(current, updated)
+}
+
+var errSpockUpgradeTopology = errors.New("a spock major version upgrade cannot be combined with adding, removing, or moving nodes; upgrade spock first, then change the nodes in a separate update")
+
+// checkNodesNotAddedOrMoved returns an error if updated adds a node or moves
+// an existing node to different hosts. Removing nodes is allowed.
+func checkNodesNotAddedOrMoved(current, updated *Spec) error {
+	hostsByNode := make(map[string][]string, len(current.Nodes))
+	for _, node := range current.Nodes {
+		hostsByNode[node.Name] = node.HostIDs
+	}
+	for _, node := range updated.Nodes {
+		hosts, ok := hostsByNode[node.Name]
+		if !ok || !ds.NewSet(hosts...).Equal(ds.NewSet(node.HostIDs...)) {
+			return errSpockUpgradeTopology
+		}
+	}
+	return nil
+}
+
+// minSpockVersionForMajorUpgrade is the oldest Spock version that can be
+// upgraded to Spock 6. The Spock extension's only upgrade path to 6.0.0
+// starts at 5.0.14.
+var minSpockVersionForMajorUpgrade = ds.MustParseVersion("5.0.14")
+
+// validateSpockMajorUpgrade validates an update against Spock major upgrades
+// and reports whether it starts one.
+//
+// An update to a later Spock major version requires every instance to be
+// observed running Spock 5.0.14 or later. The spec only records the Spock
+// major version, so this uses each instance's last reported status.
+//
+// While an earlier upgrade hasn't finished (pending), the versions were
+// already checked, so they aren't checked again; that lets an operator
+// recover when an instance is down and isn't reporting status. Nodes can't be
+// added or moved until the upgrade finishes, but a broken node can be
+// removed.
+func (s *Service) validateSpockMajorUpgrade(ctx context.Context, current, updated *Spec, pending bool) (bool, error) {
+	switch {
+	case IsSpockMajorUpgrade(current.SpockVersion, updated.SpockVersion):
+		instances, err := s.GetInstances(ctx, current.DatabaseID)
+		if err != nil {
+			return false, fmt.Errorf("failed to get instances: %w", err)
+		}
+		if errs := checkSpockUpgradeVersions(instances); len(errs) > 0 {
+			return false, fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, errors.Join(errs...))
+		}
+		return true, nil
+	case pending:
+		if err := checkNodesNotAddedOrMoved(current, updated); err != nil {
+			return false, fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, err)
+		}
+	}
+	return false, nil
+}
+
+// ClearSpockUpgradePending records that a Spock major upgrade has finished.
+func (s *Service) ClearSpockUpgradePending(ctx context.Context, databaseID string) error {
+	storedDb, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrDatabaseNotFound
+	} else if err != nil {
+		return fmt.Errorf("failed to get database: %w", err)
+	}
+	if !storedDb.SpockUpgradePending {
+		return nil
+	}
+	storedDb.SpockUpgradePending = false
+	if err := s.store.Database.Update(storedDb).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to update database: %w", err)
+	}
+	return nil
+}
+
+// checkSpockUpgradeVersions returns an error for every instance whose observed
+// Spock version is unknown or older than minSpockVersionForMajorUpgrade.
+func checkSpockUpgradeVersions(instances []*Instance) []error {
+	if len(instances) == 0 {
+		return []error{errors.New("cannot upgrade spock: the database has no instances")}
+	}
+	var errs []error
+	for _, instance := range instances {
+		var observed string
+		if instance.Status != nil && !instance.Status.IsStale() {
+			observed = utils.FromPointer(instance.Status.SpockVersion)
+		}
+		if observed == "" {
+			errs = append(errs, fmt.Errorf("cannot upgrade spock: the spock version of instance %s is unknown; make sure every instance is running and reporting status", instance.InstanceID))
+			continue
+		}
+		version, err := ds.ParseVersion(observed)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("cannot upgrade spock: instance %s reports an unrecognized spock version %q", instance.InstanceID, observed))
+			continue
+		}
+		if version.Compare(minSpockVersionForMajorUpgrade) < 0 {
+			errs = append(errs, fmt.Errorf("cannot upgrade spock: instance %s runs spock %s, but upgrading to the next spock major version requires %s or later; update the database to an image with spock %s first", instance.InstanceID, observed, minSpockVersionForMajorUpgrade, minSpockVersionForMajorUpgrade))
+		}
+	}
+	return errs
 }
 
 // checkMajorUnchanged returns an error if old and new have different major

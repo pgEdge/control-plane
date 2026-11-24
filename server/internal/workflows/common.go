@@ -163,6 +163,21 @@ func (w *Workflows) applyPlans(
 	plans []resource.Plan,
 	removeHosts ...string,
 ) error {
+	return w.applyPlansWithHook(ctx, databaseID, taskID, state, variables, plans, nil, removeHosts...)
+}
+
+// applyPlansWithHook is applyPlans, and also calls afterPlan, when it isn't
+// nil, with the index of each plan after that plan is applied.
+func (w *Workflows) applyPlansWithHook(
+	ctx workflow.Context,
+	databaseID string,
+	taskID uuid.UUID,
+	state *resource.State,
+	variables resource.Variables,
+	plans []resource.Plan,
+	afterPlan func(i int) error,
+	removeHosts ...string,
+) error {
 	logger := workflow.Logger(ctx).With("database_id", databaseID)
 
 	// We always want to persist the updated state.
@@ -185,6 +200,11 @@ func (w *Workflows) applyPlans(
 		err = w.applyEvents(ctx, databaseID, taskID, state, variables, plan, removeHosts...)
 		if err != nil {
 			return fmt.Errorf("error in plan %d: %w", i, err)
+		}
+		if afterPlan != nil {
+			if err := afterPlan(i); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

@@ -239,7 +239,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid spock major version change",
+			name: "valid spock major version upgrade",
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
@@ -258,7 +258,6 @@ func TestValidateChangedSpec(t *testing.T) {
 					{Name: "n1", HostIDs: []string{"host-1"}},
 				},
 			},
-			expectedErr: "spock major version changed from 5 to 6",
 		},
 		{
 			name: "invalid spock major version change alongside a host reassignment",
@@ -283,7 +282,74 @@ func TestValidateChangedSpec(t *testing.T) {
 					{Name: "n1", HostIDs: []string{"host-2"}},
 				},
 			},
-			expectedErr: "spock major version changed from 5 to 6",
+			expectedErr: "a spock major version upgrade cannot be combined with adding, removing, or moving nodes",
+		},
+		{
+			name: "invalid spock major version upgrade alongside a node addition",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "6",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+					{Name: "n2", HostIDs: []string{"host-2"}},
+				},
+			},
+			expectedErr: "a spock major version upgrade cannot be combined with adding, removing, or moving nodes",
+		},
+		{
+			name: "invalid spock major version downgrade",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "6",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "downgrading the spock major version is not supported",
+		},
+		{
+			name: "invalid spock major version upgrade skipping a major",
+			current: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "5",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			updated: &database.Spec{
+				TenantID:        utils.PointerTo("tenant-id"),
+				DatabaseName:    "test",
+				PostgresVersion: "18.0",
+				SpockVersion:    "7",
+				Nodes: []*database.Node{
+					{Name: "n1", HostIDs: []string{"host-1"}},
+				},
+			},
+			expectedErr: "upgrade one spock major version at a time",
 		},
 		{
 			name: "valid unchanged without spock",

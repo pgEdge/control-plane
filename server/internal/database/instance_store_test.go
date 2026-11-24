@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/storage/storagetest"
 )
 
@@ -37,5 +38,31 @@ func TestInstanceStore(t *testing.T) {
 
 		assert.Len(t, res, 1)
 		assert.Equal(t, "database", res[0].DatabaseID)
+	})
+}
+
+func TestStoredInstanceUpdateKeepStoredVersion(t *testing.T) {
+	spock5 := ds.MustParsePgEdgeVersion("17.12", "5")
+	spock6 := ds.MustParsePgEdgeVersion("17.12", "6")
+
+	t.Run("keeps the stored version", func(t *testing.T) {
+		instance := database.NewStoredInstance(&database.InstanceUpdateOptions{PgEdgeVersion: spock5})
+		instance.Update(&database.InstanceUpdateOptions{
+			State:             database.InstanceStateFailed,
+			PgEdgeVersion:     spock6,
+			KeepStoredVersion: true,
+		})
+		assert.Equal(t, spock5, instance.PgEdgeVersion)
+		assert.Equal(t, database.InstanceStateFailed, instance.State)
+	})
+	t.Run("sets a version when none is stored", func(t *testing.T) {
+		instance := database.NewStoredInstance(&database.InstanceUpdateOptions{})
+		instance.Update(&database.InstanceUpdateOptions{PgEdgeVersion: spock6, KeepStoredVersion: true})
+		assert.Equal(t, spock6, instance.PgEdgeVersion)
+	})
+	t.Run("replaces the stored version by default", func(t *testing.T) {
+		instance := database.NewStoredInstance(&database.InstanceUpdateOptions{PgEdgeVersion: spock5})
+		instance.Update(&database.InstanceUpdateOptions{PgEdgeVersion: spock6})
+		assert.Equal(t, spock6, instance.PgEdgeVersion)
 	})
 }

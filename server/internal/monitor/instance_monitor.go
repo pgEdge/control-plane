@@ -23,6 +23,7 @@ type InstanceMonitor struct {
 	dbName        string
 	dbSvc         *database.Service
 	certSvc       *certificates.Service
+	logger        zerolog.Logger
 }
 
 func NewInstanceMonitor(
@@ -39,6 +40,7 @@ func NewInstanceMonitor(
 		dbName:     dbName,
 		dbSvc:      dbSvc,
 		certSvc:    certSvc,
+		logger:     logger,
 	}
 	m.statusMonitor = NewMonitor(
 		logger,
@@ -166,6 +168,18 @@ func (m *InstanceMonitor) populateFromDbConn(
 		return fmt.Errorf("failed to query spock version: %w", err)
 	}
 	status.SpockVersion = utils.PointerTo(spockVersion)
+
+	if !status.IsPrimary() {
+		// Done on every check, rather than only when the instance is set up,
+		// because a former primary keeps its own Spock slots after any
+		// switchover or failover.
+		if err := database.CleanUpStaleSpockSlotCopies(ctx, conn, spockVersion); err != nil {
+			m.logger.Warn().Err(err).
+				Str("database_id", m.databaseID).
+				Str("instance_id", m.instanceID).
+				Msg("failed to clean up stale spock replication slot copies")
+		}
+	}
 
 	if status.IsPrimary() {
 		spockReadOnly, err := postgres.GetSpockReadOnly().Scalar(ctx, conn)

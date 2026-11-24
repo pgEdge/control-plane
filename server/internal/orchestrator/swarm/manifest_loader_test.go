@@ -724,13 +724,33 @@ func TestEmbeddedManifestValid_Spock6BetaEntryNotDefault(t *testing.T) {
 		t.Fatalf("embedded manifest cannot be parsed: %v", err)
 	}
 
-	spock6 := ds.MustParsePgEdgeVersion("18.6", "6")
-	imgs, err := v.GetImages(spock6)
-	if err != nil {
-		t.Fatalf("expected embedded manifest to have a spock6 entry: %v", err)
+	for _, pg := range []string{"16.16", "17.12", "18.7"} {
+		imgs, err := v.GetImages(ds.MustParsePgEdgeVersion(pg, "6"))
+		if err != nil {
+			t.Fatalf("expected embedded manifest to have a spock6 entry for postgres %s: %v", pg, err)
+		}
+		if imgs.Stability != "beta" {
+			t.Errorf("spock6 entry for postgres %s: Stability = %q, want %q", pg, imgs.Stability, "beta")
+		}
+		if !strings.Contains(imgs.PgEdgeImage, "spock6.0.0-beta2") {
+			t.Errorf("spock6 entry for postgres %s: image = %q, want a 6.0.0-beta2 image", pg, imgs.PgEdgeImage)
+		}
 	}
-	if imgs.Stability != "beta" {
-		t.Errorf("spock6 entry Stability = %q, want %q", imgs.Stability, "beta")
+	// The Spock 6.0.0-beta1 entries stay, so that databases created on them
+	// can still be updated and moved to beta2. They keep the beta stability,
+	// which is never an image upgrade target, so a Spock 5 database can't be
+	// moved onto them.
+	for _, pg := range []string{"16.15", "17.11", "18.6"} {
+		imgs, err := v.GetImages(ds.MustParsePgEdgeVersion(pg, "6"))
+		if err != nil {
+			t.Fatalf("expected embedded manifest to keep the spock6 beta1 entry for postgres %s: %v", pg, err)
+		}
+		if !strings.Contains(imgs.PgEdgeImage, "spock6.0.0-beta1") {
+			t.Errorf("spock6 entry for postgres %s: image = %q, want a 6.0.0-beta1 image", pg, imgs.PgEdgeImage)
+		}
+		if ds.Stability(imgs.Stability).AllowedAsUpgradeTarget() {
+			t.Errorf("spock6 beta1 entry for postgres %s: stability %q must not be an upgrade target", pg, imgs.Stability)
+		}
 	}
 
 	if major, _ := v.Default().SpockVersion.Major(); major != 5 {

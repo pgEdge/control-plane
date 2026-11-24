@@ -201,7 +201,9 @@ type Orchestrator interface {
 	// upgrade discovery is not applicable (e.g. systemd orchestrator).
 	AvailableUpgrades(current *ds.PgEdgeVersion) []*AvailableUpgrade
 	// FindUpgrade validates that targetImage is a stable upgrade from current
-	// in the same (postgres_major, spock_major) bucket and strictly newer.
+	// with the same postgres major version, and either the same spock major
+	// version and a strictly newer postgres version, or the next spock major
+	// version and a postgres version that isn't older.
 	// Returns the validated upgrade descriptor on success, or
 	// ErrUpgradeNotAvailable (possibly wrapped) on any validation failure.
 	FindUpgrade(current *ds.PgEdgeVersion, targetImage string) (*AvailableUpgrade, error)

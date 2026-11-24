@@ -201,7 +201,11 @@ func SpockDefaultGUCs(dbName string, version *ds.PgEdgeVersion) map[string]any {
 		"spock.save_resolutions":         "on",
 		"spock.conflict_log_level":       "DEBUG",
 	}
-	if dbName != "" && supportsFailoverSlotsDatabase(version) {
+	// The setting is only read by Spock's own failover-slots worker, which
+	// doesn't run when native slot sync is used (Spock 6 on Postgres 17+).
+	// Leaving it unset there also avoids the worker's connection to the
+	// database blocking DROP DATABASE on Postgres 17.
+	if dbName != "" && supportsFailoverSlotsDatabase(version) && !NeedsNativeFailoverSlotsForVersion(version) {
 		gucs["spock.failover_slots_database"] = dbName
 	}
 	return gucs

@@ -16,6 +16,11 @@ type StoredDatabase struct {
 	UpdatedAt  time.Time     `json:"updated_at"`
 	State      DatabaseState `json:"state"`
 	NotCreated bool          `json:"not_created"`
+	// SpockUpgradePending is set when an update to a later Spock major
+	// version is accepted, and cleared once the upgrade workflow has verified
+	// every node and resumed DDL replication. While it's set, retried
+	// updates finish the upgrade and can't add or move nodes.
+	SpockUpgradePending bool `json:"spock_upgrade_pending,omitempty"`
 }
 
 type DatabaseStore struct {

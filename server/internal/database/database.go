@@ -43,11 +43,11 @@ func DatabaseStateModifiable(state DatabaseState) bool {
 }
 
 type Database struct {
-	DatabaseID       string
-	TenantID         *string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	State            DatabaseState
+	DatabaseID string
+	TenantID   *string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	State      DatabaseState
 	// RawState is the state as persisted in storage, before any derived
 	// adjustments (e.g. degrading State based on instance health). Callers
 	// that need to perform a guarded transition against the stored state
@@ -57,6 +57,9 @@ type Database struct {
 	Instances        []*Instance
 	ServiceInstances []*ServiceInstance
 	NotCreated       bool
+	// SpockUpgradePending is true while a Spock major upgrade hasn't
+	// finished. See StoredDatabase.SpockUpgradePending.
+	SpockUpgradePending bool
 }
 
 func (d *Database) Variables() resource.Variables {
@@ -96,16 +99,17 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 	}
 
 	return &Database{
-		DatabaseID:       d.DatabaseID,
-		TenantID:         d.TenantID,
-		CreatedAt:        d.CreatedAt,
-		UpdatedAt:        d.UpdatedAt,
-		State:            state,
-		RawState:         d.State,
-		Spec:             storedSpec.Spec,
-		Instances:        instances,
-		ServiceInstances: serviceInstances,
-		NotCreated:       d.NotCreated,
+		DatabaseID:          d.DatabaseID,
+		TenantID:            d.TenantID,
+		CreatedAt:           d.CreatedAt,
+		UpdatedAt:           d.UpdatedAt,
+		State:               state,
+		RawState:            d.State,
+		Spec:                storedSpec.Spec,
+		Instances:           instances,
+		ServiceInstances:    serviceInstances,
+		NotCreated:          d.NotCreated,
+		SpockUpgradePending: d.SpockUpgradePending,
 	}
 }
 
