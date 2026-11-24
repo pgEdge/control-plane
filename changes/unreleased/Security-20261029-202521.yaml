@@ -1,0 +1,3 @@
+kind: Security
+body: Built the Control Plane with Go 1.26.10, which no longer trusts eight compromised eMudhra intermediate certificate authorities (CVE-2026-111943).
+time: 2026-10-29T20:25:21.000000+00:00

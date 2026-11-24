@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed node backups failing the primary instance check for a node with multiple instances when the first instance checked was not the primary. The check now looks at all of the node's instances, and the error message now says when a node has no available primary instance.
+time: 2026-10-26T15:58:50.000000+00:00
