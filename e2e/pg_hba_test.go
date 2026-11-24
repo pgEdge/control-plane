@@ -228,14 +228,9 @@ func runLocalPsql(t testing.TB, host *api.Host, instance *api.Instance, osUser, 
 
 	switch host.Orchestrator {
 	case "swarm":
-		containerName, err := fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf(
-			"docker ps --filter label=pgedge.instance.id=%s --format '{{.Names}}'", instance.ID))
+		containerName, err := swarmContainerName(instance)
 		if err != nil {
-			return "", fmt.Errorf("failed to find postgres container: %w", err)
-		}
-		containerName = strings.TrimSpace(containerName)
-		if containerName == "" {
-			return "", fmt.Errorf("no postgres container found for instance %s", instance.ID)
+			return "", err
 		}
 		return fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf(
 			"docker exec --user %s %s %s", osUser, containerName, psqlCmd))
@@ -253,6 +248,22 @@ func runLocalPsql(t testing.TB, host *api.Host, instance *api.Instance, osUser, 
 	default:
 		return "", fmt.Errorf("unsupported orchestrator %q", host.Orchestrator)
 	}
+}
+
+// swarmContainerName returns the name of the instance's Postgres container on
+// its host.
+func swarmContainerName(instance *api.Instance) (string, error) {
+	containerName, err := fixture.RunCmdOnHost(instance.HostID, fmt.Sprintf(
+		"docker ps --filter label=pgedge.instance.id=%s --format '{{.Names}}'", instance.ID))
+	if err != nil {
+		return "", fmt.Errorf("failed to find postgres container: %w", err)
+	}
+	containerName = strings.TrimSpace(containerName)
+	if containerName == "" {
+		return "", fmt.Errorf("no postgres container found for instance %s", instance.ID)
+	}
+
+	return containerName, nil
 }
 
 // userRuleAddresses returns the addresses of the active pg_hba rules for

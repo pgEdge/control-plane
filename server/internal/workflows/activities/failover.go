@@ -14,7 +14,8 @@ import (
 )
 
 type PerformFailoverInput struct {
-	DatabaseID          string    `json:"database_id"`
+	DatabaseID string `json:"database_id"`
+	// LeaderInstanceID is empty if the node has no leader.
 	LeaderInstanceID    string    `json:"leader_instance_id"`
 	CandidateInstanceID string    `json:"candidate_instance_id,omitempty"`
 	TaskID              uuid.UUID `json:"task_id"`
@@ -40,23 +41,31 @@ func (a *Activities) PerformFailover(ctx context.Context, input *PerformFailover
 	logger = logger.With("database_id", input.DatabaseID, "task_id", input.TaskID.String(),
 		"leader_instance", input.LeaderInstanceID, "candidate_instance", input.CandidateInstanceID)
 
-	// Get connection info for the leader instance. We will call that leader's Patroni API.
-	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
-	if err != nil {
-		logger.Error("failed to get leader instance connection info", "error", err, "leader", input.LeaderInstanceID)
-		return nil, fmt.Errorf("failed to get instance connection info for leader %s: %w", input.LeaderInstanceID, err)
-	}
-
-	pClient := patroni.NewClient(connInfo.PatroniURL(), nil)
-
 	if input.CandidateInstanceID == "" {
 		logger.Error("no candidate provided for failover; patroni requires a candidate")
 		return nil, errors.New("failover requires a candidate instance id")
 	}
 
+	// Any member's Patroni API accepts a failover, so we call the leader's if
+	// there is one and the candidate's otherwise.
+	apiInstanceID := input.LeaderInstanceID
+	if apiInstanceID == "" {
+		apiInstanceID = input.CandidateInstanceID
+	}
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, apiInstanceID)
+	if err != nil {
+		logger.Error("failed to get instance connection info", "error", err, "instance", apiInstanceID)
+		return nil, fmt.Errorf("failed to get instance connection info for %s: %w", apiInstanceID, err)
+	}
+
+	pClient := patroni.NewClient(connInfo.PatroniURL(), nil)
+
 	failReq := &patroni.Failover{
-		Leader:    &input.LeaderInstanceID,
 		Candidate: &input.CandidateInstanceID,
+	}
+	// Patroni rejects a failover that names a leader when the node has none.
+	if input.LeaderInstanceID != "" {
+		failReq.Leader = &input.LeaderInstanceID
 	}
 
 	logger.Info("calling patroni InitiateFailover", "leader", input.LeaderInstanceID, "candidate", input.CandidateInstanceID)

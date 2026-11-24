@@ -190,6 +190,50 @@ func (d *DatabaseFixture) RestartInstance(ctx context.Context, options RestartIn
 	return d.Refresh(ctx)
 }
 
+type StopInstanceOptions struct {
+	InstanceID string
+	Force      bool
+}
+
+func (d *DatabaseFixture) StopInstance(ctx context.Context, options StopInstanceOptions) error {
+	resp, err := d.client.StopInstance(ctx, &controlplane.StopInstancePayload{
+		DatabaseID: d.ID,
+		InstanceID: options.InstanceID,
+		Force:      options.Force,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to stop instance: %w", err)
+	}
+
+	if err := d.waitForTask(ctx, resp.Task); err != nil {
+		return err
+	}
+
+	return d.Refresh(ctx)
+}
+
+type StartInstanceOptions struct {
+	InstanceID string
+	Force      bool
+}
+
+func (d *DatabaseFixture) StartInstance(ctx context.Context, options StartInstanceOptions) error {
+	resp, err := d.client.StartInstance(ctx, &controlplane.StartInstancePayload{
+		DatabaseID: d.ID,
+		InstanceID: options.InstanceID,
+		Force:      options.Force,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to start instance: %w", err)
+	}
+
+	if err := d.waitForTask(ctx, resp.Task); err != nil {
+		return err
+	}
+
+	return d.Refresh(ctx)
+}
+
 func (d *DatabaseFixture) Refresh(ctx context.Context) error {
 	db, err := d.client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
 		DatabaseID: d.ID,

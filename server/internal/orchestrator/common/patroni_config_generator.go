@@ -22,6 +22,8 @@ import (
 type PatroniConfigGenerator struct {
 	// ArchiveCommand sets the Postgres archive command parameter.
 	ArchiveCommand string `json:"archive_command,omitempty"`
+	// ArchiveRestoreCommand sets the Postgres restore_command parameter.
+	ArchiveRestoreCommand string `json:"archive_restore_command,omitempty"`
 	// ClusterSize is the number of nodes in the Spock cluster. This is used for
 	// the tunable Postgres parameters.
 	ClusterSize int `json:"cluster_size"`
@@ -88,6 +90,11 @@ type PatroniConfigGenerator struct {
 	SpecParameters map[string]any `json:"spec_parameters,omitempty"`
 	// TenantID is an optional tenant ID that is associated with this instance.
 	TenantID *string `json:"tenant_id,omitempty"`
+	// CheckTimeline is used for the Patroni DCS check_timeline setting. When
+	// true, Patroni won't automatically promote a replica that is behind the
+	// cluster's timeline. Users can explicitly provide a candidate to override
+	// this behavior.
+	CheckTimeline *bool `json:"check_timeline,omitempty"`
 }
 
 type PatroniConfigGeneratorOptions struct {
@@ -124,9 +131,10 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 	if memoryBytes == 0 {
 		memoryBytes = opts.HostMemoryBytes
 	}
-	var archiveCommand string
+	var archiveCommand, archiveRestoreCommand string
 	if opts.Instance.BackupConfig != nil {
 		archiveCommand = opts.Paths.PgBackRestBackupCmd("archive-push", `"%p"`).String()
+		archiveRestoreCommand = opts.Paths.PgBackRestBackupCmd("archive-get", `"%f"`, `"%p"`).String()
 	}
 	var restoreCommand string
 	if opts.Instance.RestoreConfig != nil {
@@ -142,6 +150,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 	}
 	return &PatroniConfigGenerator{
 		ArchiveCommand:         archiveCommand,
+		ArchiveRestoreCommand:  archiveRestoreCommand,
 		ClusterSize:            opts.Instance.ClusterSize,
 		CPUs:                   cpus,
 		DatabaseID:             opts.Instance.DatabaseID,
@@ -167,6 +176,7 @@ func NewPatroniConfigGenerator(opts PatroniConfigGeneratorOptions) *PatroniConfi
 		PgHbaConf:              opts.Instance.PgHbaConf,
 		PgIdentConf:            opts.Instance.PgIdentConf,
 		TenantID:               opts.Instance.TenantID,
+		CheckTimeline:          new(true),
 		// TODO: Add allowlist field to instance and database types
 		// PatroniAllowlist:       opts.Instance.PatroniAllowlist,
 	}
@@ -244,6 +254,11 @@ func (p *PatroniConfigGenerator) parameters() map[string]any {
 			"archive_command": p.ArchiveCommand,
 		})
 	}
+	if p.ArchiveRestoreCommand != "" {
+		maps.Copy(parameters, map[string]any{
+			"restore_command": p.ArchiveRestoreCommand,
+		})
+	}
 	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(p.NodeOrdinal))
 	// The defaults above use normalized names, so user-specified parameters
 	// are normalized to replace them regardless of spelling.
@@ -263,10 +278,11 @@ func (p *PatroniConfigGenerator) bootstrap(dcsParameters map[string]any) *patron
 			IgnoreSlots: &[]patroni.IgnoreSlot{
 				{Plugin: utils.PointerTo("spock_output")},
 			},
-			TTL:          utils.PointerTo(30),
-			LoopWait:     utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
-			RetryTimeout: utils.PointerTo(10),
-			FailsafeMode: utils.PointerTo(p.NodeSize == 1),
+			TTL:           utils.PointerTo(30),
+			LoopWait:      utils.PointerTo(int(patroni.DefaultLoopWaitSeconds)),
+			RetryTimeout:  utils.PointerTo(10),
+			FailsafeMode:  utils.PointerTo(p.NodeSize == 1),
+			CheckTimeline: p.CheckTimeline,
 		},
 		InitDB: utils.PointerTo(p.initDB()),
 	}

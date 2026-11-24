@@ -135,6 +135,7 @@ type DCS struct {
 	MaximumLagOnFailover  *int64             `json:"maximum_lag_on_failover,omitempty"`
 	MaximumLagOnSyncNode  *int64             `json:"maximum_lag_on_syncnode,omitempty"`
 	MaxTimelinesHistory   *int               `json:"max_timelines_history,omitempty"`
+	CheckTimeline         *bool              `json:"check_timeline,omitempty"`
 	PrimaryStartTimeout   *int               `json:"primary_start_timeout,omitempty"`
 	PrimaryStopTimeout    *int               `json:"primary_stop_timeout,omitempty"`
 	SynchronousMode       *string            `json:"synchronous_mode,omitempty"`
@@ -159,6 +160,7 @@ func (d *DCS) ToDynamicConfig() *DynamicConfig {
 		MaximumLagOnFailover:  d.MaximumLagOnFailover,
 		MaximumLagOnSyncNode:  d.MaximumLagOnSyncNode,
 		MaxTimelinesHistory:   d.MaxTimelinesHistory,
+		CheckTimeline:         d.CheckTimeline,
 		PrimaryStartTimeout:   d.PrimaryStartTimeout,
 		PrimaryStopTimeout:    d.PrimaryStopTimeout,
 		SynchronousMode:       (*SynchronousMode)(d.SynchronousMode),
