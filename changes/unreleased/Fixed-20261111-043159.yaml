@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed database tasks failing with a misleading `pending futures` error when a resource change could not be queued, such as while a host was being removed. The task now waits for in-progress changes to finish and reports the underlying error.
+time: 2026-11-11T04:31:59.000000+00:00
