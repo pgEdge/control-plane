@@ -43,6 +43,8 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		}
 		if err := w.setSpockDDLReplication(ctx, upgrade, false); err != nil {
 			logger.With("error", err).Error("failed to resume spock ddl replication")
+			// The upgrade stays pending, and the next update resumes it.
+			w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "failed to resume spock ddl replication; it resumes when the next update of the database finishes")
 			return err
 		}
 		ddlPaused = false
@@ -174,13 +176,39 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		}
 	}
 
-	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans, input.RemoveHosts...)
+	// Spock steps that run on each node as soon as the rolling update has
+	// finished updating it, so that a node that fails them stops the update
+	// before the next node is updated.
+	var spockNodes *spockInstances
+	fixBeta1Catalog := fixesSpockBeta1Catalog(input.Spec)
+	switch {
+	case upgrade != nil:
+		spockNodes = &upgrade.spockInstances
+	case fixBeta1Catalog:
+		spockNodes, _, err = keptSpockInstances(current, input.Spec, input.RemoveHosts)
+		if err != nil {
+			return nil, handleError(err)
+		}
+	}
+	nodeSteps := newSpockNodeSteps(input.Spec.DatabaseID, input.TaskID, spockNodes, upgrade, fixBeta1Catalog, planOutput.Plans)
+	var afterPlan func(int) error
+	if nodeSteps != nil {
+		afterPlan = func(i int) error {
+			return nodeSteps.run(ctx, w, i)
+		}
+	}
+
+	err = w.applyPlansWithHook(ctx, input.Spec.DatabaseID, input.TaskID, current, input.Variables, planOutput.Plans, afterPlan, input.RemoveHosts...)
 	if err != nil {
+		return nil, handleError(err)
+	}
+	// The nodes that no plan changed.
+	if err := nodeSteps.run(ctx, w, len(planOutput.Plans)); err != nil {
 		return nil, handleError(err)
 	}
 
 	if upgrade != nil {
-		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "verifying the spock upgrade on each node")
+		w.logSpockUpgradeEvent(ctx, input.Spec.DatabaseID, input.TaskID, "checking replication on every node")
 		if err := w.verifySpockUpgrade(ctx, upgrade); err != nil {
 			return nil, handleError(err)
 		}

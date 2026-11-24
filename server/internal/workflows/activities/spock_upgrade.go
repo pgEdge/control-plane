@@ -35,11 +35,23 @@ func (a *Activities) ExecuteSetSpockDDLReplication(
 	hostID string,
 	input *SetSpockDDLReplicationInput,
 ) workflow.Future[*SetSpockDDLReplicationOutput] {
+	retry := workflow.RetryOptions{
+		MaxAttempts: 3,
+	}
+	if !input.Paused {
+		// Resuming must outlast an instance that's still restarting when the
+		// upgrade fails or is canceled; otherwise DDL replication stays off
+		// on it until the next update. This retries for about 10 minutes.
+		retry = workflow.RetryOptions{
+			MaxAttempts:        15,
+			FirstRetryInterval: 2 * time.Second,
+			BackoffCoefficient: 2,
+			MaxRetryInterval:   time.Minute,
+		}
+	}
 	options := workflow.ActivityOptions{
-		Queue: utils.HostQueue(hostID),
-		RetryOptions: workflow.RetryOptions{
-			MaxAttempts: 3,
-		},
+		Queue:        utils.HostQueue(hostID),
+		RetryOptions: retry,
 	}
 	return workflow.ExecuteActivity[*SetSpockDDLReplicationOutput](ctx, options, a.SetSpockDDLReplication, input)
 }
@@ -253,4 +265,54 @@ func (a *Activities) connectToInstance(
 		return nil, nil, fmt.Errorf("failed to connect to instance %s: %w", instanceID, err)
 	}
 	return conn, opts, nil
+}
+
+type FixSpockBeta1CatalogInput struct {
+	DatabaseID   string `json:"database_id"`
+	InstanceID   string `json:"instance_id"`
+	DatabaseName string `json:"database_name"`
+}
+
+type FixSpockBeta1CatalogOutput struct {
+	Fixed bool `json:"fixed"`
+}
+
+func (a *Activities) ExecuteFixSpockBeta1Catalog(
+	ctx workflow.Context,
+	hostID string,
+	input *FixSpockBeta1CatalogInput,
+) workflow.Future[*FixSpockBeta1CatalogOutput] {
+	options := workflow.ActivityOptions{
+		Queue: utils.HostQueue(hostID),
+		RetryOptions: workflow.RetryOptions{
+			MaxAttempts: 3,
+		},
+	}
+	return workflow.ExecuteActivity[*FixSpockBeta1CatalogOutput](ctx, options, a.FixSpockBeta1Catalog, input)
+}
+
+// FixSpockBeta1Catalog runs on a node's primary after the node is updated. It
+// brings a Spock catalog created by 6.0.0-beta1 up to date once the node runs
+// beta2, and does nothing otherwise. Remove at Spock 6.0.0 GA.
+func (a *Activities) FixSpockBeta1Catalog(ctx context.Context, input *FixSpockBeta1CatalogInput) (*FixSpockBeta1CatalogOutput, error) {
+	if input == nil {
+		return nil, errors.New("input is nil")
+	}
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID, "instance_id", input.InstanceID)
+
+	conn, _, err := a.connectToInstance(ctx, input.DatabaseID, input.InstanceID, input.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+
+	fixed, err := database.FixSpockBeta1Catalog(ctx, conn)
+	if err != nil {
+		return nil, fmt.Errorf("instance %s: %w", input.InstanceID, err)
+	}
+	if fixed {
+		logger.Info("updated the spock 6.0.0-beta1 catalog")
+	}
+
+	return &FixSpockBeta1CatalogOutput{Fixed: fixed}, nil
 }

@@ -29,6 +29,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.CreatePgBackRestBackup),
 		work.RegisterActivity(a.DeleteDbEntities),
 		work.RegisterActivity(a.EnableSpockSlotsFailover),
+		work.RegisterActivity(a.FixSpockBeta1Catalog),
 		work.RegisterActivity(a.GenerateServiceInstanceResources),
 		work.RegisterActivity(a.GetCurrentState),
 		work.RegisterActivity(a.GetInstanceResources),

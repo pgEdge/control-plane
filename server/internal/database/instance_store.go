@@ -34,7 +34,11 @@ type InstanceUpdateOptions struct {
 	PatroniPort   *int              `json:"patroni_port"`
 	PgEdgeVersion *ds.PgEdgeVersion `json:"pgedge_version"`
 	Error         string            `json:"error,omitempty"`
-	Now           time.Time         `json:"now"`
+	// KeepStoredVersion keeps the version already stored on an existing
+	// instance instead of PgEdgeVersion. It's set when recording a failure,
+	// since the instance may not have started on the new version.
+	KeepStoredVersion bool      `json:"keep_stored_version,omitempty"`
+	Now               time.Time `json:"now"`
 }
 
 func (o *InstanceUpdateOptions) now() time.Time {
@@ -64,7 +68,9 @@ func NewStoredInstance(opts *InstanceUpdateOptions) *StoredInstance {
 func (i *StoredInstance) Update(opts *InstanceUpdateOptions) {
 	i.Port = opts.Port
 	i.PatroniPort = opts.PatroniPort
-	i.PgEdgeVersion = opts.PgEdgeVersion
+	if !opts.KeepStoredVersion || i.PgEdgeVersion == nil {
+		i.PgEdgeVersion = opts.PgEdgeVersion
+	}
 	i.State = opts.State
 	i.Error = opts.Error
 	i.UpdateAt = opts.now()

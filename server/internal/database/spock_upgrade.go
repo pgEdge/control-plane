@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -216,4 +217,60 @@ func WaitForSubscriptionsReplicating(ctx context.Context, conn *pgx.Conn, timeou
 			return err
 		}
 	}
+}
+
+// FixSpockBeta1Catalog brings the connected primary's Spock catalog up to
+// date when it was created by Spock 6.0.0-beta1 and the server now runs
+// beta2. It does nothing otherwise, and reports whether it changed the
+// catalog. The update runs in repair mode, so that Spock doesn't replicate it
+// to nodes that may still run beta1. Remove at Spock 6.0.0 GA.
+func FixSpockBeta1Catalog(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	needsFix, err := postgres.SpockBeta1CatalogNeedsFix().Scalar(ctx, conn)
+	if err != nil {
+		return false, fmt.Errorf("failed to check the spock catalog: %w", err)
+	}
+	if !needsFix {
+		return false, nil
+	}
+	tx, err := postgres.StartRepairModeTxn(ctx, conn)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+
+	if err := postgres.FixSpockBeta1Catalog().Exec(ctx, tx); err != nil {
+		return false, fmt.Errorf("failed to update the spock 6.0.0-beta1 catalog: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("failed to commit the spock catalog update: %w", err)
+	}
+	return true, nil
+}
+
+// CleanUpStaleSpockSlotCopies drops the Spock slot copies on a standby that
+// native slot sync didn't create, when the standby uses native slot sync
+// (Spock 6 or later on PostgreSQL 17 or later). Such copies appear when a
+// former primary keeps its own slots after a switchover or failover, and
+// they stop native slot sync from keeping the standby's copies current.
+// spockVersion is the running Spock version. It does nothing on a primary.
+func CleanUpStaleSpockSlotCopies(ctx context.Context, conn *pgx.Conn, spockVersion string) error {
+	version, err := ds.ParseVersion(spockVersion)
+	if err != nil {
+		return nil
+	}
+	if major, ok := version.Major(); !ok || major < 6 {
+		return nil
+	}
+	supported, err := SupportsSlotFailover(ctx, conn)
+	if err != nil || !supported {
+		return err
+	}
+	enabled, err := postgres.NativeSlotSyncEnabled().Scalar(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to check whether native slot sync is enabled: %w", err)
+	}
+	if !enabled {
+		return nil
+	}
+	return dropStaleSpockSlotCopies(ctx, conn)
 }

@@ -404,9 +404,12 @@ func (r *InstanceResource) recordError(ctx context.Context, rc *resource.Context
 		return err
 	}
 
+	// The version is updated from the instance's reported status once it
+	// runs again. See ReconcileAllDatabaseVersions.
 	err = r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{
-		State: InstanceStateFailed,
-		Error: cause.Error(),
+		State:             InstanceStateFailed,
+		Error:             cause.Error(),
+		KeepStoredVersion: true,
 	})
 	if err != nil {
 		logger.Err(err).Msg("failed to persist instance error status")

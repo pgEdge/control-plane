@@ -38,7 +38,15 @@ func TestDetectSpockUpgrade(t *testing.T) {
 		return state
 	}
 	spec := func(spockVersion string) *database.Spec {
-		return &database.Spec{DatabaseID: databaseID, DatabaseName: "app", SpockVersion: spockVersion}
+		return &database.Spec{
+			DatabaseID:   databaseID,
+			DatabaseName: "app",
+			SpockVersion: spockVersion,
+			Nodes: []*database.Node{
+				{Name: "n1", HostIDs: []string{"host-1", "host-2"}},
+				{Name: "n2", HostIDs: []string{"host-3", "host-4"}},
+			},
+		}
 	}
 
 	// Added out of order to check that the result is sorted.
@@ -108,6 +116,18 @@ func TestDetectSpockUpgrade(t *testing.T) {
 		}, upgrade.Instances)
 	})
 
+	t.Run("instances the update removes are left out", func(t *testing.T) {
+		withoutN2 := spec("6")
+		withoutN2.Nodes = withoutN2.Nodes[:1]
+		withoutN2.Nodes[0].HostIDs = []string{"host-1"}
+		upgrade, err := detectSpockUpgrade(spock5, withoutN2, nil, true)
+		require.NoError(t, err)
+		require.NotNil(t, upgrade)
+		assert.Equal(t, []spockUpgradeInstance{
+			{NodeName: "n1", InstanceID: "test-db-n1-a", HostID: "host-1"},
+		}, upgrade.Instances)
+	})
+
 	for _, tc := range []struct {
 		name    string
 		state   *resource.State
@@ -132,5 +152,56 @@ func TestDetectSpockUpgrade(t *testing.T) {
 			require.NoError(t, err)
 			assert.Nil(t, upgrade)
 		})
+	}
+}
+
+func TestNodesUpdatedByPlan(t *testing.T) {
+	nodes := &spockInstances{
+		Instances: []spockUpgradeInstance{
+			{NodeName: "n1", InstanceID: "db-n1-a", HostID: "host-1"},
+			{NodeName: "n1", InstanceID: "db-n1-b", HostID: "host-2"},
+			{NodeName: "n2", InstanceID: "db-n2-a", HostID: "host-3"},
+			{NodeName: "n3", InstanceID: "db-n3-a", HostID: "host-5"},
+		},
+	}
+	event := func(typ resource.Type, id string) *resource.Event {
+		return &resource.Event{
+			Type:     resource.EventTypeUpdate,
+			Resource: &resource.ResourceData{Identifier: resource.Identifier{Type: typ, ID: id}},
+		}
+	}
+	instance := func(id string) *resource.Event {
+		return event(database.ResourceTypeInstance, id)
+	}
+	// A rolling update: n1's replica, then n1's primary, then n2.
+	plans := []resource.Plan{
+		{{instance("db-n1-b")}},
+		{{event("swarm.postgres_service", "db-n1-a")}, {instance("db-n1-a")}},
+		{{instance("db-n2-a"), event(database.ResourceTypeNode, "n1")}},
+	}
+
+	assert.Equal(t, [][]spockUpgradeInstance{
+		nil,
+		{{NodeName: "n1", InstanceID: "db-n1-a", HostID: "host-1"}},
+		{{NodeName: "n2", InstanceID: "db-n2-a", HostID: "host-3"}},
+		// No plan changes n3.
+		{{NodeName: "n3", InstanceID: "db-n3-a", HostID: "host-5"}},
+	}, nodes.nodesUpdatedByPlan(plans))
+
+	// Every node is in the last group when there are no plans.
+	groups := nodes.nodesUpdatedByPlan(nil)
+	require.Len(t, groups, 1)
+	assert.Len(t, groups[0], 3)
+}
+
+func TestFixesSpockBeta1Catalog(t *testing.T) {
+	for spockVersion, expected := range map[string]bool{
+		"":      false,
+		"5":     false,
+		"6":     true,
+		"6.0.0": true,
+		"7":     false,
+	} {
+		assert.Equal(t, expected, fixesSpockBeta1Catalog(&database.Spec{SpockVersion: spockVersion}), spockVersion)
 	}
 }

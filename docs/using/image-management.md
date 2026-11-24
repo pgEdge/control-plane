@@ -352,6 +352,13 @@ for, and the highest combination becomes that host's default. Only
 install the Spock 6 packages on hosts where you intend to use the
 preview.
 
+Databases created on Spock 6.0.0-beta1 keep running on their beta1
+images, which use Postgres 16.15, 17.11, and 18.6. To move one of these
+databases to beta2, update its spec and set `postgres_version` to the
+beta2 version of the same Postgres major version, such as 18.7 for 18.6.
+After it updates each node, the Control Plane applies the catalog
+update that Spock 6.0.0-beta2 provides for databases created on beta1.
+
 !!! warning
 
     Preview images are for evaluation, not production use. The Control
@@ -387,8 +394,10 @@ During the upgrade, the Control Plane:
   and later, so that replicas keep copies of the slots.
 - upgrades one node at a time, updating the node's replicas before its
   primary.
-- checks that each node's Spock extension is up to date and that its
-  subscriptions are replicating.
+- checks each node right after upgrading it, before it moves on to the
+  next node: the node's Spock extension must be up to date and its
+  subscriptions must be replicating.
+- checks every node again after the last node is upgraded.
 
 On Docker Swarm, the Control Plane switches over to an upgraded replica
 before it restarts a node's primary. To enable failover on a slot that
