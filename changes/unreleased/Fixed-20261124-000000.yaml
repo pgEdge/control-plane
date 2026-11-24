@@ -1,0 +1,3 @@
+kind: Fixed
+body: Replicas of Spock 6 databases on Postgres 17 or later now drop stale copies of Spock replication slots, including after a switchover or failover, so that native slot synchronization keeps their copies current. Creating or updating a replica no longer fails when its slot copies stay temporary, and an update doesn't switch over to a replica that lacks them.
+time: 2026-11-24T00:00:01.000000+00:00

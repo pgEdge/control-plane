@@ -177,4 +177,33 @@ func TestClusterState(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("MostAlignedReplicaExcept", func(t *testing.T) {
+		member := func(name string, role patroni.ClusterRole, lag int) patroni.ClusterMember {
+			return patroni.ClusterMember{
+				Name:  utils.PointerTo(name),
+				Role:  utils.PointerTo(role),
+				State: utils.PointerTo(patroni.StateStreaming),
+				Lag:   utils.PointerTo(patroni.Lag(lag)),
+			}
+		}
+		state := &patroni.ClusterState{
+			Members: []patroni.ClusterMember{
+				member("instance-1", patroni.ClusterRoleLeader, 0),
+				member("instance-2", patroni.ClusterRoleReplica, 3),
+				member("instance-3", patroni.ClusterRoleReplica, 5),
+			},
+		}
+
+		got, ok := state.MostAlignedReplicaExcept(nil)
+		assert.True(t, ok)
+		assert.Equal(t, "instance-2", *got.Name)
+
+		got, ok = state.MostAlignedReplicaExcept([]string{"instance-2"})
+		assert.True(t, ok)
+		assert.Equal(t, "instance-3", *got.Name)
+
+		_, ok = state.MostAlignedReplicaExcept([]string{"instance-2", "instance-3"})
+		assert.False(t, ok)
+	})
 }

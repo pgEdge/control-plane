@@ -1,0 +1,28 @@
+package postgres_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/pgEdge/control-plane/server/internal/postgres"
+)
+
+func TestIsReplicationSlotSynced(t *testing.T) {
+	sql := postgres.IsReplicationSlotSynced("app", "n1", "n2").SQL
+	// A temporary or invalidated copy can't be used after a promotion.
+	assert.Contains(t, sql, "synced AND NOT temporary AND invalidation_reason IS NULL")
+}
+
+func TestStaleSpockSlotCopiesOnlyOnStreamingStandby(t *testing.T) {
+	// A primary that Patroni restarted is briefly in recovery before it's
+	// promoted, without a WAL receiver. Its slots must never be dropped.
+	for _, sql := range []string{
+		postgres.StaleSpockSlotCopies().SQL,
+		postgres.DropStaleSpockSlotCopy("spk_app_n1_sub_n1_n2").SQL,
+	} {
+		assert.Contains(t, sql, "pg_is_in_recovery()")
+		assert.Contains(t, sql, "FROM pg_stat_wal_receiver WHERE status = 'streaming'")
+	}
+	assert.Contains(t, postgres.StaleSpockSlotCopies().SQL, "NOT synced")
+}

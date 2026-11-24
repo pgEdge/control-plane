@@ -99,12 +99,34 @@ func (s *Switchover) Create(ctx context.Context, rc *resource.Context) error {
 	// switchover resource will check if the instance is already a replica
 	// before it does any work.
 	switchover := &database.SwitchoverResource{
-		HostID:     s.HostID,
-		InstanceID: s.InstanceID,
-		TargetRole: patroni.InstanceRoleReplica,
+		HostID:            s.HostID,
+		InstanceID:        s.InstanceID,
+		TargetRole:        patroni.InstanceRoleReplica,
+		ExcludeCandidates: replicasWithoutSlotCopies(rc, node, s.InstanceID),
 	}
 
 	return switchover.Create(ctx, rc)
+}
+
+// replicasWithoutSlotCopies returns the node's other instances that don't yet
+// hold permanent copies of the primary's Spock slots. Promoting one would
+// stop peer nodes from replicating from this node, so it's better to restart
+// the primary in place. See database.InstanceResource.SpockSlotCopiesPending.
+func replicasWithoutSlotCopies(rc *resource.Context, node *database.NodeResource, primaryID string) []string {
+	var excluded []string
+	for _, id := range node.InstanceIDs {
+		if id == primaryID {
+			continue
+		}
+		replica, err := resource.FromContext[*database.InstanceResource](rc, database.InstanceResourceIdentifier(id))
+		if err != nil {
+			continue
+		}
+		if len(replica.SpockSlotCopiesPending) > 0 {
+			excluded = append(excluded, id)
+		}
+	}
+	return excluded
 }
 
 func (s *Switchover) Update(ctx context.Context, rc *resource.Context) error {

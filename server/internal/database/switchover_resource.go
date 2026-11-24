@@ -28,6 +28,11 @@ type SwitchoverResource struct {
 	HostID     string               `json:"host_id"`
 	InstanceID string               `json:"instance_id"`
 	TargetRole patroni.InstanceRole `json:"target_role"`
+	// ExcludeCandidates are instances that a switchover to a peer must not
+	// promote, such as replicas that don't hold permanent copies of their
+	// primary's Spock slots yet. When every replica is excluded, the
+	// switchover is skipped.
+	ExcludeCandidates []string `json:"exclude_candidates,omitempty"`
 }
 
 func (s *SwitchoverResource) ResourceVersion() string {
@@ -120,8 +125,15 @@ func (s *SwitchoverResource) switchover(
 	var candidate *string
 	if target != "" {
 		candidate = &target
-	} else if r, ok := cluster.MostAlignedReplica(); ok {
+	} else if r, ok := cluster.MostAlignedReplicaExcept(s.ExcludeCandidates); ok {
 		candidate = r.Name
+	} else if len(s.ExcludeCandidates) > 0 {
+		logger.Warn().
+			Str("instance_id", s.InstanceID).
+			Strs("excluded_candidates", s.ExcludeCandidates).
+			Msg("skipping switchover - no replica holds permanent copies of all spock replication slots")
+
+		return nil
 	} else {
 		logger.Warn().
 			Str("instance_id", s.InstanceID).

@@ -124,6 +124,7 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	if err != nil {
 		return nil, handleError(err)
 	}
+	w.logPendingSlotCopies(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
 
 	updateStateInput := &activities.UpdateDbStateInput{
 		DatabaseID: input.Spec.DatabaseID,
