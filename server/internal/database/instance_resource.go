@@ -94,8 +94,41 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 	if err := SetScriptNeedsToRun(ctx, rc, r.PostInit); err != nil {
 		return err
 	}
+	r.refreshSpockSlotCopiesPending(ctx, rc)
 
 	return nil
+}
+
+// refreshSpockSlotCopiesPending checks again which of the recorded missing
+// Spock slot copies this replica still lacks, because native slot sync can
+// make them permanent long after the replica was created or updated. Refresh
+// runs before an update plans its switchovers, so a replica that has caught
+// up is a switchover candidate again. On an error, it keeps the recorded
+// list, which keeps the replica out of switchovers.
+func (r *InstanceResource) refreshSpockSlotCopiesPending(ctx context.Context, rc *resource.Context) {
+	if len(r.SpockSlotCopiesPending) == 0 {
+		return
+	}
+	if r.PrimaryInstanceID == r.Spec.InstanceID {
+		// A primary holds the slots themselves.
+		r.SpockSlotCopiesPending = nil
+		return
+	}
+	pending, nativeSlotSync, err := r.missingSpockSlotCopies(ctx, rc, false)
+	if err == nil && !nativeSlotSync {
+		// Nothing was checked, for example because the subscriptions aren't
+		// in the state. Keep the recorded list.
+		return
+	}
+	if err != nil {
+		if logger, logErr := do.Invoke[zerolog.Logger](rc.Injector); logErr == nil {
+			logger.Warn().Err(err).
+				Str("instance_id", r.Spec.InstanceID).
+				Msg("failed to check the replica's spock slot copies; keeping the recorded missing copies")
+		}
+		return
+	}
+	r.SpockSlotCopiesPending = pending
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
@@ -284,57 +317,15 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *resource.Context) error {
 	r.SpockSlotCopiesPending = nil
 
-	subs, err := resource.AllFromContext[*SubscriptionResource](rc, ResourceTypeSubscription)
-	if err != nil {
-		return fmt.Errorf("failed to list subscriptions: %w", err)
-	}
-
-	var relevant []*SubscriptionResource
-	for _, sub := range subs {
-		if sub.ProviderNode == r.Spec.NodeName {
-			relevant = append(relevant, sub)
-		}
-	}
-	if len(relevant) == 0 {
-		return nil
-	}
-
-	conn, err := r.Connection(ctx, rc, r.Spec.DatabaseName)
-	if err != nil {
-		return fmt.Errorf("failed to connect for replication slot check: %w", err)
-	}
-	defer conn.Close(ctx)
-
-	nativeSlotSync, err := r.usesNativeSlotSync(ctx, conn)
-	if err != nil {
-		return err
-	}
-
 	const (
 		pollInterval    = 2 * time.Second
 		slotWaitTimeout = 2 * time.Minute
 	)
 	deadline := time.Now().Add(slotWaitTimeout)
 	for {
-		if nativeSlotSync {
-			if err := dropStaleSpockSlotCopies(ctx, conn); err != nil {
-				return err
-			}
-		}
-		var pending []string
-		for _, sub := range relevant {
-			ready := postgres.IsReplicationSlotReady(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode)
-			if nativeSlotSync {
-				ready = postgres.IsReplicationSlotSynced(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode)
-			}
-			exists, err := ready.Scalar(ctx, conn)
-			if err != nil {
-				return fmt.Errorf("failed to check replication slot for %s→%s: %w",
-					sub.ProviderNode, sub.SubscriberNode, err)
-			}
-			if !exists {
-				pending = append(pending, sub.ProviderNode+"→"+sub.SubscriberNode)
-			}
+		pending, nativeSlotSync, err := r.missingSpockSlotCopies(ctx, rc, true)
+		if err != nil {
+			return err
 		}
 		if len(pending) == 0 {
 			return nil
@@ -343,7 +334,6 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 			if !nativeSlotSync {
 				return fmt.Errorf("timed out waiting for a copy of the replication slot for %s", strings.Join(pending, ", "))
 			}
-			slices.Sort(pending)
 			r.SpockSlotCopiesPending = pending
 			if logger, err := do.Invoke[zerolog.Logger](rc.Injector); err == nil {
 				logger.Warn().
@@ -359,6 +349,62 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 		case <-time.After(pollInterval):
 		}
 	}
+}
+
+// missingSpockSlotCopies returns the subscriptions, as "provider→subscriber"
+// and sorted, whose slot this replica doesn't hold a permanent copy of, and
+// whether the copies come from native slot sync, which is false when there's
+// nothing to check. With native slot sync, only
+// copies that native slot sync made count, and dropStale drops the copies it
+// didn't make first.
+func (r *InstanceResource) missingSpockSlotCopies(ctx context.Context, rc *resource.Context, dropStale bool) ([]string, bool, error) {
+	subs, err := resource.AllFromContext[*SubscriptionResource](rc, ResourceTypeSubscription)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to list subscriptions: %w", err)
+	}
+	var relevant []*SubscriptionResource
+	for _, sub := range subs {
+		if sub.ProviderNode == r.Spec.NodeName {
+			relevant = append(relevant, sub)
+		}
+	}
+	if len(relevant) == 0 {
+		return nil, false, nil
+	}
+
+	conn, err := r.Connection(ctx, rc, r.Spec.DatabaseName)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to connect for replication slot check: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	nativeSlotSync, err := r.usesNativeSlotSync(ctx, conn)
+	if err != nil {
+		return nil, false, err
+	}
+	if nativeSlotSync && dropStale {
+		if err := dropStaleSpockSlotCopies(ctx, conn); err != nil {
+			return nil, false, err
+		}
+	}
+
+	var pending []string
+	for _, sub := range relevant {
+		ready := postgres.IsReplicationSlotReady(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode)
+		if nativeSlotSync {
+			ready = postgres.IsReplicationSlotSynced(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode)
+		}
+		exists, err := ready.Scalar(ctx, conn)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to check replication slot for %s→%s: %w",
+				sub.ProviderNode, sub.SubscriberNode, err)
+		}
+		if !exists {
+			pending = append(pending, sub.ProviderNode+"→"+sub.SubscriberNode)
+		}
+	}
+	slices.Sort(pending)
+	return pending, nativeSlotSync, nil
 }
 
 // usesNativeSlotSync reports whether this replica gets its Spock slot copies

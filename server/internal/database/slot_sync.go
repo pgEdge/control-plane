@@ -75,6 +75,15 @@ func dropStaleSpockSlotCopies(ctx context.Context, conn *pgx.Conn) error {
 		case errors.As(err, &pgErr) && (pgErr.Code == pgerrcode.ObjectInUse || pgErr.Code == pgerrcode.UndefinedObject):
 			// Picked up by a process, or already gone. Retried on the next
 			// call if it's still there.
+		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ObjectNotInPrerequisiteState:
+			// PostgreSQL refuses to drop a synced copy on a standby. Another
+			// cleanup may have dropped the stale slot, and native slot sync
+			// replaced it with a synced copy of the same name, which is the
+			// outcome we want.
+			synced, checkErr := postgres.IsSlotSynced(slot.Name).Scalar(ctx, conn)
+			if checkErr != nil || !synced {
+				return fmt.Errorf("failed to drop stale replication slot copy %s: %w", slot.Name, err)
+			}
 		default:
 			return fmt.Errorf("failed to drop stale replication slot copy %s: %w", slot.Name, err)
 		}

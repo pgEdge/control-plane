@@ -58,13 +58,30 @@ func StaleSpockSlotCopies() Query[SlotActivity] {
 	}
 }
 
-// DropStaleSpockSlotCopy drops the given slot copy, but only while the
-// instance is still a standby streaming from a primary. Checking in the same
-// statement means a slot is never dropped from an instance that was
-// promoted, or is about to be, after the copies were listed.
+// DropStaleSpockSlotCopy drops the given slot if it's still a copy that
+// native slot sync didn't make, and the instance is still a standby streaming
+// from a primary. Checking in the same statement as the drop keeps the
+// window small, but can't close it: slot drops aren't transactional, and
+// nothing can block a promotion between the check and the drop. A synced
+// copy is never dropped, because the statement skips it, and PostgreSQL
+// refuses to drop one on a standby.
 func DropStaleSpockSlotCopy(slotName string) Statement {
 	return Statement{
-		SQL:  "SELECT pg_drop_replication_slot(@slot_name) WHERE " + streamingStandbyCondition + ";",
+		SQL: `SELECT pg_drop_replication_slot(slot_name)
+			FROM pg_replication_slots
+			WHERE slot_name = @slot_name
+			  AND NOT synced
+			  AND NOT temporary
+			  AND ` + streamingStandbyCondition + `;`,
+		Args: pgx.NamedArgs{"slot_name": slotName},
+	}
+}
+
+// IsSlotSynced reports whether the named slot exists and is a copy made by
+// native slot sync. Requires PostgreSQL 17 or later.
+func IsSlotSynced(slotName string) Query[bool] {
+	return Query[bool]{
+		SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND synced);",
 		Args: pgx.NamedArgs{"slot_name": slotName},
 	}
 }

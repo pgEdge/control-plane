@@ -26,3 +26,12 @@ func TestStaleSpockSlotCopiesOnlyOnStreamingStandby(t *testing.T) {
 	}
 	assert.Contains(t, postgres.StaleSpockSlotCopies().SQL, "NOT synced")
 }
+
+func TestDropStaleSpockSlotCopySkipsSyncedCopies(t *testing.T) {
+	// A synced copy can replace a stale one between the listing and the
+	// drop. The drop must leave it alone.
+	stmt := postgres.DropStaleSpockSlotCopy("spk_app_n1_sub_n1_n2")
+	assert.Contains(t, stmt.SQL, "WHERE slot_name = @slot_name")
+	assert.Contains(t, stmt.SQL, "AND NOT synced")
+	assert.Equal(t, "spk_app_n1_sub_n1_n2", stmt.Args["slot_name"])
+}
