@@ -1,3 +1,0 @@
-kind: Changed
-body: PostgREST 14.18 and RAG 2.0.1 are now available and are the default versions for new PostgREST and RAG services. Existing services keep their current version. The Spock 5.0.14 images for Postgres 16.16, 17.12, and 18.7 now use a newer build.
-time: 2026-11-25T00:00:00.000000+00:00

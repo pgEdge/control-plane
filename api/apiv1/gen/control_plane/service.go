@@ -87,7 +87,7 @@ type Service interface {
 const APIName = "control-plane"
 
 // APIVersion is the version of the API as defined in the design.
-const APIVersion = "v0.11.0"
+const APIVersion = "v1.0.0"
 
 // ServiceName is the name of the service as defined in the design. This is the
 // same value that is set in the endpoint request contexts under the ServiceKey

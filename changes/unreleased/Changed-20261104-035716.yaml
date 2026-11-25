@@ -1,3 +1,0 @@
-kind: Changed
-body: Database updates that remove the host running a node's current primary instance, while keeping the node, are now rejected with an error that asks you to perform a switchover first. Previously, the node could not accept writes until Patroni promoted a new primary. Hosts listed in `remove_host` are not affected.
-time: 2026-11-04T03:57:16.000000+00:00

@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed Patroni REST API requests failing with `403 Access is denied` on dual-stack hosts. The generated Patroni allowlist now includes the IPv4-mapped loopback address `::ffff:127.0.0.1`.
-time: 2026-10-22T10:58:38.000000+00:00

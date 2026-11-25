@@ -1,5 +1,45 @@
 # Changelog
 
+## v1.0.0 - 2026-11-25
+
+### Added
+
+- Added support for Spock 5.0.13 on Postgres 16.15, 17.11, and 18.6.
+- Database updates can now repair a node that has no primary instance, and database deletes can now remove one. Previously, both operations failed with a `node <name> has no primary instance` error.
+- Added a `locale` field to the database spec for setting the locale provider, locale, collation, and encoding used when the database is created.
+- Added support for PostgREST services on hosts that use the systemd orchestrator. Install the PostgREST package on each host that runs a PostgREST service.
+- Added support for single-node databases without Spock to the systemd orchestrator. Postgres installations without Spock are now reported as supported versions, and databases created with those versions do not use Spock.
+- Added support for MCP services on hosts that use the systemd orchestrator. Install the pgedge-postgres-mcp package on each host that runs an MCP service. A knowledgebase file must be readable by the pgedge user.
+- Added support for Spock 5.0.14 on Postgres 16.16, 17.12, and 18.7. Postgres 18.7 with Spock 5.0.14 is now the default.
+- Added support for RAG services on hosts that use the systemd orchestrator. Install the pgedge-rag-server2 package on each host that runs a RAG service. The new systemd.rag_path setting selects the RAG server binary.
+- Added validation of `shared_preload_libraries` for hosts that use the systemd orchestrator. Each library must be installed in the library directory of the database's Postgres version on every host that runs it. Libraries are only validated on hosts that have reported their installed libraries, and path-style entries are not validated.
+
+### Changed
+
+- Changed systemd orchestrator to find Postgres and Spock installations using `pg_config` rather than by matching specific package names.
+- Renamed the `cluster_already_initialized` error returned by the init and join cluster endpoints to `host_already_in_cluster` with a clearer message.
+- Database updates that remove the host running a node's current primary instance, while keeping the node, are now rejected with an error that asks you to perform a switchover first. Previously, the node could not accept writes until Patroni promoted a new primary. Hosts listed in `remove_host` are not affected.
+- The Spock 6 preview now uses Spock 6.0.0-beta2 images on Postgres 16.16, 17.12, and 18.7. Databases created on 6.0.0-beta1 images can still be updated, and moving one to beta2 now updates its Spock catalog automatically.
+- PostgREST 14.18 and RAG 2.0.1 are now available and are the default versions for new PostgREST and RAG services. Existing services keep their current version. The Spock 5.0.14 images for Postgres 16.16, 17.12, and 18.7 now use a newer build.
+
+### Fixed
+
+- Fixed Patroni REST API requests failing with `403 Access is denied` on dual-stack hosts. The generated Patroni allowlist now includes the IPv4-mapped loopback address `::ffff:127.0.0.1`.
+- Fixed etcd `log_level` overrides being saved to `generated.config.json` and staying in effect after the override was removed. Only the etcd server ports and client endpoints are now saved to the generated config.
+- Fixed node backups failing the primary instance check for a node with multiple instances when the first instance checked was not the primary. The check now looks at all of the node's instances, and the error message now says when a node has no available primary instance.
+- Removing a host now updates the Patroni configuration of every modifiable database so that it no longer refers to the removed Etcd server. Databases that can't be modified at that time are updated on their next database update.
+- Fixed database tasks failing with a misleading `pending futures` error when a resource change could not be queued, such as while a host was being removed. The task now waits for in-progress changes to finish and reports the underlying error.
+- Fixed an issue where starting, restoring, or updating a database instance could fail because of an old failed task in the Docker Swarm task history.
+- Getting a host that doesn't exist now returns a 404 not_found error instead of a 500 server_error, and the error message no longer includes internal storage details.
+- Creating or updating a database with a node name that isn't "n" followed by a number, such as "n1-east", now returns a 400 error that names the node and the expected format, instead of a 500 server error. The same node name format is now enforced for the node names in backup, switchover, failover, and restore requests.
+- A scheduled switchover's task now stays running until the switchover happens, and canceling the task before the scheduled time cancels the switchover. Previously, the task completed as soon as the switchover was scheduled and could no longer be canceled. A scheduled switchover is now skipped if the primary changes before the scheduled time, it fails rather than running more than 5 minutes late, and it uses the node's current hosts at the scheduled time. Requesting a switchover or failover for a node that already has one in progress now returns a 409 operation_already_in_progress error instead of a 500 server error.
+- Replicas of Spock 6 databases on Postgres 17 or later now drop stale copies of Spock replication slots, including after a switchover or failover, so that native slot synchronization keeps their copies current. Creating or updating a replica no longer fails when its slot copies stay temporary, and an update doesn't switch over to a replica that lacks them.
+
+### Security
+
+- Built the Control Plane with Go 1.26.10, which no longer trusts eight compromised eMudhra intermediate certificate authorities (CVE-2026-111943).
+- Sensitive pgBackRest options, such as `cipher-pass`, in backup and restore repository `custom_options` are now excluded from API responses. Omitting these options from a database update preserves their stored values.
+
 ## v0.11.0 - 2026-09-30
 
 ### Added

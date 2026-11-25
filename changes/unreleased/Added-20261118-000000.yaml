@@ -1,3 +1,0 @@
-kind: Added
-body: Added support for RAG services on hosts that use the systemd orchestrator. Install the pgedge-rag-server2 package on each host that runs a RAG service. The new systemd.rag_path setting selects the RAG server binary.
-time: 2026-11-18T00:00:00.000000+00:00
