@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
@@ -238,6 +239,18 @@ func (p *PostgresDatabaseResource) create(ctx context.Context, rc *resource.Cont
 	}
 
 	if primary.Spec.UsesSpock() {
+		fixed, err := fixSpockBeta1Catalog(ctx, conn)
+		if err != nil {
+			return err
+		}
+		if fixed {
+			if logger, err := do.Invoke[zerolog.Logger](rc.Injector); err == nil {
+				logger.Info().
+					Str("node_name", p.NodeName).
+					Str("instance_id", primary.Spec.InstanceID).
+					Msg("updated the spock 6.0.0-beta1 catalog to beta2")
+			}
+		}
 		// Spock can be added to an existing database, so we add its existing
 		// tables to the replication sets when the Spock node is created. This
 		// happens in a transaction so that a failure to add them can't leave

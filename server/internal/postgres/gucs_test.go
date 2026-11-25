@@ -169,7 +169,9 @@ func TestSpockDefaultGUCsFailoverSlotsDatabase(t *testing.T) {
 		{name: "spock below gate", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5.0.13"), expectedPresent: false},
 		{name: "spock at gate", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5.0.14"), expectedPresent: true},
 		{name: "spock above gate", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.4", "5.1.0"), expectedPresent: true},
-		{name: "spock 6", dbName: "storefront", version: ds.MustParsePgEdgeVersion("17.0", "6"), expectedPresent: true},
+		{name: "spock 6 with postgres 16", dbName: "storefront", version: ds.MustParsePgEdgeVersion("16.16", "6"), expectedPresent: true},
+		{name: "spock 6 with postgres 17 uses native slot sync", dbName: "storefront", version: ds.MustParsePgEdgeVersion("17.12", "6"), expectedPresent: false},
+		{name: "spock 6 with postgres 18 uses native slot sync", dbName: "storefront", version: ds.MustParsePgEdgeVersion("18.7", "6"), expectedPresent: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			gucs := postgres.SpockDefaultGUCs(tc.dbName, tc.version)

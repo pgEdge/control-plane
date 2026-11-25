@@ -250,7 +250,19 @@ func (c *ClusterState) eligibleForSwitchover() iter.Seq[ClusterMember] {
 }
 
 func (c *ClusterState) MostAlignedReplica() (ClusterMember, bool) {
-	sorted := slices.SortedFunc(c.eligibleForSwitchover(), func(a, b ClusterMember) int {
+	return c.MostAlignedReplicaExcept(nil)
+}
+
+// MostAlignedReplicaExcept is MostAlignedReplica, leaving out the members
+// with the given names.
+func (c *ClusterState) MostAlignedReplicaExcept(excluded []string) (ClusterMember, bool) {
+	var eligible []ClusterMember
+	for m := range c.eligibleForSwitchover() {
+		if !slices.Contains(excluded, *m.Name) {
+			eligible = append(eligible, m)
+		}
+	}
+	sorted := slices.SortedFunc(slices.Values(eligible), func(a, b ClusterMember) int {
 		return cmp.Compare(*a.Lag, *b.Lag)
 	})
 	if len(sorted) == 0 {

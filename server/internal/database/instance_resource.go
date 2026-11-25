@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -37,6 +38,11 @@ type InstanceResource struct {
 	OrchestratorDependencies   []resource.Identifier `json:"dependencies"`
 	ConnectionInfo             *ConnectionInfo       `json:"connection_info"`
 	PostInit                   *Script               `json:"post_init"`
+	// SpockSlotCopiesPending lists the subscriptions, as "provider→subscriber",
+	// whose Spock slot this replica didn't yet hold a permanent copy of when
+	// it was last created or updated. Only set for replicas that use native
+	// slot sync. See waitForReplicationSlots.
+	SpockSlotCopiesPending []string `json:"spock_slot_copies_pending,omitempty"`
 }
 
 func (r *InstanceResource) ResourceVersion() string {
@@ -48,6 +54,7 @@ func (r *InstanceResource) DiffIgnore() []string {
 		"/primary_instance_id",
 		"/primary_instance_id_updated_at",
 		"/connection_info",
+		"/spock_slot_copies_pending",
 	}
 }
 
@@ -87,8 +94,45 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 	if err := SetScriptNeedsToRun(ctx, rc, r.PostInit); err != nil {
 		return err
 	}
+	r.refreshSpockSlotCopiesPending(ctx, rc)
 
 	return nil
+}
+
+// slotCopiesUnchecked stands in SpockSlotCopiesPending for a replica whose
+// copies couldn't be checked, so that it's kept out of switchovers rather
+// than assumed ready.
+const slotCopiesUnchecked = "unknown (the check failed)"
+
+// refreshSpockSlotCopiesPending checks which Spock slot copies this replica
+// lacks right now, for replicas that use native slot sync. Native slot sync
+// can make copies permanent long after the replica was created or updated,
+// and a former primary gets its copies after a switchover without being
+// updated. Refresh runs on the replica's host before an update plans its
+// switchovers, so the switchover sees the current state. If the check fails,
+// the replica is marked as unchecked, which keeps it out of switchovers.
+func (r *InstanceResource) refreshSpockSlotCopiesPending(ctx context.Context, rc *resource.Context) {
+	if r.PrimaryInstanceID == r.Spec.InstanceID || !postgres.NeedsNativeFailoverSlotsForVersion(r.Spec.PgEdgeVersion) {
+		// A primary holds the slots itself, and Spock's own worker makes
+		// the copies elsewhere.
+		r.SpockSlotCopiesPending = nil
+		return
+	}
+	const checkTimeout = 30 * time.Second
+	checkCtx, cancel := context.WithTimeout(ctx, checkTimeout)
+	defer cancel()
+
+	pending, _, err := r.missingSpockSlotCopies(checkCtx, rc, false)
+	if err != nil {
+		if logger, logErr := do.Invoke[zerolog.Logger](rc.Injector); logErr == nil {
+			logger.Warn().Err(err).
+				Str("instance_id", r.Spec.InstanceID).
+				Msg("failed to check the replica's spock slot copies; it won't be switched over to")
+		}
+		r.SpockSlotCopiesPending = []string{slotCopiesUnchecked}
+		return
+	}
+	r.SpockSlotCopiesPending = pending
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
@@ -199,14 +243,16 @@ func (r *InstanceResource) updatePrimaryInstanceID(ctx context.Context, timeout 
 }
 
 func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.Context) error {
+	// Set again below for replicas.
+	r.SpockSlotCopiesPending = nil
 	if err := r.updatePrimaryInstanceID(ctx, time.Minute); err != nil {
 		return err
 	}
 
 	if r.Spec.InstanceID != r.PrimaryInstanceID {
-		// Spock 5.x takes up to 60 s to create failover replication slots after a
-		// switchover. Wait for them before marking this replica available so that
-		// subscribers connected to this node do not lose their slots.
+		// Wait for this replica to hold copies of its primary's Spock slots
+		// before marking it available, so that a later switchover to it
+		// doesn't lose the slots that subscribers connected to this node use.
 		if err := r.waitForReplicationSlots(ctx, rc); err != nil {
 			return r.recordError(ctx, rc, err)
 		}
@@ -252,16 +298,99 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	return nil
 }
 
-// waitForReplicationSlots polls pg_replication_slots on this instance until the
-// replication slot for every subscription where this node is the provider exists.
-// In Spock 5.x the worker process on a replica takes up to 60 s to create
-// failover slots after a switchover; this blocks until they are ready.
+// waitForReplicationSlots polls pg_replication_slots on this replica until it
+// has a permanent copy of the replication slot for every subscription where
+// this node is the provider.
+//
+// Where Spock's own failover-slots worker copies the slots (Spock 5, and Spock
+// 6 on Postgres 16), it syncs every spock.failover_slots_naptime: up to 60 s
+// on Spock 5 and 1 s on Spock 6. The replica fails if the copies don't appear
+// in time.
+//
+// Where native slot sync copies the slots (Spock 6 on Postgres 17+), the wait
+// is best-effort. Native slot sync keeps a new copy temporary until the
+// subscriber confirms a position past the one the standby reserved for it,
+// which may not happen while the subscriber is down or paused. The replica
+// doesn't fail then: it records the missing copies in SpockSlotCopiesPending,
+// so that a rolling update doesn't switch over to it. Only copies that native
+// slot sync made count. A copy left by Spock's own worker, or this instance's
+// own slot from when it was a primary, has the same name as the primary's
+// slot, and native slot sync won't take over a slot with the same name.
+// Patroni doesn't drop them either, because Control Plane configures it to
+// ignore Spock slots, so they are dropped here.
 func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *resource.Context) error {
+	r.SpockSlotCopiesPending = nil
+
+	const (
+		pollInterval    = 2 * time.Second
+		slotWaitTimeout = 2 * time.Minute
+	)
+	// The deadline also bounds the checks themselves, in case a query
+	// blocks.
+	waitCtx, cancel := context.WithTimeout(ctx, slotWaitTimeout)
+	defer cancel()
+
+	// The last complete check, used when the deadline passes.
+	var lastPending []string
+	var lastNative, checked bool
+	for {
+		pending, nativeSlotSync, err := r.missingSpockSlotCopies(waitCtx, rc, true)
+		switch {
+		case err == nil:
+			if len(pending) == 0 {
+				return nil
+			}
+			lastPending, lastNative, checked = pending, nativeSlotSync, true
+		case ctx.Err() != nil:
+			return ctx.Err()
+		case waitCtx.Err() == nil:
+			return err
+		default:
+			// The deadline passed during a check.
+			return r.slotWaitTimedOut(rc, checked, lastPending, lastNative)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-waitCtx.Done():
+			return r.slotWaitTimedOut(rc, checked, lastPending, lastNative)
+		case <-time.After(pollInterval):
+		}
+	}
+}
+
+// slotWaitTimedOut handles the end of waitForReplicationSlots' wait. With
+// native slot sync, the replica records the copies that the last complete
+// check found missing instead of failing. Otherwise, or without a complete
+// check, it fails, since unchecked copies can't be assumed ready.
+func (r *InstanceResource) slotWaitTimedOut(rc *resource.Context, checked bool, pending []string, nativeSlotSync bool) error {
+	if !checked {
+		return errors.New("timed out checking this replica's copies of the replication slots")
+	}
+	if !nativeSlotSync {
+		return fmt.Errorf("timed out waiting for a copy of the replication slot for %s", strings.Join(pending, ", "))
+	}
+	r.SpockSlotCopiesPending = pending
+	if logger, err := do.Invoke[zerolog.Logger](rc.Injector); err == nil {
+		logger.Warn().
+			Str("instance_id", r.Spec.InstanceID).
+			Strs("subscriptions", pending).
+			Msg("replica doesn't hold permanent copies of all spock replication slots yet; it won't be switched over to until it does")
+	}
+	return nil
+}
+
+// missingSpockSlotCopies returns the subscriptions, as "provider→subscriber"
+// and sorted, whose slot this replica doesn't hold a permanent copy of, and
+// whether the copies come from native slot sync, which is false when there's
+// nothing to check. With native slot sync, only
+// copies that native slot sync made count, and dropStale drops the copies it
+// didn't make first.
+func (r *InstanceResource) missingSpockSlotCopies(ctx context.Context, rc *resource.Context, dropStale bool) ([]string, bool, error) {
 	subs, err := resource.AllFromContext[*SubscriptionResource](rc, ResourceTypeSubscription)
 	if err != nil {
-		return fmt.Errorf("failed to list subscriptions: %w", err)
+		return nil, false, fmt.Errorf("failed to list subscriptions: %w", err)
 	}
-
 	var relevant []*SubscriptionResource
 	for _, sub := range subs {
 		if sub.ProviderNode == r.Spec.NodeName {
@@ -269,41 +398,60 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 		}
 	}
 	if len(relevant) == 0 {
-		return nil
+		return nil, false, nil
 	}
 
 	conn, err := r.Connection(ctx, rc, r.Spec.DatabaseName)
 	if err != nil {
-		return fmt.Errorf("failed to connect for replication slot check: %w", err)
+		return nil, false, fmt.Errorf("failed to connect for replication slot check: %w", err)
 	}
 	defer conn.Close(ctx)
 
-	const (
-		pollInterval    = 2 * time.Second
-		slotWaitTimeout = 2 * time.Minute
-	)
-	ctx, cancel := context.WithTimeout(ctx, slotWaitTimeout)
-	defer cancel()
-
-	for _, sub := range relevant {
-		for {
-			exists, err := postgres.IsReplicationSlotReady(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode).
-				Scalar(ctx, conn)
-			if err != nil {
-				return fmt.Errorf("failed to check replication slot for %s→%s: %w",
-					sub.ProviderNode, sub.SubscriberNode, err)
-			}
-			if exists {
-				break
-			}
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(pollInterval):
-			}
+	nativeSlotSync, err := r.usesNativeSlotSync(ctx, conn)
+	if err != nil {
+		return nil, false, err
+	}
+	if nativeSlotSync && dropStale {
+		if err := dropStaleSpockSlotCopies(ctx, conn); err != nil {
+			return nil, false, err
 		}
 	}
-	return nil
+
+	var pending []string
+	for _, sub := range relevant {
+		ready := postgres.IsReplicationSlotReady(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode)
+		if nativeSlotSync {
+			ready = postgres.IsReplicationSlotSynced(sub.DatabaseName, sub.ProviderNode, sub.SubscriberNode)
+		}
+		exists, err := ready.Scalar(ctx, conn)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to check replication slot for %s→%s: %w",
+				sub.ProviderNode, sub.SubscriberNode, err)
+		}
+		if !exists {
+			pending = append(pending, sub.ProviderNode+"→"+sub.SubscriberNode)
+		}
+	}
+	slices.Sort(pending)
+	return pending, nativeSlotSync, nil
+}
+
+// usesNativeSlotSync reports whether this replica gets its Spock slot copies
+// from PostgreSQL's native slot sync. That's configured for Spock 6 on
+// Postgres 17+, and only applies while the instance is a standby.
+func (r *InstanceResource) usesNativeSlotSync(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	if !postgres.NeedsNativeFailoverSlotsForVersion(r.Spec.PgEdgeVersion) {
+		return false, nil
+	}
+	supported, err := SupportsSlotFailover(ctx, conn)
+	if err != nil || !supported {
+		return false, err
+	}
+	inRecovery, err := postgres.IsInRecovery().Scalar(ctx, conn)
+	if err != nil {
+		return false, fmt.Errorf("failed to check whether the instance is a standby: %w", err)
+	}
+	return inRecovery, nil
 }
 
 func (r *InstanceResource) updateInstanceRecord(ctx context.Context, rc *resource.Context, opts *InstanceUpdateOptions) error {

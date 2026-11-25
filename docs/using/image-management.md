@@ -298,16 +298,14 @@ value in `orchestrator_opts.swarm.image` when creating the database:
 ### Spock 6 Preview Images
 
 Spock 6 is available as a preview on both Docker Swarm and systemd
-deployments. Spock 6 itself supports Postgres 15 through 19.
+deployments. The preview uses Spock 6.0.0-beta2.
 
-On Docker Swarm, Spock 6 is available as a preview manifest entry with
-[`"stability": "dev"`](#image-stability), currently paired with
-Postgres 18.6; the version manifest currently offers only this one
-Postgres 18.6 pairing as a preview. Preview entries are excluded from
-image upgrades (see below) and are never chosen for a database that
-omits `postgres_version` and `spock_version`. To create a new database
-on the Spock 6 preview image, set `postgres_version` and
-`spock_version` to match the manifest entry:
+On Docker Swarm, the version manifest offers Spock 6 entries with
+[`"stability": "beta"`](#image-stability) for Postgres 16.16, 17.12,
+and 18.7. Beta entries are excluded from image upgrades and are never
+chosen for a database that omits `postgres_version` and `spock_version`.
+To create a new database on Spock 6, set `postgres_version` and
+`spock_version` to match a manifest entry:
 
 === "curl"
 
@@ -325,7 +323,7 @@ on the Spock 6 preview image, set `postgres_version` and
                         "attributes": ["SUPERUSER", "LOGIN"]
                     }
                 ],
-                "postgres_version": "18.6",
+                "postgres_version": "18.7",
                 "spock_version": "6",
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] },
@@ -340,33 +338,68 @@ an image other than the manifest default for that version pair, such as
 pinning a specific build. See
 [Using a Custom Image](#using-a-custom-image).
 
-On systemd, there's no version manifest or image to pin — install the
-Spock 6 packages (`pgedge-spock60_<postgres-major>` on RPM-based
-distributions, `pgedge-postgresql-<postgres-major>-spock60` on
+On systemd, there's no version manifest or image to pin. Install the
+Spock 6.0.0-beta2 packages (`pgedge-spock60_<postgres-major>` on
+RPM-based distributions, `pgedge-postgresql-<postgres-major>-spock60` on
 Debian/Ubuntu) from the pgEdge repositories alongside the matching
 `pgedge-postgresql*` package, following the same steps as
 [Installing via systemd](../installation/systemd-installation.md).
-Once installed, request the preview the same way, setting
-`spock_version` to `"6"`. Unlike the Swarm manifest, systemd has no
-automatic exclusion of preview versions from a database that omits
-`spock_version` — a host advertises whatever Spock major/Postgres
-major combinations it has packages installed for, and the highest
-combination becomes that host's default. Only install the Spock 6
-packages on hosts where you intend to opt into the preview.
+Then request the preview the same way, setting `spock_version` to
+`"6"`. Unlike the Swarm manifest, systemd doesn't exclude preview
+versions from a database that omits `spock_version`. A host advertises
+every Spock and Postgres major version combination it has packages
+for, and the highest combination becomes that host's default. Only
+install the Spock 6 packages on hosts where you intend to use the
+preview.
 
-!!! note
+#### Replicas on Spock 6
 
-    The Spock 6 preview image tracks the latest Spock 6 build against
-    Postgres 18, so its resolved Postgres minor version can advance ahead
-    of the manifest entry's declared `postgres_version`.
+Replicas keep copies of their primary's Spock replication slots, so
+that subscribers on other nodes can continue after a switchover or
+failover. On Postgres 17 and later, Spock 6 databases use the native
+slot synchronization in Postgres to keep these copies. On Postgres 16,
+Spock's own failover-slots worker keeps them, as it does for Spock 5.
+
+With native slot synchronization, a new copy on a replica stays
+temporary until each subscriber confirms new changes from the node.
+This can take a while when a subscriber is down. The Control
+Plane waits up to two minutes for the copies when it creates or
+updates a replica. If the copies are still temporary after that, the
+replica becomes available anyway, and the task log names the slots
+that the replica doesn't hold yet.
+
+Until a replica holds permanent copies of every Spock slot, the
+Control Plane doesn't promote it:
+
+- a switchover or failover request waits for the copies, then fails
+  with an error that names the missing slots.
+- an update that restarts the primary switches over to another replica
+  that holds the copies, or restarts the primary in place if no replica
+  holds them.
+
+Patroni can still promote such a replica on its own when the primary
+fails. The subscriptions that use a slot the replica didn't hold then
+stop replicating from that node.
+
+#### Moving a Database from Spock 6.0.0-beta1 to Beta2
+
+Databases created on Spock 6.0.0-beta1 keep running on their beta1
+images, which use Postgres 16.15, 17.11, and 18.6. To move one of these
+databases to beta2, update its spec and set `postgres_version` to the
+beta2 version of the same Postgres major version, such as 18.7 for
+18.6.
+
+Beta1 and beta2 both report Spock version 6.0.0, so Spock doesn't
+update the extension on its own. During the update, the Control Plane
+applies the catalog update that Spock 6.0.0-beta2 provides for databases
+created on beta1, on each node once the node runs beta2.
 
 !!! warning
 
     This preview supports only creating a new database on Spock 6. It
-    does not support upgrading an existing database from Spock 5.x to
+    does not support upgrading an existing database from Spock 5 to
     Spock 6. The Control Plane rejects a spec update that changes the
-    Spock major version on an existing database, since a Spock 6
-    subscription cannot sync from a Spock 5.x peer.
+    Spock major version of an existing database.
 
 !!! warning
 

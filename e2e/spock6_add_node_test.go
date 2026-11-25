@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,37 +14,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// spock6DevImage is a floating/mutable tag tracking the latest Spock 6
-// development build. Not pinned to a specific build number: the scheduled
-// CI job re-running this test picks up whatever the tag currently resolves
-// to, with no extra plumbing needed to point CI at "latest."
-const spock6DevImage = "ghcr.io/pgedge/pgedge-postgres:18-spock6-standard"
+// spock6PostgresVersions are the Postgres versions with a Spock 6.0.0-beta2
+// entry in the version manifest.
+var spock6PostgresVersions = []string{"16.16", "17.12", "18.7"}
 
 // TestSpock6AddNode validates the add-node workflow end-to-end against a
 // real Spock 6 cluster, adds a 3rd node, and confirms the full mesh reaches
 // "replicating" — exercising the Spock-major-gated spock.progress query
 // (PeerCatchupResource).
 //
-// On Docker Swarm, Spock 6 is only available as a "dev" stability manifest
-// entry that's never auto-selected, so the database is pinned to a Spock 6
-// dev image via orchestrator_opts.swarm.image, bypassing manifest version
-// constraints. On systemd there's no manifest or per-node image pin — the
-// Spock 6 packages just need to be installed on the host, discovered by
-// version, and requested via spock_version; postgres_version is left for the
-// server to default so the test doesn't need to track exact installed
-// package versions.
+// On Docker Swarm, it runs on each Postgres version that has a Spock 6 entry
+// in the version manifest, using the manifest's image. On systemd there's no
+// manifest — the Spock 6 packages just need to be installed on the host,
+// discovered by version, and requested via spock_version; postgres_version
+// is left for the server to default so the test doesn't need to track exact
+// installed package versions.
 func TestSpock6AddNode(t *testing.T) {
-	// TODO: Remove once spock 6 beta 2 image is available
-	t.Skip("skipping until spock 6 beta 2 image is available")
-
 	t.Parallel()
 	fixture.SkipIfSpock6Unsupported(t)
 	fixture.SkipIfSpockNotInstalled(t)
 
+	if fixture.Orchestrator() == "systemd" {
+		testSpock6AddNode(t, nil, "spock6_add_node_db")
+		return
+	}
+	for _, version := range spock6PostgresVersions {
+		t.Run("postgres "+version, func(t *testing.T) {
+			t.Parallel()
+			major, _, _ := strings.Cut(version, ".")
+			testSpock6AddNode(t, pointerTo(version), "spock6_add_node_pg"+major)
+		})
+	}
+}
+
+func testSpock6AddNode(t *testing.T, postgresVersion *string, dbName string) {
 	const (
 		username = "admin"
 		password = "password"
-		dbName   = "spock6_add_node_db"
 	)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Minute)
@@ -51,20 +58,10 @@ func TestSpock6AddNode(t *testing.T) {
 
 	hostIDs := fixture.HostIDs()
 
-	var postgresVersion *string
-	var orchestratorOpts *controlplane.OrchestratorOpts
-	if fixture.Orchestrator() != "systemd" {
-		postgresVersion = pointerTo("18.6")
-		orchestratorOpts = &controlplane.OrchestratorOpts{
-			Swarm: &controlplane.SwarmOpts{Image: pointerTo(spock6DevImage)},
-		}
-	}
-
 	nodeSpec := func(name, hostID string) *controlplane.DatabaseNodeSpec {
 		return &controlplane.DatabaseNodeSpec{
-			Name:             name,
-			HostIds:          []controlplane.Identifier{controlplane.Identifier(hostID)},
-			OrchestratorOpts: orchestratorOpts,
+			Name:    name,
+			HostIds: []controlplane.Identifier{controlplane.Identifier(hostID)},
 		}
 	}
 
