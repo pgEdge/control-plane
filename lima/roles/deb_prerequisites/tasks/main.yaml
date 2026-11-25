@@ -15,9 +15,10 @@
     - wget
     - git
     - chrony
+# downloads.pgedge.com, not apt.pgedge.com -- see rhel_prerequisites.
 - name: Install pgEdge repository
   ansible.builtin.apt:
-    deb: https://apt.pgedge.com/repodeb/pgedge-release_latest_all.deb
+    deb: https://downloads.pgedge.com/repodeb/pgedge-release_latest_all.deb
     state: present
 - name: Reconfigure pgEdge repository for staging packages
   ansible.builtin.replace:
@@ -33,10 +34,57 @@
     replace: release
   when: not (use_staging_packages | bool)
   register: repo_reconfigured_to_release
+- name: Install the pgEdge client certificate and enable the repositories
+  when: pgedge_client_cert | default('') | length > 0
+        and pgedge_client_key | default('') | length > 0
+  block:
+  - name: Create the pgEdge configuration directory
+    ansible.builtin.file:
+      path: "/etc/pgedge"
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+  - name: Write the client certificate
+    ansible.builtin.copy:
+      content: "{{ pgedge_client_cert | trim }}\n"
+      dest: "/etc/pgedge/client.crt"
+      owner: root
+      group: root
+      mode: '0644'
+    no_log: true
+  # Ownership and mode are left to pgedge-subscription-manager: apt reads the
+  # key as _apt, dnf as root.
+  - name: Write the client key
+    ansible.builtin.copy:
+      content: "{{ pgedge_client_key | trim }}\n"
+      dest: "/etc/pgedge/client.key"
+      owner: root
+      group: root
+      mode: '0600'
+    no_log: true
+  - name: Validate the certificate and enable the pgEdge repositories
+    ansible.builtin.command: >-
+      pgedge-subscription-manager install
+      /etc/pgedge/client.crt /etc/pgedge/client.key --force
+    changed_when: true
+
+- name: Warn when no pgEdge client certificate was supplied
+  ansible.builtin.debug:
+    msg: >-
+      No pgEdge client certificate supplied for this run. Any existing
+      repository configuration is left as it is, and installing pgEdge packages
+      may fail. Put the certificate and key at ~/.pgedge/client.crt and
+      ~/.pgedge/client.key, or point PGEDGE_CLIENT_CERT_FILE and
+      PGEDGE_CLIENT_KEY_FILE at them.
+  when: not (pgedge_client_cert | default('') | length > 0
+             and pgedge_client_key | default('') | length > 0)
+
 - name: Update apt cache again
   ansible.builtin.apt:
     update_cache: yes
   changed_when: false
+
 - name: Track configured Spock major for reinstall detection
   ansible.builtin.copy:
     content: "{{ spock_major | default('50') }}"
