@@ -41,7 +41,7 @@
       {
         "postgres_version": "16.16",
         "spock_version": "5",
-        "image": "pgedge-postgres:16.16-spock5.0.14-standard-1",
+        "image": "pgedge-postgres:16.16-spock5.0.14-standard-2",
         "stability": "stable"
       },
       {
@@ -83,7 +83,7 @@
       {
         "postgres_version": "17.12",
         "spock_version": "5",
-        "image": "pgedge-postgres:17.12-spock5.0.14-standard-1",
+        "image": "pgedge-postgres:17.12-spock5.0.14-standard-2",
         "stability": "stable"
       },
       {
@@ -125,7 +125,7 @@
       {
         "postgres_version": "18.7",
         "spock_version": "5",
-        "image": "pgedge-postgres:18.7-spock5.0.14-standard-1",
+        "image": "pgedge-postgres:18.7-spock5.0.14-standard-2",
         "stability": "stable",
         "default": true
       },
@@ -170,13 +170,18 @@
       {
         "version": "14.5",
         "image": "postgrest:14.5",
-        "stability": "stable",
-        "default": true
+        "stability": "stable"
       },
       {
         "version": "14.10",
         "image": "postgrest:14.10",
         "stability": "stable"
+      },
+      {
+        "version": "14.18",
+        "image": "postgrest:14.18",
+        "stability": "stable",
+        "default": true
       }
     ],
     "mcp": [
@@ -201,6 +206,11 @@
       {
         "version": "2.0.0",
         "image": "rag-server:2.0.0",
+        "stability": "stable"
+      },
+      {
+        "version": "2.0.1",
+        "image": "rag-server:2.0.1",
         "stability": "stable",
         "default": true
       }

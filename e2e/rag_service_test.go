@@ -707,8 +707,8 @@ func getEnvOrSkip(t testing.TB, key string) string {
 }
 
 // TestProvisionRAGServicePinnedVersion200 provisions a RAG service pinned
-// explicitly to "2.0.0" (the current default, but pinning explicitly still
-// exercises manifest resolution end to end) and exercises the v2.0.0 config
+// explicitly to "2.0.0" (a non-default version, so this exercises manifest
+// resolution of a pinned version end to end) and exercises the v2.0.0 config
 // fields: allow_include_sources and an optional voyage rerank stage.
 // Placeholder API keys are used so this runs without incurring LLM costs.
 func TestProvisionRAGServicePinnedVersion200(t *testing.T) {

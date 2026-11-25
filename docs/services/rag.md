@@ -19,8 +19,8 @@ queries to the service, which performs hybrid vector and keyword search
 against document tables and returns LLM-synthesized answers with source
 citations.
 
-RAG version `2.0.0` is now the default: a service spec that omits
-`version`, or sets it to `"latest"`, resolves to `2.0.0`. The examples
+RAG version `2.0.1` is now the default: a service spec that omits
+`version`, or sets it to `"latest"`, resolves to `2.0.1`. The examples
 on this page pin `"version": "2.0.0"` explicitly so they do not
 silently pick up a future default version.
 
