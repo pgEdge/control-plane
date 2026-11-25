@@ -1,3 +1,0 @@
-kind: Added
-body: Added validation of `shared_preload_libraries` for hosts that use the systemd orchestrator. Each library must be installed in the library directory of the database's Postgres version on every host that runs it. Libraries are only validated on hosts that have reported their installed libraries, and path-style entries are not validated.
-time: 2026-11-18T00:00:00.000000+00:00

@@ -1,3 +1,0 @@
-kind: Changed
-body: The Spock 6 preview now uses Spock 6.0.0-beta2 images on Postgres 16.16, 17.12, and 18.7. Databases created on 6.0.0-beta1 images can still be updated, and moving one to beta2 now updates its Spock catalog automatically.
-time: 2026-11-24T00:00:00.000000+00:00

@@ -1,3 +1,0 @@
-kind: Added
-body: Database updates can now repair a node that has no primary instance, and database deletes can now remove one. Previously, both operations failed with a `node <name> has no primary instance` error.
-time: 2026-10-19T14:33:44.000000+00:00
