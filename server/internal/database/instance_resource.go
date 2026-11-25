@@ -99,33 +99,37 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 	return nil
 }
 
-// refreshSpockSlotCopiesPending checks again which of the recorded missing
-// Spock slot copies this replica still lacks, because native slot sync can
-// make them permanent long after the replica was created or updated. Refresh
-// runs before an update plans its switchovers, so a replica that has caught
-// up is a switchover candidate again. On an error, it keeps the recorded
-// list, which keeps the replica out of switchovers.
+// slotCopiesUnchecked stands in SpockSlotCopiesPending for a replica whose
+// copies couldn't be checked, so that it's kept out of switchovers rather
+// than assumed ready.
+const slotCopiesUnchecked = "unknown (the check failed)"
+
+// refreshSpockSlotCopiesPending checks which Spock slot copies this replica
+// lacks right now, for replicas that use native slot sync. Native slot sync
+// can make copies permanent long after the replica was created or updated,
+// and a former primary gets its copies after a switchover without being
+// updated. Refresh runs on the replica's host before an update plans its
+// switchovers, so the switchover sees the current state. If the check fails,
+// the replica is marked as unchecked, which keeps it out of switchovers.
 func (r *InstanceResource) refreshSpockSlotCopiesPending(ctx context.Context, rc *resource.Context) {
-	if len(r.SpockSlotCopiesPending) == 0 {
-		return
-	}
-	if r.PrimaryInstanceID == r.Spec.InstanceID {
-		// A primary holds the slots themselves.
+	if r.PrimaryInstanceID == r.Spec.InstanceID || !postgres.NeedsNativeFailoverSlotsForVersion(r.Spec.PgEdgeVersion) {
+		// A primary holds the slots itself, and Spock's own worker makes
+		// the copies elsewhere.
 		r.SpockSlotCopiesPending = nil
 		return
 	}
-	pending, nativeSlotSync, err := r.missingSpockSlotCopies(ctx, rc, false)
-	if err == nil && !nativeSlotSync {
-		// Nothing was checked, for example because the subscriptions aren't
-		// in the state. Keep the recorded list.
-		return
-	}
+	const checkTimeout = 30 * time.Second
+	checkCtx, cancel := context.WithTimeout(ctx, checkTimeout)
+	defer cancel()
+
+	pending, _, err := r.missingSpockSlotCopies(checkCtx, rc, false)
 	if err != nil {
 		if logger, logErr := do.Invoke[zerolog.Logger](rc.Injector); logErr == nil {
 			logger.Warn().Err(err).
 				Str("instance_id", r.Spec.InstanceID).
-				Msg("failed to check the replica's spock slot copies; keeping the recorded missing copies")
+				Msg("failed to check the replica's spock slot copies; it won't be switched over to")
 		}
+		r.SpockSlotCopiesPending = []string{slotCopiesUnchecked}
 		return
 	}
 	r.SpockSlotCopiesPending = pending
@@ -321,34 +325,59 @@ func (r *InstanceResource) waitForReplicationSlots(ctx context.Context, rc *reso
 		pollInterval    = 2 * time.Second
 		slotWaitTimeout = 2 * time.Minute
 	)
-	deadline := time.Now().Add(slotWaitTimeout)
+	// The deadline also bounds the checks themselves, in case a query
+	// blocks.
+	waitCtx, cancel := context.WithTimeout(ctx, slotWaitTimeout)
+	defer cancel()
+
+	// The last complete check, used when the deadline passes.
+	var lastPending []string
+	var lastNative, checked bool
 	for {
-		pending, nativeSlotSync, err := r.missingSpockSlotCopies(ctx, rc, true)
-		if err != nil {
+		pending, nativeSlotSync, err := r.missingSpockSlotCopies(waitCtx, rc, true)
+		switch {
+		case err == nil:
+			if len(pending) == 0 {
+				return nil
+			}
+			lastPending, lastNative, checked = pending, nativeSlotSync, true
+		case ctx.Err() != nil:
+			return ctx.Err()
+		case waitCtx.Err() == nil:
 			return err
-		}
-		if len(pending) == 0 {
-			return nil
-		}
-		if !time.Now().Before(deadline) {
-			if !nativeSlotSync {
-				return fmt.Errorf("timed out waiting for a copy of the replication slot for %s", strings.Join(pending, ", "))
-			}
-			r.SpockSlotCopiesPending = pending
-			if logger, err := do.Invoke[zerolog.Logger](rc.Injector); err == nil {
-				logger.Warn().
-					Str("instance_id", r.Spec.InstanceID).
-					Strs("subscriptions", pending).
-					Msg("replica doesn't hold permanent copies of all spock replication slots yet; it won't be switched over to until it does")
-			}
-			return nil
+		default:
+			// The deadline passed during a check.
+			return r.slotWaitTimedOut(rc, checked, lastPending, lastNative)
 		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		case <-waitCtx.Done():
+			return r.slotWaitTimedOut(rc, checked, lastPending, lastNative)
 		case <-time.After(pollInterval):
 		}
 	}
+}
+
+// slotWaitTimedOut handles the end of waitForReplicationSlots' wait. With
+// native slot sync, the replica records the copies that the last complete
+// check found missing instead of failing. Otherwise, or without a complete
+// check, it fails, since unchecked copies can't be assumed ready.
+func (r *InstanceResource) slotWaitTimedOut(rc *resource.Context, checked bool, pending []string, nativeSlotSync bool) error {
+	if !checked {
+		return errors.New("timed out checking this replica's copies of the replication slots")
+	}
+	if !nativeSlotSync {
+		return fmt.Errorf("timed out waiting for a copy of the replication slot for %s", strings.Join(pending, ", "))
+	}
+	r.SpockSlotCopiesPending = pending
+	if logger, err := do.Invoke[zerolog.Logger](rc.Injector); err == nil {
+		logger.Warn().
+			Str("instance_id", r.Spec.InstanceID).
+			Strs("subscriptions", pending).
+			Msg("replica doesn't hold permanent copies of all spock replication slots yet; it won't be switched over to until it does")
+	}
+	return nil
 }
 
 // missingSpockSlotCopies returns the subscriptions, as "provider→subscriber"
